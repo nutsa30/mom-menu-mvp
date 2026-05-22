@@ -178,6 +178,11 @@ export default function PromoAdminClient({ codes }: { codes: PromoCode[] }) {
                 </td>
                 <td className="px-4 py-4">
                   <span className="font-bold text-green-700 text-sm">{code.discountPercent}%</span>
+                  {code.discountPercent > 0 && (
+                    <span className="ml-1.5 text-xs text-gray-400">
+                      → {Math.round((code.planType === 'RECIPE_PLAN' ? 15 : 30) * (1 - code.discountPercent / 100))}₾
+                    </span>
+                  )}
                 </td>
                 <td className="px-4 py-4 text-sm text-gray-600">
                   {code._count.users}
