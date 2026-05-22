@@ -59,8 +59,8 @@ export default function PromoAdminClient({ codes }: { codes: PromoCode[] }) {
   };
 
   return (
-    <div className="p-8">
-      <div className="flex items-center justify-between mb-8">
+    <div className="p-4 sm:p-6 lg:p-8">
+      <div className="flex items-center justify-between mb-6 lg:mb-8 gap-3">
         <div>
           <h1 className="text-3xl font-black text-gray-900">პრომოკოდები</h1>
           <p className="text-gray-400 text-sm mt-1">{codes.length} კოდი სულ</p>
@@ -78,7 +78,7 @@ export default function PromoAdminClient({ codes }: { codes: PromoCode[] }) {
         <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-6 mb-6">
           <h2 className="font-black text-gray-900 mb-4">ახალი პრომოკოდი</h2>
           <form onSubmit={handleCreate} className="space-y-4">
-            <div className="grid grid-cols-4 gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4">
               <div>
                 <label className="block text-xs font-semibold text-gray-500 mb-1">კოდი</label>
                 <input
@@ -147,7 +147,8 @@ export default function PromoAdminClient({ codes }: { codes: PromoCode[] }) {
 
       {/* Codes list */}
       <div className="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden">
-        <table className="w-full">
+        <div className="overflow-x-auto">
+        <table className="w-full min-w-[600px]">
           <thead className="bg-[#fdf6f3]">
             <tr>
               <th className="text-left px-6 py-3 text-xs font-semibold text-gray-400 uppercase tracking-wide">კოდი</th>
@@ -208,6 +209,7 @@ export default function PromoAdminClient({ codes }: { codes: PromoCode[] }) {
             ))}
           </tbody>
         </table>
+        </div>
       </div>
     </div>
   );
