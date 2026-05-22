@@ -100,7 +100,7 @@ const [loadingPlan, setLoadingPlan] = useState<string | null>(null);
   return (
     <main className="text-[#241915]">
       {/* Hero — sticky so content slides over it */}
-      <section className="relative pt-20 pb-16 overflow-hidden bg-[#fff8f6] sticky top-0 z-0 min-h-screen flex items-start">
+      <section className="relative pt-8 sm:pt-12 pb-16 overflow-hidden bg-[#fff8f6] sticky top-0 z-0 min-h-screen flex items-start">
         <div className="max-w-7xl mx-auto px-6 grid lg:grid-cols-2 gap-12 items-center w-full">
           <div className="z-10">
             <span className="inline-block px-4 py-1.5 mb-6 rounded-full bg-[#baead6] text-[#3f6b5b] font-semibold text-sm">
