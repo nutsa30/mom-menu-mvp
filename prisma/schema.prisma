@@ -1,0 +1,387 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum Role {
+  USER
+  ADMIN
+}
+
+enum SubscriptionStatus {
+  FREE
+  RECIPE_PLAN
+  FULL_PLAN
+  CANCELED
+}
+enum MealType {
+  BREAKFAST
+  LUNCH
+  DINNER
+  SNACK
+}
+
+enum AgeGroup {
+  FROM_6
+  FROM_9
+  FROM_12
+  FROM_24
+}
+
+enum IngredientType {
+  FRUIT
+  VEGETABLE
+}
+
+enum Season {
+  SPRING
+  SUMMER
+  AUTUMN
+  WINTER
+}
+
+model User {
+  id                     String             @id @default(cuid())
+  name                   String
+  email                  String             @unique
+  passwordHash           String
+  role                   Role               @default(USER)
+  subscriptionStatus     SubscriptionStatus @default(FREE)
+  subscriptionStartedAt  DateTime?
+  subscriptionCanceledAt DateTime?
+
+  isBlocked              Boolean            @default(false)
+  isGifted               Boolean            @default(false)
+
+  promoCodeId            String?
+  promoCode              PromoCode?         @relation(fields: [promoCodeId], references: [id], onDelete: SetNull)
+
+  children               Child[]
+  mealPlans              MealPlan[]
+
+  createdAt              DateTime           @default(now())
+  updatedAt              DateTime           @updatedAt
+}
+
+model PromoCode {
+  id              String             @id @default(cuid())
+  code            String             @unique
+  planType        SubscriptionStatus
+  discountPercent Int                @default(0)
+  maxUses         Int?
+  isActive        Boolean            @default(true)
+  createdAt       DateTime           @default(now())
+  updatedAt       DateTime           @updatedAt
+
+  users           User[]
+}
+
+model Child {
+  id        String   @id @default(cuid())
+  name      String
+  birthDate DateTime
+  ageGroup  AgeGroup
+  allergies String[] @default([])
+  dislikes  String[] @default([])
+  likes     String[] @default([])
+
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  mealPlans MealPlan[]
+  dailyLogs DailyLog[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model Dish {
+  id            String   @id @default(cuid())
+  titleKa       String
+  titleEn       String
+  descriptionKa String
+  descriptionEn String
+  imageUrl      String?
+
+  ingredientsKa String[]
+  ingredientsEn String[]
+
+  calories      Int?
+  proteinGrams  Int?
+
+  ironMg        Float?
+  calciumMg     Float?
+  vitaminCmg    Float?
+  vitaminAmcg   Float?
+  vitaminDmcg   Float?
+  vitaminEmg    Float?
+  vitaminKmcg   Float?
+  vitaminB6mg   Float?
+  vitaminB12mcg Float?
+  folateMcg     Float?
+  zincMg        Float?
+  potassiumMg   Float?
+  magnesiumMg   Float?
+  phosphorusMg  Float?
+  sodiumMg      Float?
+  fiberGrams    Float?
+  fatGrams      Float?
+  carbsGrams    Float?
+  omega3Mg      Float?
+
+  ageGroups     AgeGroup[]
+  allergens     String[] @default([])
+  mealType      MealType @default(BREAKFAST)
+
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  planItems     MealPlanItem[]
+  dailyLogs     DailyLog[]
+}
+
+model MealPlan {
+  id        String   @id @default(cuid())
+  titleKa   String
+  titleEn   String
+  ageGroup  AgeGroup
+  dayOffset Int      @default(0)
+  isActive  Boolean  @default(true)
+
+  userId    String?
+  user      User?    @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  childId   String?
+  child     Child?   @relation(fields: [childId], references: [id], onDelete: Cascade)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  items     MealPlanItem[]
+}
+
+model MealPlanItem {
+  id         String   @id @default(cuid())
+  mealType   MealType
+  sortOrder  Int      @default(0)
+  notesKa    String?
+  notesEn    String?
+
+  mealPlanId String
+  dishId     String
+
+  mealPlan   MealPlan @relation(fields: [mealPlanId], references: [id], onDelete: Cascade)
+  dish       Dish     @relation(fields: [dishId], references: [id], onDelete: Cascade)
+}
+
+model DailyLog {
+  id           String      @id @default(cuid())
+  date         String      // YYYY-MM-DD
+  childId      String
+  child        Child       @relation(fields: [childId], references: [id], onDelete: Cascade)
+  mealType     MealType
+  dishId       String?
+  dish         Dish?       @relation(fields: [dishId], references: [id], onDelete: SetNull)
+  ingredientId String?
+  ingredient   Ingredient? @relation(fields: [ingredientId], references: [id], onDelete: SetNull)
+  wasEaten     Boolean     @default(false)
+  createdAt    DateTime    @default(now())
+  updatedAt    DateTime    @updatedAt
+
+  @@unique([childId, date, mealType])
+}
+
+model Ingredient {
+  id            String         @id @default(cuid())
+  titleKa       String
+  titleEn       String
+  type          IngredientType @default(FRUIT)
+  imageUrl      String?
+  ageGroups     AgeGroup[]
+  seasons       Season[]       @default([])
+
+  calories      Int?
+  proteinGrams  Float?
+  carbsGrams    Float?
+  fatGrams      Float?
+  fiberGrams    Float?
+  ironMg        Float?
+  calciumMg     Float?
+  zincMg        Float?
+  potassiumMg   Float?
+  magnesiumMg   Float?
+  phosphorusMg  Float?
+  sodiumMg      Float?
+  vitaminAmcg   Float?
+  vitaminCmg    Float?
+  vitaminDmcg   Float?
+  vitaminEmg    Float?
+  vitaminKmcg   Float?
+  vitaminB6mg   Float?
+  vitaminB12mcg Float?
+  folateMcg     Float?
+  omega3Mg      Float?
+
+  benefitsKa    String[]       @default([])
+  benefitsEn    String[]       @default([])
+
+  dailyLogs     DailyLog[]
+
+  createdAt     DateTime       @default(now())
+  updatedAt     DateTime       @updatedAt
+}
+
+model Blog {
+  id          String   @id @default(cuid())
+  titleKa     String
+  titleEn     String
+  contentKa   String
+  contentEn   String
+  slug        String?  @unique
+  imageUrl    String?
+  images      String[] @default([])
+  isPublished Boolean  @default(false)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+}
+
+model HowItWorksSettings {
+  id             String   @id @default("singleton")
+  heroTitleKa    String   @default("სამი წუთი — და კვირის მენიუ მზადაა")
+  heroTitleEn    String   @default("Three minutes and your weekly menu is ready")
+  heroSubtitleKa String   @default("moMeals იღებს შვილის ინფორმაციას და შენ ნაცვლად ადგენს ყოველდღიურ, ბალანსირებულ კვების გეგმას.")
+  heroSubtitleEn String   @default("moMeals takes your child's info and builds a balanced daily meal plan so you don't have to.")
+  ctaTitleKa     String   @default("მზად ხარ?")
+  ctaTitleEn     String   @default("Ready to get started?")
+  ctaSubtitleKa  String   @default("პირველი კვირა — უფასოდ.")
+  ctaSubtitleEn  String   @default("Your first week — on us.")
+  updatedAt      DateTime @updatedAt
+}
+
+model HowItWorksStep {
+  id        String   @id @default(cuid())
+  icon      String   @default("🍽️")
+  titleKa   String
+  titleEn   String
+  descKa    String
+  descEn    String
+  sortOrder Int      @default(0)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model HowItWorksFaq {
+  id         String   @id @default(cuid())
+  questionKa String
+  questionEn String
+  answerKa   String
+  answerEn   String
+  sortOrder  Int      @default(0)
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+}
+
+model HomePageSettings {
+  id String @id @default("singleton")
+
+  // Hero
+  heroBadgeKa    String @default("შემდეგი თაობის კვება")
+  heroBadgeEn    String @default("Nurturing the Next Generation")
+  heroTitleKa    String @default("პერსონალური ყოველდღიური კვების გეგმა შენი ბავშვისთვის")
+  heroTitleEn    String @default("Personalized daily meal plans for your child")
+  heroTextKa     String @default("გემრიელი საუზმე, სადილი, ვახშამი და სნექი, მორგებული ბავშვის ასაკზე, კვებით საჭიროებებსა და გემოვნებაზე.")
+  heroTextEn     String @default("Delicious breakfast, lunch, dinner, and snacks tailored to your child's age, dietary needs, and preferences.")
+  heroCta1Ka     String @default("გეგმის დაწყება")
+  heroCta1En     String @default("Start planning")
+  heroCta2Ka     String @default("ფასები")
+  heroCta2En     String @default("View pricing")
+  heroImageUrl   String @default("https://images.unsplash.com/photo-1546069901-ba9599a7e63c")
+
+  // Features
+  featuresTitleKa  String @default("შექმნილია გადატვირთული, მზრუნველი მშობლებისთვის")
+  featuresTitleEn  String @default("Designed for Busy, Mindful Parents")
+  feature1Icon     String @default("❤️")
+  feature1TitleKa  String @default("მეცნიერულად დაფუძნებული კვება")
+  feature1TitleEn  String @default("Science-Backed Nutrition")
+  feature1DescKa   String @default("თითოეული კერძი შერჩეულია იმისთვის, რომ ბავშვმა მიიღოს ყველა საჭირო ვიტამინი და საკვები ნივთიერება.")
+  feature1DescEn   String @default("Every meal is curated to ensure your child gets essential vitamins and nutrients.")
+  feature2Icon     String @default("⚡")
+  feature2TitleKa  String @default("სტრესის გარეშე მომზადება")
+  feature2TitleEn  String @default("Stress-Free Prep")
+  feature2DescKa   String @default("მარტივი რეცეპტები და სავაჭრო სიები კვირაში საათებს დაგიზოგავს.")
+  feature2DescEn   String @default("Simple recipes and smart shopping lists save you hours every week.")
+  feature3Icon     String @default("🎯")
+  feature3TitleKa  String @default("მორგებული კაპრიზულ მჭამელებზე")
+  feature3TitleEn  String @default("Tailored for Picky Eaters")
+  feature3DescKa   String @default("გეგმები ადაპტირდება ბავშვის გემოვნებაზე და ამასთან ახალ კერძებს აცნობს.")
+  feature3DescEn   String @default("Plans adapt to your child's taste while introducing new foods.")
+
+  // Meal samples
+  sampleTitleKa      String @default("moMeals-ის გემო")
+  sampleTitleEn      String @default("A Taste of moMeals")
+  sampleSubtitleKa   String @default("გაეცანი ტიპიურ ყოველდღიურ კვების გეგმას.")
+  sampleSubtitleEn   String @default("Explore a typical daily meal plan for your child.")
+  sample1ImageUrl    String @default("https://images.unsplash.com/photo-1512621776951-a57141f2eefd")
+  sample1LabelKa     String @default("საუზმე")
+  sample1LabelEn     String @default("Breakfast")
+  sample1TitleKa     String @default("მზის ბანანის ფაფა")
+  sample1TitleEn     String @default("Sunshine Banana Oats")
+  sample1DescKa      String @default("ენერგია დღის დასაწყებად.")
+  sample1DescEn      String @default("Energy to start the day.")
+  sample2ImageUrl    String @default("https://images.unsplash.com/photo-1546069901-ba9599a7e63c")
+  sample2LabelKa     String @default("სადილი")
+  sample2LabelEn     String @default("Lunch")
+  sample2TitleKa     String @default("ცისარტყელა ქათმის თეფში")
+  sample2TitleEn     String @default("Rainbow Chicken Plate")
+  sample3ImageUrl    String @default("https://images.unsplash.com/photo-1604908176997-125f25cc6f3d")
+  sample3LabelKa     String @default("სნექი")
+  sample3LabelEn     String @default("Snack")
+  sample3TitleKa     String @default("ავოკადოს ვარსკვლავები")
+  sample3TitleEn     String @default("Avocado Stars")
+  sample4ImageUrl    String @default("https://images.unsplash.com/photo-1605478038585-6e7c0c0d5c2d")
+  sample4LabelKa     String @default("ვახშამი")
+  sample4LabelEn     String @default("Dinner")
+  sample4TitleKa     String @default("ჯანსაღი პასტა")
+  sample4TitleEn     String @default("Healthy Pasta Bowl")
+
+  // Pricing
+  pricingTitleKa     String @default("მარტივი, გამჭვირვალე ფასები")
+  pricingTitleEn     String @default("Simple, Transparent Pricing")
+  pricingSubtitleKa  String @default("აირჩიე შენი ოჯახისთვის შესაფერი გეგმა. გაუქმება ნებისმიერ დროს.")
+  pricingSubtitleEn  String @default("Choose the plan that fits your family. Cancel anytime.")
+  plan1NameKa        String @default("რეცეპტების წვდომა")
+  plan1NameEn        String @default("Recipe Access")
+  plan1Price         Int    @default(15)
+  plan1Feature1Ka    String @default("✔ ასობით რეცეპტი სრული ინსტრუქციებით")
+  plan1Feature1En    String @default("✔ Hundreds of recipes with full instructions")
+  plan1Feature2Ka    String @default("✔ ბლოგები, სტატიები და კვებითი რჩევები")
+  plan1Feature2En    String @default("✔ Blog posts, articles & nutrition tips")
+  plan1Feature3Ka    String @default("✔ საიტის ყველა კონტენტი შეუზღუდავად")
+  plan1Feature3En    String @default("✔ Unlimited access to all site content")
+  plan2NameKa        String @default("სრული პაკეტი")
+  plan2NameEn        String @default("Full Package")
+  plan2Price         Int    @default(30)
+  plan2Feature1Ka    String @default("✔ ყველაფერი, რაც 15₾ გეგმაშია")
+  plan2Feature1En    String @default("✔ Everything included in the 15₾ plan")
+  plan2Feature2Ka    String @default("✔ შვილის პირადი პროფილი — ასაკი, ალერგენები და გემოვნება")
+  plan2Feature2En    String @default("✔ Child profile — age, allergies & food preferences")
+  plan2Feature3Ka    String @default("✔ კვირის კვების გეგმა და ავტომატური საყიდლების სია")
+  plan2Feature3En    String @default("✔ Weekly meal plan with an automatic shopping list")
+
+  updatedAt DateTime @updatedAt
+}
+
+model EmailTemplate {
+  id        String   @id @default(cuid())
+  key       String   @unique
+  subjectKa String
+  subjectEn String
+  bodyKa    String
+  bodyEn    String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}

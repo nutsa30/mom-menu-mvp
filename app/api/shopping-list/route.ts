@@ -1,0 +1,231 @@
+import { NextRequest, NextResponse } from 'next/server';
+import { getSession } from '@/lib/auth';
+import { prisma } from '@/lib/prisma';
+import { getSuitableAgeGroups } from '@/lib/meal';
+
+const MEAL_TYPES = ['BREAKFAST', 'SNACK', 'LUNCH', 'DINNER'] as const;
+
+// ── Ingredient aggregation ─────────────────────────────────────────────────
+const GEO_NUMS: [string, number][] = [
+  ['ნახევარი', 0.5], ['მეოთხედი', 0.25], ['ერთი', 1], ['ორი', 2],
+  ['სამი', 3], ['ოთხი', 4], ['ხუთი', 5], ['ექვსი', 6], ['შვიდი', 7],
+  ['რვა', 8], ['ცხრა', 9], ['ათი', 10],
+];
+const FRAC: Record<string, number> = { '½': 0.5, '¼': 0.25, '¾': 0.75, '⅓': 1/3, '⅔': 2/3 };
+
+// Maps raw unit strings → canonical key
+const UNIT_CANON: Record<string, string> = {
+  'გ': 'გ', 'გრ': 'გ', 'გრამი': 'გ', 'გ.': 'გ',
+  'კგ': 'კგ', 'კილოგრამი': 'კგ', 'კილო': 'კგ',
+  'მლ': 'მლ', 'მილილიტრი': 'მლ',
+  'ლ': 'ლ', 'ლიტრი': 'ლ',
+  'ჭიქა': 'ჭ', 'ჭ': 'ჭ',
+  'სუფ.კ': 'სკ', 'სუფ/კ': 'სკ', 'სტბ': 'სკ',
+  'ჩ.კ': 'ჩკ', 'ჩ/კ': 'ჩკ', 'ჩ': 'ჩკ',
+  'ცალი': 'ც', 'ც': 'ც', 'ც.': 'ც',
+};
+const UNIT_DISPLAY: Record<string, string> = {
+  'გ': 'გ', 'კგ': 'კგ', 'მლ': 'მლ', 'ლ': 'ლ',
+  'ჭ': 'ჭიქა', 'სკ': 'სუფ.კ', 'ჩკ': 'ჩ.კ', 'ც': 'ც',
+};
+
+function fmtNum(n: number): string {
+  if (Number.isInteger(n)) return `${n}`;
+  const whole = Math.floor(n);
+  const frac = n - whole;
+  const fracStr = frac === 0.5 ? '½' : frac === 0.25 ? '¼' : frac === 0.75 ? '¾' : frac.toFixed(1).slice(1);
+  return whole > 0 ? `${whole}${fracStr}` : fracStr;
+}
+
+function parseIng(raw: string): { key: string; display: string; qty: number; unit: string } {
+  // Strip parenthetical notes  e.g. "(სურვილისამებრ)"
+  const s = raw.trim().replace(/\s*\([^)]*\)/g, '').trim();
+
+  // Try: numeric/fraction + optional unit + rest
+  const numRe = /^([½¼¾⅓⅔]|\d+\.?\d*)\s+(\S+)\s+(.+)$/;
+  const numSimple = /^([½¼¾⅓⅔]|\d+\.?\d*)\s+(.+)$/;
+
+  let m = s.match(numRe);
+  if (m) {
+    const qty = FRAC[m[1]] ?? parseFloat(m[1]);
+    const maybeUnit = m[2].toLowerCase().replace(/\.+$/, '');
+    if (UNIT_CANON[maybeUnit] !== undefined) {
+      const display = m[3];
+      return { key: display.toLowerCase(), display, qty, unit: UNIT_CANON[maybeUnit] };
+    }
+    // not a unit — include m[2] in the name
+    const display = `${m[2]} ${m[3]}`;
+    return { key: display.toLowerCase(), display, qty, unit: '' };
+  }
+
+  m = s.match(numSimple);
+  if (m) {
+    const qty = FRAC[m[1]] ?? parseFloat(m[1]);
+    return { key: m[2].toLowerCase(), display: m[2], qty, unit: '' };
+  }
+
+  // Try Georgian number words at start
+  const lc = s.toLowerCase();
+  for (const [word, val] of GEO_NUMS) {
+    if (lc.startsWith(word + ' ')) {
+      const display = s.slice(word.length + 1).trim();
+      return { key: display.toLowerCase(), display, qty: val, unit: '' };
+    }
+  }
+
+  return { key: lc, display: s, qty: 0, unit: '' };
+}
+
+interface IngredientItem {
+  display: string;  // ingredient name
+  amount: string;   // e.g. "3 ც", "150 გ", "×3", ""
+}
+
+function aggregateIngredients(all: string[]): IngredientItem[] {
+  const groups = new Map<string, { display: string; sums: Map<string, number>; bare: number }>();
+
+  for (const raw of all) {
+    const p = parseIng(raw);
+    if (!groups.has(p.key)) groups.set(p.key, { display: p.display, sums: new Map(), bare: 0 });
+    const g = groups.get(p.key)!;
+    if (p.qty > 0) {
+      g.sums.set(p.unit, (g.sums.get(p.unit) || 0) + p.qty);
+    } else {
+      g.bare++;
+    }
+  }
+
+  const result: IngredientItem[] = [];
+  Array.from(groups.values()).forEach((g) => {
+    if (g.sums.size === 0) {
+      result.push({ display: g.display, amount: g.bare > 1 ? `×${g.bare}` : '' });
+    } else {
+      const parts: string[] = Array.from(g.sums.entries()).map(([unitKey, total]) => {
+        const n = fmtNum(total);
+        const u = unitKey ? (UNIT_DISPLAY[unitKey] || unitKey) : 'ც';
+        return `${n} ${u}`;
+      });
+      result.push({ display: g.display, amount: parts.join(' + ') });
+    }
+  });
+
+  return result.sort((a, b) => a.display.localeCompare(b.display, 'ka'));
+}
+
+function planDays(startDate: string): string[] {
+  return Array.from({ length: 7 }, (_, i) => {
+    const d = new Date(startDate + 'T12:00:00');
+    d.setDate(d.getDate() + i);
+    return d.toISOString().split('T')[0];
+  });
+}
+
+function pickDish(dishes: any[], likes: string[], dislikes: string[]) {
+  if (!dishes.length) return null;
+  const scored = dishes.map((d) => {
+    const text = `${d.titleKa} ${d.titleEn} ${d.ingredientsKa.join(' ')} ${d.ingredientsEn.join(' ')}`.toLowerCase();
+    const likeScore = likes.filter((l) => text.includes(l.toLowerCase())).length;
+    const dislikeScore = dislikes.filter((dl) => text.includes(dl.toLowerCase())).length;
+    return { d, score: likeScore - dislikeScore };
+  });
+  scored.sort((a, b) => b.score - a.score);
+  const topScore = scored[0].score;
+  const top = scored.filter((s) => s.score === topScore);
+  return top[Math.floor(Math.random() * top.length)].d;
+}
+
+// GET /api/shopping-list?childId=X
+// Generates 7 days of meal plans and returns deduplicated ingredient list
+export async function GET(req: NextRequest) {
+  const session = await getSession();
+  if (!session) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+
+  const dbUser = await prisma.user.findUnique({ where: { id: session.id }, select: { subscriptionStatus: true } });
+  if (dbUser?.subscriptionStatus !== 'FULL_PLAN') {
+    return NextResponse.json({ error: 'FULL_PLAN required' }, { status: 403 });
+  }
+
+  const childId = req.nextUrl.searchParams.get('childId');
+  if (!childId) return NextResponse.json({ error: 'Missing childId' }, { status: 400 });
+
+  const today = new Date().toISOString().split('T')[0];
+  const planStart = req.nextUrl.searchParams.get('planStart') ?? today;
+  const dates = planDays(planStart);
+
+  const child = await prisma.child.findFirst({ where: { id: childId, userId: session.id } });
+  if (!child) return NextResponse.json({ error: 'Not found' }, { status: 404 });
+
+  const month = new Date().getMonth();
+  const currentSeason = month <= 1 || month === 11 ? 'WINTER'
+    : month <= 4 ? 'SPRING'
+    : month <= 7 ? 'SUMMER'
+    : 'AUTUMN';
+
+  const allIngredients: string[] = [];
+  const days: { date: string; dishes: string[] }[] = [];
+
+  for (const date of dates) {
+
+    let logs = await prisma.dailyLog.findMany({
+      where: { childId, date },
+      include: { dish: true, ingredient: true },
+    });
+
+    const existing = new Set(
+      logs.filter((l) => l.dishId !== null || l.ingredientId !== null).map((l) => l.mealType)
+    );
+    const missing = MEAL_TYPES.filter((m) => !existing.has(m));
+
+    for (const mealType of missing) {
+      let logData: any = { childId, date, mealType, wasEaten: false };
+
+      if (mealType === 'SNACK') {
+        const suitableAges = getSuitableAgeGroups(child.ageGroup);
+        const ingCandidates = await prisma.ingredient.findMany({
+          where: { ageGroups: { hasSome: suitableAges }, seasons: { has: currentSeason as any } },
+        });
+        if (ingCandidates.length && Math.random() < 0.5) {
+          const picked = ingCandidates[Math.floor(Math.random() * ingCandidates.length)];
+          await prisma.dailyLog.upsert({
+            where: { childId_date_mealType: { childId, date, mealType } },
+            update: { ingredientId: picked.id, dishId: null },
+            create: { ...logData, ingredientId: picked.id, dishId: null },
+          });
+          continue;
+        }
+      }
+
+      const where: any = { mealType, ageGroups: { hasSome: getSuitableAgeGroups(child.ageGroup) } };
+      if (child.allergies.length) where.NOT = { allergens: { hasSome: child.allergies } };
+      const candidates = await prisma.dish.findMany({ where });
+      const picked = pickDish(candidates, child.likes, child.dislikes);
+
+      await prisma.dailyLog.upsert({
+        where: { childId_date_mealType: { childId, date, mealType } },
+        update: { dishId: picked?.id ?? null, ingredientId: null },
+        create: { ...logData, dishId: picked?.id ?? null },
+      });
+    }
+
+    logs = await prisma.dailyLog.findMany({
+      where: { childId, date },
+      include: { dish: true, ingredient: true },
+    });
+
+    const dayDishes: string[] = [];
+    for (const log of logs) {
+      if (log.dish?.ingredientsKa?.length) {
+        allIngredients.push(...log.dish.ingredientsKa);
+        dayDishes.push(log.dish.titleKa);
+      }
+      if (log.ingredient?.titleKa) {
+        allIngredients.push(log.ingredient.titleKa);
+        dayDishes.push(log.ingredient.titleKa);
+      }
+    }
+    days.push({ date, dishes: dayDishes });
+  }
+
+  const ingredients = aggregateIngredients(allIngredients);
+  return NextResponse.json({ ingredients, days });
+}

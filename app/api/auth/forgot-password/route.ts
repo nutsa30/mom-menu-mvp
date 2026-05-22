@@ -1,0 +1,42 @@
+import { prisma } from '@/lib/prisma';
+import { hashPassword } from '@/lib/auth';
+import { sendEmail } from '@/lib/email';
+import { NextResponse } from 'next/server';
+
+function randomPassword(len = 10) {
+  const chars = 'ABCDEFGHJKMNPQRSTUVWXYZabcdefghjkmnpqrstuvwxyz23456789';
+  return Array.from({ length: len }, () => chars[Math.floor(Math.random() * chars.length)]).join('');
+}
+
+export async function POST(req: Request) {
+  const { email } = await req.json();
+  if (!email) return NextResponse.json({ error: 'Email required' }, { status: 400 });
+
+  const user = await prisma.user.findUnique({ where: { email } });
+  if (!user) {
+    // Return success anyway to avoid email enumeration
+    return NextResponse.json({ success: true });
+  }
+
+  const tempPassword = randomPassword();
+  const passwordHash = await hashPassword(tempPassword);
+  await prisma.user.update({ where: { email }, data: { passwordHash } });
+
+  await sendEmail(
+    email,
+    'moMeals — დროებითი პაროლი',
+    `
+    <div style="font-family:sans-serif;max-width:480px;margin:auto;padding:32px;background:#fff8f6;border-radius:16px;">
+      <h2 style="color:#ff7f50;margin-bottom:8px;">moMeals</h2>
+      <p style="color:#555;">შენი დროებითი პაროლია:</p>
+      <div style="font-size:28px;font-weight:bold;letter-spacing:4px;color:#241915;background:#fff1ec;padding:16px 24px;border-radius:12px;margin:16px 0;text-align:center;">
+        ${tempPassword}
+      </div>
+      <p style="color:#555;font-size:14px;">შესვლის შემდეგ გთხოვ დაუყოვნებლივ შეცვალო პაროლი.</p>
+      <p style="color:#aaa;font-size:12px;margin-top:24px;">თუ ამ მოთხოვნას ვერ ცნობ, უგულვებელყავი ეს ემეილი.</p>
+    </div>
+    `
+  );
+
+  return NextResponse.json({ success: true });
+}

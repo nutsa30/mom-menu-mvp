@@ -1,0 +1,19 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(New-Item -ItemType Directory -Force -Path \"C:\\\\Users\\\\gstore\\\\OneDrive\\\\Desktop\\\\mom-menu-mvp\\\\app\\\\login\")",
+      "Bash(Out-Null)",
+      "Bash(Write-Output \"done\")",
+      "PowerShell(New-Item *)",
+      "Bash(grep \"^.*:.*$\" lib/i18n.ts)",
+      "Bash(ls \"C:/Users/gstore/Downloads/\" | grep -i \"como\\\\|dia\\\\|mae\\\\|cook\\\\|mom\")",
+      "Read(//c/Users/gstore/Downloads/**)",
+      "Bash(cp \"C:/Users/gstore/Downloads/Como Surgiu o Dia das Mães_.jpg\" \"C:/Users/gstore/OneDrive/Desktop/mom-menu-mvp/public/cooking.jpg\" && echo \"OK\")",
+      "Bash(npx prisma *)",
+      "WebFetch(domain:images.unsplash.com)"
+    ],
+    "additionalDirectories": [
+      "C:\\Users\\gstore\\Downloads"
+    ]
+  }
+}

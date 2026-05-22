@@ -1,0 +1,56 @@
+/** @type {import('tailwindcss').Config} */
+module.exports = {
+  content: [
+    './app/**/*.{js,ts,jsx,tsx}',
+    './components/**/*.{js,ts,jsx,tsx}',
+    './lib/**/*.{js,ts,jsx,tsx}',
+  ],
+  theme: {
+    extend: {
+      colors: {
+        'outline-variant': '#dec0b6',
+        'surface-container-highest': '#f4ded7',
+        'secondary-fixed': '#bdedd9',
+        'on-secondary-container': '#3f6b5b',
+        'primary-container': '#ff7f50',
+        'surface-container': '#ffe9e3',
+        'on-primary': '#ffffff',
+        'primary-fixed': '#ffdbcf',
+        'on-primary-container': '#6c2000',
+        'on-background': '#241915',
+        'tertiary-fixed': '#ffddbb',
+        'background': '#fff8f6',
+        'surface-variant': '#f4ded7',
+        'outline': '#8b7169',
+        'surface-container-low': '#fff1ec',
+        'surface': '#fff8f6',
+        'primary': '#a43c12',
+        'secondary-container': '#baead6',
+        'tertiary': '#75593a',
+        'error': '#ba1a1a',
+        'on-surface-variant': '#57423b',
+        'on-surface': '#241915',
+        'secondary': '#3a6757',
+        cream: '#fff8ef',
+        peach: '#ffb38a',
+        berry: '#d94f70',
+        sage: '#8bbd9a',
+        cocoa: '#35241d',
+      },
+      spacing: {
+        'section-gap': '80px',
+        'stack-lg': '32px',
+        'stack-md': '16px',
+        'stack-sm': '8px',
+        gutter: '24px',
+      },
+      fontFamily: {
+        sans: ['Plus Jakarta Sans', 'sans-serif'],
+      },
+      boxShadow: {
+        soft: '0 20px 60px rgba(53, 36, 29, 0.12)',
+      },
+    },
+  },
+  plugins: [],
+};
