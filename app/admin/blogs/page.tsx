@@ -15,8 +15,8 @@ export default async function AdminBlogsPage() {
   });
 
   return (
-    <div className="p-8">
-      <div className="flex items-center justify-between mb-8">
+    <div className="p-4 sm:p-6 lg:p-8">
+      <div className="flex items-center justify-between mb-6 lg:mb-8 gap-3">
         <div>
           <h1 className="text-3xl font-black text-gray-900">ბლოგები</h1>
           <p className="text-gray-400 text-sm mt-1">{blogs.length} პოსტი სულ</p>

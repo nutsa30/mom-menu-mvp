@@ -28,7 +28,8 @@ export default function BlogsAdminClient({ blogs }: { blogs: BlogItem[] }) {
 
   return (
     <div className="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden">
-      <table className="w-full">
+      <div className="overflow-x-auto">
+      <table className="w-full min-w-[540px]">
         <thead className="bg-[#fdf6f3]">
           <tr>
             <th className="text-left px-6 py-3 text-xs font-semibold text-gray-400 uppercase tracking-wide">სურათი</th>
@@ -98,6 +99,7 @@ export default function BlogsAdminClient({ blogs }: { blogs: BlogItem[] }) {
           ))}
         </tbody>
       </table>
+      </div>
     </div>
   );
 }

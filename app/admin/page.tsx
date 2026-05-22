@@ -28,8 +28,8 @@ export default async function AdminDashboard({ searchParams }: { searchParams: {
   ]);
 
   return (
-    <div className="p-8">
-      <div className="flex items-start justify-between mb-8">
+    <div className="p-4 sm:p-6 lg:p-8">
+      <div className="flex items-start justify-between mb-6 lg:mb-8 gap-3">
         <div>
           <h1 className="text-3xl font-black text-gray-900">{d.systemOverview}</h1>
           <p className="text-gray-400 text-sm mt-1">
@@ -48,7 +48,7 @@ export default async function AdminDashboard({ searchParams }: { searchParams: {
       </div>
 
       {/* Stats */}
-      <div className="grid grid-cols-3 gap-5 mb-8">
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 sm:gap-5 mb-6 lg:mb-8">
         {[
           { label: d.totalUsers, value: totalUsers, bg: 'bg-red-50', ic: 'text-red-400', icon: 'user' },
           { label: d.activeSubs, value: activeSubs, bg: 'bg-green-50', ic: 'text-green-500', icon: 'monitor' },
@@ -78,7 +78,8 @@ export default async function AdminDashboard({ searchParams }: { searchParams: {
           </div>
           <a href={withLang('/admin/meals')} className="text-sm text-[#ff7f50] font-semibold hover:underline">{d.viewAll}</a>
         </div>
-        <table className="w-full">
+        <div className="overflow-x-auto">
+        <table className="w-full min-w-[560px]">
           <thead className="bg-[#fdf6f3]">
             <tr>
               <th className="text-left px-6 py-3 text-xs font-semibold text-gray-400 uppercase tracking-wide">{d.mealTitle}</th>
@@ -132,6 +133,7 @@ export default async function AdminDashboard({ searchParams }: { searchParams: {
             )}
           </tbody>
         </table>
+        </div>
         <div className="px-6 py-4 border-t border-gray-50 text-center">
           <a href={withLang('/admin/meals')} className="text-sm text-[#ff7f50] font-semibold hover:underline">{d.viewAllMeals}</a>
         </div>

@@ -127,14 +127,14 @@ export default async function AdminUsersPage({
   const counts = { all: total, promo15: promoRecipe, promo30: promoFull };
 
   return (
-    <div className="p-8">
-      <div className="mb-8">
+    <div className="p-4 sm:p-6 lg:p-8">
+      <div className="mb-6 lg:mb-8">
         <h1 className="text-3xl font-black text-gray-900">{d.userStatsTitle}</h1>
         <p className="text-gray-400 text-sm mt-1">{total} {d.totalRegistered}</p>
       </div>
 
       {/* Stat cards */}
-      <div className="grid grid-cols-4 gap-4 mb-8">
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4 mb-6 lg:mb-8">
         {[
           { label: d.totalUsers, value: total, color: 'text-gray-900', bg: 'bg-gray-50' },
           { label: d.recipePlan, value: recipePlan, color: 'text-blue-700', bg: 'bg-blue-50' },
