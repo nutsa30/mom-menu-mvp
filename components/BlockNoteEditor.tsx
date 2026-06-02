@@ -1,9 +1,9 @@
 'use client';
 
 import { useCreateBlockNote } from '@blocknote/react';
-import { BlockNoteView } from '@blocknote/mantine';
+import { BlockNoteView } from '@blocknote/ariakit';
 import '@blocknote/core/fonts/inter.css';
-import '@blocknote/mantine/style.css';
+import '@blocknote/ariakit/style.css';
 import { useEffect, useRef } from 'react';
 import { uploadImage } from '@/lib/uploadImage';
 
@@ -22,10 +22,9 @@ export default function BlockNoteEditor({
 
   const editor = useCreateBlockNote({
     uploadFile: async (file: File) => uploadImage(file),
-    placeholders: { default: placeholder ?? 'ტექსტი...' },
+    placeholders: { default: placeholder ?? 'დაიწყე წერა... "/" — ბლოკების მენიუ' },
   });
 
-  // Load existing HTML content into BlockNote on mount
   useEffect(() => {
     if (initialized.current || !editor) return;
     initialized.current = true;

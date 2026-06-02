@@ -5,9 +5,7 @@ const nextConfig = {
   transpilePackages: [
     '@blocknote/core',
     '@blocknote/react',
-    '@blocknote/mantine',
-    '@mantine/core',
-    '@mantine/hooks',
+    '@blocknote/ariakit',
   ],
   images: {
     remotePatterns: [

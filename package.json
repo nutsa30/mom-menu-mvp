@@ -13,6 +13,7 @@
     "seed": "tsx prisma/seed.ts"
   },
   "dependencies": {
+    "@blocknote/ariakit": "^0.51.4",
     "@blocknote/core": "^0.51.4",
     "@blocknote/mantine": "^0.51.4",
     "@blocknote/react": "^0.51.4",
