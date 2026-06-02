@@ -41,7 +41,9 @@ export default function RichTextEditor({
   placeholder?: string;
 }) {
   const imageRef = useRef<HTMLInputElement>(null);
+  const gridImageRef = useRef<HTMLInputElement>(null);
   const [imgUploading, setImgUploading] = useState(false);
+  const [gridUploading, setGridUploading] = useState(false);
 
   const editor = useEditor({
     extensions: [
@@ -85,6 +87,7 @@ export default function RichTextEditor({
     editor.chain().focus().setLink({ href: url }).run();
   }, [editor]);
 
+  // Insert single full-width image — escape list first if needed
   const onImageFileChange = useCallback(async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     e.target.value = '';
@@ -92,11 +95,43 @@ export default function RichTextEditor({
     setImgUploading(true);
     try {
       const url = await uploadImage(file);
+      // If cursor is inside a list item, exit the list first
+      if (editor.isActive('listItem')) {
+        editor.chain().focus().liftListItem('listItem').run();
+      }
       editor.chain().focus().setImage({ src: url }).run();
     } catch {
       alert('ფოტოს ატვირთვა ვერ მოხერხდა');
     } finally {
       setImgUploading(false);
+    }
+  }, [editor]);
+
+  // Insert image card grid item (photo + caption slot)
+  const onGridImageChange = useCallback(async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const files = Array.from(e.target.files ?? []);
+    e.target.value = '';
+    if (!files.length || !editor) return;
+    setGridUploading(true);
+    try {
+      const urls = await Promise.all(files.map((f) => uploadImage(f)));
+      // Build a card-grid HTML block
+      const cards = urls
+        .map(
+          (url) =>
+            `<div class="img-card"><img src="${url}" alt=""><p class="img-card-caption">სახელი / აღწერა</p></div>`
+        )
+        .join('');
+      const html = `<div class="img-card-grid">${cards}</div><p></p>`;
+      // Exit list if needed
+      if (editor.isActive('listItem')) {
+        editor.chain().focus().liftListItem('listItem').run();
+      }
+      editor.chain().focus().insertContent(html).run();
+    } catch {
+      alert('ფოტოს ატვირთვა ვერ მოხერხდა');
+    } finally {
+      setGridUploading(false);
     }
   }, [editor]);
 
@@ -122,12 +157,21 @@ export default function RichTextEditor({
           <Btn onClick={() => editor.chain().focus().unsetLink().run()} title="ბმულის წაშლა">✕🔗</Btn>
         )}
         <Divider />
+        {/* Single full-width image */}
         <Btn
           onClick={() => imageRef.current?.click()}
           disabled={imgUploading}
-          title="სურათის ჩასმა კონტენტში"
+          title="სურათის ჩასმა (სრული სიგანე)"
         >
           {imgUploading ? '⏳' : '🖼️'}
+        </Btn>
+        {/* Photo card grid (multiple images side-by-side with captions) */}
+        <Btn
+          onClick={() => gridImageRef.current?.click()}
+          disabled={gridUploading}
+          title="ფოტო ბარათები — შეარჩიე რამდენიმე ფოტო გვერდიგვერდ"
+        >
+          {gridUploading ? '⏳' : '⊞ 📷'}
         </Btn>
         <Divider />
         <Btn onClick={() => editor.chain().focus().undo().run()} title="გასაუქმებელი">↩</Btn>
@@ -137,8 +181,9 @@ export default function RichTextEditor({
       {/* Editor area */}
       <EditorContent editor={editor} />
 
-      {/* Hidden file input for inline images */}
+      {/* Hidden inputs */}
       <input ref={imageRef} type="file" accept="image/*" className="hidden" onChange={onImageFileChange} />
+      <input ref={gridImageRef} type="file" accept="image/*" multiple className="hidden" onChange={onGridImageChange} />
     </div>
   );
 }

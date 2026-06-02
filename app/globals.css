@@ -71,6 +71,36 @@ body {
   outline-offset: 2px;
 }
 
+/* Photo card grid */
+.prose-blog .img-card-grid {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  margin: 1.2rem 0;
+}
+.prose-blog .img-card {
+  flex: 1 1 120px;
+  min-width: 100px;
+  max-width: 200px;
+  text-align: center;
+}
+.prose-blog .img-card img {
+  width: 100%;
+  max-width: 100%;
+  height: 120px;
+  object-fit: cover;
+  border-radius: 12px;
+  margin: 0 0 6px 0;
+  display: block;
+}
+.prose-blog .img-card-caption {
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: #241915;
+  margin: 0;
+  line-height: 1.4;
+}
+
 /* ── Blog post display (public) ──────────────────────────── */
 .blog-content h1 { font-size: 1.8rem; font-weight: 900; margin: 1.5rem 0 0.8rem; color: #1a1a1a; }
 .blog-content h2 { font-size: 1.4rem; font-weight: 800; margin: 1.3rem 0 0.6rem; color: #1a1a1a; }
