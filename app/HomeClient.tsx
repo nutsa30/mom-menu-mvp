@@ -30,6 +30,25 @@ function useFadeUp() {
   return ref;
 }
 
+function useStaggeredFadeUp(delay = 120) {
+  const ref = useRef<HTMLDivElement>(null);
+  useEffect(() => {
+    const el = ref.current;
+    if (!el) return;
+    const obs = new IntersectionObserver(([e]) => {
+      if (e.isIntersecting) {
+        Array.from(el.children).forEach((child, i) => {
+          setTimeout(() => child.classList.add('in-view'), i * delay);
+        });
+        obs.disconnect();
+      }
+    }, { threshold: 0.05, rootMargin: '0px 0px -60px 0px' });
+    obs.observe(el);
+    return () => obs.disconnect();
+  }, [delay]);
+  return ref;
+}
+
 
 
 export default function HomeClient({ s, dishes, dishCount, recentBlogs }: { s: S; dishes: Dishes; dishCount: number; recentBlogs: RecentBlog[] }) {
@@ -40,11 +59,15 @@ export default function HomeClient({ s, dishes, dishCount, recentBlogs }: { s: S
 
   const t = (kaKey: string, enKey: string) => (ka ? s[kaKey] : s[enKey]) as string;
 
-  const refStats       = useFadeUp();
-  const refFeatures    = useFadeUp();
-  const refSamples     = useFadeUp();
-  const refPricing     = useFadeUp();
-  const refBlog        = useFadeUp();
+  const refStats         = useStaggeredFadeUp(100);
+  const refFeatures      = useFadeUp();
+  const refFeatureCards  = useStaggeredFadeUp(130);
+  const refSamples       = useFadeUp();
+  const refSampleCards   = useStaggeredFadeUp(100);
+  const refPricing       = useFadeUp();
+  const refPricingCards  = useStaggeredFadeUp(180);
+  const refBlog          = useFadeUp();
+  const refBlogCards     = useStaggeredFadeUp(120);
 
 
 const [loadingPlan, setLoadingPlan] = useState<string | null>(null);
@@ -133,14 +156,14 @@ const [loadingPlan, setLoadingPlan] = useState<string | null>(null);
 
       {/* Stats strip */}
       <section className="relative z-10 bg-white border-b border-orange-100">
-        <div ref={refStats} className="fade-up max-w-7xl mx-auto px-6 py-10 grid grid-cols-2 md:grid-cols-4 gap-6 text-center">
+        <div ref={refStats} className="max-w-7xl mx-auto px-6 py-10 grid grid-cols-2 md:grid-cols-4 gap-6 text-center">
           {[
             { num: `${dishCount}+`, label: ka ? 'კერძი' : 'Recipes' },
             { num: '4', label: ka ? 'ასაკობრივი ჯგუფი' : 'Age groups' },
             { num: '3', label: ka ? 'წუთი პირველ შექმნაზე' : 'Min to set up' },
             { num: '100%', label: ka ? 'პერსონალიზებული' : 'Personalized' },
           ].map(({ num, label }) => (
-            <div key={label}>
+            <div key={label} className="fade-up">
               <p className="text-4xl font-black text-[#ff7f50]">{num}</p>
               <p className="text-sm text-gray-500 mt-1 font-medium">{label}</p>
             </div>
@@ -154,9 +177,9 @@ const [loadingPlan, setLoadingPlan] = useState<string | null>(null);
           <div ref={refFeatures} className="fade-up text-center mb-16">
             <h2 className="text-3xl font-bold">{t('featuresTitleKa', 'featuresTitleEn')}</h2>
           </div>
-          <div className="grid md:grid-cols-3 gap-8">
+          <div ref={refFeatureCards} className="grid md:grid-cols-3 gap-8">
             {[1,2,3].map(i => (
-              <div key={i} className="bg-white p-8 rounded-[32px] shadow-[0_10px_30px_rgba(255,127,80,0.05)] hover:-translate-y-2 transition">
+              <div key={i} className="fade-up bg-white p-8 rounded-[32px] shadow-[0_10px_30px_rgba(255,127,80,0.05)] hover:-translate-y-2 transition">
                 <div className="w-14 h-14 bg-[#baead6] rounded-2xl flex items-center justify-center mb-6 text-2xl">
                   {s[`feature${i}Icon`]}
                 </div>
@@ -177,9 +200,9 @@ const [loadingPlan, setLoadingPlan] = useState<string | null>(null);
               <p className="text-gray-600">{t('sampleSubtitleKa', 'sampleSubtitleEn')}</p>
             </div>
           </div>
-          <div className="grid grid-cols-1 md:grid-cols-4 md:grid-rows-2 gap-6 h-auto md:h-[600px]">
+          <div ref={refSampleCards} className="grid grid-cols-1 md:grid-cols-4 md:grid-rows-2 gap-6 h-auto md:h-[600px]">
             {/* Breakfast — large */}
-            <div className="h-64 md:h-auto md:col-span-2 md:row-span-2 relative overflow-hidden rounded-[32px] md:rounded-[40px] group shadow-lg bg-[#f5f0ee]">
+            <div className="fade-up h-64 md:h-auto md:col-span-2 md:row-span-2 relative overflow-hidden rounded-[32px] md:rounded-[40px] group shadow-lg bg-[#f5f0ee]">
               {dishes.breakfast?.imageUrl
                 ? <img src={dishes.breakfast.imageUrl} className="absolute w-full h-full object-cover group-hover:scale-105 transition duration-500" alt="breakfast" />
                 : <div className="absolute inset-0 flex flex-col items-center justify-center gap-2 text-gray-300"><span className="text-5xl">🍳</span><span className="text-sm font-semibold">ფოტო არ არის</span></div>
@@ -191,7 +214,7 @@ const [loadingPlan, setLoadingPlan] = useState<string | null>(null);
               </div>
             </div>
             {/* Lunch */}
-            <div className="h-52 md:h-auto md:col-span-2 relative overflow-hidden rounded-[32px] md:rounded-[40px] group shadow-lg bg-[#f5f0ee]">
+            <div className="fade-up h-52 md:h-auto md:col-span-2 relative overflow-hidden rounded-[32px] md:rounded-[40px] group shadow-lg bg-[#f5f0ee]">
               {dishes.lunch?.imageUrl
                 ? <img src={dishes.lunch.imageUrl} className="absolute w-full h-full object-cover group-hover:scale-105 transition duration-500" alt="lunch" />
                 : <div className="absolute inset-0 flex flex-col items-center justify-center gap-2 text-gray-300"><span className="text-4xl">🥗</span><span className="text-sm font-semibold">ფოტო არ არის</span></div>
@@ -203,7 +226,7 @@ const [loadingPlan, setLoadingPlan] = useState<string | null>(null);
               </div>
             </div>
             {/* Snack */}
-            <div className="h-48 md:h-auto relative overflow-hidden rounded-[32px] md:rounded-[40px] group shadow-lg bg-[#f5f0ee]">
+            <div className="fade-up h-48 md:h-auto relative overflow-hidden rounded-[32px] md:rounded-[40px] group shadow-lg bg-[#f5f0ee]">
               {dishes.snack?.imageUrl
                 ? <img src={dishes.snack.imageUrl} className="absolute w-full h-full object-cover group-hover:scale-105 transition duration-500" alt="snack" />
                 : <div className="absolute inset-0 flex flex-col items-center justify-center gap-2 text-gray-300"><span className="text-3xl">🍎</span><span className="text-xs font-semibold">ფოტო არ არის</span></div>
@@ -215,7 +238,7 @@ const [loadingPlan, setLoadingPlan] = useState<string | null>(null);
               </div>
             </div>
             {/* Dinner */}
-            <div className="h-48 md:h-auto relative overflow-hidden rounded-[32px] md:rounded-[40px] group shadow-lg bg-[#f5f0ee]">
+            <div className="fade-up h-48 md:h-auto relative overflow-hidden rounded-[32px] md:rounded-[40px] group shadow-lg bg-[#f5f0ee]">
               {dishes.dinner?.imageUrl
                 ? <img src={dishes.dinner.imageUrl} className="absolute w-full h-full object-cover group-hover:scale-105 transition duration-500" alt="dinner" />
                 : <div className="absolute inset-0 flex flex-col items-center justify-center gap-2 text-gray-300"><span className="text-3xl">🍽️</span><span className="text-xs font-semibold">ფოტო არ არის</span></div>
@@ -237,9 +260,9 @@ const [loadingPlan, setLoadingPlan] = useState<string | null>(null);
             <h2 className="text-3xl font-bold mb-4">{t('pricingTitleKa','pricingTitleEn')}</h2>
             <p className="text-gray-600 max-w-xl mx-auto">{t('pricingSubtitleKa','pricingSubtitleEn')}</p>
           </div>
-          <div className="grid md:grid-cols-2 gap-6 max-w-4xl mx-auto items-stretch">
+          <div ref={refPricingCards} className="grid md:grid-cols-2 gap-6 max-w-4xl mx-auto items-stretch">
             {/* Plan 1 */}
-            <div className="bg-white p-7 sm:p-10 rounded-[32px] sm:rounded-[40px] border border-gray-200 text-center shadow-sm flex flex-col">
+            <div className="fade-up bg-white p-7 sm:p-10 rounded-[32px] sm:rounded-[40px] border border-gray-200 text-center shadow-sm flex flex-col">
               <div className="h-10 mb-5" />
               <h3 className="text-xl font-semibold mb-2">{t('plan1NameKa','plan1NameEn')}</h3>
               <div className="flex justify-center items-baseline gap-1 mb-1">
@@ -276,7 +299,7 @@ const [loadingPlan, setLoadingPlan] = useState<string | null>(null);
             </div>
 
             {/* Plan 2 */}
-            <div className="bg-white p-7 sm:p-10 rounded-[32px] sm:rounded-[40px] border-2 border-[#ff7f50] text-center shadow-2xl sm:scale-105 relative z-10 flex flex-col">
+            <div className="fade-up bg-white p-7 sm:p-10 rounded-[32px] sm:rounded-[40px] border-2 border-[#ff7f50] text-center shadow-2xl sm:scale-105 relative z-10 flex flex-col">
               <div className="mb-5">
                 <div className="inline-flex items-center gap-2 bg-[#ff7f50] text-white text-sm font-black px-6 py-2 rounded-full shadow-md">
                   ⭐ {ka ? 'საუკეთესო არჩევანი' : 'Best Choice'}
@@ -339,7 +362,7 @@ const [loadingPlan, setLoadingPlan] = useState<string | null>(null);
                 {ka ? 'ყველა პოსტი →' : 'All posts →'}
               </a>
             </div>
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+            <div ref={refBlogCards} className="grid grid-cols-1 md:grid-cols-3 gap-6">
               {recentBlogs.map((blog) => {
                 const title = ka ? blog.titleKa : blog.titleEn;
                 const content = ka ? blog.contentKa : blog.contentEn;
@@ -353,7 +376,7 @@ const [loadingPlan, setLoadingPlan] = useState<string | null>(null);
                   <a
                     key={blog.id}
                     href={href}
-                    className="bg-white rounded-[28px] border border-gray-100 shadow-sm overflow-hidden hover:shadow-md hover:-translate-y-1 transition group block"
+                    className="fade-up bg-white rounded-[28px] border border-gray-100 shadow-sm overflow-hidden hover:shadow-md hover:-translate-y-1 transition group block"
                   >
                     {blog.imageUrl ? (
                       <div className="h-44 overflow-hidden">

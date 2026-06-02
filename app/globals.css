@@ -5,11 +5,11 @@
 html { scroll-behavior: smooth; }
 
 @keyframes fadeUp {
-  from { opacity: 0; transform: translateY(40px); }
+  from { opacity: 0; transform: translateY(32px); }
   to   { opacity: 1; transform: translateY(0); }
 }
 .fade-up { opacity: 0; }
-.fade-up.in-view { animation: fadeUp 0.7s cubic-bezier(.22,1,.36,1) forwards; }
+.fade-up.in-view { animation: fadeUp 0.65s cubic-bezier(.22,1,.36,1) forwards; }
 
 body { @apply bg-cream text-cocoa antialiased; }
 .input { @apply w-full rounded-2xl border border-cocoa/10 bg-white/80 px-4 py-3 outline-none transition focus:border-berry focus:ring-4 focus:ring-berry/10; }
