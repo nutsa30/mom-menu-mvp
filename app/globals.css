@@ -60,6 +60,16 @@ body {
   color: #aaa;
   pointer-events: none;
 }
+.prose-blog img {
+  max-width: 100%;
+  border-radius: 16px;
+  margin: 1.2rem auto;
+  display: block;
+}
+.prose-blog img.ProseMirror-selectednode {
+  outline: 2px solid #ff7f50;
+  outline-offset: 2px;
+}
 
 /* ── Blog post display (public) ──────────────────────────── */
 .blog-content h1 { font-size: 1.8rem; font-weight: 900; margin: 1.5rem 0 0.8rem; color: #1a1a1a; }

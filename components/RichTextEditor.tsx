@@ -3,19 +3,22 @@
 import { useEditor, EditorContent } from '@tiptap/react';
 import StarterKit from '@tiptap/starter-kit';
 import Link from '@tiptap/extension-link';
-import { useEffect, useCallback } from 'react';
+import Image from '@tiptap/extension-image';
+import { useEffect, useCallback, useRef, useState } from 'react';
+import { uploadImage } from '@/lib/uploadImage';
 
 function Btn({
-  active, onClick, title, children,
+  active, onClick, title, disabled, children,
 }: {
-  active?: boolean; onClick: () => void; title?: string; children: React.ReactNode;
+  active?: boolean; onClick: () => void; title?: string; disabled?: boolean; children: React.ReactNode;
 }) {
   return (
     <button
       type="button"
       title={title}
+      disabled={disabled}
       onMouseDown={(e) => { e.preventDefault(); onClick(); }}
-      className={`px-2.5 py-1 rounded-lg text-sm font-bold transition select-none ${
+      className={`px-2.5 py-1 rounded-lg text-sm font-bold transition select-none disabled:opacity-40 ${
         active ? 'bg-[#ff7f50] text-white' : 'text-gray-600 hover:bg-gray-200'
       }`}
     >
@@ -37,6 +40,9 @@ export default function RichTextEditor({
   onChange: (html: string) => void;
   placeholder?: string;
 }) {
+  const imageRef = useRef<HTMLInputElement>(null);
+  const [imgUploading, setImgUploading] = useState(false);
+
   const editor = useEditor({
     extensions: [
       StarterKit.configure({ codeBlock: false }),
@@ -46,6 +52,11 @@ export default function RichTextEditor({
           class: 'text-[#ff7f50] underline underline-offset-2',
           target: '_blank',
           rel: 'noopener noreferrer',
+        },
+      }),
+      Image.configure({
+        HTMLAttributes: {
+          class: 'rounded-xl max-w-full my-4 mx-auto block',
         },
       }),
     ],
@@ -74,6 +85,21 @@ export default function RichTextEditor({
     editor.chain().focus().setLink({ href: url }).run();
   }, [editor]);
 
+  const onImageFileChange = useCallback(async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    e.target.value = '';
+    if (!file || !editor) return;
+    setImgUploading(true);
+    try {
+      const url = await uploadImage(file);
+      editor.chain().focus().setImage({ src: url }).run();
+    } catch {
+      alert('ფოტოს ატვირთვა ვერ მოხერხდა');
+    } finally {
+      setImgUploading(false);
+    }
+  }, [editor]);
+
   if (!editor) return null;
 
   return (
@@ -96,12 +122,23 @@ export default function RichTextEditor({
           <Btn onClick={() => editor.chain().focus().unsetLink().run()} title="ბმულის წაშლა">✕🔗</Btn>
         )}
         <Divider />
+        <Btn
+          onClick={() => imageRef.current?.click()}
+          disabled={imgUploading}
+          title="სურათის ჩასმა კონტენტში"
+        >
+          {imgUploading ? '⏳' : '🖼️'}
+        </Btn>
+        <Divider />
         <Btn onClick={() => editor.chain().focus().undo().run()} title="გასაუქმებელი">↩</Btn>
         <Btn onClick={() => editor.chain().focus().redo().run()} title="გასამეორებელი">↪</Btn>
       </div>
 
       {/* Editor area */}
       <EditorContent editor={editor} />
+
+      {/* Hidden file input for inline images */}
+      <input ref={imageRef} type="file" accept="image/*" className="hidden" onChange={onImageFileChange} />
     </div>
   );
 }
