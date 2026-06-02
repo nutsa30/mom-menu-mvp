@@ -1,11 +1,39 @@
 'use client';
 
 import { useEditor, EditorContent } from '@tiptap/react';
+import { Node, mergeAttributes } from '@tiptap/core';
 import StarterKit from '@tiptap/starter-kit';
 import Link from '@tiptap/extension-link';
 import Image from '@tiptap/extension-image';
 import { useEffect, useCallback, useRef, useState } from 'react';
 import { uploadImage } from '@/lib/uploadImage';
+
+// ── Custom nodes so TipTap preserves the grid HTML ──────────
+const ImageCard = Node.create({
+  name: 'imageCard',
+  group: 'block',
+  content: 'paragraph+',
+  isolating: true,
+  parseHTML() {
+    return [{ tag: 'div.img-card' }];
+  },
+  renderHTML({ HTMLAttributes }) {
+    return ['div', mergeAttributes({ class: 'img-card' }, HTMLAttributes), 0];
+  },
+});
+
+const ImageGrid = Node.create({
+  name: 'imageGrid',
+  group: 'block',
+  content: 'imageCard+',
+  parseHTML() {
+    return [{ tag: 'div.img-card-grid' }];
+  },
+  renderHTML({ HTMLAttributes }) {
+    return ['div', mergeAttributes({ class: 'img-card-grid' }, HTMLAttributes), 0];
+  },
+});
+// ────────────────────────────────────────────────────────────
 
 function Btn({
   active, onClick, title, disabled, children,
@@ -57,10 +85,10 @@ export default function RichTextEditor({
         },
       }),
       Image.configure({
-        HTMLAttributes: {
-          class: 'rounded-xl max-w-full my-4 mx-auto block',
-        },
+        HTMLAttributes: { class: 'rounded-xl max-w-full my-2 mx-auto block' },
       }),
+      ImageCard,
+      ImageGrid,
     ],
     content: value,
     editorProps: {
@@ -87,7 +115,7 @@ export default function RichTextEditor({
     editor.chain().focus().setLink({ href: url }).run();
   }, [editor]);
 
-  // Insert single full-width image — escape list first if needed
+  // Single full-width image
   const onImageFileChange = useCallback(async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     e.target.value = '';
@@ -95,10 +123,7 @@ export default function RichTextEditor({
     setImgUploading(true);
     try {
       const url = await uploadImage(file);
-      // If cursor is inside a list item, exit the list first
-      if (editor.isActive('listItem')) {
-        editor.chain().focus().liftListItem('listItem').run();
-      }
+      if (editor.isActive('listItem')) editor.chain().focus().liftListItem('listItem').run();
       editor.chain().focus().setImage({ src: url }).run();
     } catch {
       alert('ფოტოს ატვირთვა ვერ მოხერხდა');
@@ -107,7 +132,7 @@ export default function RichTextEditor({
     }
   }, [editor]);
 
-  // Insert image card grid item (photo + caption slot)
+  // Photo card grid — inserts as proper TipTap nodes (preserved in HTML output)
   const onGridImageChange = useCallback(async (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = Array.from(e.target.files ?? []);
     e.target.value = '';
@@ -115,19 +140,24 @@ export default function RichTextEditor({
     setGridUploading(true);
     try {
       const urls = await Promise.all(files.map((f) => uploadImage(f)));
-      // Build a card-grid HTML block
-      const cards = urls
-        .map(
-          (url) =>
-            `<div class="img-card"><img src="${url}" alt=""><p class="img-card-caption">სახელი / აღწერა</p></div>`
-        )
-        .join('');
-      const html = `<div class="img-card-grid">${cards}</div><p></p>`;
-      // Exit list if needed
-      if (editor.isActive('listItem')) {
-        editor.chain().focus().liftListItem('listItem').run();
-      }
-      editor.chain().focus().insertContent(html).run();
+      if (editor.isActive('listItem')) editor.chain().focus().liftListItem('listItem').run();
+
+      editor.chain().focus().insertContent({
+        type: 'imageGrid',
+        content: urls.map((url) => ({
+          type: 'imageCard',
+          content: [
+            {
+              type: 'paragraph',
+              content: [{ type: 'image', attrs: { src: url, alt: '' } }],
+            },
+            {
+              type: 'paragraph',
+              content: [{ type: 'text', text: 'სახელი / აღწერა' }],
+            },
+          ],
+        })),
+      }).run();
     } catch {
       alert('ფოტოს ატვირთვა ვერ მოხერხდა');
     } finally {
@@ -157,31 +187,19 @@ export default function RichTextEditor({
           <Btn onClick={() => editor.chain().focus().unsetLink().run()} title="ბმულის წაშლა">✕🔗</Btn>
         )}
         <Divider />
-        {/* Single full-width image */}
-        <Btn
-          onClick={() => imageRef.current?.click()}
-          disabled={imgUploading}
-          title="სურათის ჩასმა (სრული სიგანე)"
-        >
+        <Btn onClick={() => imageRef.current?.click()} disabled={imgUploading} title="სურათი (სრული სიგანე)">
           {imgUploading ? '⏳' : '🖼️'}
         </Btn>
-        {/* Photo card grid (multiple images side-by-side with captions) */}
-        <Btn
-          onClick={() => gridImageRef.current?.click()}
-          disabled={gridUploading}
-          title="ფოტო ბარათები — შეარჩიე რამდენიმე ფოტო გვერდიგვერდ"
-        >
+        <Btn onClick={() => gridImageRef.current?.click()} disabled={gridUploading} title="ფოტო ბარათები გვერდიგვერდ — შეარჩიე რამდენიმე ერთად">
           {gridUploading ? '⏳' : '⊞ 📷'}
         </Btn>
         <Divider />
-        <Btn onClick={() => editor.chain().focus().undo().run()} title="გასაუქმებელი">↩</Btn>
-        <Btn onClick={() => editor.chain().focus().redo().run()} title="გასამეორებელი">↪</Btn>
+        <Btn onClick={() => editor.chain().focus().undo().run()} title="გაუქმება">↩</Btn>
+        <Btn onClick={() => editor.chain().focus().redo().run()} title="გამეორება">↪</Btn>
       </div>
 
-      {/* Editor area */}
       <EditorContent editor={editor} />
 
-      {/* Hidden inputs */}
       <input ref={imageRef} type="file" accept="image/*" className="hidden" onChange={onImageFileChange} />
       <input ref={gridImageRef} type="file" accept="image/*" multiple className="hidden" onChange={onGridImageChange} />
     </div>
