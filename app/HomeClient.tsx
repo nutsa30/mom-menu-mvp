@@ -22,7 +22,11 @@ function useFadeUp() {
     const el = ref.current;
     if (!el) return;
     const obs = new IntersectionObserver(([e]) => {
-      if (e.isIntersecting) { el.classList.add('in-view'); obs.disconnect(); }
+      if (e.isIntersecting) {
+        el.classList.add('in-view');
+      } else {
+        el.classList.remove('in-view');
+      }
     }, { threshold: 0.12 });
     obs.observe(el);
     return () => obs.disconnect();
@@ -35,16 +39,20 @@ function useStaggeredFadeUp(delay = 120) {
   useEffect(() => {
     const el = ref.current;
     if (!el) return;
+    const timers: ReturnType<typeof setTimeout>[] = [];
     const obs = new IntersectionObserver(([e]) => {
       if (e.isIntersecting) {
         Array.from(el.children).forEach((child, i) => {
-          setTimeout(() => child.classList.add('in-view'), i * delay);
+          timers.push(setTimeout(() => child.classList.add('in-view'), i * delay));
         });
-        obs.disconnect();
+      } else {
+        timers.forEach(clearTimeout);
+        timers.length = 0;
+        Array.from(el.children).forEach(child => child.classList.remove('in-view'));
       }
     }, { threshold: 0.05, rootMargin: '0px 0px -60px 0px' });
     obs.observe(el);
-    return () => obs.disconnect();
+    return () => { obs.disconnect(); timers.forEach(clearTimeout); };
   }, [delay]);
   return ref;
 }
