@@ -373,8 +373,9 @@ const [loadingPlan, setLoadingPlan] = useState<string | null>(null);
             <div ref={refBlogCards} className="grid grid-cols-1 md:grid-cols-3 gap-6">
               {recentBlogs.map((blog) => {
                 const title = ka ? blog.titleKa : blog.titleEn;
-                const content = ka ? blog.contentKa : blog.contentEn;
-                const excerpt = content.length > 120 ? content.slice(0, 120) + '...' : content;
+                const raw = ka ? blog.contentKa : blog.contentEn;
+                const plain = raw.replace(/<[^>]*>/g, ' ').replace(/\s+/g, ' ').trim();
+                const excerpt = plain.length > 120 ? plain.slice(0, 120) + '...' : plain;
                 const d = new Date(blog.createdAt);
                 const KA_M = ['იანვ','თებ','მარ','აპრ','მაი','ივნ','ივლ','აგვ','სექ','ოქტ','ნოე','დეკ'];
                 const EN_M = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
