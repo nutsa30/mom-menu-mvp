@@ -4,7 +4,9 @@ import { useState, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import { createBlog, updateBlog } from './actions';
 import { uploadImage } from '@/lib/uploadImage';
-import RichTextEditor from '@/components/RichTextEditor';
+import dynamic from 'next/dynamic';
+
+const BlockNoteEditor = dynamic(() => import('@/components/BlockNoteEditor'), { ssr: false });
 
 export type BlogFields = {
   titleKa: string;
@@ -247,12 +249,13 @@ export default function BlogForm({
         <label className="block text-xs font-semibold text-gray-500 mb-1.5">
           {lang === 'ka' ? 'კონტენტი (ქართული)' : 'Content (English)'}
         </label>
-        <RichTextEditor
+        <BlockNoteEditor
+          key={lang}
           value={lang === 'ka' ? form.contentKa : form.contentEn}
           onChange={(html) =>
             setForm((f) => ({ ...f, [lang === 'ka' ? 'contentKa' : 'contentEn']: html }))
           }
-          placeholder={lang === 'ka' ? 'პოსტის ტექსტი...' : 'Post content...'}
+          placeholder={lang === 'ka' ? 'დაიწყე წერა... "/" — ბლოკების მენიუ' : 'Start writing... "/" for blocks menu'}
         />
       </div>
 

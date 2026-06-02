@@ -71,6 +71,20 @@ body {
   outline-offset: 2px;
 }
 
+/* ── BlockNote editor overrides ──────────────────────────── */
+.bn-container .bn-editor {
+  padding: 1.5rem 2rem;
+  min-height: 480px;
+  font-family: 'Plus Jakarta Sans', sans-serif;
+  font-size: 0.95rem;
+  color: #241915;
+}
+.bn-container [data-node-type="blockContainer"] {
+  margin: 0.1rem 0;
+}
+/* Hide the drag handle chevron unless hovering */
+.bn-container .bn-block-outer:not(:hover) .bn-drag-handle { opacity: 0; }
+
 /* Photo card grid */
 .prose-blog .img-card-grid {
   display: flex;
