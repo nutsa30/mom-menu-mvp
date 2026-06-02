@@ -152,7 +152,7 @@ export default async function BlogPostPage({
         <article>
           {/<[a-z][\s\S]*>/i.test(content) ? (
             <div
-              className="blog-content"
+              className="prose-blog"
               dangerouslySetInnerHTML={{ __html: content }}
             />
           ) : (
@@ -164,13 +164,13 @@ export default async function BlogPostPage({
 
         {/* Gallery images */}
         {images.length > 0 && (
-          <div className="mt-10 space-y-4">
+          <div className="mt-10 grid grid-cols-2 sm:grid-cols-3 gap-3">
             {images.map((url, i) => (
-              <div key={i} className="rounded-2xl overflow-hidden shadow-sm border border-gray-100">
+              <div key={i} className="rounded-2xl overflow-hidden shadow-sm border border-gray-100 aspect-square">
                 <img
                   src={url}
                   alt={`${title} — ფოტო ${i + 1}`}
-                  className="w-full object-cover"
+                  className="w-full h-full object-cover"
                 />
               </div>
             ))}

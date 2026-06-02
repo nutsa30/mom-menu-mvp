@@ -61,7 +61,7 @@ body {
   pointer-events: none;
 }
 .prose-blog img {
-  max-width: 60%;
+  max-width: 72%;
   border-radius: 16px;
   margin: 1.2rem auto;
   display: block;
