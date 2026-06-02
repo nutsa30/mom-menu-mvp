@@ -29,13 +29,12 @@ export default function BlockNoteEditor({
     if (initialized.current || !editor) return;
     initialized.current = true;
     if (!value) return;
-    editor.tryParseHTMLToBlocks(value).then((blocks) => {
-      if (blocks.length) editor.replaceBlocks(editor.document, blocks);
-    });
+    const blocks = editor.tryParseHTMLToBlocks(value);
+    if (blocks.length) editor.replaceBlocks(editor.document, blocks);
   }, [editor]); // eslint-disable-line react-hooks/exhaustive-deps
 
-  const handleChange = async () => {
-    const html = await editor.blocksToHTMLLossy(editor.document);
+  const handleChange = () => {
+    const html = editor.blocksToHTMLLossy(editor.document);
     onChangeRef.current(html);
   };
 
