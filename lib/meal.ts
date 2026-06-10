@@ -19,6 +19,21 @@ export function getSuitableAgeGroups(childAgeGroup: AgeGroup): AgeGroup[] {
 
 export const mealOrder: MealType[] = ['BREAKFAST', 'SNACK', 'LUNCH', 'DINNER'];
 
+/**
+ * Returns the appropriate meal slots based on child's age in months.
+ *
+ * 6–8 months  (FROM_6):  2 meals  — საუზმე + სადილი
+ * 9–11 months (FROM_9):  3 meals  — საუზმე + სადილი + ვახშამი
+ * 12+ months  (FROM_12, FROM_24): 4 meals — სრული + სნექი
+ */
+export function getMealTypesForAge(birthDate: Date | null | undefined): MealType[] {
+  if (!birthDate) return ['BREAKFAST', 'SNACK', 'LUNCH', 'DINNER'];
+  const months = (Date.now() - new Date(birthDate).getTime()) / (1000 * 60 * 60 * 24 * 30.44);
+  if (months < 9)  return ['BREAKFAST', 'LUNCH'];
+  if (months < 12) return ['BREAKFAST', 'LUNCH', 'DINNER'];
+  return ['BREAKFAST', 'SNACK', 'LUNCH', 'DINNER'];
+}
+
 export function mealLabel(type: MealType, locale: 'ka' | 'en') {
   const map = {
     BREAKFAST: { ka: 'საუზმე', en: 'Breakfast' },

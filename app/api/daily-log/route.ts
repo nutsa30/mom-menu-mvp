@@ -1,9 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getSession } from '@/lib/auth';
 import { prisma } from '@/lib/prisma';
-import { getSuitableAgeGroups } from '@/lib/meal';
-
-const MEAL_TYPES = ['BREAKFAST', 'SNACK', 'LUNCH', 'DINNER'] as const;
+import { getSuitableAgeGroups, getMealTypesForAge } from '@/lib/meal';
 
 function todayStr() {
   return new Date().toISOString().split('T')[0];
@@ -43,11 +41,12 @@ export async function GET(req: NextRequest) {
     orderBy: { mealType: 'asc' },
   });
 
-  // Auto-generate missing meal slots
+  // Auto-generate missing meal slots — age-appropriate meal types
+  const ageMealTypes = getMealTypesForAge(child.birthDate);
   const existing = new Set(
     logs.filter((l) => l.dishId !== null || l.ingredientId !== null).map((l) => l.mealType)
   );
-  const missing = MEAL_TYPES.filter((m) => !existing.has(m));
+  const missing = ageMealTypes.filter((m) => !existing.has(m));
 
   if (missing.length) {
     for (const mealType of missing) {
