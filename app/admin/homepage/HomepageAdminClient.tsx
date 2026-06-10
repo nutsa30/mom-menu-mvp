@@ -197,11 +197,34 @@ export default function HomepageAdminClient({ settings }: { settings: S }) {
             <div key={i} className="border border-[#465940]/10 rounded-xl p-4 space-y-3">
               <p className="text-xs font-black text-[#465940]/60 uppercase">გეგმა {i}</p>
               <BiField labelKa={`გეგმა ${i} სახელი ქართ.`} labelEn={`გეგმა ${i} სახელი ინგლ.`} nameKa={`plan${i}NameKa`} nameEn={`plan${i}NameEn`} s={s} onChange={set} />
-              <div>
-                <label className="block text-xs font-semibold text-[#465940]/70 mb-1">ფასი (₾)</label>
-                <input type="number" value={s[`plan${i}Price`] ?? ''}
-                  onChange={e => set(`plan${i}Price`, e.target.value)}
-                  className="w-32 border border-[#465940]/20 rounded-xl px-3 py-2 text-sm focus:outline-none focus:border-[#465940]" />
+              <div className="flex items-end gap-4 flex-wrap">
+                <div>
+                  <label className="block text-xs font-semibold text-[#465940]/70 mb-1">ჩვეულებრივი ფასი (₾)</label>
+                  <input type="number" value={s[`plan${i}Price`] ?? ''}
+                    onChange={e => set(`plan${i}Price`, e.target.value)}
+                    className="w-28 border border-[#465940]/20 rounded-xl px-3 py-2 text-sm text-[#465940] bg-white focus:outline-none focus:border-[#465940]" />
+                </div>
+                <div>
+                  <label className="block text-xs font-semibold text-[#465940]/70 mb-1">
+                    ფასდაკლებული ფასი (₾)
+                    <span className="ml-1 text-[#465940]/40 font-normal">— ცარიელი = ფასდაკლება გამორთული</span>
+                  </label>
+                  <div className="flex items-center gap-2">
+                    <input type="number" value={s[`plan${i}SalePrice`] ?? ''}
+                      onChange={e => set(`plan${i}SalePrice`, e.target.value)}
+                      placeholder="მაგ. 10"
+                      className="w-28 border border-[#465940]/20 rounded-xl px-3 py-2 text-sm text-[#465940] bg-white focus:outline-none focus:border-[#465940]" />
+                    {s[`plan${i}SalePrice`] ? (
+                      <span className="text-xs bg-[#465940] text-[#FDFBF0] px-2 py-1 rounded-full font-bold">
+                        -{Math.round((1 - s[`plan${i}SalePrice`] / s[`plan${i}Price`]) * 100)}%
+                      </span>
+                    ) : null}
+                    {s[`plan${i}SalePrice`] ? (
+                      <button type="button" onClick={() => set(`plan${i}SalePrice`, '')}
+                        className="text-xs text-[#465940]/50 hover:text-[#465940] transition">გამორთვა</button>
+                    ) : null}
+                  </div>
+                </div>
               </div>
               {[1,2,3].map(j => (
                 <BiField key={j} labelKa={`სარგებელი ${j} ქართ.`} labelEn={`სარგებელი ${j} ინგლ.`}

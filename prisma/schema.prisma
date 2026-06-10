@@ -356,6 +356,7 @@ model HomePageSettings {
   plan1NameKa        String @default("რეცეპტების წვდომა")
   plan1NameEn        String @default("Recipe Access")
   plan1Price         Int    @default(15)
+  plan1SalePrice     Int?
   plan1Feature1Ka    String @default("✔ ასობით რეცეპტი სრული ინსტრუქციებით")
   plan1Feature1En    String @default("✔ Hundreds of recipes with full instructions")
   plan1Feature2Ka    String @default("✔ ბლოგები, სტატიები და კვებითი რჩევები")
@@ -365,6 +366,7 @@ model HomePageSettings {
   plan2NameKa        String @default("სრული პაკეტი")
   plan2NameEn        String @default("Full Package")
   plan2Price         Int    @default(30)
+  plan2SalePrice     Int?
   plan2Feature1Ka    String @default("✔ ყველაფერი, რაც 15₾ გეგმაშია")
   plan2Feature1En    String @default("✔ Everything included in the 15₾ plan")
   plan2Feature2Ka    String @default("✔ შვილის პირადი პროფილი — ასაკი, ალერგენები და გემოვნება")

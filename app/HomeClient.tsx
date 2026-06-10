@@ -133,6 +133,9 @@ export default function HomeClient({ s, dishes, dishCount, recentBlogs }: {
 
   const plan1Price = Number(s.plan1Price ?? 15);
   const plan2Price = Number(s.plan2Price ?? 30);
+  // Global sale prices set by admin (null = no discount)
+  const plan1Sale = s.plan1SalePrice ? Number(s.plan1SalePrice) : null;
+  const plan2Sale = s.plan2SalePrice ? Number(s.plan2SalePrice) : null;
 
   const mealEntries: { key: keyof Dishes; label: string; labelEn: string }[] = [
     { key: 'breakfast', label: 'საუზმე',  labelEn: 'Breakfast' },
@@ -342,15 +345,20 @@ export default function HomeClient({ s, dishes, dishCount, recentBlogs }: {
               <div className="h-10 mb-5" />
               <h3 className="text-xl font-semibold mb-2 text-[#465940]">{t('plan1NameKa', 'plan1NameEn')}</h3>
               <div className="flex justify-center items-baseline gap-1 mb-1">
-                {discountedPrice('RECIPE_PLAN', plan1Price) ? (
+                {(plan1Sale ?? discountedPrice('RECIPE_PLAN', plan1Price)) ? (
                   <>
-                    <span className="text-2xl font-bold text-[#465940]/50 line-through">{plan1Price}₾</span>
-                    <span className="text-4xl font-bold text-[#465940] ml-2">{discountedPrice('RECIPE_PLAN', plan1Price)}₾</span>
+                    <span className="text-2xl font-bold text-[#465940]/40 line-through">{plan1Price}₾</span>
+                    <span className="text-4xl font-bold text-[#465940] ml-2">{plan1Sale ?? discountedPrice('RECIPE_PLAN', plan1Price)}₾</span>
                   </>
                 ) : <span className="text-4xl font-bold text-[#465940]">{plan1Price}₾</span>}
                 <span className="text-[#465940]/60">/mo</span>
               </div>
-              {promoStatus['RECIPE_PLAN']?.valid && <p className="text-[#465940] text-xs font-bold mt-1">{promoStatus['RECIPE_PLAN'].discount}% ფასდაკლება</p>}
+              {plan1Sale && (
+                <p className="text-[#465940] text-xs font-bold mt-1">
+                  -{Math.round((1 - plan1Sale / plan1Price) * 100)}% {ka ? 'ფასდაკლება' : 'discount'}
+                </p>
+              )}
+              {!plan1Sale && promoStatus['RECIPE_PLAN']?.valid && <p className="text-[#465940] text-xs font-bold mt-1">{promoStatus['RECIPE_PLAN'].discount}% ფასდაკლება</p>}
               <div className="mb-6 h-6" />
               <ul className="space-y-3 text-left flex-1 text-sm text-[#465940]">
                 <li>{t('plan1Feature1Ka', 'plan1Feature1En')}</li>
@@ -387,15 +395,20 @@ export default function HomeClient({ s, dishes, dishCount, recentBlogs }: {
               </div>
               <h3 className="text-xl font-semibold mb-2 text-[#465940]">{t('plan2NameKa', 'plan2NameEn')}</h3>
               <div className="flex justify-center items-baseline gap-1 mb-1">
-                {discountedPrice('FULL_PLAN', plan2Price) ? (
+                {(plan2Sale ?? discountedPrice('FULL_PLAN', plan2Price)) ? (
                   <>
-                    <span className="text-2xl font-bold text-[#465940]/50 line-through">{plan2Price}₾</span>
-                    <span className="text-4xl font-bold text-[#465940] ml-2">{discountedPrice('FULL_PLAN', plan2Price)}₾</span>
+                    <span className="text-2xl font-bold text-[#465940]/40 line-through">{plan2Price}₾</span>
+                    <span className="text-4xl font-bold text-[#465940] ml-2">{plan2Sale ?? discountedPrice('FULL_PLAN', plan2Price)}₾</span>
                   </>
                 ) : <span className="text-4xl font-bold text-[#465940]">{plan2Price}₾</span>}
                 <span className="text-[#465940]/60">/mo</span>
               </div>
-              {promoStatus['FULL_PLAN']?.valid && <p className="text-[#465940] text-xs font-bold mt-1">{promoStatus['FULL_PLAN'].discount}% ფასდაკლება</p>}
+              {plan2Sale && (
+                <p className="text-[#465940] text-xs font-bold mt-1">
+                  -{Math.round((1 - plan2Sale / plan2Price) * 100)}% {ka ? 'ფასდაკლება' : 'discount'}
+                </p>
+              )}
+              {!plan2Sale && promoStatus['FULL_PLAN']?.valid && <p className="text-[#465940] text-xs font-bold mt-1">{promoStatus['FULL_PLAN'].discount}% ფასდაკლება</p>}
               <p className="font-semibold mb-6 text-sm text-[#465940]/70">{ka ? 'ყველაზე პოპულარული' : 'Most Popular'}</p>
               <ul className="space-y-3 text-left text-[#465940] flex-1 text-sm">
                 <li>{t('plan2Feature1Ka', 'plan2Feature1En')}</li>
