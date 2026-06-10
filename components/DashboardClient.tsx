@@ -51,6 +51,67 @@ const NUTRIENT_UNIT: Record<string, string> = {
 const card = 'bg-[#FDFBF0] rounded-2xl border border-[#465940]/10 shadow-sm';
 const btn = 'px-4 py-2 rounded-full text-sm font-bold transition';
 
+// ── Introduction Banner (6-9mo) ──────────────────────────────────────────
+function IntroductionBanner({ childId, childName }: { childId: string; childName: string }) {
+  const [intro, setIntro] = useState<any | null>(undefined);
+
+  useEffect(() => {
+    fetch(`/api/food-introduction?childId=${childId}`)
+      .then(r => r.json())
+      .then(data => {
+        const active = Array.isArray(data) ? data.find((i: any) => i.status === 'INTRODUCING') : null;
+        setIntro(active ?? null);
+      })
+      .catch(() => setIntro(null));
+  }, [childId]);
+
+  if (intro === undefined) return null;
+
+  const daysSince = intro ? Math.floor((Date.now() - new Date(intro.startedAt).getTime()) / 86400000) : 0;
+  const readyForNext = daysSince >= 3;
+
+  // Suggested first foods for 6-9mo
+  const FIRST_FOODS = ['გოგრა', 'კარტოფილი', 'სტაფილო', 'ბრინჯის ფაფა', 'შვრია', 'ვაშლი', 'მსხალი', 'ბანანი', 'ბოლოქი'];
+  const tried = new Set<string>();
+
+  return (
+    <div className={`${card} p-4 border-2 border-[#465940]/30`}>
+      <div className="flex items-center gap-2 mb-3">
+        <span className="text-xl">🌱</span>
+        <div>
+          <p className="font-black text-[#465940] text-sm">პირველი საკვების გაცნობა</p>
+          <p className="text-[10px] text-[#465940]/60">ყოველ ახალ პროდუქტს 3 დღე მიეცი — შემდეგ გადავიდე შემდეგზე</p>
+        </div>
+      </div>
+
+      {intro ? (
+        <div className={`rounded-xl p-3 ${readyForNext ? 'bg-green-50 border border-green-200' : 'bg-[#465940]/5'}`}>
+          <div className="flex items-center justify-between">
+            <div>
+              <p className="font-bold text-[#465940] text-sm">ახლა: <span className="text-[#465940]">{intro.foodName}</span></p>
+              <p className="text-xs text-[#465940]/60 mt-0.5">
+                {daysSince} დღე · {readyForNext ? '✅ მზადაა შემდეგ პროდუქტზე გადასასვლელად!' : `კიდევ ${3 - daysSince} დღე`}
+              </p>
+            </div>
+            <div className={`w-10 h-10 rounded-full flex items-center justify-center text-sm font-black ${
+              readyForNext ? 'bg-green-500 text-white' : 'bg-[#465940]/15 text-[#465940]'
+            }`}>{daysSince}/3</div>
+          </div>
+        </div>
+      ) : (
+        <div>
+          <p className="text-xs text-[#465940]/70 mb-2">შემდეგი შეარჩიე და "შვილი" ჩანართში დაამატე:</p>
+          <div className="flex flex-wrap gap-1.5">
+            {FIRST_FOODS.map(f => (
+              <span key={f} className="text-xs bg-[#465940]/10 text-[#465940] px-2.5 py-1 rounded-full font-semibold">{f}</span>
+            ))}
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
 // ── Today Tab ────────────────────────────────────────────────────────────
 function TodayTab({ child, allDishes, planStart }: { child: any; allDishes: any[]; planStart: string }) {
   const todayStr = localToday();
@@ -298,6 +359,11 @@ function TodayTab({ child, allDishes, planStart }: { child: any; allDishes: any[
             );
           })}
         </div>
+      )}
+
+      {/* Introduction mode — only for 6-9 month olds */}
+      {child.ageGroup === 'FROM_6' && (
+        <IntroductionBanner childId={child.id} childName={child.name} />
       )}
 
       {/* Seasonal fruit suggestion */}
@@ -671,6 +737,62 @@ function ShoppingListTab({ child, planStart }: { child: any; planStart: string }
   );
 }
 
+// WHO/AAP daily requirements by ageGroup
+const AGE_REQUIREMENTS: Record<string, { label: string; values: { nutrient: string; amount: string; note?: string }[] }> = {
+  FROM_6: {
+    label: '6–8 თვე',
+    values: [
+      { nutrient: 'კალორია', amount: '600–800 kcal' },
+      { nutrient: 'რკინა', amount: '11 მგ', note: '⚠️ ყველაზე მნიშვნელოვანი' },
+      { nutrient: 'ცილა', amount: '9.1 გ' },
+      { nutrient: 'კალციუმი', amount: '200 მგ' },
+      { nutrient: 'D ვიტამინი', amount: '10 მკგ' },
+      { nutrient: 'C ვიტამინი', amount: '40 მგ' },
+      { nutrient: 'A ვიტამინი', amount: '400 მკგ' },
+      { nutrient: 'ბოჭკო', amount: '—', note: 'ჯერ არ სჭირდება' },
+    ],
+  },
+  FROM_9: {
+    label: '9–11 თვე',
+    values: [
+      { nutrient: 'კალორია', amount: '700–900 kcal' },
+      { nutrient: 'რკინა', amount: '11 მგ', note: '⚠️ კვლავ კრიტიკული' },
+      { nutrient: 'ცილა', amount: '11 გ' },
+      { nutrient: 'კალციუმი', amount: '260 მგ' },
+      { nutrient: 'D ვიტამინი', amount: '10 მკგ' },
+      { nutrient: 'C ვიტამინი', amount: '50 მგ' },
+      { nutrient: 'A ვიტამინი', amount: '500 მკგ' },
+      { nutrient: 'ომეგა-3', amount: '500 მგ' },
+    ],
+  },
+  FROM_12: {
+    label: '1–2 წელი',
+    values: [
+      { nutrient: 'კალორია', amount: '1000–1400 kcal' },
+      { nutrient: 'რკინა', amount: '7 მგ' },
+      { nutrient: 'ცილა', amount: '13 გ' },
+      { nutrient: 'კალციუმი', amount: '700 მგ' },
+      { nutrient: 'D ვიტამინი', amount: '15 მკგ' },
+      { nutrient: 'C ვიტამინი', amount: '15 მგ' },
+      { nutrient: 'A ვიტამინი', amount: '300 მკგ' },
+      { nutrient: 'ბოჭკო', amount: '19 გ' },
+    ],
+  },
+  FROM_24: {
+    label: '2–3 წელი',
+    values: [
+      { nutrient: 'კალორია', amount: '1000–1400 kcal' },
+      { nutrient: 'რკინა', amount: '7 მგ' },
+      { nutrient: 'ცილა', amount: '13 გ' },
+      { nutrient: 'კალციუმი', amount: '700 მგ' },
+      { nutrient: 'D ვიტამინი', amount: '15 მკგ' },
+      { nutrient: 'C ვიტამინი', amount: '15 მგ' },
+      { nutrient: 'A ვიტამინი', amount: '300 მკგ' },
+      { nutrient: 'ბოჭკო', amount: '19 გ' },
+    ],
+  },
+};
+
 // ── Nutrition Tab ────────────────────────────────────────────────────────────
 function NutritionTab({ child }: { child: any }) {
   const [data, setData] = useState<any>(null);
@@ -757,6 +879,36 @@ function NutritionTab({ child }: { child: any }) {
           <p className="text-sm text-[#465940]/60">მონიშნე "დღის გეგმა" tab-ში "ჭამა" ერთხელ მაინც რომ გამოჩნდეს კვებითი ბალანსი.</p>
         </div>
       )}
+
+      {/* Age-specific requirements */}
+      {AGE_REQUIREMENTS[child.ageGroup] && (
+        <div className={`${card} p-5`}>
+          <div className="flex items-center gap-2 mb-4">
+            <span className="text-xl">💊</span>
+            <div>
+              <h3 className="font-black text-[#465940] text-sm">დღიური ნორმა — {AGE_REQUIREMENTS[child.ageGroup].label}</h3>
+              <p className="text-[10px] text-[#465940]/60">WHO / AAP რეკომენდაციების მიხედვით</p>
+            </div>
+          </div>
+          <div className="grid grid-cols-2 gap-2">
+            {AGE_REQUIREMENTS[child.ageGroup].values.map(v => (
+              <div key={v.nutrient} className="bg-[#465940]/5 rounded-xl p-3">
+                <p className="text-xs font-bold text-[#465940]">{v.nutrient}</p>
+                <p className="text-sm font-black text-[#465940] mt-0.5">{v.amount}</p>
+                {v.note && <p className="text-[10px] text-[#465940]/60 mt-0.5">{v.note}</p>}
+              </div>
+            ))}
+          </div>
+          {child.milkType && child.milkType !== 'NONE' && !child.milkStopped && (
+            <div className="mt-3 p-3 rounded-xl bg-[#465940]/10 flex items-center gap-2">
+              <span>🥛</span>
+              <p className="text-xs text-[#465940]/80 font-medium">
+                {child.milkType === 'BREAST' ? 'დედის რძე' : child.milkType === 'FORMULA' ? 'ფორმულა' : 'დედის რძე + ფორმულა'} — ავსებს ვიტამინების ნაწილს
+              </p>
+            </div>
+          )}
+        </div>
+      )}
     </div>
   );
 }
@@ -791,6 +943,13 @@ function TagInput({ tags, onChange, color }: { tags: string[]; onChange: (t: str
   );
 }
 
+const MILK_OPTIONS = [
+  { value: 'BREAST',  label: '🤱 დედის რძე' },
+  { value: 'FORMULA', label: '🍼 ფორმულა' },
+  { value: 'BOTH',    label: '🤱🍼 ორივე' },
+  { value: 'NONE',    label: '🥣 მხოლოდ მყარი' },
+];
+
 // ── Child Tab ────────────────────────────────────────────────────────────────
 function ChildTab({ children: kids, userId, onUpdate, onDelete }: {
   children: any[]; userId: string; onUpdate: (c: any) => void; onDelete: (id: string) => void;
@@ -802,12 +961,67 @@ function ChildTab({ children: kids, userId, onUpdate, onDelete }: {
   const [allergies, setAllergies] = useState<string[]>([]);
   const [dislikes, setDislikes] = useState<string[]>([]);
   const [likes, setLikes] = useState<string[]>([]);
+  const [milkType, setMilkType] = useState('BREAST');
+  const [milkStopped, setMilkStopped] = useState(false);
   const [saving, setSaving] = useState(false);
   const [deleting, setDeleting] = useState(false);
   const [newChildMode, setNewChildMode] = useState(false);
   const [newName, setNewName] = useState('');
   const [newBirth, setNewBirth] = useState('');
   const [addingChild, setAddingChild] = useState(false);
+
+  // Food introduction state
+  const [introductions, setIntroductions] = useState<any[]>([]);
+  const [introChild, setIntroChild] = useState<any | null>(null);
+  const [newFood, setNewFood] = useState('');
+  const [addingFood, setAddingFood] = useState(false);
+  const [introLoading, setIntroLoading] = useState(false);
+
+  const loadIntroductions = async (child: any) => {
+    setIntroChild(child);
+    setIntroLoading(true);
+    const res = await fetch(`/api/food-introduction?childId=${child.id}`);
+    const data = await res.json();
+    setIntroductions(Array.isArray(data) ? data : []);
+    setIntroLoading(false);
+  };
+
+  const addFood = async () => {
+    if (!newFood.trim() || !introChild) return;
+    setAddingFood(true);
+    const res = await fetch('/api/food-introduction', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ childId: introChild.id, foodName: newFood.trim() }),
+    });
+    const item = await res.json();
+    if (item.id) {
+      setIntroductions(prev => [item, ...prev.filter(i => i.status !== 'INTRODUCING')]);
+      setNewFood('');
+    }
+    setAddingFood(false);
+  };
+
+  const updateFoodStatus = async (id: string, status: string) => {
+    const res = await fetch(`/api/food-introduction?id=${id}`, {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ status }),
+    });
+    const updated = await res.json();
+    setIntroductions(prev => prev.map(i => i.id === id ? updated : i));
+  };
+
+  const deleteFood = async (id: string) => {
+    await fetch(`/api/food-introduction?id=${id}`, { method: 'DELETE' });
+    setIntroductions(prev => prev.filter(i => i.id !== id));
+  };
+
+  // Days since introduction started
+  const daysSince = (dateStr: string) => {
+    const diff = Date.now() - new Date(dateStr).getTime();
+    return Math.floor(diff / (1000 * 60 * 60 * 24));
+  };
 
   const openEdit = (child: any) => {
     setViewModal(null);
@@ -817,6 +1031,9 @@ function ChildTab({ children: kids, userId, onUpdate, onDelete }: {
     setAllergies(child.allergies ?? []);
     setDislikes(child.dislikes ?? []);
     setLikes(child.likes ?? []);
+    setMilkType(child.milkType ?? 'BREAST');
+    setMilkStopped(child.milkStopped ?? false);
+    loadIntroductions(child);
   };
 
   const deleteChild = async (child: any) => {
@@ -834,7 +1051,7 @@ function ChildTab({ children: kids, userId, onUpdate, onDelete }: {
     const res = await fetch(`/api/children/${selected.id}`, {
       method: 'PATCH',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ name, birthDate, allergies, dislikes, likes }),
+      body: JSON.stringify({ name, birthDate, allergies, dislikes, likes, milkType, milkStopped }),
     });
     const updated = await res.json();
     setSaving(false);
@@ -943,10 +1160,120 @@ function ChildTab({ children: kids, userId, onUpdate, onDelete }: {
             <label className="block text-sm font-semibold text-[#465940] mb-2">😋 უყვარს</label>
             <TagInput tags={likes} onChange={setLikes} color="bg-[#465940]/20 text-[#465940]" />
           </div>
+
+          {/* Milk tracking */}
+          <div className="border-t border-[#465940]/10 pt-4">
+            <label className="block text-sm font-semibold text-[#465940] mb-3">🥛 რძის კვება</label>
+            <div className="grid grid-cols-2 gap-2 mb-3">
+              {MILK_OPTIONS.map(opt => (
+                <button key={opt.value} type="button"
+                  onClick={() => { setMilkType(opt.value); setMilkStopped(opt.value === 'NONE'); }}
+                  className={`py-2.5 px-3 rounded-xl text-sm font-semibold border-2 transition text-left ${
+                    milkType === opt.value
+                      ? 'border-[#465940] bg-[#465940] text-[#FDFBF0]'
+                      : 'border-[#465940]/15 text-[#465940]/70 hover:border-[#465940]/30'
+                  }`}>
+                  {opt.label}
+                </button>
+              ))}
+            </div>
+            {milkType !== 'NONE' && (
+              <label className="flex items-center gap-3 cursor-pointer">
+                <button type="button"
+                  onClick={() => setMilkStopped(!milkStopped)}
+                  className={`relative inline-flex h-5 w-9 items-center rounded-full transition ${milkStopped ? 'bg-[#465940]' : 'bg-[#465940]/20'}`}>
+                  <span className={`inline-block h-3.5 w-3.5 transform rounded-full bg-[#FDFBF0] shadow transition ${milkStopped ? 'translate-x-4.5' : 'translate-x-1'}`} />
+                </button>
+                <span className="text-sm text-[#465940]/70">სრულად მყარ კვებაზე გადასვლა</span>
+              </label>
+            )}
+          </div>
+
           <button onClick={save} disabled={saving}
             className="w-full bg-[#465940] hover:bg-[#465940] text-[#FDFBF0] py-3 rounded-full font-bold text-sm transition disabled:opacity-60">
             {saving ? 'ინახება...' : 'შენახვა'}
           </button>
+        </div>
+      )}
+
+      {/* Food Introduction Tracker */}
+      {selected && introChild?.id === selected.id && (
+        <div className={`${card} p-5 space-y-4`}>
+          <div>
+            <h3 className="font-black text-[#465940] mb-0.5">🌱 ახალი პროდუქტების გაცნობა</h3>
+            <p className="text-xs text-[#465940]/60">გასინჯეთ ახალი პროდუქტი? დაამატეთ — 3 დღე დააკვირდით, შემდეგ მომდევნოზე გადახვიდეთ</p>
+          </div>
+
+          {/* Active introduction */}
+          {introductions.filter(i => i.status === 'INTRODUCING').map(item => {
+            const days = daysSince(item.startedAt);
+            const safe = days >= 3;
+            return (
+              <div key={item.id} className={`rounded-2xl p-4 border-2 ${safe ? 'border-green-300 bg-green-50' : 'border-[#465940]/20 bg-[#465940]/5'}`}>
+                <div className="flex items-center justify-between mb-2">
+                  <div>
+                    <p className="font-black text-[#465940]">{item.foodName}</p>
+                    <p className="text-xs text-[#465940]/60">{days} დღე გავიდა · {safe ? '✅ 3 დღე შესრულდა' : `${3 - days} დღე დარჩა`}</p>
+                  </div>
+                  <div className={`w-12 h-12 rounded-full flex items-center justify-center text-xl font-black ${safe ? 'bg-green-100 text-green-700' : 'bg-[#465940]/10 text-[#465940]'}`}>
+                    {days}/3
+                  </div>
+                </div>
+                <div className="flex gap-2 flex-wrap">
+                  <button onClick={() => updateFoodStatus(item.id, 'SAFE')}
+                    className="px-3 py-1.5 rounded-full text-xs font-bold bg-green-500 text-white transition">
+                    ✓ ალერგია არ არის
+                  </button>
+                  <button onClick={() => updateFoodStatus(item.id, 'ALLERGIC')}
+                    className="px-3 py-1.5 rounded-full text-xs font-bold bg-red-100 text-red-600 transition">
+                    ⚠ ალერგია აქვს
+                  </button>
+                  <button onClick={() => deleteFood(item.id)}
+                    className="px-3 py-1.5 rounded-full text-xs font-bold bg-[#465940]/10 text-[#465940]/60 transition">
+                    წაშლა
+                  </button>
+                </div>
+              </div>
+            );
+          })}
+
+          {/* Add new food */}
+          <div className="flex gap-2">
+            <input value={newFood} onChange={e => setNewFood(e.target.value)}
+              onKeyDown={e => e.key === 'Enter' && addFood()}
+              placeholder="ახალი პროდუქტი (მაგ. გოგრა)"
+              className="flex-1 px-4 py-2.5 rounded-xl border border-[#465940]/20 text-sm text-[#465940] bg-white focus:outline-none focus:border-[#465940]" />
+            <button onClick={addFood} disabled={addingFood || !newFood.trim()}
+              className="px-4 py-2.5 rounded-xl bg-[#465940] text-[#FDFBF0] text-sm font-bold disabled:opacity-50 transition">
+              {addingFood ? '...' : '+ დაწყება'}
+            </button>
+          </div>
+
+          {/* History */}
+          {introductions.filter(i => i.status !== 'INTRODUCING').length > 0 && (
+            <div>
+              <p className="text-xs font-semibold text-[#465940]/60 mb-2 uppercase tracking-wide">ისტორია</p>
+              <div className="space-y-1.5">
+                {introLoading && <p className="text-xs text-[#465940]/50">იტვირთება...</p>}
+                {introductions.filter(i => i.status !== 'INTRODUCING').map(item => (
+                  <div key={item.id} className="flex items-center justify-between px-3 py-2 rounded-xl bg-[#465940]/5">
+                    <div className="flex items-center gap-2">
+                      <span>{item.status === 'SAFE' ? '✅' : '⚠️'}</span>
+                      <span className="text-sm font-semibold text-[#465940]">{item.foodName}</span>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${
+                        item.status === 'SAFE' ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-600'
+                      }`}>
+                        {item.status === 'SAFE' ? 'უსაფრთხო' : 'ალერგია'}
+                      </span>
+                      <button onClick={() => deleteFood(item.id)} className="text-[#465940]/30 hover:text-[#465940]/60 text-xs">×</button>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
         </div>
       )}
 

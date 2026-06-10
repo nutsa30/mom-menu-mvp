@@ -26,7 +26,10 @@
       "Bash(node fix-colors.js)",
       "Bash(del fix-colors.js fix-colors2.js fix-colors3.js)",
       "Bash(Remove-Item fix-colors.js, fix-colors2.js, fix-colors3.js -ErrorAction SilentlyContinue)",
-      "Bash(Write-Output \"Cleaned up\")"
+      "Bash(Write-Output \"Cleaned up\")",
+      "Bash(npm uninstall *)",
+      "Bash(git commit -m 'Remove @mantine/core, @mantine/hooks, @blocknote/mantine — fixes Vercel build \\(React 18 peer conflict\\) *)",
+      "Bash(git push *)"
     ],
     "additionalDirectories": [
       "C:\\Users\\gstore\\Downloads"

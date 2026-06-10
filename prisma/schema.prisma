@@ -89,14 +89,35 @@ model Child {
   dislikes  String[] @default([])
   likes     String[] @default([])
 
+  // Milk tracking
+  milkType    String  @default("BREAST") // BREAST | FORMULA | BOTH | NONE
+  milkStopped Boolean @default(false)
+
   userId    String
   user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
 
-  mealPlans MealPlan[]
-  dailyLogs DailyLog[]
+  mealPlans         MealPlan[]
+  dailyLogs         DailyLog[]
+  foodIntroductions FoodIntroduction[]
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
+}
+
+model FoodIntroduction {
+  id        String   @id @default(cuid())
+  childId   String
+  child     Child    @relation(fields: [childId], references: [id], onDelete: Cascade)
+
+  foodName  String           // e.g. "გოგრა"
+  startedAt DateTime         @default(now())
+  status    String           @default("INTRODUCING") // INTRODUCING | SAFE | ALLERGIC
+  notes     String?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([childId])
 }
 
 model Dish {
