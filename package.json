@@ -15,10 +15,7 @@
   "dependencies": {
     "@blocknote/ariakit": "^0.51.4",
     "@blocknote/core": "^0.51.4",
-    "@blocknote/mantine": "^0.51.4",
     "@blocknote/react": "^0.51.4",
-    "@mantine/core": "^9.3.0",
-    "@mantine/hooks": "^9.3.0",
     "@prisma/client": "^6.16.3",
     "@tailwindcss/postcss": "^4.2.4",
     "@tiptap/extension-image": "^3.24.0",
