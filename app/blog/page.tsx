@@ -59,9 +59,14 @@ export default async function BlogListPage({ searchParams }: { searchParams: { l
         <div className="max-w-3xl mx-auto">
 
           {/* title */}
-          <h1 className="text-5xl sm:text-7xl font-black text-[#FDFBF0] leading-none tracking-tight mb-5">
-            {ka ? 'ბლო' : 'Bl'}
-            <span style={{ color: '#a8c49a' }}>{ka ? 'გი' : 'og'}</span>
+          <h1 className="text-5xl sm:text-7xl font-black leading-none tracking-tight mb-5"
+            style={{
+              background: 'linear-gradient(90deg, #FDFBF0 0%, #FDFBF0 35%, #a8c49a 100%)',
+              WebkitBackgroundClip: 'text',
+              WebkitTextFillColor: 'transparent',
+              backgroundClip: 'text',
+            }}>
+            {ka ? 'ბლოგი' : 'Blog'}
           </h1>
 
           {/* divider + subtitle */}
