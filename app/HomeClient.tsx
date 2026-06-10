@@ -347,16 +347,16 @@ export default function HomeClient({ s, dishes, dishCount, recentBlogs }: {
               <div className="flex justify-center items-baseline gap-1 mb-1">
                 {(plan1Sale ?? discountedPrice('RECIPE_PLAN', plan1Price)) ? (
                   <>
-                    <span className="text-2xl font-bold text-[#465940]/40 line-through">{plan1Price}₾</span>
+                    <span className="text-2xl font-bold text-red-400 line-through">{plan1Price}₾</span>
                     <span className="text-4xl font-bold text-[#465940] ml-2">{plan1Sale ?? discountedPrice('RECIPE_PLAN', plan1Price)}₾</span>
                   </>
                 ) : <span className="text-4xl font-bold text-[#465940]">{plan1Price}₾</span>}
                 <span className="text-[#465940]/60">/mo</span>
               </div>
               {plan1Sale && (
-                <p className="text-[#465940] text-xs font-bold mt-1">
-                  -{Math.round((1 - plan1Sale / plan1Price) * 100)}% {ka ? 'ფასდაკლება' : 'discount'}
-                </p>
+                <span className="inline-block mt-1 px-3 py-0.5 rounded-full bg-red-100 text-red-600 text-xs font-black">
+                  -{Math.round((1 - plan1Sale / plan1Price) * 100)}% {ka ? 'ფასდაკლება' : 'OFF'}
+                </span>
               )}
               {!plan1Sale && promoStatus['RECIPE_PLAN']?.valid && <p className="text-[#465940] text-xs font-bold mt-1">{promoStatus['RECIPE_PLAN'].discount}% ფასდაკლება</p>}
               <div className="mb-6 h-6" />
@@ -397,16 +397,16 @@ export default function HomeClient({ s, dishes, dishCount, recentBlogs }: {
               <div className="flex justify-center items-baseline gap-1 mb-1">
                 {(plan2Sale ?? discountedPrice('FULL_PLAN', plan2Price)) ? (
                   <>
-                    <span className="text-2xl font-bold text-[#465940]/40 line-through">{plan2Price}₾</span>
+                    <span className="text-2xl font-bold text-red-400 line-through">{plan2Price}₾</span>
                     <span className="text-4xl font-bold text-[#465940] ml-2">{plan2Sale ?? discountedPrice('FULL_PLAN', plan2Price)}₾</span>
                   </>
                 ) : <span className="text-4xl font-bold text-[#465940]">{plan2Price}₾</span>}
                 <span className="text-[#465940]/60">/mo</span>
               </div>
               {plan2Sale && (
-                <p className="text-[#465940] text-xs font-bold mt-1">
-                  -{Math.round((1 - plan2Sale / plan2Price) * 100)}% {ka ? 'ფასდაკლება' : 'discount'}
-                </p>
+                <span className="inline-block mt-1 px-3 py-0.5 rounded-full bg-red-100 text-red-600 text-xs font-black">
+                  -{Math.round((1 - plan2Sale / plan2Price) * 100)}% {ka ? 'ფასდაკლება' : 'OFF'}
+                </span>
               )}
               {!plan2Sale && promoStatus['FULL_PLAN']?.valid && <p className="text-[#465940] text-xs font-bold mt-1">{promoStatus['FULL_PLAN'].discount}% ფასდაკლება</p>}
               <p className="font-semibold mb-6 text-sm text-[#465940]/70">{ka ? 'ყველაზე პოპულარული' : 'Most Popular'}</p>
