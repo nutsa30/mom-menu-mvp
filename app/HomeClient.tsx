@@ -354,9 +354,12 @@ export default function HomeClient({ s, dishes, dishCount, recentBlogs }: {
                 <span className="text-[#465940]/60">/mo</span>
               </div>
               {plan1Sale && (
-                <span className="inline-block mt-1 px-3 py-0.5 rounded-full bg-red-100 text-red-600 text-xs font-black">
-                  -{Math.round((1 - plan1Sale / plan1Price) * 100)}% {ka ? 'ფასდაკლება' : 'OFF'}
-                </span>
+                <div className="flex items-center justify-center gap-2 mt-2">
+                  <span className="bg-red-500 text-white text-sm font-black px-3 py-1 rounded-lg">
+                    -{Math.round((1 - plan1Sale / plan1Price) * 100)}%
+                  </span>
+                  <span className="text-red-500 text-sm font-semibold">{ka ? 'ფასდაკლება' : 'OFF'}</span>
+                </div>
               )}
               {!plan1Sale && promoStatus['RECIPE_PLAN']?.valid && <p className="text-[#465940] text-xs font-bold mt-1">{promoStatus['RECIPE_PLAN'].discount}% ფასდაკლება</p>}
               <div className="mb-6 h-6" />
@@ -404,9 +407,12 @@ export default function HomeClient({ s, dishes, dishCount, recentBlogs }: {
                 <span className="text-[#465940]/60">/mo</span>
               </div>
               {plan2Sale && (
-                <span className="inline-block mt-1 px-3 py-0.5 rounded-full bg-red-100 text-red-600 text-xs font-black">
-                  -{Math.round((1 - plan2Sale / plan2Price) * 100)}% {ka ? 'ფასდაკლება' : 'OFF'}
-                </span>
+                <div className="flex items-center justify-center gap-2 mt-2">
+                  <span className="bg-red-500 text-white text-sm font-black px-3 py-1 rounded-lg">
+                    -{Math.round((1 - plan2Sale / plan2Price) * 100)}%
+                  </span>
+                  <span className="text-red-500 text-sm font-semibold">{ka ? 'ფასდაკლება' : 'OFF'}</span>
+                </div>
               )}
               {!plan2Sale && promoStatus['FULL_PLAN']?.valid && <p className="text-[#465940] text-xs font-bold mt-1">{promoStatus['FULL_PLAN'].discount}% ფასდაკლება</p>}
               <p className="font-semibold mb-6 text-sm text-[#465940]/70">{ka ? 'ყველაზე პოპულარული' : 'Most Popular'}</p>
