@@ -1,4 +1,5 @@
 ﻿import type { Metadata } from 'next';
+import BackToRegisterButton from '@/components/BackToRegisterButton';
 
 export const metadata: Metadata = {
   title: 'კონფიდენციალურობის პოლიტიკა — mom menu',
@@ -7,9 +8,10 @@ export const metadata: Metadata = {
   robots: { index: false, follow: false },
 };
 
-export default function PrivacyPage({ searchParams }: { searchParams: { lang?: string } }) {
+export default function PrivacyPage({ searchParams }: { searchParams: { lang?: string; from?: string } }) {
   const locale = searchParams.lang === 'en' ? 'en' : 'ka';
   const ka = locale === 'ka';
+  const fromRegister = searchParams.from === 'register';
 
   return (
     <main className="min-h-screen bg-[#465940]">
@@ -17,6 +19,11 @@ export default function PrivacyPage({ searchParams }: { searchParams: { lang?: s
       {/* Header */}
       <div className="bg-[#FDFBF0] border-b border-[#465940]/10">
         <div className="max-w-3xl mx-auto px-6 py-14">
+          {fromRegister && (
+            <div className="mb-6">
+              <BackToRegisterButton label={ka ? 'რეგისტრაციაზე დაბრუნება' : 'Back to registration'} />
+            </div>
+          )}
           <h1 className="text-4xl font-black text-[#465940] mb-3">
             {ka ? 'კონფიდენციალურობის პოლიტიკა' : 'Privacy Policy'}
           </h1>

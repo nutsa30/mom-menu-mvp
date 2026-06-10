@@ -223,11 +223,11 @@ export default function Register({ searchParams }: { searchParams: { lang?: Loca
                 <input type="checkbox" required className="mt-0.5" style={{ accentColor: '#465940' }} />
                 <span className="text-sm text-[#465940]/60">
                   {locale === 'ka' ? 'ვეთანხმები ' : 'I agree to the '}
-                  <a href="#" className="text-[#465940] font-semibold hover:underline">
+                  <a href={`/terms?lang=${locale}&from=register`} target="_blank" rel="noopener noreferrer" className="text-[#465940] font-semibold hover:underline">
                     {locale === 'ka' ? 'მომსახურების პირობებს' : 'Terms of Service'}
                   </a>
                   {locale === 'ka' ? ' და ' : ' and '}
-                  <a href="#" className="text-[#465940] font-semibold hover:underline">
+                  <a href={`/privacy?lang=${locale}&from=register`} target="_blank" rel="noopener noreferrer" className="text-[#465940] font-semibold hover:underline">
                     {locale === 'ka' ? 'კონფიდენციალურობის პოლიტიკას' : 'Privacy Policy'}
                   </a>
                   .
