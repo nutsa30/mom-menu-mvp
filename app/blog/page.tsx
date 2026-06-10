@@ -55,16 +55,33 @@ export default async function BlogListPage({ searchParams }: { searchParams: { l
     <main style={{ background: '#465940' }} className="min-h-screen">
 
       {/* ── Hero ── */}
-      <section className="py-14 px-6" style={{ background: '#465940' }}>
+      <section className="pt-16 pb-12 px-6" style={{ background: '#465940' }}>
         <div className="max-w-3xl mx-auto">
-          <h1 className="text-4xl sm:text-5xl font-black text-[#FDFBF0] mb-4">
-            {ka ? 'ბლოგი' : 'Blog'}
+
+          {/* pill badge */}
+          <div className="inline-flex items-center gap-2 mb-5 px-4 py-1.5 rounded-full border border-[#FDFBF0]/20 bg-[#FDFBF0]/10">
+            <span className="text-base">✍️</span>
+            <span className="text-xs font-semibold text-[#FDFBF0]/70 tracking-wide uppercase">
+              {ka ? 'სტატიები და რჩევები' : 'Articles & Tips'}
+            </span>
+          </div>
+
+          {/* title */}
+          <h1 className="text-5xl sm:text-7xl font-black text-[#FDFBF0] leading-none tracking-tight mb-5">
+            {ka ? 'ბლო' : 'Bl'}
+            <span style={{ color: '#a8c49a' }}>{ka ? 'გი' : 'og'}</span>
           </h1>
-          <p className="text-[#FDFBF0]/70 text-sm leading-relaxed max-w-md">
-            {ka
-              ? 'სასარგებლო რჩევები, რეცეპტები და ინფორმაცია ბავშვის ჯანსაღი და დაბალანსებული კვებისთვის.'
-              : 'Useful tips, recipes, and information for healthy and balanced child nutrition.'}
-          </p>
+
+          {/* divider + subtitle */}
+          <div className="flex items-center gap-4 max-w-lg">
+            <div className="w-8 h-px bg-[#FDFBF0]/30 flex-shrink-0" />
+            <p className="text-[#FDFBF0]/65 text-sm leading-relaxed">
+              {ka
+                ? 'სასარგებლო რჩევები, რეცეპტები და ინფორმაცია ბავშვის ჯანსაღი და დაბალანსებული კვებისთვის.'
+                : 'Useful tips, recipes, and information for healthy and balanced child nutrition.'}
+            </p>
+          </div>
+
         </div>
       </section>
 
