@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
+import FirstFoodsTab from './FirstFoodsTab';
 
 // Use local date (not UTC) to avoid timezone issues (e.g. Georgia is UTC+4)
 function localToday(): string {
@@ -9,7 +10,7 @@ function localToday(): string {
   return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
 }
 
-type Tab = 'today' | 'nutrition' | 'shopping' | 'child' | 'settings';
+type Tab = 'today' | 'firstfoods' | 'nutrition' | 'shopping' | 'child' | 'settings';
 
 const MEAL_ORDER = ['BREAKFAST', 'SNACK', 'LUNCH', 'DINNER'] as const;
 const MEAL_LABEL: Record<string, string> = { BREAKFAST: 'საუზმე', SNACK: 'სნექი', LUNCH: 'სადილი', DINNER: 'ვახშამი' };
@@ -1468,9 +1469,11 @@ function SettingsTab({ user }: { user: any }) {
 // ── Main Dashboard ────────────────────────────────────────────────────────────
 export default function DashboardClient({ user }: { user: any }) {
   const router = useRouter();
-  const [tab, setTab] = useState<Tab>('today');
+  const firstChild = user.children?.[0];
+  const defaultTab: Tab = (firstChild?.ageGroup === 'FROM_6' || firstChild?.ageGroup === 'FROM_9') ? 'firstfoods' : 'today';
+  const [tab, setTab] = useState<Tab>(defaultTab);
   const [children, setChildren] = useState<any[]>(user.children ?? []);
-  const [activeChild, setActiveChild] = useState<any>(user.children?.[0] ?? null);
+  const [activeChild, setActiveChild] = useState<any>(firstChild ?? null);
   const [allDishes, setAllDishes] = useState<any[]>([]);
   const [planStart, setPlanStart] = useState(localToday());
 
@@ -1526,11 +1529,15 @@ export default function DashboardClient({ user }: { user: any }) {
   };
 
   const isFullPlan = user.subscriptionStatus === 'FULL_PLAN';
+  const isYoungBaby = activeChild?.ageGroup === 'FROM_6' || activeChild?.ageGroup === 'FROM_9';
 
   const tabs: { key: Tab; label: string; icon: string }[] = [
-    { key: 'today', label: 'დღის გეგმა', icon: '📋' },
+    ...(isYoungBaby
+      ? [{ key: 'firstfoods' as Tab, label: 'პირველი საკვები', icon: '🍼' }]
+      : [{ key: 'today' as Tab, label: 'დღის გეგმა', icon: '📋' }]
+    ),
     { key: 'nutrition', label: 'კვება', icon: '📊' },
-    ...(isFullPlan ? [{ key: 'shopping' as Tab, label: 'საყიდლები', icon: '🛒' }] : []),
+    ...(isFullPlan && !isYoungBaby ? [{ key: 'shopping' as Tab, label: 'საყიდლები', icon: '🛒' }] : []),
     { key: 'child', label: 'შვილი', icon: '👶' },
     { key: 'settings', label: 'პარამეტრები', icon: '⚙️' },
   ];
@@ -1594,6 +1601,7 @@ export default function DashboardClient({ user }: { user: any }) {
 
       {/* Content */}
       <main className="flex-1 p-4 sm:p-6 max-w-4xl mx-auto w-full">
+        {tab === 'firstfoods' && activeChild && <FirstFoodsTab child={activeChild} />}
         {tab === 'today' && <TodayTab child={activeChild} allDishes={allDishes} planStart={planStart} />}
         {tab === 'nutrition' && <NutritionTab child={activeChild} />}
         {tab === 'shopping' && <ShoppingListTab child={activeChild} planStart={planStart} />}

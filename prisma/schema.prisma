@@ -96,9 +96,11 @@ model Child {
   userId    String
   user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
 
-  mealPlans         MealPlan[]
-  dailyLogs         DailyLog[]
-  foodIntroductions FoodIntroduction[]
+  mealPlans              MealPlan[]
+  dailyLogs              DailyLog[]
+  foodIntroductions      FoodIntroduction[]
+  babyIngredientStatuses BabyIngredientStatus[]
+  babyMealLogs           BabyMealLog[]
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -396,6 +398,80 @@ model HomePageSettings {
   plan2Feature3En    String @default("✔ Weekly meal plan with an automatic shopping list")
 
   updatedAt DateTime @updatedAt
+}
+
+// ── First Foods (6–12 months) ─────────────────────────────────────────────
+
+model BabyIngredient {
+  id           String   @id @default(cuid())
+  nameKa       String
+  nameEn       String
+  category     String   // "vegetable" | "fruit"
+  minAgeMonths Int      @default(6)
+  imageUrl     String?
+  createdAt    DateTime @default(now())
+
+  statuses     BabyIngredientStatus[]
+  suggestionLinks BabyMealSuggestionIngredient[]
+}
+
+model BabyIngredientStatus {
+  id           String         @id @default(cuid())
+  childId      String
+  child        Child          @relation(fields: [childId], references: [id], onDelete: Cascade)
+  ingredientId String
+  ingredient   BabyIngredient @relation(fields: [ingredientId], references: [id])
+
+  tried        Boolean   @default(false)
+  liked        Boolean?
+  disliked     Boolean?
+  ateWell      Boolean?
+  refused      Boolean?
+  allergic     Boolean   @default(false)
+  comment      String?
+  triedAt      DateTime?
+
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
+
+  @@unique([childId, ingredientId])
+}
+
+model BabyMealSuggestion {
+  id           String   @id @default(cuid())
+  titleKa      String
+  titleEn      String
+  minAgeMonths Int      @default(6)
+  texture      String   @default("puree") // "puree" | "mashed" | "softPieces"
+  createdAt    DateTime @default(now())
+
+  ingredientLinks BabyMealSuggestionIngredient[]
+  logs            BabyMealLog[]
+}
+
+model BabyMealSuggestionIngredient {
+  id           String             @id @default(cuid())
+  suggestionId String
+  suggestion   BabyMealSuggestion @relation(fields: [suggestionId], references: [id], onDelete: Cascade)
+  ingredientId String
+  ingredient   BabyIngredient     @relation(fields: [ingredientId], references: [id])
+
+  @@unique([suggestionId, ingredientId])
+}
+
+model BabyMealLog {
+  id           String             @id @default(cuid())
+  childId      String
+  child        Child              @relation(fields: [childId], references: [id], onDelete: Cascade)
+  suggestionId String
+  suggestion   BabyMealSuggestion @relation(fields: [suggestionId], references: [id])
+
+  ate          Boolean  @default(false)
+  liked        Boolean?
+  refused      Boolean?
+  comment      String?
+  eatenAt      DateTime @default(now())
+  createdAt    DateTime @default(now())
 }
 
 model EmailTemplate {
