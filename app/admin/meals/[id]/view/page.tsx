@@ -31,7 +31,7 @@ export default async function ViewMealPage({
 
   return (
     <div>
-      <div className="mx-auto max-w-4xl rounded-[32px] bg-white p-8 shadow-soft">
+      <div className="mx-auto max-w-4xl rounded-[32px] bg-[#FDFBF0] p-8 shadow-soft">
         {dish.imageUrl && (
           <img
             src={dish.imageUrl}
@@ -90,7 +90,7 @@ export default async function ViewMealPage({
                 return (
                   <div
                     key={nutrient.key}
-                    className="flex items-center justify-between rounded-2xl bg-white p-4"
+                    className="flex items-center justify-between rounded-2xl bg-[#FDFBF0] p-4"
                   >
                     <span className="font-semibold">{nutrient.label}</span>
                     <span className="text-on-surface-variant">
@@ -126,7 +126,7 @@ export default async function ViewMealPage({
         <div className="mt-8 flex gap-3">
           <Link
             href={`/admin/meals/${dish.id}`}
-            className="rounded-full bg-primary-container px-6 py-3 font-semibold text-white"
+            className="rounded-full bg-primary-container px-6 py-3 font-semibold text-[#FDFBF0]"
           >
             Edit
           </Link>

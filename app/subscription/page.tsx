@@ -37,7 +37,7 @@ export default function SubscriptionPage() {
         </p>
 
         <div className="grid gap-8 md:grid-cols-2">
-          <div className="rounded-[32px] bg-white p-8 shadow-soft">
+          <div className="rounded-[32px] bg-[#FDFBF0] p-8 shadow-soft">
             <h2 className="mb-3 text-2xl font-bold">Recipe Plan</h2>
             <p className="mb-2 text-4xl font-bold">15₾</p>
             <p className="mb-6 text-sm text-on-surface-variant">
@@ -52,7 +52,7 @@ export default function SubscriptionPage() {
             </button>
           </div>
 
-          <div className="rounded-[32px] border-2 border-primary-container bg-white p-8 shadow-soft">
+          <div className="rounded-[32px] border-2 border-primary-container bg-[#FDFBF0] p-8 shadow-soft">
             <h2 className="mb-3 text-2xl font-bold">Full Plan</h2>
             <p className="mb-2 text-4xl font-bold">30₾</p>
             <p className="mb-6 text-sm text-on-surface-variant">
@@ -61,7 +61,7 @@ export default function SubscriptionPage() {
             <button
               onClick={() => handleSubscribe('FULL_PLAN')}
               disabled={loadingPlan !== null}
-              className="w-full rounded-full bg-primary-container py-4 font-semibold text-white disabled:opacity-60"
+              className="w-full rounded-full bg-primary-container py-4 font-semibold text-[#FDFBF0] disabled:opacity-60"
             >
               {loadingPlan === 'FULL_PLAN' ? 'Processing...' : 'Subscribe 30₾'}
             </button>

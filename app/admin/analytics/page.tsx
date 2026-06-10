@@ -1,4 +1,4 @@
-import { prisma } from '@/lib/prisma';
+﻿import { prisma } from '@/lib/prisma';
 
 export default async function AdminAnalyticsPage() {
   const [users, planItems, recentUsers] = await Promise.all([
@@ -50,27 +50,27 @@ export default async function AdminAnalyticsPage() {
     newThisMonth > 0 ? ((activeThisMonth / newThisMonth) * 100).toFixed(1) : '0';
 
   const stats = [
-    { label: 'Total users', value: total, sub: `${newThisMonth} new this month`, color: 'text-[#241915]' },
-    { label: 'Free', value: free, sub: `${((free / Math.max(total, 1)) * 100).toFixed(0)}% of users`, color: 'text-gray-500' },
-    { label: 'Recipe plan (15₾)', value: recipe, sub: 'active', color: 'text-blue-600' },
-    { label: 'Full plan (30₾)', value: full, sub: 'active', color: 'text-green-600' },
-    { label: 'Canceled', value: canceled, sub: 'churned', color: 'text-red-500' },
-    { label: 'Blocked', value: blocked, sub: 'accounts', color: 'text-orange-500' },
-    { label: 'Conversion rate', value: `${conversionRate}%`, sub: 'free → paid', color: 'text-[#ff7f50]' },
-    { label: 'Retention (30d)', value: `${retentionRate}%`, sub: 'new → subscribed', color: 'text-purple-600' },
+    { label: 'Total users', value: total, sub: `${newThisMonth} new this month`, color: 'text-[#465940]' },
+    { label: 'Free', value: free, sub: `${((free / Math.max(total, 1)) * 100).toFixed(0)}% of users`, color: 'text-[#465940]/70' },
+    { label: 'Recipe plan (15₾)', value: recipe, sub: 'active', color: 'text-[#465940]' },
+    { label: 'Full plan (30₾)', value: full, sub: 'active', color: 'text-[#465940]' },
+    { label: 'Canceled', value: canceled, sub: 'churned', color: 'text-[#FDFBF0]' },
+    { label: 'Blocked', value: blocked, sub: 'accounts', color: 'text-[#465940]' },
+    { label: 'Conversion rate', value: `${conversionRate}%`, sub: 'free → paid', color: 'text-[#465940]' },
+    { label: 'Retention (30d)', value: `${retentionRate}%`, sub: 'new → subscribed', color: 'text-[#465940]' },
   ];
 
   return (
     <div>
       <div className="mb-8">
-        <h1 className="text-3xl font-bold text-[#241915]">Analytics</h1>
-        <p className="mt-1 text-sm text-[#57423b]">Overview of users, subscriptions and content</p>
+        <h1 className="text-3xl font-bold text-[#465940]">Analytics</h1>
+        <p className="mt-1 text-sm text-[#465940]">Overview of users, subscriptions and content</p>
       </div>
 
       <div className="mb-8 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
         {stats.map((s) => (
-          <div key={s.label} className="rounded-[20px] bg-white p-5 shadow-sm">
-            <p className="text-xs font-bold uppercase tracking-wider text-[#57423b]">{s.label}</p>
+          <div key={s.label} className="rounded-[20px] bg-[#FDFBF0] p-5 shadow-sm">
+            <p className="text-xs font-bold uppercase tracking-wider text-[#465940]">{s.label}</p>
             <p className={`mt-2 text-3xl font-black ${s.color}`}>{s.value}</p>
             <p className="mt-1 text-xs text-[#bbb]">{s.sub}</p>
           </div>
@@ -78,8 +78,8 @@ export default async function AdminAnalyticsPage() {
       </div>
 
       <div className="grid gap-6 lg:grid-cols-2">
-        <section className="rounded-[20px] bg-white p-6 shadow-sm">
-          <h2 className="mb-4 font-bold text-[#241915]">Top 10 meals (by plan usage)</h2>
+        <section className="rounded-[20px] bg-[#FDFBF0] p-6 shadow-sm">
+          <h2 className="mb-4 font-bold text-[#465940]">Top 10 meals (by plan usage)</h2>
           <div className="space-y-3">
             {planItems.map((item, i) => {
               const dish = dishMap[item.dishId];
@@ -89,14 +89,14 @@ export default async function AdminAnalyticsPage() {
               return (
                 <div key={item.dishId}>
                   <div className="flex items-center justify-between text-sm">
-                    <span className="font-semibold text-[#241915]">
+                    <span className="font-semibold text-[#465940]">
                       {i + 1}. {dish.titleEn}
                     </span>
-                    <span className="text-[#57423b]">{item._count.dishId}×</span>
+                    <span className="text-[#465940]">{item._count.dishId}×</span>
                   </div>
-                  <div className="mt-1 h-1.5 rounded-full bg-[#fff1ec]">
+                  <div className="mt-1 h-1.5 rounded-full bg-[#465940]">
                     <div
-                      className="h-1.5 rounded-full bg-[#ff7f50]"
+                      className="h-1.5 rounded-full bg-[#465940]"
                       style={{ width: `${pct}%` }}
                     />
                   </div>
@@ -109,17 +109,17 @@ export default async function AdminAnalyticsPage() {
           </div>
         </section>
 
-        <section className="rounded-[20px] bg-white p-6 shadow-sm">
-          <h2 className="mb-4 font-bold text-[#241915]">Recent registrations</h2>
+        <section className="rounded-[20px] bg-[#FDFBF0] p-6 shadow-sm">
+          <h2 className="mb-4 font-bold text-[#465940]">Recent registrations</h2>
           <div className="space-y-3">
             {recentUsers.map((u) => (
               <div key={u.email} className="flex items-center justify-between">
                 <div>
-                  <p className="text-sm font-semibold text-[#241915]">{u.name}</p>
-                  <p className="text-xs text-[#57423b]">{u.email}</p>
+                  <p className="text-sm font-semibold text-[#465940]">{u.name}</p>
+                  <p className="text-xs text-[#465940]">{u.email}</p>
                 </div>
                 <div className="text-right">
-                  <span className="rounded-full bg-[#fff8f6] px-2 py-0.5 text-xs font-bold text-[#ff7f50]">
+                  <span className="rounded-full bg-[#465940] px-2 py-0.5 text-xs font-bold text-[#465940]">
                     {u.subscriptionStatus}
                   </span>
                   <p className="mt-1 text-xs text-[#bbb]">{new Date(u.createdAt).toLocaleDateString()}</p>
@@ -129,28 +129,28 @@ export default async function AdminAnalyticsPage() {
           </div>
         </section>
 
-        <section className="rounded-[20px] bg-white p-6 shadow-sm lg:col-span-2">
-          <h2 className="mb-4 font-bold text-[#241915]">Subscription breakdown</h2>
+        <section className="rounded-[20px] bg-[#FDFBF0] p-6 shadow-sm lg:col-span-2">
+          <h2 className="mb-4 font-bold text-[#465940]">Subscription breakdown</h2>
           <div className="flex items-center gap-4 flex-wrap">
             {[
-              { label: 'Free', count: free, color: 'bg-gray-300' },
-              { label: 'Recipe 15₾', count: recipe, color: 'bg-blue-400' },
-              { label: 'Full 30₾', count: full, color: 'bg-green-400' },
-              { label: 'Canceled', count: canceled, color: 'bg-red-300' },
+              { label: 'Free', count: free, color: 'bg-[#FDFBF0]/40' },
+              { label: 'Recipe 15₾', count: recipe, color: 'bg-[#FDFBF0]/10' },
+              { label: 'Full 30₾', count: full, color: 'bg-[#465940]/60' },
+              { label: 'Canceled', count: canceled, color: 'bg-[#465940]' },
             ].map((seg) => (
               <div key={seg.label} className="flex items-center gap-2 text-sm">
                 <span className={`h-3 w-3 rounded-full ${seg.color}`} />
-                <span className="font-semibold text-[#241915]">{seg.label}</span>
-                <span className="text-[#57423b]">{seg.count}</span>
+                <span className="font-semibold text-[#465940]">{seg.label}</span>
+                <span className="text-[#465940]">{seg.count}</span>
               </div>
             ))}
           </div>
           <div className="mt-4 flex h-6 w-full overflow-hidden rounded-full">
             {[
-              { count: free, color: 'bg-gray-300' },
-              { count: recipe, color: 'bg-blue-400' },
-              { count: full, color: 'bg-green-400' },
-              { count: canceled, color: 'bg-red-300' },
+              { count: free, color: 'bg-[#FDFBF0]/40' },
+              { count: recipe, color: 'bg-[#FDFBF0]/10' },
+              { count: full, color: 'bg-[#465940]/60' },
+              { count: canceled, color: 'bg-[#465940]' },
             ].filter((s) => s.count > 0).map((seg, i) => (
               <div
                 key={i}

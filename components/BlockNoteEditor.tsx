@@ -1,4 +1,4 @@
-'use client';
+﻿'use client';
 
 import { useCreateBlockNote } from '@blocknote/react';
 import { BlockNoteView } from '@blocknote/ariakit';
@@ -39,7 +39,7 @@ export default function BlockNoteEditor({
   };
 
   return (
-    <div className="bn-container min-h-[480px] bg-white rounded-2xl border border-gray-200 overflow-hidden focus-within:border-[#ff7f50] transition-colors">
+    <div className="bn-container min-h-[480px] bg-[#FDFBF0] rounded-2xl border border-[#465940]/20 overflow-hidden focus-within:border-[#465940] transition-colors">
       <BlockNoteView
         editor={editor}
         onChange={handleChange}

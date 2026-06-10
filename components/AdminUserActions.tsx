@@ -1,4 +1,4 @@
-'use client';
+﻿'use client';
 
 import { useRouter } from 'next/navigation';
 import { useState, useRef, useEffect } from 'react';
@@ -27,8 +27,8 @@ export function BlockUserButton({ userId, isBlocked, locale = 'ka' }: { userId: 
       disabled={loading}
       className={`rounded-full px-3 py-1 text-xs font-bold transition disabled:opacity-50 ${
         isBlocked
-          ? 'bg-orange-100 text-orange-700 hover:bg-orange-200'
-          : 'bg-red-50 text-red-500 hover:bg-red-100'
+          ? 'bg-[#465940]/20 text-[#465940] hover:bg-[#465940]/30'
+          : 'bg-[#465940] text-[#FDFBF0] hover:bg-[#465940]/10'
       }`}
     >
       {loading ? '...' : isBlocked ? d.unblockBtn : d.blockBtn}
@@ -37,9 +37,9 @@ export function BlockUserButton({ userId, isBlocked, locale = 'ka' }: { userId: 
 }
 
 const GIFT_OPTIONS = [
-  { value: 'RECIPE_PLAN', label: '15₾ — რეცეპტები', color: 'text-blue-700' },
-  { value: 'FULL_PLAN', label: '30₾ — სრული', color: 'text-green-700' },
-  { value: 'FREE', label: 'გაუქმება', color: 'text-red-500' },
+  { value: 'RECIPE_PLAN', label: '15₾ — რეცეპტები', color: 'text-[#465940]' },
+  { value: 'FULL_PLAN', label: '30₾ — სრული', color: 'text-[#465940]' },
+  { value: 'FREE', label: 'გაუქმება', color: 'text-[#FDFBF0]' },
 ];
 
 export function GiftSubscriptionButton({ userId, currentStatus, isGifted }: { userId: string; currentStatus: string; isGifted: boolean }) {
@@ -79,19 +79,19 @@ export function GiftSubscriptionButton({ userId, currentStatus, isGifted }: { us
         disabled={loading}
         className={`rounded-full px-3 py-1 text-xs font-bold transition disabled:opacity-50 flex items-center gap-1 ${
           hasGift
-            ? 'bg-purple-100 text-purple-700 hover:bg-purple-200'
-            : 'bg-gray-100 text-gray-500 hover:bg-gray-200'
+            ? 'bg-[#FDFBF0]/10 text-[#465940] hover:bg-[#FDFBF0]/10'
+            : 'bg-[#465940]/10 text-[#465940]/70 hover:bg-[#465940]/15'
         }`}
       >
         {loading ? '...' : hasGift ? '🎁 გაჩუქებული' : '🎁 გაჩუქება'}
       </button>
       {open && (
-        <div className="absolute right-0 top-full mt-1 bg-white border border-gray-100 rounded-xl shadow-lg z-50 min-w-[160px] py-1 overflow-hidden">
+        <div className="absolute right-0 top-full mt-1 bg-[#FDFBF0] border border-[#465940]/10 rounded-xl shadow-lg z-50 min-w-[160px] py-1 overflow-hidden">
           {GIFT_OPTIONS.filter(o => o.value !== currentStatus).map(opt => (
             <button
               key={opt.value}
               onClick={() => gift(opt.value)}
-              className={`w-full text-left px-4 py-2 text-xs font-semibold hover:bg-gray-50 transition ${opt.color}`}
+              className={`w-full text-left px-4 py-2 text-xs font-semibold hover:bg-[#465940]/5 transition ${opt.color}`}
             >
               {opt.label}
             </button>
@@ -126,8 +126,8 @@ export function ToggleAdminButton({ userId, role, locale = 'ka' }: { userId: str
       disabled={loading}
       className={`rounded-full px-3 py-1 text-xs font-bold transition disabled:opacity-50 ${
         isAdmin
-          ? 'bg-[#fff1ec] text-[#ff7f50] hover:bg-orange-100'
-          : 'bg-gray-100 text-gray-500 hover:bg-gray-200'
+          ? 'bg-[#465940] text-[#465940] hover:bg-[#465940]/20'
+          : 'bg-[#465940]/10 text-[#465940]/70 hover:bg-[#465940]/15'
       }`}
     >
       {loading ? '...' : isAdmin ? d.adminRole : d.makeAdmin}

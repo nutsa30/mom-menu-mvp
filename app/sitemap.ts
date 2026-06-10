@@ -1,7 +1,7 @@
-import { MetadataRoute } from 'next';
+﻿import { MetadataRoute } from 'next';
 import { prisma } from '@/lib/prisma';
 
-const SITE_URL = process.env.NEXT_PUBLIC_APP_URL || 'https://momeals.ge';
+const SITE_URL = process.env.NEXT_PUBLIC_APP_URL || 'https://mom menu.ge';
 
 function alternates(path: string) {
   return {
@@ -70,3 +70,4 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
 
   return [...staticPages, ...blogPages];
 }
+

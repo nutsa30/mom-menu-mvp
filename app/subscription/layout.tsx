@@ -1,7 +1,7 @@
 import type { Metadata } from 'next';
 
 export const metadata: Metadata = {
-  title: 'გამოწერა — moMeals',
+  title: 'გამოწერა — mom menu',
   robots: { index: false, follow: false },
 };
 

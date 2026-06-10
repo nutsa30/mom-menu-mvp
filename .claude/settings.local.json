@@ -10,7 +10,23 @@
       "Read(//c/Users/gstore/Downloads/**)",
       "Bash(cp \"C:/Users/gstore/Downloads/Como Surgiu o Dia das Mães_.jpg\" \"C:/Users/gstore/OneDrive/Desktop/mom-menu-mvp/public/cooking.jpg\" && echo \"OK\")",
       "Bash(npx prisma *)",
-      "WebFetch(domain:images.unsplash.com)"
+      "WebFetch(domain:images.unsplash.com)",
+      "Bash(git add *)",
+      "Bash(git commit -m ' *)",
+      "Bash(npm install *)",
+      "Bash(node -e \"const bn = require\\('@blocknote/core'\\); console.log\\(Object.keys\\(bn\\).slice\\(0,10\\)\\)\")",
+      "Bash(cat next.config.ts)",
+      "Bash(cat next.config.js)",
+      "Bash(cat next.config.mjs)",
+      "PowerShell(cd \"c:\\\\Users\\\\gstore\\\\OneDrive\\\\Desktop\\\\mom-menu-mvp\"; $publicFiles = @\\('app/about/page.tsx','app/how-it-works/page.tsx','app/login/page.tsx','app/register/page.tsx','app/signup/page.tsx','app/not-found.tsx','app/error.tsx','app/terms/page.tsx','app/privacy/page.tsx','app/forgot-password/page.tsx','app/change-password/page.tsx','app/meals/[id]/MealDetailClient.tsx'\\); foreach \\($f in $publicFiles\\) { if \\(Test-Path $f\\) { $c = Get-Content $f -Raw; $c = $c -replace '#ff7f50', '#2d5a27'; $c = $c -replace '#e86e40', '#1d3b18'; $c = $c -replace '#fff1ec', '#edf5e8'; $c = $c -replace '#fff8f6', '#f9f5ef'; $c = $c -replace '#fef3ef', '#f0f8ee'; $c = $c -replace '#ffb08a', '#bbf7d0'; $c = $c -replace '#ffdbcf', '#edf5e8'; $c = $c -replace 'orange-100', 'green-100'; $c | Out-File $f -Encoding utf8; Write-Host \"Updated $f\" } })",
+      "PowerShell(cd \"c:\\\\Users\\\\gstore\\\\OneDrive\\\\Desktop\\\\mom-menu-mvp\"; $publicComponents = @\\('components/CookieBanner.tsx','components/RecipesClient.tsx'\\); foreach \\($f in $publicComponents\\) { if \\(Test-Path $f\\) { $c = Get-Content $f -Raw; $c = $c -replace '#ff7f50', '#2d5a27'; $c = $c -replace '#e86e40', '#1d3b18'; $c = $c -replace '#fff1ec', '#edf5e8'; $c = $c -replace '#fff8f6', '#f9f5ef'; $c = $c -replace 'orange-100', 'green-100'; $c | Out-File $f -Encoding utf8; Write-Host \"Updated $f\" } })",
+      "Bash(grep -iE \"\\\\.\\(jpg|jpeg|png|webp\\)$\")",
+      "PowerShell(Get-ChildItem \"c:\\\\Users\\\\gstore\\\\OneDrive\\\\Desktop\\\\mom-menu-mvp\\\\public\\\\\" | Where-Object { $_.Name -match 'baby' })",
+      "Bash(node -e ' *)",
+      "Bash(node fix-colors.js)",
+      "Bash(del fix-colors.js fix-colors2.js fix-colors3.js)",
+      "Bash(Remove-Item fix-colors.js, fix-colors2.js, fix-colors3.js -ErrorAction SilentlyContinue)",
+      "Bash(Write-Output \"Cleaned up\")"
     ],
     "additionalDirectories": [
       "C:\\Users\\gstore\\Downloads"

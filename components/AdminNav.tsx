@@ -45,35 +45,32 @@ export default function AdminNav() {
   };
 
   const navItems = [
-    { key: 'dashboard', label: d.dashboard, href: '/admin' },
-    { key: 'mealManager', label: d.mealManager, href: '/admin/meals' },
-    { key: 'blogs', label: d.blogs, href: '/admin/blogs' },
-    { key: 'userStats', label: d.userStats, href: '/admin/users' },
-    { key: 'ingredients', label: d.ingredientsNav, href: '/admin/ingredients' },
-    { key: 'settings', label: d.settings, href: '/admin/settings' },
-    { key: 'howItWorks', label: locale === 'ka' ? 'როგორ მუშაობს' : 'How it works', href: '/admin/how-it-works' },
-    { key: 'promo', label: locale === 'ka' ? 'პრომოკოდები' : 'Promo codes', href: '/admin/promo' },
-    { key: 'homepage', label: locale === 'ka' ? 'მთავარი გვერდი' : 'Home page', href: '/admin/homepage' },
+    { key: 'homepage',  label: locale === 'ka' ? 'მთავარი გვერდი'  : 'Home page',    href: '/admin/homepage' },
+    { key: 'mealManager', label: d.mealManager,                                        href: '/admin/meals' },
+    { key: 'blogs',     label: d.blogs,                                                href: '/admin/blogs' },
+    { key: 'howItWorks', label: locale === 'ka' ? 'როგორ მუშაობს' : 'How it works',  href: '/admin/how-it-works' },
+    { key: 'promo',     label: locale === 'ka' ? 'პრომოკოდები'    : 'Promo codes',   href: '/admin/promo' },
+    { key: 'userStats', label: d.userStats,                                            href: '/admin/users' },
+    { key: 'ingredients', label: d.ingredientsNav,                                     href: '/admin/ingredients' },
+    { key: 'settings',  label: d.settings,                                             href: '/admin/settings' },
   ] as const;
 
   const SidebarContent = () => (
     <>
       {/* Brand */}
-      <div className="px-6 py-5 border-b border-gray-100 flex items-center justify-between">
-        <span className="text-lg font-extrabold tracking-tight">
-          <span style={{ color: '#2b1d18' }}>mo</span>
-          <span className="text-orange-500">M</span>
-          <span style={{ color: '#2b1d18' }}>eals</span>
-          <span className="ml-2 text-sm font-semibold text-gray-400">Admin</span>
+      <div className="px-6 py-5 border-b border-[#FDFBF0]/20 flex items-center justify-between">
+        <span className="text-lg font-extrabold tracking-tight text-[#FDFBF0]">
+          mom menu
+          <span className="ml-2 text-sm font-semibold text-[#FDFBF0]/50">Admin</span>
         </span>
         <div className="flex items-center gap-2">
           <button onClick={switchLang}
-            className="text-xs font-bold px-2.5 py-1 rounded-full border border-gray-200 text-gray-500 hover:border-[#ff7f50] hover:text-[#ff7f50] transition">
+            className="text-xs font-bold px-2.5 py-1 rounded-full border border-[#FDFBF0]/20 text-[#FDFBF0]/70 hover:border-[#FDFBF0]/50 hover:text-[#FDFBF0] transition">
             {locale === 'ka' ? 'EN' : 'ქარ'}
           </button>
           {/* Close button on mobile */}
           <button onClick={() => setOpen(false)}
-            className="lg:hidden p-1 rounded-lg text-gray-400 hover:text-gray-600 transition">
+            className="lg:hidden p-1 rounded-lg text-[#FDFBF0]/60 hover:text-[#FDFBF0] transition">
             <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
           </button>
         </div>
@@ -87,9 +84,9 @@ export default function AdminNav() {
             <a key={item.href} href={withLang(item.href)}
               onClick={() => setOpen(false)}
               className={`flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition ${
-                active ? 'bg-[#e8f5f0] text-[#2d7a5f]' : 'text-gray-500 hover:bg-gray-50 hover:text-gray-800'
+                active ? 'bg-[#FDFBF0]/15 text-[#FDFBF0]' : 'text-[#FDFBF0]/60 hover:bg-[#FDFBF0]/10 hover:text-[#FDFBF0]'
               }`}>
-              <span className={active ? 'text-[#2d7a5f]' : 'text-gray-400'}>
+              <span className={active ? 'text-[#FDFBF0]' : 'text-[#FDFBF0]/40'}>
                 {NAV_ICONS[item.key]}
               </span>
               {item.label}
@@ -102,11 +99,12 @@ export default function AdminNav() {
       <div className="px-3 pb-6 space-y-1.5">
         <a href={withLang('/admin/meals/new')}
           onClick={() => setOpen(false)}
-          className="flex items-center justify-center gap-2 w-full bg-[#ff7f50] hover:bg-[#e86e40] text-white text-sm font-bold py-3 rounded-full transition">
+          className="flex items-center justify-center gap-2 w-full text-[#465940] text-sm font-bold py-3 rounded-full transition"
+          style={{ background: '#FDFBF0' }}>
           {d.addRecipe}
         </a>
         <button onClick={handleLogout}
-          className="flex items-center gap-3 w-full px-3 py-2.5 rounded-xl text-sm font-medium text-gray-500 hover:bg-gray-50 hover:text-gray-800 transition">
+          className="flex items-center gap-3 w-full px-3 py-2.5 rounded-xl text-sm font-medium text-[#FDFBF0]/60 hover:bg-[#FDFBF0]/10 hover:text-[#FDFBF0] transition">
           {NAV_ICONS.logout}
           {d.logout}
         </button>
@@ -117,15 +115,13 @@ export default function AdminNav() {
   return (
     <>
       {/* Mobile top bar */}
-      <div className="lg:hidden fixed top-0 left-0 right-0 z-40 bg-white border-b border-gray-100 px-4 py-3 flex items-center justify-between">
-        <span className="text-base font-extrabold tracking-tight">
-          <span style={{ color: '#2b1d18' }}>mo</span>
-          <span className="text-orange-500">M</span>
-          <span style={{ color: '#2b1d18' }}>eals</span>
-          <span className="ml-1.5 text-xs font-semibold text-gray-400">Admin</span>
+      <div className="lg:hidden fixed top-0 left-0 right-0 z-40 border-b border-[#FDFBF0]/10 px-4 py-3 flex items-center justify-between" style={{ background: '#465940' }}>
+        <span className="text-base font-extrabold tracking-tight text-[#FDFBF0]">
+          mom menu
+          <span className="ml-1.5 text-xs font-semibold text-[#FDFBF0]/50">Admin</span>
         </span>
         <button onClick={() => setOpen(true)}
-          className="p-2 rounded-xl text-gray-500 hover:bg-gray-100 transition">
+          className="p-2 rounded-xl text-[#FDFBF0]/70 hover:bg-[#FDFBF0]/10 transition">
           <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/></svg>
         </button>
       </div>
@@ -138,11 +134,11 @@ export default function AdminNav() {
       {/* Sidebar — mobile: slide-in drawer, desktop: always visible */}
       <aside className={`
         fixed lg:static inset-y-0 left-0 z-50
-        w-60 flex-shrink-0 bg-white border-r border-gray-100 min-h-screen flex flex-col
+        w-60 flex-shrink-0 border-r border-[#FDFBF0]/10 min-h-screen flex flex-col
         transform transition-transform duration-200
         ${open ? 'translate-x-0' : '-translate-x-full'}
         lg:translate-x-0
-      `}>
+      `} style={{ background: '#465940' }}>
         <SidebarContent />
       </aside>
     </>

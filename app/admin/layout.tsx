@@ -9,7 +9,7 @@ export const metadata: Metadata = {
 export default async function AdminLayout({ children }: { children: React.ReactNode }) {
   await requireAdmin();
   return (
-    <div className="flex min-h-screen bg-[#fdf6f3]">
+    <div className="flex min-h-screen bg-[#465940]">
       <AdminNav />
       <div className="flex-1 overflow-auto pt-14 lg:pt-0">{children}</div>
     </div>

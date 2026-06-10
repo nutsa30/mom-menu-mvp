@@ -2,11 +2,11 @@ import { prisma } from '@/lib/prisma';
 import HomeClient from './HomeClient';
 import type { Metadata } from 'next';
 
-const SITE_URL = process.env.NEXT_PUBLIC_APP_URL || 'https://momeals.ge';
+const SITE_URL = process.env.NEXT_PUBLIC_APP_URL || 'https://mommenu.ge';
 
 export const metadata: Metadata = {
-  title: 'moMeals — პერსონალური კვების გეგმა ბავშვისთვის',
-  description: 'შექმენი შენი ბავშვის ასაკისა და გემოვნების მიხედვით მორგებული კვების გეგმა. ასობით რეცეპტი, ალერგენების გათვალისწინება და ავტომატური საყიდლების სია.',
+  title: 'mom menu — პერსონალური კვების გეგმა ბავშვისთვის',
+  description: 'შექმენი შენი ბავშვის ასაკის და გემოვნების მიხედვით მარგებული კვების გეგმა. ასობით რეცეპტი, ალერგენების გათვალისწინება და ავტომატური საყიდლების სია.',
   alternates: {
     canonical: '/',
     languages: {
@@ -16,13 +16,13 @@ export const metadata: Metadata = {
     },
   },
   openGraph: {
-    title: 'moMeals — პერსონალური კვების გეგმა ბავშვისთვის',
-    description: 'შექმენი შენი ბავშვის ასაკისა და გემოვნების მიხედვით მორგებული კვების გეგმა.',
+    title: 'mom menu — პერსონალური კვების გეგმა ბავშვისთვის',
+    description: 'შექმენი შენი ბავშვის ასაკის და გემოვნების მიხედვით მარგებული კვების გეგმა.',
     url: '/',
     images: [{
       url: `/og?title=Personal+Meal+Plans+for+Your+Child&sub=Hundreds+of+recipes%2C+allergy-aware+%26+personalized`,
       width: 1200, height: 630,
-      alt: 'moMeals — ბავშვის კვების გეგმა',
+      alt: 'mom menu — ბავშვის კვების გეგმა',
     }],
   },
 };
@@ -43,7 +43,7 @@ export default async function Home() {
       where: { isPublished: true },
       orderBy: { createdAt: 'desc' },
       take: 3,
-      select: { id: true, titleKa: true, titleEn: true, imageUrl: true, createdAt: true, contentKa: true, contentEn: true },
+      select: { id: true, slug: true, titleKa: true, titleEn: true, imageUrl: true, createdAt: true, contentKa: true, contentEn: true },
     }),
   ]);
 
@@ -52,7 +52,7 @@ export default async function Home() {
   const websiteJsonLd = {
     '@context': 'https://schema.org',
     '@type': 'WebSite',
-    name: 'moMeals',
+    name: 'mom menu',
     url: SITE_URL,
     description: 'პერსონალური ყოველდღიური კვების გეგმა ბავშვებისთვის',
     inLanguage: ['ka', 'en'],
@@ -66,9 +66,9 @@ export default async function Home() {
   const orgJsonLd = {
     '@context': 'https://schema.org',
     '@type': 'Organization',
-    name: 'moMeals',
+    name: 'mom menu',
     url: SITE_URL,
-    logo: `${SITE_URL}/og?title=moMeals&sub=momeals.ge`,
+    logo: `${SITE_URL}/og?title=mom+menu`,
     sameAs: [],
     contactPoint: {
       '@type': 'ContactPoint',

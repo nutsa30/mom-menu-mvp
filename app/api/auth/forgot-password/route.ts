@@ -1,4 +1,4 @@
-import { prisma } from '@/lib/prisma';
+﻿import { prisma } from '@/lib/prisma';
 import { hashPassword } from '@/lib/auth';
 import { sendEmail } from '@/lib/email';
 import { NextResponse } from 'next/server';
@@ -24,19 +24,20 @@ export async function POST(req: Request) {
 
   await sendEmail(
     email,
-    'moMeals — დროებითი პაროლი',
+    'mom menu â€” áƒ“áƒ áƒáƒ”áƒ‘áƒ˜áƒ—áƒ˜ áƒžáƒáƒ áƒáƒšáƒ˜',
     `
-    <div style="font-family:sans-serif;max-width:480px;margin:auto;padding:32px;background:#fff8f6;border-radius:16px;">
-      <h2 style="color:#ff7f50;margin-bottom:8px;">moMeals</h2>
-      <p style="color:#555;">შენი დროებითი პაროლია:</p>
-      <div style="font-size:28px;font-weight:bold;letter-spacing:4px;color:#241915;background:#fff1ec;padding:16px 24px;border-radius:12px;margin:16px 0;text-align:center;">
+    <div style="font-family:sans-serif;max-width:480px;margin:auto;padding:32px;background:#465940;border-radius:16px;">
+      <h2 style="color:#465940;margin-bottom:8px;">mom menu</h2>
+      <p style="color:#555;">áƒ¨áƒ”áƒœáƒ˜ áƒ“áƒ áƒáƒ”áƒ‘áƒ˜áƒ—áƒ˜ áƒžáƒáƒ áƒáƒšáƒ˜áƒ:</p>
+      <div style="font-size:28px;font-weight:bold;letter-spacing:4px;color:#465940;background:#F4F0EA;padding:16px 24px;border-radius:12px;margin:16px 0;text-align:center;">
         ${tempPassword}
       </div>
-      <p style="color:#555;font-size:14px;">შესვლის შემდეგ გთხოვ დაუყოვნებლივ შეცვალო პაროლი.</p>
-      <p style="color:#aaa;font-size:12px;margin-top:24px;">თუ ამ მოთხოვნას ვერ ცნობ, უგულვებელყავი ეს ემეილი.</p>
+      <p style="color:#555;font-size:14px;">áƒ¨áƒ”áƒ¡áƒ•áƒšáƒ˜áƒ¡ áƒ¨áƒ”áƒ›áƒ“áƒ”áƒ’ áƒ’áƒ—áƒ®áƒáƒ• áƒ“áƒáƒ£áƒ§áƒáƒ•áƒœáƒ”áƒ‘áƒšáƒ˜áƒ• áƒ¨áƒ”áƒªáƒ•áƒáƒšáƒ áƒžáƒáƒ áƒáƒšáƒ˜.</p>
+      <p style="color:#aaa;font-size:12px;margin-top:24px;">áƒ—áƒ£ áƒáƒ› áƒ›áƒáƒ—áƒ®áƒáƒ•áƒœáƒáƒ¡ áƒ•áƒ”áƒ  áƒªáƒœáƒáƒ‘, áƒ£áƒ’áƒ£áƒšáƒ•áƒ”áƒ‘áƒ”áƒšáƒ§áƒáƒ•áƒ˜ áƒ”áƒ¡ áƒ”áƒ›áƒ”áƒ˜áƒšáƒ˜.</p>
     </div>
     `
   );
 
   return NextResponse.json({ success: true });
 }
+

@@ -1,4 +1,4 @@
-'use client';
+﻿'use client';
 
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
@@ -35,26 +35,26 @@ export default function MealDetailClient({ dish }: { dish: any }) {
 
   if (!canViewRecipe) {
     return (
-      <main className="min-h-screen bg-[#fff8f6] px-6 py-10">
+      <main className="min-h-screen bg-[#465940] px-6 py-10">
         <div className="max-w-3xl mx-auto">
-          <Link href="/dashboard" className="text-[#ff7f50] font-semibold">
+          <Link href="/dashboard" className="text-[#465940] font-semibold">
             ← Back to dashboard
           </Link>
-          <div className="mt-8 bg-white rounded-[40px] shadow-xl overflow-hidden">
+          <div className="mt-8 bg-[#FDFBF0] rounded-[40px] shadow-xl overflow-hidden">
             {dish.imageUrl && (
               <img src={dish.imageUrl} alt={dish.titleEn || dish.titleKa} className="w-full h-[420px] object-cover" />
             )}
             <div className="p-10 text-center">
-              <div className="w-24 h-24 rounded-full bg-[#fff1ec] flex items-center justify-center text-5xl mx-auto mb-6">
+              <div className="w-24 h-24 rounded-full bg-[#465940] flex items-center justify-center text-5xl mx-auto mb-6">
                 🔒
               </div>
-              <h1 className="text-4xl font-bold mb-4 text-[#241915]">Recipe Locked</h1>
-              <p className="text-gray-600 text-lg mb-8 leading-8">
+              <h1 className="text-4xl font-bold mb-4 text-[#465940]">Recipe Locked</h1>
+              <p className="text-[#465940]/80 text-lg mb-8 leading-8">
                 რეცეპტის სანახავად საჭიროა 15₾ Recipe Plan ან 30₾ Full Plan.
               </p>
               <Link
                 href="/subscription"
-                className="inline-flex items-center justify-center rounded-full bg-[#ff7f50] px-8 py-4 font-semibold text-white shadow-lg hover:scale-105 transition"
+                className="inline-flex items-center justify-center rounded-full bg-[#465940] px-8 py-4 font-semibold text-[#FDFBF0] shadow-lg hover:scale-105 transition"
               >
                 Upgrade subscription
               </Link>
@@ -66,34 +66,34 @@ export default function MealDetailClient({ dish }: { dish: any }) {
   }
 
   return (
-    <main className="min-h-screen bg-[#fff8f6] px-6 py-10">
+    <main className="min-h-screen bg-[#465940] px-6 py-10">
       <div className="max-w-5xl mx-auto">
-        <Link href="/dashboard" className="text-[#ff7f50] font-semibold">
+        <Link href="/dashboard" className="text-[#465940] font-semibold">
           ← Back to dashboard
         </Link>
-        <div className="mt-8 bg-white rounded-[40px] shadow-xl overflow-hidden">
+        <div className="mt-8 bg-[#FDFBF0] rounded-[40px] shadow-xl overflow-hidden">
           {dish.imageUrl && (
             <img src={dish.imageUrl} alt={dish.titleEn || dish.titleKa} className="w-full h-[420px] object-cover" />
           )}
           <div className="p-10">
-            <span className="inline-block mb-4 px-4 py-1 rounded-full bg-[#ffe9e3] text-[#a43c12] font-semibold">
+            <span className="inline-block mb-4 px-4 py-1 rounded-full bg-[#465940] text-[#a43c12] font-semibold">
               {dish.mealType}
             </span>
             <h1 className="text-4xl font-bold mb-2">{dish.titleKa}</h1>
-            <p className="text-gray-500 mb-8">{dish.titleEn}</p>
+            <p className="text-[#465940]/70 mb-8">{dish.titleEn}</p>
 
             <div className="grid md:grid-cols-2 gap-8 mb-10">
               <div>
                 <h2 className="text-xl font-bold mb-3">აღწერა</h2>
-                <p className="text-gray-700 leading-7">{dish.descriptionKa}</p>
+                <p className="text-[#465940] leading-7">{dish.descriptionKa}</p>
               </div>
               <div>
                 <h2 className="text-xl font-bold mb-3">Description</h2>
-                <p className="text-gray-700 leading-7">{dish.descriptionEn}</p>
+                <p className="text-[#465940] leading-7">{dish.descriptionEn}</p>
               </div>
             </div>
 
-            <section className="mb-10 rounded-3xl bg-[#fff8f6] p-6">
+            <section className="mb-10 rounded-3xl bg-[#465940] p-6">
               <h2 className="mb-4 text-xl font-bold">ვიტამინები და მინერალები</h2>
               <div className="flex flex-wrap gap-3">
                 {nutrients.map((nutrient) => {
@@ -101,8 +101,8 @@ export default function MealDetailClient({ dish }: { dish: any }) {
                   const level = getLevel(value);
                   if (!level) return null;
                   return (
-                    <span key={nutrient.key} className="inline-flex items-center gap-2 rounded-full bg-white px-4 py-2 text-sm font-semibold text-gray-700">
-                      <span className={`h-4 w-4 rounded-full ${level === 'good' ? 'bg-green-500' : 'bg-orange-400'}`} />
+                    <span key={nutrient.key} className="inline-flex items-center gap-2 rounded-full bg-[#FDFBF0] px-4 py-2 text-sm font-semibold text-[#465940]">
+                      <span className={`h-4 w-4 rounded-full ${level === 'good' ? 'bg-[#465940]' : 'bg-[#FDFBF0]/10'}`} />
                       {nutrient.label}
                     </span>
                   );
@@ -111,16 +111,16 @@ export default function MealDetailClient({ dish }: { dish: any }) {
             </section>
 
             <div className="grid sm:grid-cols-3 gap-4 mb-10">
-              <div className="bg-[#fff8f6] p-5 rounded-2xl">
-                <p className="text-sm text-gray-500">Calories</p>
+              <div className="bg-[#465940] p-5 rounded-2xl">
+                <p className="text-sm text-[#465940]/70">Calories</p>
                 <p className="text-2xl font-bold">{dish.calories || '-'} kcal</p>
               </div>
-              <div className="bg-[#fff8f6] p-5 rounded-2xl">
-                <p className="text-sm text-gray-500">Protein</p>
+              <div className="bg-[#465940] p-5 rounded-2xl">
+                <p className="text-sm text-[#465940]/70">Protein</p>
                 <p className="text-2xl font-bold">{dish.proteinGrams || '-'} g</p>
               </div>
-              <div className="bg-[#fff8f6] p-5 rounded-2xl">
-                <p className="text-sm text-gray-500">Age groups</p>
+              <div className="bg-[#465940] p-5 rounded-2xl">
+                <p className="text-sm text-[#465940]/70">Age groups</p>
                 <p className="text-lg font-bold">{dish.ageGroups?.join(', ')}</p>
               </div>
             </div>
@@ -128,13 +128,13 @@ export default function MealDetailClient({ dish }: { dish: any }) {
             <div className="grid md:grid-cols-2 gap-8">
               <div>
                 <h2 className="text-xl font-bold mb-3">ინგრედიენტები</h2>
-                <ul className="list-disc pl-5 space-y-2 text-gray-700">
+                <ul className="list-disc pl-5 space-y-2 text-[#465940]">
                   {dish.ingredientsKa?.map((item: string) => <li key={item}>{item}</li>)}
                 </ul>
               </div>
               <div>
                 <h2 className="text-xl font-bold mb-3">Ingredients</h2>
-                <ul className="list-disc pl-5 space-y-2 text-gray-700">
+                <ul className="list-disc pl-5 space-y-2 text-[#465940]">
                   {dish.ingredientsEn?.map((item: string) => <li key={item}>{item}</li>)}
                 </ul>
               </div>

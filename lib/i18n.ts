@@ -1,8 +1,8 @@
-export type Locale = 'ka' | 'en';
+﻿export type Locale = 'ka' | 'en';
 
 export const dict = {
   ka: {
-    brand: 'დედის მენიუ',
+    brand: 'mom menu',
     navHome: 'მთავარი',
     login: 'შესვლა',
     register: 'რეგისტრაცია',
@@ -20,7 +20,7 @@ export const dict = {
     feature2Desc: 'მარტივი რეცეპტები და სავაჭრო სიები კვირაში საათებს დაგიზოგავს.',
     feature3Title: 'მორგებული კაპრიზულ მჭამელებზე',
     feature3Desc: 'გეგმები ადაპტირდება ბავშვის გემოვნებაზე და ამასთან ახალ კერძებს აცნობს.',
-    sampleTitle: 'moMeals-ის გემო',
+    sampleTitle: 'mom menu-ის გემო',
     sampleSubtitle: 'გაეცანი ტიპიურ ყოველდღიურ კვების გეგმას.',
     pricingTitle: 'მარტივი, გამჭვირვალე ფასები',
     pricingSubtitle: 'აირჩიე შენი ოჯახისთვის შესაფერი გეგმა. გაუქმება ნებისმიერ დროს.',
@@ -96,7 +96,7 @@ export const dict = {
     feature2Desc: 'Simple recipes and smart shopping lists save you hours every week.',
     feature3Title: 'Tailored for Picky Eaters',
     feature3Desc: 'Plans adapt to your child\'s taste while introducing new foods.',
-    sampleTitle: 'A Taste of moMeals',
+    sampleTitle: 'A Taste of mom menu',
     sampleSubtitle: 'Explore a typical daily meal plan for your child.',
     pricingTitle: 'Simple, Transparent Pricing',
     pricingSubtitle: 'Choose the plan that fits your family. Cancel anytime.',

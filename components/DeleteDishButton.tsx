@@ -1,4 +1,4 @@
-'use client';
+﻿'use client';
 
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
@@ -23,17 +23,17 @@ export default function DeleteDishButton({ id }: { id: string }) {
   if (confirming) {
     return (
       <div className="flex items-center gap-2">
-        <span className="text-xs text-gray-500">დარწმუნებული ხარ?</span>
+        <span className="text-xs text-[#465940]/70">დარწმუნებული ხარ?</span>
         <button
           onClick={handleDelete}
           disabled={deleting}
-          className="text-xs font-bold text-white bg-red-500 hover:bg-red-600 px-2.5 py-1 rounded-full transition disabled:opacity-60"
+          className="text-xs font-bold text-[#FDFBF0] bg-[#465940] hover:bg-[#465940] px-2.5 py-1 rounded-full transition disabled:opacity-60"
         >
           {deleting ? '...' : 'კი'}
         </button>
         <button
           onClick={() => setConfirming(false)}
-          className="text-xs font-bold text-gray-500 hover:text-gray-700 transition"
+          className="text-xs font-bold text-[#465940]/70 hover:text-[#465940] transition"
         >
           არა
         </button>
@@ -44,7 +44,7 @@ export default function DeleteDishButton({ id }: { id: string }) {
   return (
     <button
       onClick={() => setConfirming(true)}
-      className="text-gray-400 hover:text-red-500 transition"
+      className="text-[#465940]/60 hover:text-[#FDFBF0] transition"
       title="წაშლა"
     >
       <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">

@@ -1,4 +1,4 @@
-'use client';
+﻿'use client';
 
 import { useRouter, usePathname, useSearchParams } from 'next/navigation';
 
@@ -60,12 +60,12 @@ export default function UsersFilterBar({
             onClick={() => handleTabClick(tab.key)}
             className={`px-4 py-2 rounded-full text-sm font-bold transition flex items-center gap-2 ${
               activeTab === tab.key
-                ? 'bg-[#ff7f50] text-white'
-                : 'bg-white border border-gray-200 text-gray-500 hover:border-[#ff7f50] hover:text-[#ff7f50]'
+                ? 'bg-[#465940] text-[#FDFBF0]'
+                : 'bg-[#FDFBF0] border border-[#465940]/20 text-[#465940]/70 hover:border-[#465940] hover:text-[#FDFBF0]'
             }`}
           >
             {tab.label}
-            <span className={`text-xs px-1.5 py-0.5 rounded-full ${activeTab === tab.key ? 'bg-white/20' : 'bg-gray-100'}`}>
+            <span className={`text-xs px-1.5 py-0.5 rounded-full ${activeTab === tab.key ? 'bg-[#FDFBF0]/20' : 'bg-[#465940]/10'}`}>
               {counts[tab.key] ?? 0}
             </span>
           </button>
@@ -77,7 +77,7 @@ export default function UsersFilterBar({
         <select
           value={activePromo}
           onChange={handlePromoChange}
-          className="border border-gray-200 rounded-full px-4 py-2 text-sm font-semibold text-gray-600 focus:outline-none focus:border-[#ff7f50] bg-white cursor-pointer"
+          className="border border-[#465940]/20 rounded-full px-4 py-2 text-sm font-semibold text-[#465940]/80 focus:outline-none focus:border-[#465940] bg-[#FDFBF0] cursor-pointer"
         >
           <option value="">ყველა კოდი</option>
           {visibleCodes.map((c) => (

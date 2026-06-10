@@ -4,17 +4,17 @@ import { getSession } from '@/lib/auth';
 import type { Metadata } from 'next';
 
 export const metadata: Metadata = {
-  title: 'როგორ მუშაობს — moMeals',
-  description: 'სამი მარტივი ნაბიჯი: დაარეგისტრირე ბავშვი, მიუთითე ალერგენები და გემოვნება — და მიიღე პერსონალური კვების გეგმა. გაეცანი როგორ მუშაობს moMeals.',
+  title: 'როგორ მუშაობს — mom menu',
+  description: 'სამი მარტივი ნაბიჯი: დაარეგისტრირე ბავშვი, მიუთითე ალერგენები და გემოვნება — და მიიღე პერსონალური კვების გეგმა. გაეცანი როგორ მუშაობს mom menu.',
   alternates: {
     canonical: '/how-it-works',
     languages: { 'ka': '/how-it-works?lang=ka', 'en': '/how-it-works?lang=en', 'x-default': '/how-it-works' },
   },
   openGraph: {
-    title: 'როგორ მუშაობს — moMeals',
-    description: 'სამი მარტივი ნაბიჯი პერსონალური კვების გეგმისთვის. გაეცანი როგორ მუშაობს moMeals.',
+    title: 'როგორ მუშაობს — mom menu',
+    description: 'სამი მარტივი ნაბიჯი პერსონალური კვების გეგმისთვის. გაეცანი როგორ მუშაობს mom menu.',
     url: '/how-it-works',
-    images: [{ url: `/og?title=How+moMeals+Works&sub=3+steps+to+a+personalized+meal+plan+for+your+child`, width: 1200, height: 630, alt: 'How moMeals Works' }],
+    images: [{ url: `/og?title=How+mom menu+Works&sub=3+steps+to+a+personalized+meal+plan+for+your+child`, width: 1200, height: 630, alt: 'How mom menu Works' }],
   },
 };
 
@@ -46,17 +46,17 @@ export default async function HowItWorksPage({ searchParams }: { searchParams: {
   return (
     <>
     {faqJsonLd && <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(faqJsonLd) }} />}
-    <main className="min-h-screen bg-[#fff8f6]">
+    <main className="min-h-screen" style={{ background: '#465940' }}>
 
       {/* Hero */}
-      <section className="bg-white border-b border-orange-100/60 py-16 text-center px-6">
-        <p className="text-[#ff7f50] font-bold text-sm uppercase tracking-widest mb-3">
+      <section className="border-b border-[#FDFBF0]/10 py-16 text-center px-6" style={{ background: '#465940' }}>
+        <p className="text-[#FDFBF0]/70 font-bold text-sm uppercase tracking-widest mb-3">
           {locale === 'ka' ? 'როგორ მუშაობს' : 'How it works'}
         </p>
-        <h1 className="text-4xl sm:text-5xl font-black text-gray-900 mb-4 leading-tight">
+        <h1 className="text-4xl sm:text-5xl font-black text-[#FDFBF0] mb-4 leading-tight">
           {locale === 'ka' ? (settings?.heroTitleKa || 'სამი წუთი — და კვირის მენიუ მზადაა') : (settings?.heroTitleEn || 'Three minutes and your weekly menu is ready')}
         </h1>
-        <p className="text-gray-400 max-w-md mx-auto text-sm leading-relaxed">
+        <p className="text-[#FDFBF0]/60 max-w-md mx-auto text-sm leading-relaxed">
           {locale === 'ka' ? (settings?.heroSubtitleKa || '') : (settings?.heroSubtitleEn || '')}
         </p>
       </section>
@@ -66,19 +66,19 @@ export default async function HowItWorksPage({ searchParams }: { searchParams: {
         <section className="max-w-3xl mx-auto px-6 py-16">
           <div className="space-y-6">
             {steps.map((step, i) => (
-              <div key={step.id} className="flex gap-5 bg-white rounded-2xl border border-gray-100 shadow-sm p-6">
+              <div key={step.id} className="flex gap-5 bg-[#FDFBF0] rounded-2xl border border-[#FDFBF0]/20 shadow-sm p-6">
                 <div className="flex flex-col items-center gap-2 flex-shrink-0">
-                  <div className="w-12 h-12 rounded-xl bg-[#fff1ec] flex items-center justify-center text-2xl">
+                  <div className="w-12 h-12 rounded-xl bg-[#465940] flex items-center justify-center text-2xl">
                     {step.icon}
                   </div>
-                  {i < steps.length - 1 && <div className="w-0.5 flex-1 bg-gray-100 min-h-[24px]" />}
+                  {i < steps.length - 1 && <div className="w-0.5 flex-1 bg-[#465940]/10 min-h-[24px]" />}
                 </div>
                 <div className="pt-1">
-                  <p className="text-[10px] font-black text-[#ff7f50] tracking-widest mb-1">
+                  <p className="text-[10px] font-black text-[#465940]/60 tracking-widest mb-1">
                     {String(i + 1).padStart(2, '0')}
                   </p>
-                  <h3 className="text-lg font-black text-gray-900 mb-1.5">{title(step)}</h3>
-                  <p className="text-sm text-gray-500 leading-relaxed">{desc(step)}</p>
+                  <h3 className="text-lg font-black text-[#465940] mb-1.5">{title(step)}</h3>
+                  <p className="text-sm text-[#465940]/70 leading-relaxed">{desc(step)}</p>
                 </div>
               </div>
             ))}
@@ -88,16 +88,16 @@ export default async function HowItWorksPage({ searchParams }: { searchParams: {
 
       {/* FAQ */}
       {faqs.length > 0 && (
-        <section id="faq" className="bg-white border-t border-gray-100 py-16 px-6">
+        <section id="faq" className="border-t border-[#FDFBF0]/10 py-16 px-6" style={{ background: '#465940' }}>
           <div className="max-w-2xl mx-auto">
-            <h2 className="text-2xl font-black text-gray-900 mb-8 text-center">
+            <h2 className="text-2xl font-black text-[#FDFBF0] mb-8 text-center">
               {locale === 'ka' ? 'ხშირი კითხვები' : 'Frequently asked questions'}
             </h2>
             <div className="space-y-4">
               {faqs.map((faq) => (
-                <div key={faq.id} className="bg-[#fef8f5] rounded-2xl p-5">
-                  <p className="font-bold text-gray-900 mb-1.5">— {question(faq)}</p>
-                  <p className="text-sm text-gray-500 leading-relaxed">{answer(faq)}</p>
+                <div key={faq.id} className="bg-[#FDFBF0] rounded-2xl p-5 border border-[#FDFBF0]/20">
+                  <p className="font-bold text-[#465940] mb-1.5">— {question(faq)}</p>
+                  <p className="text-sm text-[#465940]/70 leading-relaxed">{answer(faq)}</p>
                 </div>
               ))}
             </div>
@@ -106,18 +106,19 @@ export default async function HowItWorksPage({ searchParams }: { searchParams: {
       )}
 
       {/* CTA */}
-      <section className="py-16 px-6 text-center">
-        <h2 className="text-2xl font-black text-gray-900 mb-3">
+      <section className="py-16 px-6 text-center" style={{ background: '#465940' }}>
+        <h2 className="text-2xl font-black text-[#FDFBF0] mb-3">
           {locale === 'ka' ? (settings?.ctaTitleKa || 'მზად ხარ?') : (settings?.ctaTitleEn || 'Ready to get started?')}
         </h2>
-        <p className="text-gray-400 text-sm mb-7">
+        <p className="text-[#FDFBF0]/60 text-sm mb-7">
           {locale === 'ka' ? (settings?.ctaSubtitleKa || '') : (settings?.ctaSubtitleEn || '')}
         </p>
         <div className="flex flex-col sm:flex-row gap-3 justify-center">
           {session ? (
             <a
               href="/dashboard"
-              className="bg-[#ff7f50] hover:bg-[#e86e40] text-white font-bold px-8 py-3.5 rounded-full transition text-sm"
+              className="font-bold px-8 py-3.5 rounded-full transition text-sm"
+              style={{ background: '#FDFBF0', color: '#465940' }}
             >
               {locale === 'ka' ? 'ჩემი დეშბორდი →' : 'Go to Dashboard →'}
             </a>
@@ -125,13 +126,14 @@ export default async function HowItWorksPage({ searchParams }: { searchParams: {
             <>
               <a
                 href={locale === 'ka' ? '/register' : '/register?lang=en'}
-                className="bg-[#ff7f50] hover:bg-[#e86e40] text-white font-bold px-8 py-3.5 rounded-full transition text-sm"
+                className="font-bold px-8 py-3.5 rounded-full transition text-sm"
+                style={{ background: '#FDFBF0', color: '#465940' }}
               >
                 {locale === 'ka' ? 'დარეგისტრირდი' : 'Sign up'}
               </a>
               <a
                 href={locale === 'ka' ? '/#pricing' : '/?lang=en#pricing'}
-                className="bg-white border border-gray-200 hover:border-[#ff7f50] text-gray-700 hover:text-[#ff7f50] font-bold px-8 py-3.5 rounded-full transition text-sm"
+                className="border border-[#FDFBF0]/30 text-[#FDFBF0] hover:bg-[#FDFBF0]/10 font-bold px-8 py-3.5 rounded-full transition text-sm"
               >
                 {locale === 'ka' ? 'ფასები' : 'View pricing'}
               </a>

@@ -1,4 +1,4 @@
-import Link from 'next/link';
+﻿import Link from 'next/link';
 import { prisma } from '@/lib/prisma';
 import { adminDict, getAdminLocale } from '@/lib/adminI18n';
 import {
@@ -10,10 +10,10 @@ import {
 } from '@/components/AdminPlanActions';
 
 const mealTypeColor: Record<string, string> = {
-  BREAKFAST: 'bg-yellow-100 text-yellow-700',
-  LUNCH: 'bg-blue-100 text-blue-700',
-  DINNER: 'bg-purple-100 text-purple-700',
-  SNACK: 'bg-green-100 text-green-700',
+  BREAKFAST: 'bg-[#FDFBF0]/10 text-[#465940]',
+  LUNCH: 'bg-[#FDFBF0]/10 text-[#465940]',
+  DINNER: 'bg-[#FDFBF0]/10 text-[#465940]',
+  SNACK: 'bg-[#465940]/20 text-[#465940]',
 };
 
 export default async function AdminPlansPage({ searchParams }: { searchParams: { lang?: string } }) {
@@ -48,12 +48,12 @@ export default async function AdminPlansPage({ searchParams }: { searchParams: {
     <div className="p-8">
       <div className="mb-8 flex items-center justify-between">
         <div>
-          <h1 className="text-3xl font-black text-gray-900">{d.planEditorTitle}</h1>
-          <p className="mt-1 text-sm text-gray-400">{plans.length} {d.plansTotal}</p>
+          <h1 className="text-3xl font-black text-[#465940]">{d.planEditorTitle}</h1>
+          <p className="mt-1 text-sm text-[#465940]/60">{plans.length} {d.plansTotal}</p>
         </div>
         <Link
           href={withLang('/admin/plans/new')}
-          className="rounded-full bg-[#ff7f50] px-6 py-3 font-semibold text-white shadow-sm hover:-translate-y-0.5 transition"
+          className="rounded-full bg-[#465940] px-6 py-3 font-semibold text-[#FDFBF0] shadow-sm hover:-translate-y-0.5 transition"
         >
           {d.newPlan}
         </Link>
@@ -61,21 +61,21 @@ export default async function AdminPlansPage({ searchParams }: { searchParams: {
 
       {Object.entries(grouped).map(([ageGroup, groupPlans]) => (
         <section key={ageGroup} className="mb-10">
-          <h2 className="mb-4 text-sm font-bold uppercase tracking-widest text-[#ff7f50]">
+          <h2 className="mb-4 text-sm font-bold uppercase tracking-widest text-[#465940]">
             {ageGroup}
           </h2>
           <div className="space-y-4">
             {groupPlans.map((plan) => (
               <div
                 key={plan.id}
-                className="rounded-[20px] bg-white p-6 shadow-sm border border-[#f0e4df]"
+                className="rounded-[20px] bg-[#FDFBF0] p-6 shadow-sm border border-[#f0e4df]"
               >
                 <div className="flex items-start justify-between gap-4 flex-wrap">
                   <div>
-                    <h3 className="font-bold text-[#241915]">
+                    <h3 className="font-bold text-[#465940]">
                       {locale === 'ka' ? plan.titleKa : plan.titleEn}
                     </h3>
-                    <p className="text-sm text-[#57423b]">
+                    <p className="text-sm text-[#465940]">
                       {locale === 'ka' ? plan.titleEn : plan.titleKa}
                     </p>
                     <p className="mt-1 text-xs text-[#bbb]">
@@ -93,14 +93,14 @@ export default async function AdminPlansPage({ searchParams }: { searchParams: {
                     {plan.items.map((item) => (
                       <div
                         key={item.id}
-                        className="flex items-center gap-3 rounded-xl bg-[#fff8f6] px-4 py-2"
+                        className="flex items-center gap-3 rounded-xl bg-[#465940] px-4 py-2"
                       >
                         <span
-                          className={`rounded-full px-2 py-0.5 text-xs font-bold ${mealTypeColor[item.mealType] ?? 'bg-gray-100 text-gray-600'}`}
+                          className={`rounded-full px-2 py-0.5 text-xs font-bold ${mealTypeColor[item.mealType] ?? 'bg-[#465940]/10 text-[#465940]/80'}`}
                         >
                           {item.mealType}
                         </span>
-                        <span className="flex-1 text-sm font-semibold text-[#241915]">
+                        <span className="flex-1 text-sm font-semibold text-[#465940]">
                           {locale === 'ka' ? (item.dish.titleKa || item.dish.titleEn) : (item.dish.titleEn || item.dish.titleKa)}
                         </span>
                         <div className="flex items-center gap-1">
@@ -121,9 +121,9 @@ export default async function AdminPlansPage({ searchParams }: { searchParams: {
       ))}
 
       {plans.length === 0 && (
-        <div className="rounded-[20px] border border-dashed border-[#dec0b6] bg-white p-12 text-center text-[#57423b]">
+        <div className="rounded-[20px] border border-dashed border-[#dec0b6] bg-[#FDFBF0] p-12 text-center text-[#465940]">
           {d.noPlansYet}{' '}
-          <Link href={withLang('/admin/plans/new')} className="font-semibold text-[#ff7f50]">
+          <Link href={withLang('/admin/plans/new')} className="font-semibold text-[#465940]">
             {d.createFirstPlan}
           </Link>
         </div>

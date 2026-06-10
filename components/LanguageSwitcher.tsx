@@ -11,9 +11,27 @@ export function LanguageSwitcher({ locale }: { locale: 'ka' | 'en' }) {
     router.push(`${path}?${q.toString()}`);
   }
   return (
-    <div className="rounded-full bg-white p-1 shadow-sm ring-1 ring-cocoa/10">
-      <button onClick={() => setLocale('ka')} className={`rounded-full px-3 py-1 text-sm font-bold ${locale === 'ka' ? 'bg-cocoa text-white' : ''}`}>KA</button>
-      <button onClick={() => setLocale('en')} className={`rounded-full px-3 py-1 text-sm font-bold ${locale === 'en' ? 'bg-cocoa text-white' : ''}`}>EN</button>
+    <div className="flex items-center gap-1">
+      <button
+        onClick={() => setLocale('ka')}
+        className={`rounded-full px-3 py-1 text-sm font-bold transition ${
+          locale === 'ka'
+            ? 'border-2 border-[#465940] text-[#465940] bg-[#FDFBF0]'
+            : 'border-2 border-transparent text-[#465940] hover:border-[#465940]/40'
+        }`}
+      >
+        KA
+      </button>
+      <button
+        onClick={() => setLocale('en')}
+        className={`rounded-full px-3 py-1 text-sm font-bold transition ${
+          locale === 'en'
+            ? 'border-2 border-[#465940] text-[#465940] bg-[#FDFBF0]'
+            : 'border-2 border-transparent text-[#465940] hover:border-[#465940]/40'
+        }`}
+      >
+        EN
+      </button>
     </div>
   );
 }

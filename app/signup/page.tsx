@@ -1,4 +1,4 @@
-'use client';
+﻿'use client';
 
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
@@ -42,8 +42,8 @@ export default function SignupPage() {
     };
 
     return (
-        <main className="min-h-screen flex items-center justify-center bg-[#fff8f6] px-6">
-            <div className="w-full max-w-md bg-white p-10 rounded-[32px] shadow-xl">
+        <main className="min-h-screen flex items-center justify-center bg-[#465940] px-6">
+            <div className="w-full max-w-md bg-[#FDFBF0] p-10 rounded-[32px] shadow-xl">
 
                 <h1 className="text-2xl font-bold mb-6 text-center">
                     Create Account
@@ -56,7 +56,7 @@ export default function SignupPage() {
                         placeholder="Full Name"
                         value={name}
                         onChange={(e) => setName(e.target.value)}
-                        className="w-full px-4 py-3 rounded-xl border border-gray-200 focus:outline-none focus:border-[#ff7f50]"
+                        className="w-full px-4 py-3 rounded-xl border border-[#465940]/20 focus:outline-none focus:border-[#465940]"
                     />
 
                     <input
@@ -64,7 +64,7 @@ export default function SignupPage() {
                         placeholder="Email"
                         value={email}
                         onChange={(e) => setEmail(e.target.value)}
-                        className="w-full px-4 py-3 rounded-xl border border-gray-200 focus:outline-none focus:border-[#ff7f50]"
+                        className="w-full px-4 py-3 rounded-xl border border-[#465940]/20 focus:outline-none focus:border-[#465940]"
                     />
 
                     <input
@@ -72,15 +72,15 @@ export default function SignupPage() {
                         placeholder="Password"
                         value={password}
                         onChange={(e) => setPassword(e.target.value)}
-                        className="w-full px-4 py-3 rounded-xl border border-gray-200 focus:outline-none focus:border-[#ff7f50]"
+                        className="w-full px-4 py-3 rounded-xl border border-[#465940]/20 focus:outline-none focus:border-[#465940]"
                     />
 
                     <button
                         disabled={loading}
-                        className="w-full bg-[#ff7f50] text-white py-3 rounded-full font-semibold hover:scale-105 transition disabled:opacity-70 disabled:scale-100 flex items-center justify-center gap-2"
+                        className="w-full bg-[#465940] text-[#FDFBF0] py-3 rounded-full font-semibold hover:scale-105 transition disabled:opacity-70 disabled:scale-100 flex items-center justify-center gap-2"
                     >
                         {loading && (
-                            <svg className="animate-spin h-4 w-4 text-white" viewBox="0 0 24 24" fill="none">
+                            <svg className="animate-spin h-4 w-4 text-[#FDFBF0]" viewBox="0 0 24 24" fill="none">
                                 <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"/>
                                 <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8H4z"/>
                             </svg>
@@ -90,9 +90,9 @@ export default function SignupPage() {
 
                 </form>
 
-                <p className="text-sm text-gray-500 mt-6 text-center">
+                <p className="text-sm text-[#465940]/70 mt-6 text-center">
                     Already have an account?{" "}
-                    <a href="/login" className="text-[#ff7f50] font-semibold">
+                    <a href="/login" className="text-[#465940] font-semibold">
                         Login
                     </a>
                 </p>

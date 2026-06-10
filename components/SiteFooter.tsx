@@ -1,0 +1,124 @@
+'use client';
+
+import { useSearchParams } from 'next/navigation';
+
+export default function SiteFooter() {
+  const searchParams = useSearchParams();
+  const locale = searchParams.get('lang') === 'en' ? 'en' : 'ka';
+  const ka = locale === 'ka';
+
+  const navLinks = [
+    { href: `/about?lang=${locale}`,        label: ka ? 'ჩვენ შესახებ'      : 'About' },
+    { href: `/how-it-works?lang=${locale}`, label: ka ? 'როგორ მუშაობს'    : 'How it Works' },
+    { href: `/recipes?lang=${locale}`,      label: ka ? 'რეცეპტები'         : 'Recipes' },
+    { href: `/blog?lang=${locale}`,         label: ka ? 'ბლოგი'             : 'Blog' },
+  ];
+
+  const legalLinks = [
+    { href: `/privacy?lang=${locale}`, label: ka ? 'კონფიდენციალურობა' : 'Privacy Policy' },
+    { href: `/terms?lang=${locale}`,   label: ka ? 'გამოყენების წესები' : 'Terms of Use' },
+  ];
+
+  return (
+    <footer className="border-t border-[#FDFBF0]/20" style={{ background: '#465940' }}>
+      <div className="max-w-6xl mx-auto px-5 pt-14 pb-10">
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-12">
+
+          {/* Brand */}
+          <div>
+            <a href={`/?lang=${locale}`} className="inline-block mb-4">
+              <div className="leading-tight">
+                <div className="text-2xl font-black text-[#FDFBF0]">mom<span className="opacity-60">♥</span></div>
+                <div className="text-2xl font-black text-[#FDFBF0]">menu</div>
+              </div>
+            </a>
+            <p className="text-sm text-[#FDFBF0]/65 leading-relaxed mb-6 max-w-[200px]">
+              {ka
+                ? 'ჯანსაღი კვება ბავშვებისთვის, მარტივად და სახალისოდ.'
+                : 'Healthy nutrition for children, simply and joyfully.'}
+            </p>
+            <div className="flex items-center gap-2">
+              <a href="#" aria-label="Instagram"
+                className="w-9 h-9 rounded-full border border-[#FDFBF0]/30 flex items-center justify-center text-[#FDFBF0]/70 hover:text-[#FDFBF0] hover:border-[#FDFBF0]/60 transition">
+                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  <rect x="2" y="2" width="20" height="20" rx="5"/>
+                  <circle cx="12" cy="12" r="5"/>
+                  <circle cx="17.5" cy="6.5" r="1" fill="currentColor" stroke="none"/>
+                </svg>
+              </a>
+              <a href="#" aria-label="TikTok"
+                className="w-9 h-9 rounded-full border border-[#FDFBF0]/30 flex items-center justify-center text-[#FDFBF0]/70 hover:text-[#FDFBF0] hover:border-[#FDFBF0]/60 transition">
+                <svg width="15" height="15" viewBox="0 0 24 24" fill="currentColor">
+                  <path d="M19.59 6.69a4.83 4.83 0 0 1-3.77-4.25V2h-3.45v13.67a2.89 2.89 0 0 1-2.88 2.5 2.89 2.89 0 0 1-2.89-2.89 2.89 2.89 0 0 1 2.89-2.89c.28 0 .54.04.79.1V9.01a6.33 6.33 0 0 0-.79-.05 6.34 6.34 0 0 0-6.34 6.34 6.34 6.34 0 0 0 6.34 6.34 6.34 6.34 0 0 0 6.33-6.34V8.69a8.18 8.18 0 0 0 4.78 1.52V6.75a4.85 4.85 0 0 1-1.01-.06z"/>
+                </svg>
+              </a>
+            </div>
+          </div>
+
+          {/* Nav links */}
+          <div>
+            <h4 className="text-xs font-black text-[#FDFBF0]/40 uppercase tracking-widest mb-5">
+              {ka ? 'ნავიგაცია' : 'Navigation'}
+            </h4>
+            <ul className="space-y-3">
+              {navLinks.map((l) => (
+                <li key={l.href}>
+                  <a href={l.href} className="text-sm text-[#FDFBF0]/70 hover:text-[#FDFBF0] transition">
+                    {l.label}
+                  </a>
+                </li>
+              ))}
+            </ul>
+          </div>
+
+          {/* Contact + CTA */}
+          <div>
+            <h4 className="text-xs font-black text-[#FDFBF0]/40 uppercase tracking-widest mb-5">
+              {ka ? 'კონტაქტი' : 'Contact'}
+            </h4>
+            <ul className="space-y-3 mb-8">
+              <li className="flex items-center gap-2 text-sm text-[#FDFBF0]/70">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="flex-shrink-0 opacity-60">
+                  <path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22,6 12,13 2,6"/>
+                </svg>
+                <a href="mailto:hello@mommenu.ge" className="hover:text-[#FDFBF0] transition">
+                  hello@mommenu.ge
+                </a>
+              </li>
+              <li className="flex items-start gap-2 text-sm text-[#FDFBF0]/70">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="flex-shrink-0 opacity-60 mt-0.5">
+                  <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/>
+                </svg>
+                <span>{ka ? 'თბილისი, საქართველო' : 'Tbilisi, Georgia'}</span>
+              </li>
+            </ul>
+            <a
+              href={`/register?lang=${locale}`}
+              className="inline-block text-sm font-bold px-5 py-2.5 rounded-full transition"
+              style={{ background: '#FDFBF0', color: '#465940' }}
+            >
+              {ka ? 'დაიწყე უფასოდ →' : 'Start for free →'}
+            </a>
+          </div>
+
+        </div>
+      </div>
+
+      {/* Bottom bar */}
+      <div className="border-t border-[#FDFBF0]/10 py-5">
+        <div className="max-w-6xl mx-auto px-5 flex flex-col sm:flex-row items-center justify-between gap-3">
+          <p className="text-xs text-[#FDFBF0]/40">
+            © 2026 mom menu. {ka ? 'ყველა უფლება დაცულია.' : 'All rights reserved.'}
+          </p>
+          <div className="flex items-center gap-5">
+            {legalLinks.map((l) => (
+              <a key={l.href} href={l.href} className="text-xs text-[#FDFBF0]/40 hover:text-[#FDFBF0]/70 transition">
+                {l.label}
+              </a>
+            ))}
+          </div>
+        </div>
+      </div>
+    </footer>
+  );
+}

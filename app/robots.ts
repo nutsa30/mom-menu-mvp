@@ -1,6 +1,6 @@
-import { MetadataRoute } from 'next';
+﻿import { MetadataRoute } from 'next';
 
-const SITE_URL = process.env.NEXT_PUBLIC_APP_URL || 'https://momeals.ge';
+const SITE_URL = process.env.NEXT_PUBLIC_APP_URL || 'https://mom menu.ge';
 
 export default function robots(): MetadataRoute.Robots {
   return {
@@ -14,3 +14,4 @@ export default function robots(): MetadataRoute.Robots {
     sitemap: `${SITE_URL}/sitemap.xml`,
   };
 }
+

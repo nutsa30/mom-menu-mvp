@@ -84,9 +84,9 @@ export const adminDict = {
     grantAdminConfirm: 'ადმინი მიენიჭება?',
 
     // Ingredients
-    ingredientsNav: 'ხილი & ბოსტნეული',
-    ingredientsTitle: 'ხილი და ბოსტნეული',
-    ingredientsDesc: 'ხილისა და ბოსტნეულის მართვა.',
+    ingredientsNav: 'ხილი',
+    ingredientsTitle: 'ხილი',
+    ingredientsDesc: 'სეზონური ხილის მართვა.',
     addIngredient: '+ დამატება',
     noIngredients: 'ჯერ არ არის შეყვანილი.',
     ingredientName: 'დასახელება',

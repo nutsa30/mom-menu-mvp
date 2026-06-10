@@ -1,4 +1,4 @@
-'use client';
+﻿'use client';
 
 import { useState, useRef } from 'react';
 import { useRouter } from 'next/navigation';
@@ -54,9 +54,9 @@ const ALLERGEN_LIST = [
   { key: 'lupin',      label: 'ლუპინი'            },
 ];
 
-const inp = 'w-full px-4 py-3 rounded-xl border border-gray-200 focus:outline-none focus:border-[#ff7f50] transition text-sm bg-white';
-const lbl = 'block text-sm font-semibold text-gray-700 mb-1.5';
-const sec = 'bg-white rounded-2xl border border-gray-100 shadow-sm p-6';
+const inp = 'w-full px-4 py-3 rounded-xl border border-[#465940]/20 focus:outline-none focus:border-[#465940] transition text-sm text-[#465940] bg-white';
+const lbl = 'block text-sm font-semibold text-[#465940] mb-1.5';
+const sec = 'bg-[#FDFBF0] rounded-2xl border border-[#465940]/10 shadow-sm p-6';
 
 export default function NewMealPage() {
   const router = useRouter();
@@ -161,13 +161,13 @@ export default function NewMealPage() {
     <div className="p-6 max-w-3xl">
       {/* Header */}
       <div className="mb-6 flex items-center gap-3">
-        <a href="/admin/meals" className="text-gray-400 hover:text-gray-600 text-sm transition">← უკან</a>
-        <span className="text-gray-300">/</span>
-        <h1 className="text-2xl font-black text-gray-900">ახალი კერძი</h1>
+        <a href="/admin/meals" className="text-[#465940]/60 hover:text-[#465940]/80 text-sm transition">← უკან</a>
+        <span className="text-[#465940]/40">/</span>
+        <h1 className="text-2xl font-black text-[#465940]">ახალი კერძი</h1>
       </div>
 
       {error && (
-        <div className="mb-5 rounded-xl bg-red-50 border border-red-200 px-4 py-3 text-sm font-medium text-red-700">{error}</div>
+        <div className="mb-5 rounded-xl bg-[#465940] border border-[#FDFBF0]/30 px-4 py-3 text-sm font-medium text-[#FDFBF0]">{error}</div>
       )}
 
       <form onSubmit={handleSubmit} className="space-y-5">
@@ -181,27 +181,27 @@ export default function NewMealPage() {
             onDragLeave={() => setDragOver(false)}
             onDrop={onDrop}
             className={`relative cursor-pointer rounded-2xl border-2 border-dashed transition flex items-center justify-center overflow-hidden
-              ${dragOver ? 'border-[#ff7f50] bg-[#fff3ee]' : 'border-gray-200 hover:border-[#ff7f50] hover:bg-[#fef9f7]'}`}
+              ${dragOver ? 'border-[#465940] bg-[#fff3ee]' : 'border-[#465940]/20 hover:border-[#465940] hover:bg-[#fef9f7]'}`}
             style={{ minHeight: imagePreview ? 240 : 160 }}
           >
             {imagePreview ? (
               <>
                 <img src={imagePreview} alt="" className="w-full h-full object-cover absolute inset-0" style={{ maxHeight: 280 }} />
                 <div className="absolute inset-0 bg-black/30 flex items-center justify-center opacity-0 hover:opacity-100 transition">
-                  <span className="text-white font-bold text-sm bg-black/50 px-4 py-2 rounded-full">შეცვლა</span>
+                  <span className="text-[#FDFBF0] font-bold text-sm bg-black/50 px-4 py-2 rounded-full">შეცვლა</span>
                 </div>
               </>
             ) : (
               <div className="text-center py-8 px-4">
                 <div className="text-4xl mb-3">📷</div>
-                <p className="text-sm font-semibold text-gray-600">ჩააგდე ფოტო ან დააჭირე</p>
-                <p className="text-xs text-gray-400 mt-1">JPG, PNG, WEBP · ნებისმიერი ზომა</p>
+                <p className="text-sm font-semibold text-[#465940]/80">ჩააგდე ფოტო ან დააჭირე</p>
+                <p className="text-xs text-[#465940]/60 mt-1">JPG, PNG, WEBP · ნებისმიერი ზომა</p>
               </div>
             )}
           </div>
           <input ref={fileRef} type="file" accept="image/*" className="hidden" onChange={onFileChange} />
           {imageFile && (
-            <p className="mt-2 text-xs text-gray-400">
+            <p className="mt-2 text-xs text-[#465940]/60">
               {imageFile.name} · {(imageFile.size / 1024 / 1024).toFixed(1)} MB
             </p>
           )}
@@ -209,7 +209,7 @@ export default function NewMealPage() {
 
         {/* ── Basic info ── */}
         <div className={`${sec} space-y-4`}>
-          <p className="text-sm font-bold text-gray-500 uppercase tracking-wide">ძირითადი</p>
+          <p className="text-sm font-bold text-[#465940]/70 uppercase tracking-wide">ძირითადი</p>
 
           <div className="grid grid-cols-2 gap-4">
             <div>
@@ -247,7 +247,7 @@ export default function NewMealPage() {
 
         {/* ── Meal type + Age + Allergens ── */}
         <div className={`${sec} space-y-5`}>
-          <p className="text-sm font-bold text-gray-500 uppercase tracking-wide">კატეგორია</p>
+          <p className="text-sm font-bold text-[#465940]/70 uppercase tracking-wide">კატეგორია</p>
 
           <div>
             <label className={lbl}>კვების ტიპი *</label>
@@ -259,7 +259,7 @@ export default function NewMealPage() {
                 { v: 'DINNER', l: 'ვახშამი', icon: '🍲' },
               ].map(({ v, l, icon }) => (
                 <button key={v} type="button" onClick={() => setMealType(v)}
-                  className={`py-3 rounded-xl text-sm font-bold transition border ${mealType === v ? 'bg-[#ff7f50] text-white border-[#ff7f50]' : 'bg-white text-gray-600 border-gray-200 hover:border-[#ff7f50]'}`}>
+                  className={`py-3 rounded-xl text-sm font-bold transition border ${mealType === v ? 'bg-[#465940] text-[#FDFBF0] border-[#465940]' : 'bg-[#FDFBF0] text-[#465940]/80 border-[#465940]/20 hover:border-[#465940]'}`}>
                   {icon}<br />{l}
                 </button>
               ))}
@@ -271,11 +271,11 @@ export default function NewMealPage() {
             <div className="grid grid-cols-2 gap-2">
               {AGE_GROUPS.map((ag) => (
                 <label key={ag.value}
-                  className={`flex items-center gap-2.5 px-4 py-3 rounded-xl border cursor-pointer transition ${ageGroups.includes(ag.value) ? 'border-[#ff7f50] bg-[#fff3ee]' : 'border-gray-200 hover:border-gray-300'}`}>
-                  <input type="checkbox" className="accent-[#ff7f50] w-4 h-4"
+                  className={`flex items-center gap-2.5 px-4 py-3 rounded-xl border cursor-pointer transition ${ageGroups.includes(ag.value) ? 'border-[#465940] bg-[#fff3ee]' : 'border-[#465940]/20 hover:border-[#465940]/30'}`}>
+                  <input type="checkbox" className="accent-[#465940] w-4 h-4"
                     checked={ageGroups.includes(ag.value)}
                     onChange={() => toggle(ageGroups, setAgeGroups, ag.value)} />
-                  <span className="text-sm font-medium text-gray-700">{ag.label}</span>
+                  <span className="text-sm font-medium text-[#465940]">{ag.label}</span>
                 </label>
               ))}
             </div>
@@ -286,7 +286,7 @@ export default function NewMealPage() {
             <div className="flex flex-wrap gap-2">
               {ALLERGEN_LIST.map(({ key, label }) => (
                 <button key={key} type="button" onClick={() => toggle(allergens, setAllergens, key)}
-                  className={`px-3 py-1.5 rounded-full text-xs font-bold transition ${allergens.includes(key) ? 'bg-red-500 text-white' : 'bg-gray-100 text-gray-600 hover:bg-gray-200'}`}>
+                  className={`px-3 py-1.5 rounded-full text-xs font-bold transition ${allergens.includes(key) ? 'bg-[#465940] text-[#FDFBF0]' : 'bg-[#465940]/10 text-[#465940]/80 hover:bg-[#465940]/15'}`}>
                   {allergens.includes(key) ? '✓ ' : ''}{label}
                 </button>
               ))}
@@ -296,7 +296,7 @@ export default function NewMealPage() {
 
         {/* ── Nutrition ── */}
         <div className={`${sec} space-y-4`}>
-          <p className="text-sm font-bold text-gray-500 uppercase tracking-wide">კვებითი ღირებულება</p>
+          <p className="text-sm font-bold text-[#465940]/70 uppercase tracking-wide">კვებითი ღირებულება</p>
 
           <div className="grid grid-cols-2 gap-4">
             <div>
@@ -309,28 +309,28 @@ export default function NewMealPage() {
             </div>
           </div>
 
-          <div className="rounded-xl border border-gray-100 divide-y divide-gray-50 overflow-hidden">
+          <div className="rounded-xl border border-[#465940]/10 divide-y divide-[#465940]/5 overflow-hidden">
             {NUTRIENTS.map((n) => {
               const active = n.key in nutrients;
               return (
-                <div key={n.key} className="flex items-center gap-3 px-4 py-3 bg-gray-50/50">
-                  <input type="checkbox" className="accent-[#ff7f50] w-4 h-4 flex-shrink-0"
+                <div key={n.key} className="flex items-center gap-3 px-4 py-3 bg-[#465940]/5/50">
+                  <input type="checkbox" className="accent-[#465940] w-4 h-4 flex-shrink-0"
                     checked={active}
                     onChange={(e) => {
                       if (e.target.checked) setNutrients((p) => ({ ...p, [n.key]: '' }));
                       else setNutrients((p) => { const c = { ...p }; delete c[n.key]; return c; });
                     }} />
-                  <span className="text-sm text-gray-700 flex-1">{n.label}</span>
+                  <span className="text-sm text-[#465940] flex-1">{n.label}</span>
                   {active ? (
                     <div className="flex items-center gap-1.5">
                       <input type="number" min="0" step="0.1" placeholder="0"
                         value={nutrients[n.key]}
                         onChange={(e) => setNutrients((p) => ({ ...p, [n.key]: e.target.value }))}
-                        className="w-24 px-3 py-1.5 rounded-lg border border-gray-200 focus:outline-none focus:border-[#ff7f50] text-sm text-right" />
-                      <span className="text-xs text-gray-400 w-8">{n.unit}</span>
+                        className="w-24 px-3 py-1.5 rounded-lg border border-[#465940]/20 focus:outline-none focus:border-[#465940] text-sm text-right" />
+                      <span className="text-xs text-[#465940]/60 w-8">{n.unit}</span>
                     </div>
                   ) : (
-                    <span className="text-xs text-gray-300 w-20 text-right">—</span>
+                    <span className="text-xs text-[#465940]/40 w-20 text-right">—</span>
                   )}
                 </div>
               );
@@ -341,12 +341,12 @@ export default function NewMealPage() {
         {/* ── Submit ── */}
         <div className="flex items-center gap-3 pb-8">
           <button type="submit" disabled={busy}
-            className="flex-1 bg-[#ff7f50] hover:bg-[#e86e40] disabled:opacity-50 text-white py-4 rounded-full font-black text-sm transition flex items-center justify-center gap-2">
+            className="flex-1 bg-[#465940] hover:bg-[#465940] disabled:opacity-50 text-[#FDFBF0] py-4 rounded-full font-black text-sm transition flex items-center justify-center gap-2">
             {uploading && <span className="animate-spin text-base">⏳</span>}
             {uploading ? 'ფოტო იტვირთება...' : saving ? 'ინახება...' : 'კერძის შენახვა'}
           </button>
           <a href="/admin/meals"
-            className="px-6 py-4 rounded-full border border-gray-200 text-gray-600 font-bold text-sm hover:bg-gray-50 transition text-center">
+            className="px-6 py-4 rounded-full border border-[#465940]/20 text-[#465940]/80 font-bold text-sm hover:bg-[#465940]/5 transition text-center">
             გაუქმება
           </a>
         </div>

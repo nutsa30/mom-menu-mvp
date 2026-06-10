@@ -1,4 +1,4 @@
-import { prisma } from '@/lib/prisma';
+﻿import { prisma } from '@/lib/prisma';
 import { adminDict, getAdminLocale } from '@/lib/adminI18n';
 import DishesAdminList from '@/components/DishesAdminList';
 
@@ -17,11 +17,11 @@ export default async function MealManager({ searchParams }: { searchParams: { la
     <div className="p-8">
       <div className="flex items-center justify-between mb-8">
         <div>
-          <h1 className="text-3xl font-black text-gray-900">{d.mealManagerTitle}</h1>
-          <p className="text-gray-400 text-sm mt-1">{dishes.length} {d.recipesInDb}</p>
+          <h1 className="text-3xl font-black text-[#465940]">{d.mealManagerTitle}</h1>
+          <p className="text-[#465940]/60 text-sm mt-1">{dishes.length} {d.recipesInDb}</p>
         </div>
         <a href={newHref}
-          className="bg-[#ff7f50] hover:bg-[#e86e40] text-white px-5 py-2.5 rounded-full font-bold text-sm transition">
+          className="bg-[#465940] hover:bg-[#465940] text-[#FDFBF0] px-5 py-2.5 rounded-full font-bold text-sm transition">
           {d.addRecipe}
         </a>
       </div>

@@ -1,4 +1,4 @@
-import { NextRequest, NextResponse } from 'next/server';
+﻿import { NextRequest, NextResponse } from 'next/server';
 import { getSession } from '@/lib/auth';
 import crypto from 'crypto';
 
@@ -41,3 +41,4 @@ export async function POST(req: NextRequest) {
 
   return NextResponse.json({ url: data.secure_url });
 }
+

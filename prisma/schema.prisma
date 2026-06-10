@@ -253,8 +253,8 @@ model HowItWorksSettings {
   id             String   @id @default("singleton")
   heroTitleKa    String   @default("სამი წუთი — და კვირის მენიუ მზადაა")
   heroTitleEn    String   @default("Three minutes and your weekly menu is ready")
-  heroSubtitleKa String   @default("moMeals იღებს შვილის ინფორმაციას და შენ ნაცვლად ადგენს ყოველდღიურ, ბალანსირებულ კვების გეგმას.")
-  heroSubtitleEn String   @default("moMeals takes your child's info and builds a balanced daily meal plan so you don't have to.")
+  heroSubtitleKa String   @default("mom menu იღებს შვილის ინფორმაციას და შენ ნაცვლად ადგენს ყოველდღიურ, ბალანსირებულ კვების გეგმას.")
+  heroSubtitleEn String   @default("mom menu takes your child's info and builds a balanced daily meal plan so you don't have to.")
   ctaTitleKa     String   @default("მზად ხარ?")
   ctaTitleEn     String   @default("Ready to get started?")
   ctaSubtitleKa  String   @default("პირველი კვირა — უფასოდ.")
@@ -321,8 +321,8 @@ model HomePageSettings {
   feature3DescEn   String @default("Plans adapt to your child's taste while introducing new foods.")
 
   // Meal samples
-  sampleTitleKa      String @default("moMeals-ის გემო")
-  sampleTitleEn      String @default("A Taste of moMeals")
+  sampleTitleKa      String @default("mom menu-ს გემო")
+  sampleTitleEn      String @default("A Taste of mom menu")
   sampleSubtitleKa   String @default("გაეცანი ტიპიურ ყოველდღიურ კვების გეგმას.")
   sampleSubtitleEn   String @default("Explore a typical daily meal plan for your child.")
   sample1ImageUrl    String @default("https://images.unsplash.com/photo-1512621776951-a57141f2eefd")

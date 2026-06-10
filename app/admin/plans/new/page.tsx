@@ -1,4 +1,4 @@
-'use client';
+﻿'use client';
 
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
@@ -50,27 +50,27 @@ export default function NewPlanPage() {
     dishes.filter((d) => d.mealType === type);
 
   return (
-    <div className="mx-auto max-w-2xl rounded-[24px] bg-white p-8 shadow-sm">
-      <h1 className="mb-6 text-2xl font-bold text-[#241915]">New meal plan</h1>
+    <div className="mx-auto max-w-2xl rounded-[24px] bg-[#FDFBF0] p-8 shadow-sm">
+      <h1 className="mb-6 text-2xl font-bold text-[#465940]">New meal plan</h1>
 
       <form onSubmit={handleSubmit} className="space-y-5">
         <div className="grid gap-4 sm:grid-cols-2">
           <div>
-            <label className="mb-1 block text-sm font-semibold text-[#241915]">Title EN</label>
+            <label className="mb-1 block text-sm font-semibold text-[#465940]">Title EN</label>
             <input
               value={titleEn}
               onChange={(e) => setTitleEn(e.target.value)}
-              className="w-full rounded-xl border border-[#f0e4df] bg-[#fff8f6] px-4 py-2.5 text-sm outline-none focus:border-[#ff7f50]"
+              className="w-full rounded-xl border border-[#f0e4df] bg-[#465940] px-4 py-2.5 text-sm outline-none focus:border-[#465940]"
               placeholder="Today's preschool menu"
               required
             />
           </div>
           <div>
-            <label className="mb-1 block text-sm font-semibold text-[#241915]">Title KA</label>
+            <label className="mb-1 block text-sm font-semibold text-[#465940]">Title KA</label>
             <input
               value={titleKa}
               onChange={(e) => setTitleKa(e.target.value)}
-              className="w-full rounded-xl border border-[#f0e4df] bg-[#fff8f6] px-4 py-2.5 text-sm outline-none focus:border-[#ff7f50]"
+              className="w-full rounded-xl border border-[#f0e4df] bg-[#465940] px-4 py-2.5 text-sm outline-none focus:border-[#465940]"
               placeholder="დღევანდელი მენიუ"
               required
             />
@@ -79,37 +79,37 @@ export default function NewPlanPage() {
 
         <div className="grid gap-4 sm:grid-cols-2">
           <div>
-            <label className="mb-1 block text-sm font-semibold text-[#241915]">Age group</label>
+            <label className="mb-1 block text-sm font-semibold text-[#465940]">Age group</label>
             <select
               value={ageGroup}
               onChange={(e) => setAgeGroup(e.target.value)}
-              className="w-full rounded-xl border border-[#f0e4df] bg-[#fff8f6] px-4 py-2.5 text-sm outline-none focus:border-[#ff7f50]"
+              className="w-full rounded-xl border border-[#f0e4df] bg-[#465940] px-4 py-2.5 text-sm outline-none focus:border-[#465940]"
             >
               {ageGroups.map((g) => <option key={g} value={g}>{g}</option>)}
             </select>
           </div>
           <div>
-            <label className="mb-1 block text-sm font-semibold text-[#241915]">Day offset</label>
+            <label className="mb-1 block text-sm font-semibold text-[#465940]">Day offset</label>
             <input
               type="number"
               min="0"
               value={dayOffset}
               onChange={(e) => setDayOffset(e.target.value)}
-              className="w-full rounded-xl border border-[#f0e4df] bg-[#fff8f6] px-4 py-2.5 text-sm outline-none focus:border-[#ff7f50]"
+              className="w-full rounded-xl border border-[#f0e4df] bg-[#465940] px-4 py-2.5 text-sm outline-none focus:border-[#465940]"
             />
           </div>
         </div>
 
         <div className="rounded-xl border border-[#f0e4df] p-5">
-          <p className="mb-4 font-semibold text-[#241915]">Assign dishes</p>
+          <p className="mb-4 font-semibold text-[#465940]">Assign dishes</p>
           <div className="space-y-3">
             {mealTypes.map((type) => (
               <div key={type} className="flex items-center gap-3">
-                <span className="w-24 text-xs font-bold uppercase text-[#57423b]">{type}</span>
+                <span className="w-24 text-xs font-bold uppercase text-[#465940]">{type}</span>
                 <select
                   value={selectedDishes[type] ?? ''}
                   onChange={(e) => setSelectedDishes((p) => ({ ...p, [type]: e.target.value }))}
-                  className="flex-1 rounded-xl border border-[#f0e4df] bg-[#fff8f6] px-3 py-2 text-sm outline-none focus:border-[#ff7f50]"
+                  className="flex-1 rounded-xl border border-[#f0e4df] bg-[#465940] px-3 py-2 text-sm outline-none focus:border-[#465940]"
                 >
                   <option value="">— skip —</option>
                   {dishesByType(type).map((d) => (
@@ -124,7 +124,7 @@ export default function NewPlanPage() {
         <button
           type="submit"
           disabled={loading}
-          className="w-full rounded-full bg-[#ff7f50] py-3 font-semibold text-white disabled:opacity-60"
+          className="w-full rounded-full bg-[#465940] py-3 font-semibold text-[#FDFBF0] disabled:opacity-60"
         >
           {loading ? 'Saving…' : 'Create plan'}
         </button>

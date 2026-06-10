@@ -1,10 +1,10 @@
-import { requireUser } from '@/lib/auth';
+﻿import { requireUser } from '@/lib/auth';
 import { prisma } from '@/lib/prisma';
 import DashboardClient from '@/components/DashboardClient';
 import type { Metadata } from 'next';
 
 export const metadata: Metadata = {
-  title: 'დეშბორდი — moMeals',
+  title: 'დეშბორდი — mom menu',
   robots: { index: false, follow: false },
 };
 

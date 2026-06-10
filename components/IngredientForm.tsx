@@ -1,4 +1,4 @@
-'use client';
+﻿'use client';
 
 import { useState, useRef } from 'react';
 import { useRouter } from 'next/navigation';
@@ -42,9 +42,9 @@ const NUTRIENTS = [
   { key: 'omega3Mg',     label: 'Omega-3',            unit: 'mg'  },
 ];
 
-const inp = 'w-full px-4 py-3 rounded-xl border border-gray-200 focus:outline-none focus:border-[#ff7f50] transition text-sm bg-white';
-const lbl = 'block text-sm font-semibold text-gray-700 mb-1.5';
-const sec = 'bg-white rounded-2xl border border-gray-100 shadow-sm p-6';
+const inp = 'w-full px-4 py-3 rounded-xl border border-[#465940]/20 focus:outline-none focus:border-[#465940] transition text-sm bg-white text-[#465940]';
+const lbl = 'block text-sm font-semibold text-[#465940] mb-1.5';
+const sec = 'bg-[#FDFBF0] rounded-2xl border border-[#465940]/10 shadow-sm p-6';
 
 type Props = { ingredient?: any; backUrl?: string };
 
@@ -137,12 +137,12 @@ export default function IngredientForm({ ingredient, backUrl = '/admin/ingredien
   return (
     <div className="p-6 max-w-3xl">
       <div className="mb-6 flex items-center gap-3">
-        <a href={backUrl} className="text-gray-400 hover:text-gray-600 text-sm transition">← უკან</a>
-        <span className="text-gray-300">/</span>
-        <h1 className="text-2xl font-black text-gray-900">{isEdit ? 'რედაქტირება' : 'ახალი ხილი / ბოსტნეული'}</h1>
+        <a href={backUrl} className="text-[#465940]/60 hover:text-[#465940]/80 text-sm transition">← უკან</a>
+        <span className="text-[#465940]/40">/</span>
+        <h1 className="text-2xl font-black text-[#465940]">{isEdit ? 'რედაქტირება' : 'ახალი ხილი'}</h1>
       </div>
 
-      {error && <div className="mb-5 rounded-xl bg-red-50 border border-red-200 px-4 py-3 text-sm font-medium text-red-700">{error}</div>}
+      {error && <div className="mb-5 rounded-xl bg-[#465940] border border-[#FDFBF0]/30 px-4 py-3 text-sm font-medium text-[#FDFBF0]">{error}</div>}
 
       <form onSubmit={handleSubmit} className="space-y-5">
 
@@ -166,7 +166,7 @@ export default function IngredientForm({ ingredient, backUrl = '/admin/ingredien
           <div className="grid grid-cols-2 gap-2">
             {[{ v: 'FRUIT', l: '🍎 ხილი' }, { v: 'VEGETABLE', l: '🥦 ბოსტნეული' }].map(opt => (
               <button key={opt.v} type="button" onClick={() => setType(opt.v)}
-                className={`py-3 rounded-xl text-sm font-bold border-2 transition ${type === opt.v ? 'border-[#ff7f50] bg-[#fff8f6] text-[#ff7f50]' : 'border-gray-100 text-gray-500 hover:border-gray-200'}`}>
+                className={`py-3 rounded-xl text-sm font-bold border-2 transition ${type === opt.v ? 'border-[#465940] bg-[#465940] text-[#465940]' : 'border-[#465940]/10 text-[#465940]/70 hover:border-[#465940]/20'}`}>
                 {opt.l}
               </button>
             ))}
@@ -181,27 +181,27 @@ export default function IngredientForm({ ingredient, backUrl = '/admin/ingredien
             onDragOver={(e) => { e.preventDefault(); setDragOver(true); }}
             onDragLeave={() => setDragOver(false)}
             onDrop={(e) => { e.preventDefault(); setDragOver(false); const f = e.dataTransfer.files?.[0]; if (f && f.type.startsWith('image/')) setImage(f); }}
-            className={`relative cursor-pointer rounded-2xl border-2 border-dashed transition flex items-center justify-center overflow-hidden ${dragOver ? 'border-[#ff7f50] bg-[#fff3ee]' : 'border-gray-200 hover:border-[#ff7f50] hover:bg-[#fef9f7]'}`}
+            className={`relative cursor-pointer rounded-2xl border-2 border-dashed transition flex items-center justify-center overflow-hidden ${dragOver ? 'border-[#465940] bg-[#fff3ee]' : 'border-[#465940]/20 hover:border-[#465940] hover:bg-[#fef9f7]'}`}
             style={{ minHeight: imagePreview ? 220 : 140 }}
           >
             {imagePreview ? (
               <>
                 <img src={imagePreview} alt="" className="w-full object-cover absolute inset-0" style={{ maxHeight: 260 }} />
                 <div className="absolute inset-0 bg-black/30 flex items-center justify-center opacity-0 hover:opacity-100 transition">
-                  <span className="text-white font-bold text-sm bg-black/50 px-4 py-2 rounded-full">შეცვლა</span>
+                  <span className="text-[#FDFBF0] font-bold text-sm bg-black/50 px-4 py-2 rounded-full">შეცვლა</span>
                 </div>
               </>
             ) : (
               <div className="text-center py-8 px-4">
                 <div className="text-4xl mb-3">📷</div>
-                <p className="text-sm font-semibold text-gray-600">ჩააგდე ფოტო ან დააჭირე</p>
-                <p className="text-xs text-gray-400 mt-1">JPG, PNG, WEBP</p>
+                <p className="text-sm font-semibold text-[#465940]/80">ჩააგდე ფოტო ან დააჭირე</p>
+                <p className="text-xs text-[#465940]/60 mt-1">JPG, PNG, WEBP</p>
               </div>
             )}
           </div>
           <input ref={fileRef} type="file" accept="image/*" className="hidden"
             onChange={(e) => { const f = e.target.files?.[0]; if (f) setImage(f); }} />
-          {imageFile && <p className="mt-2 text-xs text-gray-400">{imageFile.name} · {(imageFile.size / 1024 / 1024).toFixed(1)} MB</p>}
+          {imageFile && <p className="mt-2 text-xs text-[#465940]/60">{imageFile.name} · {(imageFile.size / 1024 / 1024).toFixed(1)} MB</p>}
         </div>
 
         {/* Seasons */}
@@ -209,12 +209,12 @@ export default function IngredientForm({ ingredient, backUrl = '/admin/ingredien
           <p className={lbl}>სეზონი</p>
           <div className="grid grid-cols-2 gap-2">
             {SEASONS.map(s => (
-              <label key={s.value} className={`flex items-center gap-3 p-3 rounded-xl border-2 cursor-pointer transition ${seasons.includes(s.value) ? 'border-[#ff7f50] bg-[#fff8f6]' : 'border-gray-100 hover:border-gray-200'}`}>
+              <label key={s.value} className={`flex items-center gap-3 p-3 rounded-xl border-2 cursor-pointer transition ${seasons.includes(s.value) ? 'border-[#465940] bg-[#465940]' : 'border-[#465940]/10 hover:border-[#465940]/20'}`}>
                 <input type="checkbox" className="hidden" checked={seasons.includes(s.value)} onChange={() => toggle(seasons, setSeasons, s.value)} />
-                <div className={`w-5 h-5 rounded-md border-2 flex items-center justify-center flex-shrink-0 ${seasons.includes(s.value) ? 'bg-[#ff7f50] border-[#ff7f50]' : 'border-gray-300'}`}>
+                <div className={`w-5 h-5 rounded-md border-2 flex items-center justify-center flex-shrink-0 ${seasons.includes(s.value) ? 'bg-[#465940] border-[#465940]' : 'border-[#465940]/30'}`}>
                   {seasons.includes(s.value) && <svg width="10" height="8" viewBox="0 0 10 8" fill="none"><path d="M1 4L3.5 6.5L9 1" stroke="white" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/></svg>}
                 </div>
-                <span className="text-sm font-medium text-gray-700">{s.ka}</span>
+                <span className="text-sm font-medium text-[#465940]">{s.ka}</span>
               </label>
             ))}
           </div>
@@ -225,12 +225,12 @@ export default function IngredientForm({ ingredient, backUrl = '/admin/ingredien
           <p className={lbl}>ასაკობრივი ჯგუფი</p>
           <div className="grid grid-cols-2 gap-2">
             {AGE_GROUPS.map(ag => (
-              <label key={ag.value} className={`flex items-center gap-3 p-3 rounded-xl border-2 cursor-pointer transition ${ageGroups.includes(ag.value) ? 'border-[#ff7f50] bg-[#fff8f6]' : 'border-gray-100 hover:border-gray-200'}`}>
+              <label key={ag.value} className={`flex items-center gap-3 p-3 rounded-xl border-2 cursor-pointer transition ${ageGroups.includes(ag.value) ? 'border-[#465940] bg-[#465940]' : 'border-[#465940]/10 hover:border-[#465940]/20'}`}>
                 <input type="checkbox" className="hidden" checked={ageGroups.includes(ag.value)} onChange={() => toggle(ageGroups, setAgeGroups, ag.value)} />
-                <div className={`w-5 h-5 rounded-md border-2 flex items-center justify-center flex-shrink-0 ${ageGroups.includes(ag.value) ? 'bg-[#ff7f50] border-[#ff7f50]' : 'border-gray-300'}`}>
+                <div className={`w-5 h-5 rounded-md border-2 flex items-center justify-center flex-shrink-0 ${ageGroups.includes(ag.value) ? 'bg-[#465940] border-[#465940]' : 'border-[#465940]/30'}`}>
                   {ageGroups.includes(ag.value) && <svg width="10" height="8" viewBox="0 0 10 8" fill="none"><path d="M1 4L3.5 6.5L9 1" stroke="white" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/></svg>}
                 </div>
-                <span className="text-sm font-medium text-gray-700">{ag.label}</span>
+                <span className="text-sm font-medium text-[#465940]">{ag.label}</span>
               </label>
             ))}
           </div>
@@ -239,7 +239,7 @@ export default function IngredientForm({ ingredient, backUrl = '/admin/ingredien
         {/* Benefits */}
         <div className={sec}>
           <p className={lbl}>სარგებლობა (Benefits)</p>
-          <p className="text-xs text-gray-400 mb-3">თითოეული სარგებელი ახალ სტრიქონზე — ქართული და ინგლისური ცალ-ცალკე</p>
+          <p className="text-xs text-[#465940]/60 mb-3">თითოეული სარგებელი ახალ სტრიქონზე — ქართული და ინგლისური ცალ-ცალკე</p>
           <div className="grid grid-cols-2 gap-4">
             <div>
               <label className={lbl}>ქართულად</label>
@@ -276,11 +276,11 @@ export default function IngredientForm({ ingredient, backUrl = '/admin/ingredien
                       else next[key] = '';
                       return next;
                     })}
-                    className={`w-5 h-5 rounded-md border-2 flex items-center justify-center flex-shrink-0 cursor-pointer transition ${nutrients[key] !== undefined ? 'bg-[#ff7f50] border-[#ff7f50]' : 'border-gray-300'}`}
+                    className={`w-5 h-5 rounded-md border-2 flex items-center justify-center flex-shrink-0 cursor-pointer transition ${nutrients[key] !== undefined ? 'bg-[#465940] border-[#465940]' : 'border-[#465940]/30'}`}
                   >
                     {nutrients[key] !== undefined && <svg width="10" height="8" viewBox="0 0 10 8" fill="none"><path d="M1 4L3.5 6.5L9 1" stroke="white" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/></svg>}
                   </div>
-                  <span className="text-sm text-gray-700 truncate">{label}</span>
+                  <span className="text-sm text-[#465940] truncate">{label}</span>
                 </label>
                 {nutrients[key] !== undefined ? (
                   <div className="flex items-center gap-2 flex-shrink-0">
@@ -290,12 +290,12 @@ export default function IngredientForm({ ingredient, backUrl = '/admin/ingredien
                       min="0"
                       value={nutrients[key]}
                       onChange={e => setNutrients(prev => ({ ...prev, [key]: e.target.value }))}
-                      className="w-24 px-3 py-1.5 rounded-lg border border-gray-200 text-sm text-right focus:outline-none focus:border-[#ff7f50]"
+                      className="w-24 px-3 py-1.5 rounded-lg border border-[#465940]/20 text-sm text-right text-[#465940] bg-white focus:outline-none focus:border-[#465940]"
                     />
-                    <span className="text-xs text-gray-400 w-8">{unit}</span>
+                    <span className="text-xs text-[#465940]/60 w-8">{unit}</span>
                   </div>
                 ) : (
-                  <span className="text-gray-300 text-sm w-36 text-right flex-shrink-0">—</span>
+                  <span className="text-[#465940]/40 text-sm w-36 text-right flex-shrink-0">—</span>
                 )}
               </div>
             ))}
@@ -303,7 +303,7 @@ export default function IngredientForm({ ingredient, backUrl = '/admin/ingredien
         </div>
 
         <button type="submit" disabled={busy}
-          className="w-full bg-[#ff7f50] hover:bg-[#e86e40] disabled:opacity-60 text-white py-3.5 rounded-2xl font-bold text-sm transition">
+          className="w-full bg-[#465940] hover:bg-[#465940] disabled:opacity-60 text-[#FDFBF0] py-3.5 rounded-2xl font-bold text-sm transition">
           {uploading ? 'ფოტო იტვირთება...' : saving ? 'ინახება...' : (isEdit ? 'განახლება' : 'შენახვა')}
         </button>
       </form>

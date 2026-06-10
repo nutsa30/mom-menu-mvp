@@ -1,4 +1,4 @@
-import bcrypt from 'bcryptjs';
+﻿import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
 import { cookies } from 'next/headers';
 import { redirect } from 'next/navigation';
@@ -45,3 +45,4 @@ export async function currentDbUser() {
   if (!session) return null;
   return prisma.user.findUnique({ where: { id: session.id }, include: { children: true } });
 }
+

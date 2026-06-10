@@ -1,4 +1,4 @@
-import { NextRequest, NextResponse } from 'next/server';
+﻿import { NextRequest, NextResponse } from 'next/server';
 
 function decodePayload(token: string) {
   try {
@@ -36,3 +36,4 @@ export function middleware(req: NextRequest) {
 export const config = {
   matcher: ['/dashboard/:path*', '/admin/:path*', '/login', '/register', '/signup'],
 };
+

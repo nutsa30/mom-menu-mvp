@@ -1,7 +1,7 @@
 import type { Metadata } from 'next';
 
 export const metadata: Metadata = {
-  title: 'რეგისტრაცია — moMeals',
+  title: 'რეგისტრაცია — mom menu',
   robots: { index: false, follow: false },
 };
 

@@ -1,4 +1,4 @@
-import { prisma } from '@/lib/prisma';
+﻿import { prisma } from '@/lib/prisma';
 
 export default async function NewMealPlanPage() {
   const dishes = await prisma.dish.findMany({
@@ -6,8 +6,8 @@ export default async function NewMealPlanPage() {
   });
 
   return (
-    <main className="min-h-screen bg-[#fff8f6] px-6 py-10">
-      <div className="max-w-3xl mx-auto bg-white rounded-[32px] shadow-xl p-10">
+    <main className="min-h-screen bg-[#465940] px-6 py-10">
+      <div className="max-w-3xl mx-auto bg-[#FDFBF0] rounded-[32px] shadow-xl p-10">
         <h1 className="text-3xl font-bold mb-6">Create meal plan</h1>
 
         <form className="space-y-5">
@@ -51,7 +51,7 @@ export default async function NewMealPlanPage() {
             </div>
           ))}
 
-          <button className="w-full bg-[#ff7f50] text-white py-3 rounded-full font-semibold">
+          <button className="w-full bg-[#465940] text-[#FDFBF0] py-3 rounded-full font-semibold">
             Save meal plan
           </button>
         </form>

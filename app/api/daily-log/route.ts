@@ -50,35 +50,8 @@ export async function GET(req: NextRequest) {
   const missing = MEAL_TYPES.filter((m) => !existing.has(m));
 
   if (missing.length) {
-    // Pick a seasonal ingredient for SNACK (current month → season)
-    const month = new Date().getMonth(); // 0-11
-    const currentSeason = month <= 1 || month === 11 ? 'WINTER'
-      : month <= 4 ? 'SPRING'
-      : month <= 7 ? 'SUMMER'
-      : 'AUTUMN';
-
     for (const mealType of missing) {
       let logData: any = { childId, date, mealType, wasEaten: false };
-
-      if (mealType === 'SNACK') {
-        // 50% chance: use seasonal fruit/veggie instead of a dish
-        const suitableAges = getSuitableAgeGroups(child.ageGroup);
-        const ingCandidates = await prisma.ingredient.findMany({
-          where: {
-            ageGroups: { hasSome: suitableAges },
-            seasons: { has: currentSeason as any },
-          },
-        });
-        if (ingCandidates.length && Math.random() < 0.5) {
-          const picked = ingCandidates[Math.floor(Math.random() * ingCandidates.length)];
-          await prisma.dailyLog.upsert({
-            where: { childId_date_mealType: { childId, date, mealType } },
-            update: { ingredientId: picked.id, dishId: null },
-            create: { ...logData, ingredientId: picked.id, dishId: null },
-          });
-          continue;
-        }
-      }
 
       const where: any = { mealType, ageGroups: { hasSome: getSuitableAgeGroups(child.ageGroup) } };
       if (child.allergies.length) where.NOT = { allergens: { hasSome: child.allergies } };

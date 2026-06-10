@@ -1,4 +1,4 @@
-import { NextResponse } from 'next/server';
+﻿import { NextResponse } from 'next/server';
 import { getSession } from '@/lib/auth';
 import crypto from 'crypto';
 
@@ -19,3 +19,4 @@ export async function GET() {
 
   return NextResponse.json({ cloudName, apiKey, timestamp, signature, folder });
 }
+

@@ -1,4 +1,4 @@
-import { prisma } from '@/lib/prisma';
+﻿import { prisma } from '@/lib/prisma';
 import { getSession } from '@/lib/auth';
 import { dict } from '@/lib/i18n';
 import RecipesClient from '@/components/RecipesClient';
@@ -15,7 +15,7 @@ export const metadata: Metadata = {
     title: 'რეცეპტები — ბავშვის კვება ასაკის მიხედვით',
     description: 'ასობით ჯანსაღი რეცეპტი ბავშვებისთვის ალერგენების გათვალისწინებით.',
     url: '/recipes',
-    images: [{ url: `/og?title=Recipes+for+Children&sub=Hundreds+of+age-appropriate%2C+allergy-aware+meals`, width: 1200, height: 630, alt: 'moMeals Recipes' }],
+    images: [{ url: `/og?title=Recipes+for+Children&sub=Hundreds+of+age-appropriate%2C+allergy-aware+meals`, width: 1200, height: 630, alt: 'mom menu Recipes' }],
   },
 };
 

@@ -1,13 +1,13 @@
-'use client';
+﻿'use client';
 
 import { useState, useMemo } from 'react';
 import DeleteDishButton from './DeleteDishButton';
 
 const TYPE_COLOR: Record<string, string> = {
-  BREAKFAST: 'bg-orange-100 text-orange-700',
-  LUNCH: 'bg-green-100 text-green-700',
-  DINNER: 'bg-blue-100 text-blue-700',
-  SNACK: 'bg-yellow-100 text-yellow-700',
+  BREAKFAST: 'bg-[#465940]/20 text-[#465940]',
+  LUNCH: 'bg-[#465940]/20 text-[#465940]',
+  DINNER: 'bg-[#FDFBF0]/10 text-[#465940]',
+  SNACK: 'bg-[#FDFBF0]/10 text-[#465940]',
 };
 
 const MEAL_LABELS: Record<string, { ka: string; en: string }> = {
@@ -47,12 +47,12 @@ export default function DishesAdminList({ dishes, locale, labels, ageLabel }: Pr
       {/* Search + Filter bar */}
       <div className="flex flex-col sm:flex-row gap-3">
         <div className="relative flex-1">
-          <svg className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>
+          <svg className="absolute left-3 top-1/2 -translate-y-1/2 text-[#465940]/60" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>
           <input
             value={search}
             onChange={(e) => setSearch(e.target.value)}
             placeholder={locale === 'ka' ? 'კერძის ძებნა...' : 'Search dish...'}
-            className="w-full pl-9 pr-4 py-2.5 rounded-xl border border-gray-200 focus:outline-none focus:border-[#ff7f50] text-sm bg-white"
+            className="w-full pl-9 pr-4 py-2.5 rounded-xl border border-[#465940]/20 focus:outline-none focus:border-[#465940] text-sm bg-[#FDFBF0]"
           />
         </div>
         <div className="flex gap-2 flex-wrap">
@@ -62,8 +62,8 @@ export default function DishesAdminList({ dishes, locale, labels, ageLabel }: Pr
               onClick={() => setMealFilter(key)}
               className={`px-4 py-2 rounded-full text-xs font-bold transition whitespace-nowrap
                 ${mealFilter === key
-                  ? 'bg-[#ff7f50] text-white'
-                  : 'bg-white border border-gray-200 text-gray-600 hover:border-[#ff7f50] hover:text-[#ff7f50]'}`}
+                  ? 'bg-[#465940] text-[#FDFBF0]'
+                  : 'bg-[#FDFBF0] border border-[#465940]/20 text-[#465940]/80 hover:border-[#465940] hover:text-[#FDFBF0]'}`}
             >
               {MEAL_LABELS[key][locale as 'ka' | 'en'] ?? MEAL_LABELS[key].en}
             </button>
@@ -71,32 +71,32 @@ export default function DishesAdminList({ dishes, locale, labels, ageLabel }: Pr
         </div>
       </div>
 
-      <p className="text-xs text-gray-400">{filtered.length} კერძი</p>
+      <p className="text-xs text-[#465940]/60">{filtered.length} კერძი</p>
 
-      <div className="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden">
+      <div className="bg-[#FDFBF0] rounded-2xl border border-[#465940]/10 shadow-sm overflow-hidden">
         <div className="overflow-x-auto">
         <table className="w-full min-w-[600px]">
-          <thead className="bg-[#fdf6f3]">
+          <thead className="bg-[#465940]">
             <tr>
-              <th className="text-left px-6 py-3 text-xs font-semibold text-gray-400 uppercase tracking-wide">{labels.meal}</th>
-              <th className="text-left px-4 py-3 text-xs font-semibold text-gray-400 uppercase tracking-wide">{labels.type}</th>
-              <th className="text-left px-4 py-3 text-xs font-semibold text-gray-400 uppercase tracking-wide">{labels.ageGroups}</th>
-              <th className="text-right px-6 py-3 text-xs font-semibold text-gray-400 uppercase tracking-wide">{labels.actions}</th>
+              <th className="text-left px-6 py-3 text-xs font-semibold text-[#465940]/60 uppercase tracking-wide">{labels.meal}</th>
+              <th className="text-left px-4 py-3 text-xs font-semibold text-[#465940]/60 uppercase tracking-wide">{labels.type}</th>
+              <th className="text-left px-4 py-3 text-xs font-semibold text-[#465940]/60 uppercase tracking-wide">{labels.ageGroups}</th>
+              <th className="text-right px-6 py-3 text-xs font-semibold text-[#465940]/60 uppercase tracking-wide">{labels.actions}</th>
             </tr>
           </thead>
-          <tbody className="divide-y divide-gray-50">
+          <tbody className="divide-y divide-[#465940]/5">
             {filtered.map((dish) => (
-              <tr key={dish.id} className="hover:bg-gray-50 transition">
+              <tr key={dish.id} className="hover:bg-[#465940]/5 transition">
                 <td className="px-6 py-4">
                   <div className="flex items-center gap-3">
-                    <div className="w-10 h-10 rounded-xl bg-gray-100 overflow-hidden flex-shrink-0">
+                    <div className="w-10 h-10 rounded-xl bg-[#465940]/10 overflow-hidden flex-shrink-0">
                       {dish.imageUrl
                         ? <img src={dish.imageUrl} alt="" className="w-full h-full object-cover" />
                         : <div className="w-full h-full flex items-center justify-center text-lg">🍽️</div>}
                     </div>
                     <div>
-                      <p className="text-sm font-semibold text-gray-800">{locale === 'ka' ? dish.titleKa : dish.titleEn}</p>
-                      <p className="text-xs text-gray-400">{locale === 'ka' ? dish.titleEn : dish.titleKa}</p>
+                      <p className="text-sm font-semibold text-[#465940]">{locale === 'ka' ? dish.titleKa : dish.titleEn}</p>
+                      <p className="text-xs text-[#465940]/60">{locale === 'ka' ? dish.titleEn : dish.titleKa}</p>
                     </div>
                   </div>
                 </td>
@@ -105,15 +105,15 @@ export default function DishesAdminList({ dishes, locale, labels, ageLabel }: Pr
                     {MEAL_LABELS[dish.mealType]?.[locale as 'ka' | 'en'] ?? dish.mealType}
                   </span>
                 </td>
-                <td className="px-4 py-4 text-xs text-gray-500">
+                <td className="px-4 py-4 text-xs text-[#465940]/70">
                   {dish.ageGroups.map((g: string) => ageLabel[g] ?? g).join(', ')}
                 </td>
                 <td className="px-6 py-4">
                   <div className="flex items-center justify-end gap-3">
-                    <a href={withLang(`/admin/meals/${dish.id}/view`)} className="text-gray-400 hover:text-blue-500 transition text-xs font-medium">
+                    <a href={withLang(`/admin/meals/${dish.id}/view`)} className="text-[#465940]/60 hover:text-[#465940] transition text-xs font-medium">
                       {labels.view}
                     </a>
-                    <a href={withLang(`/admin/meals/${dish.id}`)} className="text-gray-400 hover:text-[#ff7f50] transition">
+                    <a href={withLang(`/admin/meals/${dish.id}`)} className="text-[#465940]/60 hover:text-[#FDFBF0] transition">
                       <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
                     </a>
                     <DeleteDishButton id={dish.id} />
@@ -122,7 +122,7 @@ export default function DishesAdminList({ dishes, locale, labels, ageLabel }: Pr
               </tr>
             ))}
             {filtered.length === 0 && (
-              <tr><td colSpan={4} className="px-6 py-12 text-center text-gray-400 text-sm">
+              <tr><td colSpan={4} className="px-6 py-12 text-center text-[#465940]/60 text-sm">
                 {locale === 'ka' ? 'კერძი ვერ მოიძებნა' : 'No dishes found'}
               </td></tr>
             )}

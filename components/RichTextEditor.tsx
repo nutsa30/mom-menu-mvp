@@ -1,4 +1,4 @@
-'use client';
+﻿'use client';
 
 import { useEditor, EditorContent } from '@tiptap/react';
 import { Node, mergeAttributes } from '@tiptap/core';
@@ -8,15 +8,54 @@ import Image from '@tiptap/extension-image';
 import { useEffect, useCallback, useRef, useState } from 'react';
 import { uploadImage } from '@/lib/uploadImage';
 
-// ── Custom nodes so TipTap preserves the grid HTML ──────────
+// ── Custom image with S/M/L size control ────────────────────
+const CustomImage = Image.extend({
+  addAttributes() {
+    return {
+      src: { default: null },
+      alt: { default: null },
+      title: { default: null },
+      size: {
+        default: 'medium',
+        parseHTML: (el) => el.getAttribute('data-size') || 'medium',
+        renderHTML: (attrs) => {
+          const cls = ({ small: 'img-sm', medium: 'img-md', full: 'img-full' } as Record<string, string>)[attrs.size] ?? 'img-md';
+          return { 'data-size': attrs.size, class: `rounded-xl ${cls} my-2 mx-auto block` };
+        },
+      },
+    };
+  },
+});
+
+// ── Column layout nodes ──────────────────────────────────────
+const Column = Node.create({
+  name: 'column',
+  group: 'block',
+  content: 'block+',
+  isolating: true,
+  parseHTML() { return [{ tag: 'div.col' }]; },
+  renderHTML({ HTMLAttributes }) {
+    return ['div', mergeAttributes({ class: 'col' }, HTMLAttributes), 0];
+  },
+});
+
+const ColumnLayout = Node.create({
+  name: 'columnLayout',
+  group: 'block',
+  content: 'column+',
+  parseHTML() { return [{ tag: 'div.col-layout' }]; },
+  renderHTML({ HTMLAttributes }) {
+    return ['div', mergeAttributes({ class: 'col-layout' }, HTMLAttributes), 0];
+  },
+});
+
+// ── Photo card grid nodes ────────────────────────────────────
 const ImageCard = Node.create({
   name: 'imageCard',
   group: 'block',
   content: 'paragraph+',
   isolating: true,
-  parseHTML() {
-    return [{ tag: 'div.img-card' }];
-  },
+  parseHTML() { return [{ tag: 'div.img-card' }]; },
   renderHTML({ HTMLAttributes }) {
     return ['div', mergeAttributes({ class: 'img-card' }, HTMLAttributes), 0];
   },
@@ -26,9 +65,7 @@ const ImageGrid = Node.create({
   name: 'imageGrid',
   group: 'block',
   content: 'imageCard+',
-  parseHTML() {
-    return [{ tag: 'div.img-card-grid' }];
-  },
+  parseHTML() { return [{ tag: 'div.img-card-grid' }]; },
   renderHTML({ HTMLAttributes }) {
     return ['div', mergeAttributes({ class: 'img-card-grid' }, HTMLAttributes), 0];
   },
@@ -47,7 +84,7 @@ function Btn({
       disabled={disabled}
       onMouseDown={(e) => { e.preventDefault(); onClick(); }}
       className={`px-2.5 py-1 rounded-lg text-sm font-bold transition select-none disabled:opacity-40 ${
-        active ? 'bg-[#ff7f50] text-white' : 'text-gray-600 hover:bg-gray-200'
+        active ? 'bg-[#465940] text-[#FDFBF0]' : 'text-[#465940]/80 hover:bg-[#465940]/15'
       }`}
     >
       {children}
@@ -56,7 +93,7 @@ function Btn({
 }
 
 function Divider() {
-  return <div className="w-px h-5 bg-gray-200 mx-0.5 self-center" />;
+  return <div className="w-px h-5 bg-[#465940]/15 mx-0.5 self-center" />;
 }
 
 export default function RichTextEditor({
@@ -72,6 +109,7 @@ export default function RichTextEditor({
   const gridImageRef = useRef<HTMLInputElement>(null);
   const [imgUploading, setImgUploading] = useState(false);
   const [gridUploading, setGridUploading] = useState(false);
+  const [, forceUpdate] = useState(0);
 
   const editor = useEditor({
     extensions: [
@@ -79,25 +117,29 @@ export default function RichTextEditor({
       Link.configure({
         openOnClick: false,
         HTMLAttributes: {
-          class: 'text-[#ff7f50] underline underline-offset-2',
+          class: 'text-[#465940] underline underline-offset-2',
           target: '_blank',
           rel: 'noopener noreferrer',
         },
       }),
-      Image.configure({
-        HTMLAttributes: { class: 'rounded-xl max-w-full my-2 mx-auto block' },
-      }),
+      CustomImage,
       ImageCard,
       ImageGrid,
+      Column,
+      ColumnLayout,
     ],
     content: value,
     editorProps: {
       attributes: {
-        class: 'outline-none min-h-[220px] p-4 prose-blog',
+        class: 'outline-none min-h-[420px] p-6 prose-blog',
         'data-placeholder': placeholder,
       },
     },
-    onUpdate: ({ editor }) => onChange(editor.getHTML()),
+    onUpdate: ({ editor }) => {
+      onChange(editor.getHTML());
+      forceUpdate((n) => n + 1);
+    },
+    onSelectionUpdate: () => forceUpdate((n) => n + 1),
   });
 
   useEffect(() => {
@@ -115,7 +157,29 @@ export default function RichTextEditor({
     editor.chain().focus().setLink({ href: url }).run();
   }, [editor]);
 
-  // Single full-width image
+  const insertTwoCol = useCallback(() => {
+    if (!editor) return;
+    editor.chain().focus().insertContent({
+      type: 'columnLayout',
+      content: [
+        { type: 'column', content: [{ type: 'paragraph' }] },
+        { type: 'column', content: [{ type: 'paragraph' }] },
+      ],
+    }).run();
+  }, [editor]);
+
+  const insertThreeCol = useCallback(() => {
+    if (!editor) return;
+    editor.chain().focus().insertContent({
+      type: 'columnLayout',
+      content: [
+        { type: 'column', content: [{ type: 'paragraph' }] },
+        { type: 'column', content: [{ type: 'paragraph' }] },
+        { type: 'column', content: [{ type: 'paragraph' }] },
+      ],
+    }).run();
+  }, [editor]);
+
   const onImageFileChange = useCallback(async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     e.target.value = '';
@@ -132,7 +196,6 @@ export default function RichTextEditor({
     }
   }, [editor]);
 
-  // Photo card grid — inserts as proper TipTap nodes (preserved in HTML output)
   const onGridImageChange = useCallback(async (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = Array.from(e.target.files ?? []);
     e.target.value = '';
@@ -141,20 +204,13 @@ export default function RichTextEditor({
     try {
       const urls = await Promise.all(files.map((f) => uploadImage(f)));
       if (editor.isActive('listItem')) editor.chain().focus().liftListItem('listItem').run();
-
       editor.chain().focus().insertContent({
         type: 'imageGrid',
         content: urls.map((url) => ({
           type: 'imageCard',
           content: [
-            {
-              type: 'paragraph',
-              content: [{ type: 'image', attrs: { src: url, alt: '' } }],
-            },
-            {
-              type: 'paragraph',
-              content: [{ type: 'text', text: 'სახელი / აღწერა' }],
-            },
+            { type: 'paragraph', content: [{ type: 'image', attrs: { src: url, alt: '' } }] },
+            { type: 'paragraph', content: [{ type: 'text', text: 'სახელი / აღწერა' }] },
           ],
         })),
       }).run();
@@ -167,10 +223,13 @@ export default function RichTextEditor({
 
   if (!editor) return null;
 
+  const imageActive = editor.isActive('image');
+  const imgSize = editor.getAttributes('image').size ?? 'medium';
+
   return (
-    <div className="border border-gray-200 rounded-xl overflow-hidden focus-within:border-[#ff7f50] transition-colors">
+    <div className="border border-[#465940]/20 rounded-xl overflow-hidden focus-within:border-[#465940] transition-colors bg-[#FDFBF0]">
       {/* Toolbar */}
-      <div className="flex flex-wrap items-center gap-0.5 px-2 py-1.5 bg-gray-50 border-b border-gray-100">
+      <div className="flex flex-wrap items-center gap-0.5 px-2 py-1.5 bg-[#465940]/5 border-b border-[#465940]/10 sticky top-0 z-10">
         <Btn active={editor.isActive('heading', { level: 1 })} onClick={() => editor.chain().focus().toggleHeading({ level: 1 }).run()} title="სათაური 1">H1</Btn>
         <Btn active={editor.isActive('heading', { level: 2 })} onClick={() => editor.chain().focus().toggleHeading({ level: 2 }).run()} title="სათაური 2">H2</Btn>
         <Btn active={editor.isActive('heading', { level: 3 })} onClick={() => editor.chain().focus().toggleHeading({ level: 3 }).run()} title="სათაური 3">H3</Btn>
@@ -187,13 +246,39 @@ export default function RichTextEditor({
           <Btn onClick={() => editor.chain().focus().unsetLink().run()} title="ბმულის წაშლა">✕🔗</Btn>
         )}
         <Divider />
-        <Btn onClick={() => imageRef.current?.click()} disabled={imgUploading} title="სურათი (სრული სიგანე)">
+        {/* Image upload */}
+        <Btn onClick={() => imageRef.current?.click()} disabled={imgUploading} title="სურათის ჩასმა">
           {imgUploading ? '⏳' : '🖼️'}
         </Btn>
-        <Btn onClick={() => gridImageRef.current?.click()} disabled={gridUploading} title="ფოტო ბარათები გვერდიგვერდ — შეარჩიე რამდენიმე ერთად">
+        <Btn onClick={() => gridImageRef.current?.click()} disabled={gridUploading} title="ფოტო ბარათები (რამდენიმე ერთად)">
           {gridUploading ? '⏳' : '⊞ 📷'}
         </Btn>
         <Divider />
+        {/* Column layouts */}
+        <Btn onClick={insertTwoCol} title="2 სვეტი — ტექსტი | ფოტო">⊟ ×2</Btn>
+        <Btn onClick={insertThreeCol} title="3 სვეტი — ფოტო | ფოტო | ფოტო">⊞ ×3</Btn>
+        <Divider />
+        {/* Image size — visible only when an image is selected */}
+        {imageActive && (
+          <>
+            <Btn
+              active={imgSize === 'small'}
+              onClick={() => editor.chain().focus().updateAttributes('image', { size: 'small' }).run()}
+              title="მცირე"
+            >S</Btn>
+            <Btn
+              active={imgSize === 'medium'}
+              onClick={() => editor.chain().focus().updateAttributes('image', { size: 'medium' }).run()}
+              title="საშუალო"
+            >M</Btn>
+            <Btn
+              active={imgSize === 'full'}
+              onClick={() => editor.chain().focus().updateAttributes('image', { size: 'full' }).run()}
+              title="სრული სიგანე"
+            >L</Btn>
+            <Divider />
+          </>
+        )}
         <Btn onClick={() => editor.chain().focus().undo().run()} title="გაუქმება">↩</Btn>
         <Btn onClick={() => editor.chain().focus().redo().run()} title="გამეორება">↪</Btn>
       </div>

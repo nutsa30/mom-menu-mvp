@@ -1,4 +1,4 @@
-'use client';
+﻿'use client';
 
 import { useRouter } from 'next/navigation';
 import { useState } from 'react';
@@ -26,8 +26,8 @@ export function PublishToggle({ planId, isActive, locale = 'ka' }: { planId: str
       disabled={loading}
       className={`rounded-full px-3 py-1 text-xs font-bold transition ${
         isActive
-          ? 'bg-green-100 text-green-700 hover:bg-green-200'
-          : 'bg-gray-100 text-gray-500 hover:bg-gray-200'
+          ? 'bg-[#465940]/20 text-[#465940] hover:bg-[#465940]/30'
+          : 'bg-[#465940]/10 text-[#465940]/70 hover:bg-[#465940]/15'
       }`}
     >
       {loading ? '...' : isActive ? d.planPublished : d.planDraft}
@@ -46,7 +46,7 @@ export function DeletePlanButton({ planId, locale = 'ka' }: { planId: string; lo
   };
 
   return (
-    <button onClick={del} className="text-sm font-semibold text-red-500 hover:text-red-700">
+    <button onClick={del} className="text-sm font-semibold text-[#FDFBF0] hover:text-[#FDFBF0]">
       {d.deletePlan}
     </button>
   );
@@ -73,7 +73,7 @@ export function SortItemButton({
   };
 
   return (
-    <button onClick={move} className="rounded px-1.5 py-0.5 text-xs text-[#57423b] hover:bg-[#fff1ec]">
+    <button onClick={move} className="rounded px-1.5 py-0.5 text-xs text-[#465940] hover:bg-[#465940]">
       {direction === 'up' ? '↑' : '↓'}
     </button>
   );
@@ -88,7 +88,7 @@ export function RemoveItemButton({ planId, itemId }: { planId: string; itemId: s
   };
 
   return (
-    <button onClick={remove} className="text-xs font-semibold text-red-400 hover:text-red-600">
+    <button onClick={remove} className="text-xs font-semibold text-[#FDFBF0]/70 hover:text-[#FDFBF0]">
       ✕
     </button>
   );
@@ -128,7 +128,7 @@ export function AddItemForm({
       <select
         value={mealType}
         onChange={(e) => setMealType(e.target.value)}
-        className="rounded-xl border border-[#f0e4df] bg-[#fff8f6] px-3 py-2 text-sm"
+        className="rounded-xl border border-[#f0e4df] bg-[#465940] px-3 py-2 text-sm"
       >
         {['BREAKFAST', 'LUNCH', 'DINNER', 'SNACK'].map((t) => (
           <option key={t} value={t}>{t}</option>
@@ -137,7 +137,7 @@ export function AddItemForm({
       <select
         value={dishId}
         onChange={(e) => setDishId(e.target.value)}
-        className="flex-1 min-w-[180px] rounded-xl border border-[#f0e4df] bg-[#fff8f6] px-3 py-2 text-sm"
+        className="flex-1 min-w-[180px] rounded-xl border border-[#f0e4df] bg-[#465940] px-3 py-2 text-sm"
       >
         <option value="">{d.selectDish}</option>
         {dishes.map((dish) => (
@@ -149,7 +149,7 @@ export function AddItemForm({
       <button
         type="submit"
         disabled={loading || !dishId}
-        className="rounded-xl bg-[#ff7f50] px-4 py-2 text-sm font-semibold text-white disabled:opacity-50"
+        className="rounded-xl bg-[#465940] px-4 py-2 text-sm font-semibold text-[#FDFBF0] disabled:opacity-50"
       >
         {d.addItem}
       </button>

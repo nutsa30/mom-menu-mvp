@@ -1,9 +1,9 @@
-import type { Metadata } from 'next';
+﻿import type { Metadata } from 'next';
 
 export const metadata: Metadata = {
-  title: 'კონფიდენციალურობის პოლიტიკა — moMeals',
-  description: 'moMeals-ის კონფიდენციალურობის პოლიტიკა. გაეცანი როგორ ვიყენებთ და ვიცავთ შენს პირად მონაცემებს.',
-  openGraph: { title: 'კონფიდენციალურობის პოლიტიკა — moMeals', url: '/privacy' },
+  title: 'კონფიდენციალურობის პოლიტიკა — mom menu',
+  description: 'mom menu-ის კონფიდენციალურობის პოლიტიკა. გაეცანი როგორ ვიყენებთ და ვიცავთ შენს პირად მონაცემებს.',
+  openGraph: { title: 'კონფიდენციალურობის პოლიტიკა — mom menu', url: '/privacy' },
   robots: { index: false, follow: false },
 };
 
@@ -12,15 +12,15 @@ export default function PrivacyPage({ searchParams }: { searchParams: { lang?: s
   const ka = locale === 'ka';
 
   return (
-    <main className="min-h-screen bg-[#fff8f6]">
+    <main className="min-h-screen bg-[#465940]">
 
       {/* Header */}
-      <div className="bg-white border-b border-gray-100">
+      <div className="bg-[#FDFBF0] border-b border-[#465940]/10">
         <div className="max-w-3xl mx-auto px-6 py-14">
-          <h1 className="text-4xl font-black text-gray-900 mb-3">
+          <h1 className="text-4xl font-black text-[#465940] mb-3">
             {ka ? 'კონფიდენციალურობის პოლიტიკა' : 'Privacy Policy'}
           </h1>
-          <p className="text-sm text-gray-400">
+          <p className="text-sm text-[#465940]/60">
             {ka ? 'ბოლო განახლება: 2026 წლის მაისი' : 'Last updated: May 2026'}
           </p>
         </div>
@@ -30,11 +30,11 @@ export default function PrivacyPage({ searchParams }: { searchParams: { lang?: s
       <div className="max-w-3xl mx-auto px-6 py-14 space-y-12">
 
         {/* Intro */}
-        <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-8">
-          <p className="text-gray-600 leading-relaxed">
+        <div className="bg-[#FDFBF0] rounded-2xl border border-[#465940]/10 shadow-sm p-8">
+          <p className="text-[#465940]/80 leading-relaxed">
             {ka
-              ? 'moMeals ("ჩვენ", "ჩვენი") პატივს სცემს თქვენს კონფიდენციალურობას. ეს დოკუმენტი განმარტავს, თუ რა პერსონალურ მონაცემებს ვაგროვებთ, როგორ ვიყენებთ და როგორ ვიცავთ მათ, როდესაც იყენებთ ჩვენს სერვისს.'
-              : 'moMeals ("we", "our") respects your privacy. This document explains what personal data we collect, how we use it, and how we protect it when you use our service.'}
+              ? 'mom menu ("ჩვენ", "ჩვენი") პატივს სცემს თქვენს კონფიდენციალურობას. ეს დოკუმენტი განმარტავს, თუ რა პერსონალურ მონაცემებს ვაგროვებთ, როგორ ვიყენებთ და როგორ ვიცავთ მათ, როდესაც იყენებთ ჩვენს სერვისს.'
+              : 'mom menu ("we", "our") respects your privacy. This document explains what personal data we collect, how we use it, and how we protect it when you use our service.'}
           </p>
         </div>
 
@@ -68,7 +68,7 @@ export default function PrivacyPage({ searchParams }: { searchParams: { lang?: s
           num="02"
           title={ka ? 'რატომ ვიყენებთ თქვენს მონაცემებს' : 'Why we use your data'}
         >
-          <ul className="space-y-3 text-gray-600 text-sm leading-relaxed">
+          <ul className="space-y-3 text-[#465940]/80 text-sm leading-relaxed">
             {(ka ? [
               'პერსონალური კვების გეგმების შექმნა და მიწოდება',
               'ანგარიშის მართვა და უსაფრთხო ავტორიზაცია',
@@ -83,7 +83,7 @@ export default function PrivacyPage({ searchParams }: { searchParams: { lang?: s
               'Compliance with legal obligations',
             ]).map((item, i) => (
               <li key={i} className="flex gap-3">
-                <span className="flex-shrink-0 w-5 h-5 rounded-full bg-[#fff1ec] text-[#ff7f50] text-[10px] font-black flex items-center justify-center mt-0.5">{i + 1}</span>
+                <span className="flex-shrink-0 w-5 h-5 rounded-full bg-[#465940] text-[#FDFBF0] text-[10px] font-black flex items-center justify-center mt-0.5">{i + 1}</span>
                 {item}
               </li>
             ))}
@@ -94,12 +94,12 @@ export default function PrivacyPage({ searchParams }: { searchParams: { lang?: s
           num="03"
           title={ka ? 'ვინ ხედავს თქვენს მონაცემებს' : 'Who can see your data'}
         >
-          <p className="text-gray-600 text-sm leading-relaxed mb-4">
+          <p className="text-[#465940]/80 text-sm leading-relaxed mb-4">
             {ka
               ? 'თქვენს პერსონალურ მონაცემებს არ ვყიდით, არ ვქირაობთ და არ ვაზიარებთ მესამე პირებთან, გარდა შემდეგი შემთხვევებისა:'
               : 'We do not sell, rent, or share your personal data with third parties, except in the following cases:'}
           </p>
-          <ul className="space-y-3 text-gray-600 text-sm leading-relaxed">
+          <ul className="space-y-3 text-[#465940]/80 text-sm leading-relaxed">
             {(ka ? [
               'ტექნიკური ინფრასტრუქტურის პროვაიდერები (მონაცემთა ბაზა, სერვერი) — მხოლოდ სერვისის ფუნქციონირებისთვის',
               'კანონით გათვალისწინებული შემთხვევები — სასამართლოს ან უფლებამოსილი ორგანოს მოთხოვნით',
@@ -108,7 +108,7 @@ export default function PrivacyPage({ searchParams }: { searchParams: { lang?: s
               'As required by law — upon request from a court or authorized authority',
             ]).map((item, i) => (
               <li key={i} className="flex gap-3">
-                <span className="flex-shrink-0 text-[#ff7f50] font-black text-base leading-none mt-0.5">—</span>
+                <span className="flex-shrink-0 text-[#465940] font-black text-base leading-none mt-0.5">—</span>
                 {item}
               </li>
             ))}
@@ -119,7 +119,7 @@ export default function PrivacyPage({ searchParams }: { searchParams: { lang?: s
           num="04"
           title={ka ? 'Cookie-ები' : 'Cookies'}
         >
-          <p className="text-gray-600 text-sm leading-relaxed mb-4">
+          <p className="text-[#465940]/80 text-sm leading-relaxed mb-4">
             {ka
               ? 'ვიყენებთ მხოლოდ ერთ cookie-ს — ავტორიზაციის JWT ტოკენს (mom_menu_token). ეს cookie:'
               : 'We use only one cookie — the authentication JWT token (mom_menu_token). This cookie is:'}
@@ -136,13 +136,13 @@ export default function PrivacyPage({ searchParams }: { searchParams: { lang?: s
               { label: 'SameSite', desc: 'Protected against CSRF attacks' },
               { label: 'Temporary', desc: 'Automatically deleted on logout' },
             ]).map(({ label, desc }) => (
-              <div key={label} className="bg-[#fef8f5] rounded-xl p-4">
-                <p className="font-black text-gray-800 text-sm mb-1">{label}</p>
-                <p className="text-xs text-gray-500">{desc}</p>
+              <div key={label} className="bg-[#465940] rounded-xl p-4">
+                <p className="font-black text-[#FDFBF0] text-sm mb-1">{label}</p>
+                <p className="text-xs text-[#FDFBF0]/70">{desc}</p>
               </div>
             ))}
           </div>
-          <p className="text-gray-500 text-xs mt-4 leading-relaxed">
+          <p className="text-[#465940]/70 text-xs mt-4 leading-relaxed">
             {ka
               ? 'სარეკლამო, ანალიტიკური ან მესამე მხარის tracking cookie-ებს არ ვიყენებთ.'
               : 'We do not use advertising, analytics, or third-party tracking cookies.'}
@@ -153,10 +153,10 @@ export default function PrivacyPage({ searchParams }: { searchParams: { lang?: s
           num="05"
           title={ka ? 'თქვენი უფლებები' : 'Your rights'}
         >
-          <p className="text-gray-600 text-sm leading-relaxed mb-4">
+          <p className="text-[#465940]/80 text-sm leading-relaxed mb-4">
             {ka ? 'თქვენ გაქვთ უფლება:' : 'You have the right to:'}
           </p>
-          <ul className="space-y-3 text-gray-600 text-sm leading-relaxed">
+          <ul className="space-y-3 text-[#465940]/80 text-sm leading-relaxed">
             {(ka ? [
               'ნახოთ, რა მონაცემები გვაქვს თქვენზე',
               'შეასწოროთ არასწორი მონაცემები პარამეტრებიდან',
@@ -171,7 +171,7 @@ export default function PrivacyPage({ searchParams }: { searchParams: { lang?: s
               'Request a copy of your personal data',
             ]).map((item, i) => (
               <li key={i} className="flex gap-3">
-                <span className="flex-shrink-0 text-[#ff7f50] font-black leading-none mt-0.5">✓</span>
+                <span className="flex-shrink-0 text-[#465940] font-black leading-none mt-0.5">✓</span>
                 {item}
               </li>
             ))}
@@ -182,7 +182,7 @@ export default function PrivacyPage({ searchParams }: { searchParams: { lang?: s
           num="06"
           title={ka ? 'მონაცემების შენახვის ვადა' : 'Data retention'}
         >
-          <p className="text-gray-600 text-sm leading-relaxed">
+          <p className="text-[#465940]/80 text-sm leading-relaxed">
             {ka
               ? 'თქვენს მონაცემებს ვინახავთ მანამ, სანამ გამოიყენებთ სერვისს. ანგარიშის წაშლის მოთხოვნის შემდეგ, ყველა პერსონალური მონაცემი წაიშლება 30 დღის განმავლობაში, გარდა იმ შემთხვევებისა, როდესაც კანონი გვავალდებულებს უფრო ხანგრძლივ შენახვას.'
               : 'We retain your data for as long as you use the service. Upon a deletion request, all personal data will be erased within 30 days, unless we are legally required to retain it longer.'}
@@ -193,7 +193,7 @@ export default function PrivacyPage({ searchParams }: { searchParams: { lang?: s
           num="07"
           title={ka ? 'ცვლილებები პოლიტიკაში' : 'Changes to this policy'}
         >
-          <p className="text-gray-600 text-sm leading-relaxed">
+          <p className="text-[#465940]/80 text-sm leading-relaxed">
             {ka
               ? 'პოლიტიკის მნიშვნელოვანი ცვლილების შემთხვევაში, გაცნობებთ ელ.ფოსტით ან სერვისში შეტყობინებით. განახლებული პოლიტიკა ამ გვერდზე გამოჩნდება "ბოლო განახლების" თარიღის ცვლილებით.'
               : "In the event of significant changes to this policy, we will notify you by email or in-app notification. The updated policy will appear on this page with a revised \"last updated\" date."}
@@ -201,41 +201,37 @@ export default function PrivacyPage({ searchParams }: { searchParams: { lang?: s
         </Section>
 
         {/* Contact box */}
-        <div className="bg-[#fff1ec] rounded-2xl border border-orange-100 p-8 text-center">
-          <div className="w-12 h-12 bg-[#ff7f50]/10 rounded-full flex items-center justify-center mx-auto mb-4">
-            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#ff7f50" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+        <div className="bg-[#465940] rounded-2xl p-8 text-center">
+          <div className="w-12 h-12 bg-[#FDFBF0]/10 rounded-full flex items-center justify-center mx-auto mb-4">
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#FDFBF0" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
               <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>
             </svg>
           </div>
-          <h3 className="font-black text-gray-900 mb-2">
+          <h3 className="font-black text-[#FDFBF0] mb-2">
             {ka ? 'კითხვები გაქვთ?' : 'Have questions?'}
           </h3>
-          <p className="text-sm text-gray-500 mb-1">
+          <p className="text-sm text-[#FDFBF0]/70 mb-1">
             {ka
               ? 'კონფიდენციალურობასთან დაკავშირებული ნებისმიერი კითხვისთვის მოგვწერეთ:'
               : 'For any privacy-related questions, contact us at:'}
           </p>
-          <p className="text-sm text-gray-400 italic">
+          <p className="text-sm text-[#FDFBF0]/60 italic">
             {ka ? 'მეილი მალე დაემატება' : 'Email coming soon'}
           </p>
         </div>
 
       </div>
 
-      {/* Footer strip */}
-      <div className="border-t border-orange-100 bg-white py-6 text-center text-xs text-gray-400">
-        © 2026 moMeals. {ka ? 'ყველა უფლება დაცულია.' : 'All rights reserved.'}
-      </div>
     </main>
   );
 }
 
 function Section({ num, title, children }: { num: string; title: string; children: React.ReactNode }) {
   return (
-    <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-8">
+    <div className="bg-[#FDFBF0] rounded-2xl border border-[#465940]/10 shadow-sm p-8">
       <div className="flex items-center gap-3 mb-6">
-        <span className="text-xs font-black text-[#ff7f50] bg-[#fff1ec] px-3 py-1 rounded-full">{num}</span>
-        <h2 className="text-xl font-black text-gray-900">{title}</h2>
+        <span className="text-xs font-black text-[#FDFBF0] bg-[#465940] px-3 py-1 rounded-full">{num}</span>
+        <h2 className="text-xl font-black text-[#465940]">{title}</h2>
       </div>
       {children}
     </div>
@@ -245,8 +241,8 @@ function Section({ num, title, children }: { num: string; title: string; childre
 function SubSection({ title, children }: { title: string; children: React.ReactNode }) {
   return (
     <div className="mb-5 last:mb-0">
-      <p className="text-sm font-black text-gray-800 mb-1.5">{title}</p>
-      <p className="text-sm text-gray-600 leading-relaxed">{children}</p>
+      <p className="text-sm font-black text-[#465940] mb-1.5">{title}</p>
+      <p className="text-sm text-[#465940]/80 leading-relaxed">{children}</p>
     </div>
   );
 }
