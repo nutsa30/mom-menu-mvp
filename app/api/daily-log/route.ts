@@ -52,7 +52,7 @@ export async function GET(req: NextRequest) {
     for (const mealType of missing) {
       let logData: any = { childId, date, mealType, wasEaten: false };
 
-      const where: any = { mealType, ageGroups: { hasSome: getSuitableAgeGroups(child.ageGroup) } };
+      const where: any = { mealType, ageGroups: { has: child.ageGroup } };
       if (child.allergies.length) where.NOT = { allergens: { hasSome: child.allergies } };
       const candidates = await prisma.dish.findMany({ where });
 
