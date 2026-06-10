@@ -58,14 +58,6 @@ export default async function BlogListPage({ searchParams }: { searchParams: { l
       <section className="pt-16 pb-12 px-6" style={{ background: '#465940' }}>
         <div className="max-w-3xl mx-auto">
 
-          {/* pill badge */}
-          <div className="inline-flex items-center gap-2 mb-5 px-4 py-1.5 rounded-full border border-[#FDFBF0]/20 bg-[#FDFBF0]/10">
-            <span className="text-base">✍️</span>
-            <span className="text-xs font-semibold text-[#FDFBF0]/70 tracking-wide uppercase">
-              {ka ? 'სტატიები და რჩევები' : 'Articles & Tips'}
-            </span>
-          </div>
-
           {/* title */}
           <h1 className="text-5xl sm:text-7xl font-black text-[#FDFBF0] leading-none tracking-tight mb-5">
             {ka ? 'ბლო' : 'Bl'}
