@@ -17,7 +17,7 @@ export default function Nav({ locale = 'ka', isLoggedIn = false }: { locale?: st
         {/* Logo */}
         <a href={`/?lang=${locale}`} className="flex-shrink-0 select-none leading-tight">
           <div className="text-xl font-black" style={{ color: '#FDFBF0', lineHeight: 1 }}>
-            mom<span style={{ color: '#FDFBF0', opacity: 0.6 }}>♥</span>
+            mom<span style={{ color: '#FDFBF0', opacity: 0.6 }}>{'♥︎'}</span>
           </div>
           <div className="text-xl font-black" style={{ color: '#FDFBF0', lineHeight: 1 }}>menu</div>
         </a>

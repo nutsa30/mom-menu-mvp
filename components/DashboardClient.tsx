@@ -1214,7 +1214,7 @@ export default function DashboardClient({ user }: { user: any }) {
       <header className="bg-gradient-to-r from-[#465940] to-[#465940] px-5 py-4 flex items-center justify-between sticky top-0 z-30 shadow-sm">
         <div className="flex items-center gap-3">
           <a href="/" className="font-black leading-tight">
-            <div className="text-base text-[#FDFBF0]" style={{ lineHeight: 1 }}>mom<span className="text-[#FDFBF0]/50">♥</span></div>
+            <div className="text-base text-[#FDFBF0]" style={{ lineHeight: 1 }}>mom<span className="text-[#FDFBF0]/50">{'♥︎'}</span></div>
             <div className="text-base text-[#FDFBF0]" style={{ lineHeight: 1 }}>menu</div>
           </a>
           {children.length > 1 && (

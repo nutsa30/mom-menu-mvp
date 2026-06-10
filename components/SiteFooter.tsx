@@ -28,7 +28,7 @@ export default function SiteFooter() {
           <div>
             <a href={`/?lang=${locale}`} className="inline-block mb-4">
               <div className="leading-tight">
-                <div className="text-2xl font-black text-[#FDFBF0]">mom<span className="opacity-60">♥</span></div>
+                <div className="text-2xl font-black text-[#FDFBF0]">mom<span className="opacity-60">{'♥︎'}</span></div>
                 <div className="text-2xl font-black text-[#FDFBF0]">menu</div>
               </div>
             </a>
