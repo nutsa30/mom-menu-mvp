@@ -151,11 +151,11 @@ export default async function BlogPostPage({
                 )}
               </article>
 
-                {/* Gallery if available */}
-                {images.length > 0 && (
+                {/* Gallery — skip images[0] (used as cover) */}
+                {images.slice(1).length > 0 && (
                   <div style={{ marginTop: '2.5rem' }}>
                     <div className="columns-2 sm:columns-3 gap-3">
-                      {images.map((url, i) => (
+                      {images.slice(1).map((url, i) => (
                         <div key={i} style={{ marginBottom: '0.75rem', borderRadius: '20px', overflow: 'hidden' }} className="break-inside-avoid">
                           <img src={url} alt={`${title} — ${i + 1}`} className="w-full object-cover" />
                         </div>
