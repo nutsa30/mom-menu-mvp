@@ -59,14 +59,23 @@ export default async function BlogListPage({ searchParams }: { searchParams: { l
         <div className="max-w-3xl mx-auto">
 
           {/* title */}
-          <h1 className="text-5xl sm:text-7xl font-black leading-none tracking-tight mb-5"
-            style={{
-              background: 'linear-gradient(90deg, #FDFBF0 0%, #FDFBF0 35%, #a8c49a 100%)',
-              WebkitBackgroundClip: 'text',
-              WebkitTextFillColor: 'transparent',
-              backgroundClip: 'text',
-            }}>
-            {ka ? 'ბლოგი' : 'Blog'}
+          <h1 className="text-5xl sm:text-7xl font-black leading-none tracking-tight mb-5">
+            {ka ? (
+              <>
+                <span style={{ color: '#FDFBF0' }}>ბ</span>
+                <span style={{ color: '#FDFBF0' }}>ლ</span>
+                <span style={{ color: '#d8e8c8' }}>ო</span>
+                <span style={{ color: '#c0d8a8' }}>გ</span>
+                <span style={{ color: '#a8c49a' }}>ი</span>
+              </>
+            ) : (
+              <>
+                <span style={{ color: '#FDFBF0' }}>B</span>
+                <span style={{ color: '#d8e8c8' }}>l</span>
+                <span style={{ color: '#c0d8a8' }}>o</span>
+                <span style={{ color: '#a8c49a' }}>g</span>
+              </>
+            )}
           </h1>
 
           {/* divider + subtitle */}
