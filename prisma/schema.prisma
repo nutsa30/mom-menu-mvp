@@ -526,6 +526,14 @@ model EmailRecipient {
   createdAt   DateTime        @default(now())
 }
 
+model SeoSettings {
+  id                   String   @id @default("singleton")
+  googleVerification   String   @default("")
+  gaId                 String   @default("")
+  gtmId                String   @default("")
+  updatedAt            DateTime @updatedAt
+}
+
 model EmailTemplate {
   id        String   @id @default(cuid())
   key       String   @unique

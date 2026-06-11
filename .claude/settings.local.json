@@ -29,7 +29,10 @@
       "Bash(Write-Output \"Cleaned up\")",
       "Bash(npm uninstall *)",
       "Bash(git commit -m 'Remove @mantine/core, @mantine/hooks, @blocknote/mantine — fixes Vercel build \\(React 18 peer conflict\\) *)",
-      "Bash(git push *)"
+      "Bash(git push *)",
+      "Bash(Get-ChildItem -Recurse -Directory)",
+      "Bash(Select-Object -ExpandProperty FullName)",
+      "Bash(git commit -m 'Fix admin users table header text color — white on green background *)"
     ],
     "additionalDirectories": [
       "C:\\Users\\gstore\\Downloads"

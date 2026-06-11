@@ -70,7 +70,7 @@ export default async function BlogPostPage({
   const images: string[] = (blog as any).images ?? [];
   // images[0] = detail cover (16:7), fallback to imageUrl
   const detailCover = images[0] || blog.imageUrl;
-  const siteUrl  = process.env.NEXT_PUBLIC_APP_URL || 'https://momeals.ge';
+  const siteUrl  = process.env.NEXT_PUBLIC_APP_URL || 'https://mommenu.ge';
 
   const KA_M = ['იანვარი','თებერვალი','მარტი','აპრილი','მაისი','ივნისი','ივლისი','აგვისტო','სექტემბერი','ოქტომბერი','ნოემბერი','დეკემბერი'];
   const EN_M = ['January','February','March','April','May','June','July','August','September','October','November','December'];

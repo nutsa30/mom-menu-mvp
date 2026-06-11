@@ -1,6 +1,6 @@
 ﻿import { MetadataRoute } from 'next';
 
-const SITE_URL = process.env.NEXT_PUBLIC_APP_URL || 'https://mom menu.ge';
+const SITE_URL = process.env.NEXT_PUBLIC_APP_URL || 'https://mommenu.ge';
 
 export default function robots(): MetadataRoute.Robots {
   return {

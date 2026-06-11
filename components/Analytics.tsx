@@ -1,23 +1,53 @@
+'use client';
+
 import Script from 'next/script';
+import { usePathname, useSearchParams } from 'next/navigation';
+import { useEffect } from 'react';
 
-const GA_ID = process.env.NEXT_PUBLIC_GA_ID;
+interface Props {
+  gaId?: string;
+  gtmId?: string;
+}
 
-export default function Analytics() {
-  if (!GA_ID) return null;
+export default function Analytics({ gaId, gtmId }: Props) {
+  const pathname = usePathname();
+  const searchParams = useSearchParams();
+
+  useEffect(() => {
+    if (gaId && window.gtag) {
+      window.gtag('config', gaId, { page_path: pathname });
+    }
+  }, [pathname, searchParams, gaId]);
+
   return (
     <>
-      <Script
-        src={`https://www.googletagmanager.com/gtag/js?id=${GA_ID}`}
-        strategy="afterInteractive"
-      />
-      <Script id="ga4-init" strategy="afterInteractive">
-        {`
-          window.dataLayer = window.dataLayer || [];
-          function gtag(){dataLayer.push(arguments);}
-          gtag('js', new Date());
-          gtag('config', '${GA_ID}', { page_path: window.location.pathname });
-        `}
-      </Script>
+      {/* ── Google Analytics 4 ── */}
+      {gaId && (
+        <>
+          <Script
+            src={`https://www.googletagmanager.com/gtag/js?id=${gaId}`}
+            strategy="afterInteractive"
+          />
+          <Script id="ga4-init" strategy="afterInteractive">{`
+            window.dataLayer = window.dataLayer || [];
+            function gtag(){dataLayer.push(arguments);}
+            gtag('js', new Date());
+            gtag('config', '${gaId}', { send_page_view: false });
+          `}</Script>
+        </>
+      )}
+
+      {/* ── Google Tag Manager ── */}
+      {gtmId && (
+        <Script id="gtm-init" strategy="afterInteractive">{`
+          (function(w,d,s,l,i){w[l]=w[l]||[];w[l].push({'gtm.start':
+          new Date().getTime(),event:'gtm.js'});var f=d.getElementsByTagName(s)[0],
+          j=d.createElement(s),dl=l!='dataLayer'?'&l='+l:'';j.async=true;j.src=
+          'https://www.googletagmanager.com/gtm.js?id='+i+dl;
+          f.parentNode.insertBefore(j,f);
+          })(window,document,'script','dataLayer','${gtmId}');
+        `}</Script>
+      )}
     </>
   );
 }

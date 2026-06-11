@@ -1,7 +1,7 @@
 ﻿import { MetadataRoute } from 'next';
 import { prisma } from '@/lib/prisma';
 
-const SITE_URL = process.env.NEXT_PUBLIC_APP_URL || 'https://mom menu.ge';
+const SITE_URL = process.env.NEXT_PUBLIC_APP_URL || 'https://mommenu.ge';
 
 function alternates(path: string) {
   return {
