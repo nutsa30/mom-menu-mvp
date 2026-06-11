@@ -339,7 +339,7 @@ export default function EmailCenterClient({
                 <select
                   value={senderEmail}
                   onChange={(e) => setSenderEmail(e.target.value)}
-                  className="w-full px-3 py-2.5 rounded-xl border border-gray-200 text-sm focus:outline-none focus:border-[#465940] bg-white"
+                  className="w-full px-3 py-2.5 rounded-xl border border-gray-200 text-sm text-[#465940] focus:outline-none focus:border-[#465940] bg-white"
                 >
                   <option value="info@mommenu.ge">MomMenu &lt;info@mommenu.ge&gt;</option>
                   <option value="support@mommenu.ge">MomMenu Support &lt;support@mommenu.ge&gt;</option>
