@@ -3,6 +3,7 @@ import { redirect } from 'next/navigation';
 import { prisma } from '@/lib/prisma';
 import { clearAuthCookie, hashPassword, setAuthCookie, verifyPassword } from '@/lib/auth';
 import { getAgeGroup } from '@/lib/meal';
+import { sendWelcomeEmail } from '@/lib/email';
 
 function str(form: FormData, key: string) { return String(form.get(key) || '').trim(); }
 function list(form: FormData, key: string) { return str(form, key).split(',').map(x => x.trim()).filter(Boolean); }
@@ -32,6 +33,7 @@ export async function registerAction(form: FormData) {
     },
   });
   await setAuthCookie({ id: user.id, email: user.email, name: user.name, role: user.role });
+  try { await sendWelcomeEmail(email, name); } catch {}
   redirect('/dashboard?lang=ka');
 }
 

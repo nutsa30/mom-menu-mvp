@@ -53,8 +53,8 @@ export default function ForgotPassword({ searchParams }: { searchParams: { lang?
                 </h2>
                 <p className="text-[#465940]/60 text-sm mb-6">
                   {locale === 'ka'
-                    ? 'შეამოწმე ელფოსტა. გამოგეგზავნა დროებითი პაროლი.'
-                    : 'Check your email. A temporary password has been sent.'}
+                    ? 'შეამოწმეთ ელფოსტა. გაგზავნილია პაროლის აღდგენის ბმული. ბმული მოქმედებს 30 წუთის განმავლობაში.'
+                    : 'Check your email. A password reset link has been sent. The link is valid for 30 minutes.'}
                 </p>
                 <a href={`/login?lang=${locale}`} className="text-[#465940] font-bold hover:underline text-sm">
                   {locale === 'ka' ? 'შესვლაზე გადასვლა →' : 'Go to login →'}
@@ -67,8 +67,8 @@ export default function ForgotPassword({ searchParams }: { searchParams: { lang?
                 </h1>
                 <p className="text-[#465940]/60 text-sm mb-8">
                   {locale === 'ka'
-                    ? 'შეიყვანე ელფოსტა და გამოგიგზავნით დროებით პაროლს.'
-                    : 'Enter your email and we\'ll send you a temporary password.'}
+                    ? 'შეიყვანეთ ელფოსტა და გამოგიგზავნით პაროლის აღდგენის ბმულს.'
+                    : 'Enter your email and we\'ll send you a password reset link.'}
                 </p>
 
                 <form onSubmit={handleSubmit} className="space-y-4">
@@ -98,7 +98,7 @@ export default function ForgotPassword({ searchParams }: { searchParams: { lang?
                   >
                     {status === 'loading'
                       ? (locale === 'ka' ? 'იგზავნება...' : 'Sending...')
-                      : (locale === 'ka' ? 'პაროლის გაგზავნა' : 'Send password')}
+                      : (locale === 'ka' ? 'ბმულის გაგზავნა' : 'Send reset link')}
                   </button>
                 </form>
 

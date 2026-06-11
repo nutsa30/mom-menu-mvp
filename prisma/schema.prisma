@@ -62,6 +62,7 @@ model User {
 
   children               Child[]
   mealPlans              MealPlan[]
+  passwordResetTokens    PasswordResetToken[]
 
   createdAt              DateTime           @default(now())
   updatedAt              DateTime           @updatedAt
@@ -472,6 +473,57 @@ model BabyMealLog {
   comment      String?
   eatenAt      DateTime @default(now())
   createdAt    DateTime @default(now())
+}
+
+model PasswordResetToken {
+  id        String    @id @default(cuid())
+  userId    String
+  user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  tokenHash String    @unique
+  expiresAt DateTime
+  usedAt    DateTime?
+  createdAt DateTime  @default(now())
+}
+
+enum CampaignStatus {
+  DRAFT
+  SCHEDULED
+  SENDING
+  SENT
+  FAILED
+}
+
+enum RecipientStatus {
+  PENDING
+  SENT
+  FAILED
+}
+
+model EmailCampaign {
+  id             String           @id @default(cuid())
+  subject        String
+  htmlContent    String
+  senderEmail    String           @default("info@mommenu.ge")
+  status         CampaignStatus   @default(DRAFT)
+  type           String           @default("CAMPAIGN")
+  audienceType   String           @default("specific")
+  audienceFilter String?
+  recipientCount Int              @default(0)
+  scheduledAt    DateTime?
+  sentAt         DateTime?
+  createdAt      DateTime         @default(now())
+  updatedAt      DateTime         @updatedAt
+  recipients     EmailRecipient[]
+}
+
+model EmailRecipient {
+  id          String          @id @default(cuid())
+  campaignId  String
+  campaign    EmailCampaign   @relation(fields: [campaignId], references: [id], onDelete: Cascade)
+  email       String
+  status      RecipientStatus @default(PENDING)
+  sentAt      DateTime?
+  createdAt   DateTime        @default(now())
 }
 
 model EmailTemplate {
