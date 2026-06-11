@@ -9,7 +9,7 @@ import { getSession } from '@/lib/auth';
 import { prisma } from '@/lib/prisma';
 
 const SITE_URL = process.env.NEXT_PUBLIC_APP_URL || 'https://mommenu.ge';
-const OG_IMAGE = '/og-image.jpg';
+const OG_IMAGE = '/og-image.png';
 
 export const metadata: Metadata = {
   metadataBase: new URL(SITE_URL),
@@ -55,7 +55,7 @@ const organizationJsonLd = {
   '@type': 'Organization',
   name: 'MomMenu',
   url: SITE_URL,
-  logo: `${SITE_URL}/og-image.jpg`,
+  logo: `${SITE_URL}/og-image.png`,
   contactPoint: { '@type': 'ContactPoint', email: 'info@mommenu.ge', contactType: 'customer service' },
   sameAs: [`${SITE_URL}`],
 };
