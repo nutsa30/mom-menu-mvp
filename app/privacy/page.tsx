@@ -222,9 +222,9 @@ export default function PrivacyPage({ searchParams }: { searchParams: { lang?: s
               ? 'კონფიდენციალურობასთან დაკავშირებული ნებისმიერი კითხვისთვის მოგვწერეთ:'
               : 'For any privacy-related questions, contact us at:'}
           </p>
-          <p className="text-sm text-[#FDFBF0]/60 italic">
-            {ka ? 'მეილი მალე დაემატება' : 'Email coming soon'}
-          </p>
+          <a href="mailto:info@mommenu.ge" className="text-sm text-[#FDFBF0] font-semibold hover:underline">
+            info@mommenu.ge
+          </a>
         </div>
 
       </div>

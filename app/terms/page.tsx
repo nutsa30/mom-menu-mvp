@@ -183,9 +183,9 @@ export default function TermsPage({ searchParams }: { searchParams: { lang?: str
               ? 'პირობებთან დაკავშირებული ნებისმიერი კითხვისთვის მოგვწერეთ:'
               : 'For any questions regarding these terms, contact us at:'}
           </p>
-          <p className="text-sm text-[#FDFBF0]/60 italic">
-            {ka ? 'მეილი მალე დაემატება' : 'Email coming soon'}
-          </p>
+          <a href="mailto:info@mommenu.ge" className="text-sm text-[#FDFBF0] font-semibold hover:underline">
+            info@mommenu.ge
+          </a>
         </div>
 
       </div>

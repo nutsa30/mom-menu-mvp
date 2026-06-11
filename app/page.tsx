@@ -72,6 +72,7 @@ export default async function Home() {
     sameAs: [],
     contactPoint: {
       '@type': 'ContactPoint',
+      email: 'info@mommenu.ge',
       contactType: 'customer service',
       availableLanguage: ['Georgian', 'English'],
     },
