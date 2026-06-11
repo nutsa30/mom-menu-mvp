@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useRef, useCallback } from 'react';
+import { useState, useRef, useCallback, useEffect } from 'react';
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -25,7 +25,7 @@ interface CampaignDetail extends Campaign {
 
 interface Stats { sent: number; failed: number; scheduled: number; draft: number }
 
-type Tab = 'compose' | 'history';
+type Tab = 'compose' | 'history' | 'templates';
 type AudienceType = 'specific' | 'all' | 'active' | 'inactive' | 'age_group';
 type SendAction = 'send' | 'draft' | 'schedule';
 
@@ -83,6 +83,21 @@ const TEMPLATES = {
 } as const;
 type TemplateKey = keyof typeof TEMPLATES;
 
+interface EmailTemplate {
+  id: string;
+  key: string;
+  subjectKa: string;
+  bodyKa: string;
+  updatedAt: string;
+}
+
+const TEMPLATE_META: Record<string, { name: string; vars: string[] }> = {
+  welcome:               { name: 'Welcome Email 💚',          vars: ['{{name}}'] },
+  subscription_confirmed:{ name: 'Subscription Activated ✅', vars: ['{{name}}','{{planName}}','{{amount}}','{{startDate}}','{{endDate}}'] },
+  password_reset:        { name: 'Password Reset 🔐',         vars: ['{{resetUrl}}'] },
+  password_changed:      { name: 'Password Changed ✔',        vars: ['{{name}}'] },
+};
+
 function fmt(dateStr: string | null) {
   if (!dateStr) return '—';
   return new Date(dateStr).toLocaleString('ka-GE', { day: '2-digit', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' });
@@ -116,6 +131,16 @@ export default function EmailCenterClient({
   const [testResult, setTestResult] = useState<{ type: 'success' | 'error'; msg: string } | null>(null);
   const [showPreview, setShowPreview] = useState(false);
   const [previewContent, setPreviewContent] = useState('');
+
+  // Templates state
+  const [templates, setTemplates] = useState<EmailTemplate[]>([]);
+  const [templatesLoading, setTemplatesLoading] = useState(false);
+  const [editingTemplate, setEditingTemplate] = useState<EmailTemplate | null>(null);
+  const [editSubject, setEditSubject] = useState('');
+  const [editBody, setEditBody] = useState('');
+  const [savingTemplate, setSavingTemplate] = useState(false);
+  const [templateSaveResult, setTemplateSaveResult] = useState<{ type: 'success' | 'error'; msg: string } | null>(null);
+  const bodyTextareaRef = useRef<HTMLTextAreaElement>(null);
 
   // History state
   const [filter, setFilter] = useState('all');
@@ -250,6 +275,61 @@ export default function EmailCenterClient({
     }
   };
 
+  const fetchTemplates = useCallback(async () => {
+    setTemplatesLoading(true);
+    try {
+      const res = await fetch('/api/admin/emails/templates');
+      if (res.ok) setTemplates(await res.json());
+    } finally {
+      setTemplatesLoading(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    if (tab === 'templates' && templates.length === 0) fetchTemplates();
+  }, [tab, templates.length, fetchTemplates]);
+
+  const openEditTemplate = (t: EmailTemplate) => {
+    setEditingTemplate(t);
+    setEditSubject(t.subjectKa);
+    setEditBody(t.bodyKa);
+    setTemplateSaveResult(null);
+  };
+
+  const insertVar = (variable: string) => {
+    const ta = bodyTextareaRef.current;
+    if (!ta) { setEditBody(prev => prev + variable); return; }
+    const start = ta.selectionStart;
+    const end = ta.selectionEnd;
+    const next = editBody.slice(0, start) + variable + editBody.slice(end);
+    setEditBody(next);
+    setTimeout(() => { ta.selectionStart = ta.selectionEnd = start + variable.length; ta.focus(); }, 0);
+  };
+
+  const saveTemplate = async () => {
+    if (!editingTemplate) return;
+    setSavingTemplate(true);
+    setTemplateSaveResult(null);
+    try {
+      const res = await fetch('/api/admin/emails/templates', {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ key: editingTemplate.key, subjectKa: editSubject, bodyKa: editBody }),
+      });
+      if (res.ok) {
+        setTemplateSaveResult({ type: 'success', msg: 'შაბლონი წარმატებით შენახულია.' });
+        await fetchTemplates();
+        setTimeout(() => setEditingTemplate(null), 1500);
+      } else {
+        setTemplateSaveResult({ type: 'error', msg: 'შეცდომა შენახვისას.' });
+      }
+    } catch {
+      setTemplateSaveResult({ type: 'error', msg: 'შეცდომა შენახვისას.' });
+    } finally {
+      setSavingTemplate(false);
+    }
+  };
+
   const openPreview = () => {
     setPreviewContent(editorRef.current?.innerHTML ?? '');
     setShowPreview(true);
@@ -298,7 +378,11 @@ export default function EmailCenterClient({
 
       {/* Tabs */}
       <div className="flex gap-2 mb-6">
-        {(['compose', 'history'] as Tab[]).map((t) => (
+        {([
+          ['compose',   '✉️ Compose'],
+          ['history',   '📋 History'],
+          ['templates', '📄 Templates'],
+        ] as [Tab, string][]).map(([t, label]) => (
           <button
             key={t}
             onClick={() => setTab(t)}
@@ -306,7 +390,7 @@ export default function EmailCenterClient({
               tab === t ? 'bg-[#465940] text-[#FDFBF0]' : 'bg-white text-[#465940] border border-[#465940]/20 hover:border-[#465940]'
             }`}
           >
-            {t === 'compose' ? '✉️ Compose' : '📋 History'}
+            {label}
           </button>
         ))}
       </div>
@@ -620,6 +704,149 @@ export default function EmailCenterClient({
               </table>
             </div>
           )}
+        </div>
+      )}
+
+      {/* ── TEMPLATES TAB ───────────────────────────────────────────────────── */}
+      {tab === 'templates' && (
+        <div>
+          <p className="text-sm text-[#465940]/60 mb-5">
+            ავტომატური მეილების შაბლონები. ცვლილება მყისიერად ამოქმედდება — კოდის შეხება არ სჭირდება.
+          </p>
+
+          {templatesLoading ? (
+            <div className="py-16 text-center text-[#465940]/40">
+              <div className="text-3xl mb-2">⏳</div>
+              <p className="text-sm">იტვირთება...</p>
+            </div>
+          ) : (
+            <div className="grid sm:grid-cols-2 gap-4">
+              {templates.map((t) => {
+                const meta = TEMPLATE_META[t.key];
+                return (
+                  <div key={t.key} className="bg-white rounded-2xl shadow-sm p-5 flex flex-col gap-3">
+                    <div className="flex items-start justify-between gap-2">
+                      <div className="min-w-0">
+                        <p className="font-bold text-[#465940]">{meta?.name ?? t.key}</p>
+                        <p className="text-xs text-gray-400 mt-0.5 truncate">{t.subjectKa}</p>
+                      </div>
+                      <span className="flex-shrink-0 text-xs bg-green-50 text-green-700 px-2 py-0.5 rounded-full font-bold">ავტო</span>
+                    </div>
+                    <div className="flex flex-wrap gap-1">
+                      {meta?.vars.map((v) => (
+                        <span key={v} className="text-xs bg-[#465940]/10 text-[#465940] px-2 py-0.5 rounded-full font-mono">{v}</span>
+                      ))}
+                    </div>
+                    <p className="text-xs text-gray-400">
+                      ბოლო ცვლილება: {t.updatedAt ? new Date(t.updatedAt).toLocaleDateString('ka-GE') : '—'}
+                    </p>
+                    <button
+                      onClick={() => openEditTemplate(t)}
+                      className="w-full border border-[#465940]/30 text-[#465940] py-2 rounded-xl text-sm font-bold hover:bg-[#465940]/5 transition"
+                    >
+                      ✏️ შაბლონის რედაქტირება
+                    </button>
+                  </div>
+                );
+              })}
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* ── TEMPLATE EDIT MODAL ─────────────────────────────────────────────── */}
+      {editingTemplate && (
+        <div
+          className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4"
+          onClick={(e) => { if (e.target === e.currentTarget) setEditingTemplate(null); }}
+        >
+          <div className="bg-white rounded-2xl shadow-2xl w-full max-w-2xl max-h-[90vh] overflow-y-auto">
+            <div className="sticky top-0 bg-white border-b border-gray-100 px-6 py-4 flex items-center justify-between">
+              <div>
+                <p className="font-black text-[#465940]">{TEMPLATE_META[editingTemplate.key]?.name ?? editingTemplate.key}</p>
+                <p className="text-xs text-gray-400 mt-0.5">შეცვალეთ სათაური და შინაარსი</p>
+              </div>
+              <button onClick={() => setEditingTemplate(null)} className="p-2 rounded-xl hover:bg-gray-100 transition text-gray-400">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+              </button>
+            </div>
+
+            <div className="p-6 space-y-5">
+              {/* Subject */}
+              <div>
+                <label className="block text-xs font-bold text-[#465940]/60 uppercase tracking-wider mb-1.5">Subject (სათაური)</label>
+                <input
+                  type="text"
+                  value={editSubject}
+                  onChange={(e) => setEditSubject(e.target.value)}
+                  className="w-full px-3 py-2.5 rounded-xl border border-gray-200 text-sm text-[#465940] focus:outline-none focus:border-[#465940]"
+                />
+              </div>
+
+              {/* Variables */}
+              <div>
+                <label className="block text-xs font-bold text-[#465940]/60 uppercase tracking-wider mb-2">ცვლადები (დააჭირეთ ჩასაწერად)</label>
+                <div className="flex flex-wrap gap-1.5">
+                  {(TEMPLATE_META[editingTemplate.key]?.vars ?? []).map((v) => (
+                    <button
+                      key={v}
+                      type="button"
+                      onClick={() => insertVar(v)}
+                      className="font-mono text-xs bg-[#465940]/10 text-[#465940] px-2.5 py-1 rounded-full hover:bg-[#465940] hover:text-[#FDFBF0] transition"
+                    >
+                      {v}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              {/* HTML Body */}
+              <div>
+                <label className="block text-xs font-bold text-[#465940]/60 uppercase tracking-wider mb-1.5">შინაარსი (HTML)</label>
+                <textarea
+                  ref={bodyTextareaRef}
+                  value={editBody}
+                  onChange={(e) => setEditBody(e.target.value)}
+                  rows={14}
+                  spellCheck={false}
+                  className="w-full px-3 py-3 rounded-xl border border-gray-200 text-xs text-[#465940] font-mono focus:outline-none focus:border-[#465940] resize-y"
+                />
+              </div>
+
+              {/* Preview */}
+              {editBody && (
+                <div>
+                  <label className="block text-xs font-bold text-[#465940]/60 uppercase tracking-wider mb-2">გადახედვა</label>
+                  <iframe
+                    srcDoc={`<!DOCTYPE html><html><head><meta charset="utf-8"><style>body{font-family:Arial,sans-serif;color:#465940;padding:20px;line-height:1.7;}a{color:#465940;}img{max-width:100%;}</style></head><body>${editBody}</body></html>`}
+                    className="w-full border border-gray-100 rounded-xl"
+                    style={{ height: 240 }}
+                    title="Template Preview"
+                  />
+                </div>
+              )}
+
+              {/* Save result */}
+              {templateSaveResult && (
+                <div className={`rounded-xl px-4 py-3 text-sm font-medium ${templateSaveResult.type === 'success' ? 'bg-green-50 text-green-700' : 'bg-red-50 text-red-700'}`}>
+                  {templateSaveResult.msg}
+                </div>
+              )}
+
+              <div className="flex gap-3 pt-1">
+                <button onClick={() => setEditingTemplate(null)} className="flex-1 border border-gray-200 text-gray-500 py-2.5 rounded-full text-sm font-bold hover:bg-gray-50 transition">
+                  გაუქმება
+                </button>
+                <button
+                  onClick={saveTemplate}
+                  disabled={savingTemplate}
+                  className="flex-1 bg-[#465940] text-[#FDFBF0] py-2.5 rounded-full text-sm font-bold hover:opacity-90 transition disabled:opacity-60"
+                >
+                  {savingTemplate ? 'ინახება...' : 'შენახვა'}
+                </button>
+              </div>
+            </div>
+          </div>
         </div>
       )}
 
