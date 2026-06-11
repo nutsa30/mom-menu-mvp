@@ -9,40 +9,33 @@ import { getSession } from '@/lib/auth';
 import { prisma } from '@/lib/prisma';
 
 const SITE_URL = process.env.NEXT_PUBLIC_APP_URL || 'https://mommenu.ge';
-const DEFAULT_OG = `/og?title=mom+menu&sub=Personal+Meal+Plans+for+Children`;
+const OG_IMAGE = '/og-image.jpg';
 
 export const metadata: Metadata = {
   metadataBase: new URL(SITE_URL),
   title: {
-    default: 'mom menu — ბავშვის კვების გეგმა',
-    template: '%s | mom menu',
+    default: 'MomMenu - ჯანსაღი მენიუები ბავშვებისთვის',
+    template: '%s | MomMenu',
   },
-  description: 'პერსონალური ყოველდღიური კვების გეგმა თქვენი ბავშვისთვის. ასობით რეცეპტი, ალერგენების გათვალისწინება, საყიდლების სია — ყველაფერი ერთ აპში.',
+  description: 'ასაკზე მორგებული მენიუები, რეცეპტები და კვების გეგმები ბავშვებისთვის. მარტივი დაგეგმვა მშობლებისთვის და დაბალანსებული კვება პატარებისთვის.',
   keywords: [
     'ბავშვის კვება', 'კვების გეგმა ბავშვისთვის', 'ბავშვის მენიუ',
     'ბავშვის რეცეპტები', 'დამატებითი კვება', 'ჩვილის კვება',
-    'mom menu', 'mommenu.ge', 'child meal plan georgia', 'baby food georgia',
+    'MomMenu', 'mommenu.ge', 'child meal plan georgia', 'baby food georgia',
   ],
-  authors: [{ name: 'mom menu', url: SITE_URL }],
-  creator: 'mom menu',
-  publisher: 'mom menu',
+  authors: [{ name: 'MomMenu', url: SITE_URL }],
+  creator: 'MomMenu',
+  publisher: 'MomMenu',
   formatDetection: { email: false, address: false, telephone: false },
   alternates: { canonical: SITE_URL },
   openGraph: {
     type: 'website',
     locale: 'ka_GE',
-    alternateLocale: ['en_US'],
-    siteName: 'mom menu',
-    title: 'mom menu — ბავშვის კვების გეგმა',
-    description: 'პერსონალური ყოველდღიური კვების გეგმა თქვენი ბავშვისთვის. ასობით რეცეპტი, ალერგენების გათვალისწინება, საყიდლების სია.',
+    siteName: 'MomMenu',
+    title: 'MomMenu - ჯანსაღი მენიუები ბავშვებისთვის',
+    description: 'ასაკზე მორგებული მენიუები, რეცეპტები და კვების გეგმები ბავშვებისთვის. მარტივი დაგეგმვა მშობლებისთვის და დაბალანსებული კვება პატარებისთვის.',
     url: SITE_URL,
-    images: [{ url: DEFAULT_OG, width: 1200, height: 630, alt: 'mom menu — ბავშვის კვების გეგმა' }],
-  },
-  twitter: {
-    card: 'summary_large_image',
-    title: 'mom menu — ბავშვის კვების გეგმა',
-    description: 'პერსონალური ყოველდღიური კვების გეგმა თქვენი ბავშვისთვის.',
-    images: [DEFAULT_OG],
+    images: [{ url: OG_IMAGE, width: 1200, height: 630, alt: 'MomMenu - ჯანსაღი მენიუები ბავშვებისთვის' }],
   },
   robots: {
     index: true,
@@ -60,9 +53,9 @@ export const metadata: Metadata = {
 const organizationJsonLd = {
   '@context': 'https://schema.org',
   '@type': 'Organization',
-  name: 'mom menu',
+  name: 'MomMenu',
   url: SITE_URL,
-  logo: `${SITE_URL}/og?title=mom+menu`,
+  logo: `${SITE_URL}/og-image.jpg`,
   contactPoint: { '@type': 'ContactPoint', email: 'info@mommenu.ge', contactType: 'customer service' },
   sameAs: [`${SITE_URL}`],
 };
@@ -70,9 +63,9 @@ const organizationJsonLd = {
 const websiteJsonLd = {
   '@context': 'https://schema.org',
   '@type': 'WebSite',
-  name: 'mom menu',
+  name: 'MomMenu',
   url: SITE_URL,
-  description: 'პერსონალური ყოველდღიური კვების გეგმა თქვენი ბავშვისთვის',
+  description: 'ასაკზე მორგებული მენიუები, რეცეპტები და კვების გეგმები ბავშვებისთვის',
   potentialAction: {
     '@type': 'SearchAction',
     target: { '@type': 'EntryPoint', urlTemplate: `${SITE_URL}/blog?q={search_term_string}` },
