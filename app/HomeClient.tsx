@@ -2,6 +2,7 @@
 
 import { useRouter, useSearchParams } from 'next/navigation';
 import { useState, useEffect, useRef } from 'react';
+import { ga } from '@/lib/gtag';
 
 type S = Record<string, string | number>;
 type Dish = { titleKa: string; titleEn: string; imageUrl: string | null } | null;
@@ -113,6 +114,9 @@ export default function HomeClient({ s, dishes, dishCount, recentBlogs }: {
 
   const handleSubscribe = async (plan: 'RECIPE_PLAN' | 'FULL_PLAN') => {
     setLoadingPlan(plan);
+    const planLabel = plan === 'RECIPE_PLAN' ? 'რეცეპტების წვდომა' : 'სრული პაკეტი';
+    const planPrice = plan === 'RECIPE_PLAN' ? 15 : 30;
+    ga.subscribe(planLabel, planPrice);
     try {
       const code = promoStatus[plan]?.valid ? promoInput[plan]?.trim() : undefined;
       const res = await fetch('/api/subscription/update', {

@@ -1,5 +1,6 @@
 ﻿import { notFound } from 'next/navigation';
 import { prisma } from '@/lib/prisma';
+import BlogViewTracker from '@/components/BlogViewTracker';
 import type { Metadata } from 'next';
 import { Suspense } from 'react';
 
@@ -91,6 +92,7 @@ export default async function BlogPostPage({
   return (
     <>
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(articleJsonLd) }} />
+      <BlogViewTracker title={title} />
 
       <main style={{ background: '#465940', minHeight: '100vh' }}>
 

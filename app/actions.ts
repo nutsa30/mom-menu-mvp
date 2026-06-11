@@ -34,7 +34,7 @@ export async function registerAction(form: FormData) {
   });
   await setAuthCookie({ id: user.id, email: user.email, name: user.name, role: user.role });
   try { await sendWelcomeEmail(email, name); } catch {}
-  redirect('/dashboard?lang=ka');
+  redirect('/dashboard?lang=ka&new=1');
 }
 
 export async function loginAction(form: FormData) {
@@ -44,7 +44,7 @@ export async function loginAction(form: FormData) {
   if (!user || !(await verifyPassword(password, user.passwordHash))) redirect('/login?error=1');
   if (user!.isBlocked) redirect('/login?error=blocked');
   await setAuthCookie({ id: user!.id, email: user!.email, name: user!.name, role: user!.role });
-  redirect(user!.role === 'ADMIN' ? '/admin?lang=ka' : '/dashboard?lang=ka');
+  redirect(user!.role === 'ADMIN' ? '/admin?lang=ka' : '/dashboard?lang=ka&in=1');
 }
 
 export async function logoutAction() {

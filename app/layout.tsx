@@ -86,8 +86,8 @@ export default async function RootLayout({ children }: { children: React.ReactNo
     prisma.seoSettings.findUnique({ where: { id: 'singleton' } }).catch(() => null),
   ]);
 
-  const gaId  = seo?.gaId  || process.env.NEXT_PUBLIC_GA_ID;
-  const gtmId = seo?.gtmId || process.env.NEXT_PUBLIC_GTM_ID;
+  const gaId  = seo?.gaId  || process.env.NEXT_PUBLIC_GA_ID  || 'G-YXNN1XCX9V';
+  const gtmId = seo?.gtmId || process.env.NEXT_PUBLIC_GTM_ID || '';
   const googleVerification = seo?.googleVerification;
 
   return (

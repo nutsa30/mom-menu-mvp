@@ -3,6 +3,7 @@
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useState } from 'react';
+import { ga } from '@/lib/gtag';
 
 export default function SubscriptionPage() {
   const router = useRouter();
@@ -10,6 +11,11 @@ export default function SubscriptionPage() {
 
   const handleSubscribe = async (plan: 'RECIPE_PLAN' | 'FULL_PLAN') => {
     setLoadingPlan(plan);
+
+    const planLabel = plan === 'RECIPE_PLAN' ? 'რეცეპტების წვდომა' : 'სრული პაკეტი';
+    const planPrice = plan === 'RECIPE_PLAN' ? 15 : 30;
+
+    ga.subscribe(planLabel, planPrice); // start_checkout
 
     const res = await fetch('/api/subscription/update', {
       method: 'POST',

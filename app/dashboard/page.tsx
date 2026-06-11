@@ -1,6 +1,8 @@
 ﻿import { requireUser } from '@/lib/auth';
 import { prisma } from '@/lib/prisma';
 import DashboardClient from '@/components/DashboardClient';
+import GaPageEvents from '@/components/GaPageEvents';
+import { Suspense } from 'react';
 import type { Metadata } from 'next';
 
 export const metadata: Metadata = {
@@ -18,5 +20,10 @@ export default async function DashboardPage() {
 
   if (!user) return null;
 
-  return <DashboardClient user={user} />;
+  return (
+    <>
+      <Suspense fallback={null}><GaPageEvents /></Suspense>
+      <DashboardClient user={user} />
+    </>
+  );
 }
