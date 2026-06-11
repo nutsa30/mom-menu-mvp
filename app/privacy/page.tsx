@@ -1,5 +1,6 @@
 ﻿import type { Metadata } from 'next';
 import BackToRegisterButton from '@/components/BackToRegisterButton';
+import CopyEmailButton from '@/components/CopyEmailButton';
 
 export const metadata: Metadata = {
   title: 'კონფიდენციალურობის პოლიტიკა — mom menu',
@@ -222,9 +223,7 @@ export default function PrivacyPage({ searchParams }: { searchParams: { lang?: s
               ? 'კონფიდენციალურობასთან დაკავშირებული ნებისმიერი კითხვისთვის მოგვწერეთ:'
               : 'For any privacy-related questions, contact us at:'}
           </p>
-          <a href="mailto:info@mommenu.ge" className="text-sm text-[#FDFBF0] font-semibold hover:underline">
-            info@mommenu.ge
-          </a>
+          <CopyEmailButton email="info@mommenu.ge" />
         </div>
 
       </div>

@@ -1,5 +1,6 @@
 ﻿import type { Metadata } from 'next';
 import BackToRegisterButton from '@/components/BackToRegisterButton';
+import CopyEmailButton from '@/components/CopyEmailButton';
 
 export const metadata: Metadata = {
   title: 'მომსახურების პირობები — mom menu',
@@ -183,9 +184,7 @@ export default function TermsPage({ searchParams }: { searchParams: { lang?: str
               ? 'პირობებთან დაკავშირებული ნებისმიერი კითხვისთვის მოგვწერეთ:'
               : 'For any questions regarding these terms, contact us at:'}
           </p>
-          <a href="mailto:info@mommenu.ge" className="text-sm text-[#FDFBF0] font-semibold hover:underline">
-            info@mommenu.ge
-          </a>
+          <CopyEmailButton email="info@mommenu.ge" />
         </div>
 
       </div>
