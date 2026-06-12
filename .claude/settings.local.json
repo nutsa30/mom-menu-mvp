@@ -32,7 +32,9 @@
       "Bash(git push *)",
       "Bash(Get-ChildItem -Recurse -Directory)",
       "Bash(Select-Object -ExpandProperty FullName)",
-      "Bash(git commit -m 'Fix admin users table header text color — white on green background *)"
+      "Bash(git commit -m 'Fix admin users table header text color — white on green background *)",
+      "Bash(gh run *)",
+      "Bash(node -p \"JSON.stringify\\(Object.keys\\(require\\('./package.json'\\).dependencies\\).concat\\(Object.keys\\(require\\('./package.json'\\).devDependencies || {}\\)\\)\\)\")"
     ],
     "additionalDirectories": [
       "C:\\Users\\gstore\\Downloads"

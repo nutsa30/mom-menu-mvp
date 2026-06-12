@@ -544,3 +544,14 @@ model EmailTemplate {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 }
+
+model PushTemplate {
+  id        Int      @id @default(autoincrement())
+  mealType  String   // breakfast | lunch | snack | dinner | weekly
+  title     String
+  body      String
+  active    Boolean  @default(true)
+  sortOrder Int      @default(0)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}

@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { prisma } from '@/lib/prisma';
 
 const APP_ID   = process.env.NEXT_PUBLIC_ONESIGNAL_APP_ID!;
 const REST_KEY = process.env.ONESIGNAL_REST_API_KEY!;
@@ -11,37 +12,17 @@ function geoDay()  {
   return new Date(ms).getUTCDay(); // 0=კვირა
 }
 
-const MSGS = {
-  breakfast: [
-    { title: '☀️ საუზმის დრო!',    body: 'დილა მშვიდობისა! პატარა საუზმის მოლოდინშია — დღევანდელი მენიუ გაქვს?' },
-    { title: '🥣 გუდ მორნინგ!',    body: 'საუზმე ყველაზე მნიშვნელოვანი კვებაა. MomMenu-ზე ახალი იდეები გელოდება.' },
-    { title: '☀️ საუზმის დრო!',    body: 'ჯანსაღი საუზმე — ბედნიერი პატარა! MomMenu-ზე შეამოწმე.' },
-  ],
-  lunch: [
-    { title: '🍽️ სადილის დრო!',   body: 'სადილი დადგა! პატარასთვის ახალი რეცეპტი MomMenu-ზე გელოდება.' },
-    { title: '🥗 სადილი!',         body: 'შუადღე — სადილის დრო! MomMenu-ზე კვების გეგმა შეამოწმე.' },
-    { title: '🍽️ სადილის დრო!',   body: 'ჯანსაღი სადილი — ბედნიერი ბავშვი. დღეს რას გააჭამ პატარას?' },
-  ],
-  snack: [
-    { title: '🍎 სნექ-ტაიმი!',     body: 'შუადღის მცირე საჭმლის დრო! ჯანსაღი სნექი — MomMenu-ზე ნახე.' },
-    { title: '🥕 შუადღის საჭმელი!', body: 'პატარა მშიერია? ჯანსაღი სნექის იდეები MomMenu-ზე გელოდება.' },
-  ],
-  dinner: [
-    { title: '🌙 ვახშმის დრო!',    body: 'დღე მიდის — ვახშამი კი გეგმია? MomMenu-ზე ახალი რეცეპტი გელოდება.' },
-    { title: '🍲 ვახშამი!',        body: 'ვახშმის დრო! პატარასთვის ბოლო კვება — ჯანსაღი და გემრიელი.' },
-    { title: '🌙 ვახშმის დრო!',    body: 'კარგი ვახშამი — კარგი ძილი! MomMenu-ზე ახალი რეცეპტები გელოდება.' },
-  ],
-  weekly: [
-    { title: '📅 კვირის კვების გეგმა!', body: 'ახალი კვირა — ახალი შანსი! მომავალი კვირის კვება MomMenu-ზე დაგეგმე.' },
-  ],
-};
-
-function pick<T>(arr: T[]): T {
-  return arr[new Date().getDate() % arr.length];
+async function getMealType(hour: number, day: number): Promise<string | null> {
+  if (day === 0 && hour === 10) return 'weekly';
+  if (hour === 8)  return 'breakfast';
+  if (hour === 12) return 'lunch';
+  if (hour === 15) return 'snack';
+  if (hour === 18) return 'dinner';
+  return null;
 }
 
 async function sendNotification(title: string, body: string, url = 'https://mommenu.ge') {
-  const res = await fetch('https://onesignal.com/api/v1/notifications', {
+  return fetch('https://onesignal.com/api/v1/notifications', {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
@@ -56,7 +37,6 @@ async function sendNotification(title: string, body: string, url = 'https://momm
       chrome_web_icon: 'https://mommenu.ge/icon-192x192.png',
     }),
   });
-  return res;
 }
 
 export async function GET(req: NextRequest) {
@@ -65,26 +45,29 @@ export async function GET(req: NextRequest) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   }
 
-  const hour = geoHour();
-  const day  = geoDay();
+  const hour     = geoHour();
+  const day      = geoDay();
+  const mealType = await getMealType(hour, day);
 
-  let msg: { title: string; body: string } | null = null;
-  let url = 'https://mommenu.ge';
-
-  if (day === 0 && hour === 10) {          // კვირა 10:00 — კვირის გეგმა
-    msg = pick(MSGS.weekly);
-    url = 'https://mommenu.ge/dashboard';
-  } else if (hour === 8)  { msg = pick(MSGS.breakfast); }
-  else if (hour === 12)   { msg = pick(MSGS.lunch);     }
-  else if (hour === 15)   { msg = pick(MSGS.snack);     }
-  else if (hour === 18)   { msg = pick(MSGS.dinner);    }
-
-  if (!msg) {
+  if (!mealType) {
     return NextResponse.json({ skipped: true, hour, day });
   }
+
+  // Load active templates from DB
+  const templates = await prisma.pushTemplate.findMany({
+    where: { mealType, active: true },
+    orderBy: { sortOrder: 'asc' },
+  });
+
+  if (templates.length === 0) {
+    return NextResponse.json({ skipped: true, reason: 'no active templates', mealType });
+  }
+
+  const msg = templates[new Date().getDate() % templates.length];
+  const url = mealType === 'weekly' ? 'https://mommenu.ge/dashboard' : 'https://mommenu.ge';
 
   const res  = await sendNotification(msg.title, msg.body, url);
   const data = await res.json().catch(() => ({}));
 
-  return NextResponse.json({ ok: res.ok, hour, day, title: msg.title, onesignal: data });
+  return NextResponse.json({ ok: res.ok, hour, day, mealType, title: msg.title, onesignal: data });
 }
