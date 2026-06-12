@@ -545,6 +545,22 @@ model EmailTemplate {
   updatedAt DateTime @updatedAt
 }
 
+model ContactSettings {
+  id             String   @id @default("singleton")
+  titleKa        String   @default("გვესაუბრე")
+  titleEn        String   @default("Talk to us")
+  subtitleKa     String   @default("ვმუშაობთ, რომ MomMenu ყოველდღე უკეთესი გახდეს. შენი ხმა მნიშვნელოვანია.")
+  subtitleEn     String   @default("We work every day to make MomMenu better. Your voice matters.")
+  introKa        String   @default("კითხვა გაქვს? წინადადება? ჩაგვწერე — ვუპასუხებთ 24 საათის განმავლობაში.")
+  introEn        String   @default("Have a question or suggestion? Write to us — we respond within 24 hours.")
+  email          String   @default("info@mommenu.ge")
+  responseTimeKa String   @default("24 საათის განმავლობაში")
+  responseTimeEn String   @default("Within 24 hours")
+  workingHoursKa String   @default("ორშ — პარ, 10:00 – 18:00")
+  workingHoursEn String   @default("Mon – Fri, 10:00 – 18:00")
+  updatedAt      DateTime @updatedAt
+}
+
 model PushTemplate {
   id        Int      @id @default(autoincrement())
   mealType  String   // breakfast | lunch | snack | dinner | weekly
