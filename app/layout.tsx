@@ -151,7 +151,9 @@ export default async function RootLayout({ children }: { children: React.ReactNo
         />
       </head>
 
-      <body className="min-h-screen overflow-x-hidden">
+      <body className="min-h-screen">
+        {/* overflow-x-hidden on body breaks iOS fixed element touch events — use wrapper instead */}
+        <div style={{ overflowX: 'hidden', minHeight: '100vh' }}>
         {/* GTM noscript fallback */}
         {gtmId && (
           <noscript>
@@ -185,6 +187,8 @@ export default async function RootLayout({ children }: { children: React.ReactNo
 
         {/* Notification permission prompt — shown after 8s, triggered by user tap (iOS requirement) */}
         <NotificationPrompt />
+
+        </div>{/* end overflow-x-hidden wrapper */}
 
         {/* OneSignal SDK — registers OneSignalSDKWorker.js (handles both push + caching) */}
         <OneSignalProvider />
