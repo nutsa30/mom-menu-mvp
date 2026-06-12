@@ -5,8 +5,8 @@ import type { Metadata } from 'next';
 const SITE_URL = process.env.NEXT_PUBLIC_APP_URL || 'https://mommenu.ge';
 
 export const metadata: Metadata = {
-  title: 'mom menu — პერსონალური კვების გეგმა ბავშვისთვის',
-  description: 'შექმენი შენი ბავშვის ასაკის და გემოვნების მიხედვით მარგებული კვების გეგმა. ასობით რეცეპტი, ალერგენების გათვალისწინება და ავტომატური საყიდლების სია.',
+  title: 'MomMenu - ჯანსაღი მენიუები ბავშვებისთვის',
+  description: 'ასაკზე მორგებული მენიუები, რეცეპტები და კვების გეგმები ბავშვებისთვის. მარტივი დაგეგმვა მშობლებისთვის და დაბალანსებული კვება პატარებისთვის.',
   alternates: {
     canonical: '/',
     languages: {
@@ -16,13 +16,13 @@ export const metadata: Metadata = {
     },
   },
   openGraph: {
-    title: 'mom menu — პერსონალური კვების გეგმა ბავშვისთვის',
-    description: 'შექმენი შენი ბავშვის ასაკის და გემოვნების მიხედვით მარგებული კვების გეგმა.',
+    title: 'MomMenu - ჯანსაღი მენიუები ბავშვებისთვის',
+    description: 'ასაკზე მორგებული მენიუები, რეცეპტები და კვების გეგმები ბავშვებისთვის. მარტივი დაგეგმვა მშობლებისთვის და დაბალანსებული კვება პატარებისთვის.',
     url: '/',
     images: [{
-      url: `/og?title=Personal+Meal+Plans+for+Your+Child&sub=Hundreds+of+recipes%2C+allergy-aware+%26+personalized`,
+      url: '/og-image.png',
       width: 1200, height: 630,
-      alt: 'mom menu — ბავშვის კვების გეგმა',
+      alt: 'MomMenu - ჯანსაღი მენიუები ბავშვებისთვის',
     }],
   },
 };
