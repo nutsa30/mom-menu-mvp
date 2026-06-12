@@ -5,7 +5,6 @@ import FooterWrapper from '@/components/FooterWrapper';
 import Analytics from '@/components/Analytics';
 import CookieBanner from '@/components/CookieBanner';
 import PWAInstallBanner from '@/components/PWAInstallBanner';
-import NotificationPrompt from '@/components/NotificationPrompt';
 import OneSignalProvider from '@/components/OneSignalProvider';
 import { Suspense } from 'react';
 import { getSession } from '@/lib/auth';
@@ -182,9 +181,6 @@ export default async function RootLayout({ children }: { children: React.ReactNo
         <Suspense fallback={null}>
           <Analytics gaId={gaId} gtmId={gtmId} />
         </Suspense>
-
-        {/* Push notification permission prompt (shown after 8 s) */}
-        <NotificationPrompt />
 
         {/* OneSignal SDK — registers OneSignalSDKWorker.js (handles both push + caching) */}
         <OneSignalProvider />
