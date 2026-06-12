@@ -1,13 +1,4 @@
 // ─────────────────────────────────────────────────────────────────────────────
-// OneSignal — must be first so push/notificationclick handlers register early
-// ─────────────────────────────────────────────────────────────────────────────
-try {
-  importScripts('https://cdn.onesignal.com/sdks/web/v16/OneSignalSDK.sw.js');
-} catch (_) {
-  // CDN unreachable: push notifications unavailable, caching still works
-}
-
-// ─────────────────────────────────────────────────────────────────────────────
 // Cache names — bump CACHE_VER to invalidate everything
 // ─────────────────────────────────────────────────────────────────────────────
 const CACHE_VER    = 'v5';

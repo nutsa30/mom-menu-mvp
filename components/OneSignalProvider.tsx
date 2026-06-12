@@ -34,8 +34,8 @@ export default function OneSignalProvider() {
       };
       await os.init({
         appId,
-        // Re-use our existing service worker — it already imports OneSignal's SW code
-        serviceWorkerPath: '/sw.js',
+        // Dedicated OneSignal SW — avoids conflicts with our caching sw.js
+        serviceWorkerPath: '/OneSignalSDKWorker.js',
         serviceWorkerParam: { scope: '/' },
         // Suppress OneSignal's built-in notify button — we have our own UI
         notifyButton: { enable: false },
