@@ -9,11 +9,11 @@ const publicDir = resolve(__dir, '../public');
 function makeSvg(size) {
   const cx = size / 2;
   const cy = size / 2;
-  const r  = size / 2;
   const fs = Math.round(size * 0.60);
   const dy = Math.round(size * 0.22);
+  // Full-bleed background — no circle, no clipping artifacts on any OS shape
   return `<svg xmlns="http://www.w3.org/2000/svg" width="${size}" height="${size}" viewBox="0 0 ${size} ${size}">
-  <circle cx="${cx}" cy="${cy}" r="${r}" fill="#F5F1E8"/>
+  <rect width="${size}" height="${size}" fill="#F5F1E8"/>
   <text
     x="${cx}" y="${cy + dy}"
     font-family="Georgia, 'Times New Roman', serif"
