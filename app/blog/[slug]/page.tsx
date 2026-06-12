@@ -239,7 +239,7 @@ export default async function BlogPostPage({
               <h2 style={{ fontWeight: 900, color: '#FDFBF0', fontSize: '1.25rem', marginBottom: '1.5rem', opacity: 0.9 }}>
                 {ka ? 'მსგავსი სტატიები' : 'Related Articles'}
               </h2>
-              <div className="no-scrollbar" style={{ display: 'flex', gap: '1rem', overflowX: 'auto', paddingBottom: '0.5rem' }}>
+              <div className="no-scrollbar" style={{ display: 'flex', gap: '1rem', overflowX: 'auto' }}>
                 {related.map((r) => {
                   const rTitle = ka ? r.titleKa : r.titleEn;
                   const rSlug = (r as any).slug ?? r.id;
@@ -252,7 +252,7 @@ export default async function BlogPostPage({
                       key={r.id}
                       href={`/blog/${rSlug}?lang=${locale}`}
                       style={{
-                        minWidth: '220px', maxWidth: '240px', flex: '0 0 auto',
+                        minWidth: '180px', flex: '1 1 0',
                         background: 'rgba(253,251,240,0.07)', borderRadius: '18px',
                         overflow: 'hidden', display: 'flex', flexDirection: 'column',
                         textDecoration: 'none', border: '1px solid rgba(253,251,240,0.12)',
