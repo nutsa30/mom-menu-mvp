@@ -2,6 +2,16 @@ const nextConfig = {
   typescript: {
     ignoreBuildErrors: true,
   },
+  async redirects() {
+    return [
+      {
+        source: '/:path*',
+        has: [{ type: 'host', value: 'www.mommenu.ge' }],
+        destination: 'https://mommenu.ge/:path*',
+        permanent: true,
+      },
+    ];
+  },
   transpilePackages: [
     '@blocknote/core',
     '@blocknote/react',

@@ -6,12 +6,6 @@ const STORAGE_KEY  = 'mommenu-notif-prompt';
 const SNOOZE_DAYS  = 30;          // wait 30 days before showing again after dismissal
 const SHOW_DELAY   = 8_000;       // show 8 s after page load
 
-declare global {
-  interface Window {
-    OneSignalDeferred?: ((fn: (os: OneSignalAPI) => void) => void)[];
-  }
-}
-
 interface OneSignalAPI {
   Notifications: {
     permission: boolean;
@@ -20,8 +14,16 @@ interface OneSignalAPI {
   User: {
     PushSubscription: {
       optedIn: boolean;
+      optIn(): Promise<void>;
     };
   };
+}
+
+declare global {
+  interface Window {
+    OneSignalDeferred?: ((fn: (os: OneSignalAPI) => void) => void)[];
+    OneSignal?: OneSignalAPI;
+  }
 }
 
 function snoozed() {
