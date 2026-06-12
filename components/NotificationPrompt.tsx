@@ -78,30 +78,20 @@ export default function NotificationPrompt() {
 
   return (
     <div
-      style={{
-        position: 'fixed',
-        inset: 0,
-        zIndex: 10002,
-        background: 'rgba(0,0,0,0.45)',
-        display: 'flex',
-        alignItems: 'center',
-        justifyContent: 'center',
-        padding: '1rem',
-      }}
-      onClick={dismiss}
-    >
-    <div
       role="dialog"
       aria-modal="true"
       aria-label="შეტყობინებების ნებართვა"
-      onClick={(e) => e.stopPropagation()}
       style={{
-        width: '100%',
+        position: 'fixed',
+        top: '50%',
+        left: '50%',
+        transform: 'translate(-50%, -50%)',
+        width: 'calc(100% - 2rem)',
         maxWidth: '400px',
-        zIndex: 10003,
+        zIndex: 10002,
         background: '#FDFBF0',
         borderRadius: '20px',
-        boxShadow: '0 8px 48px rgba(0,0,0,0.25)',
+        boxShadow: '0 8px 48px rgba(0,0,0,0.35)',
         padding: '1.4rem 1.4rem 1.3rem',
         border: '1px solid rgba(70,89,64,0.12)',
       }}
@@ -205,7 +195,6 @@ export default function NotificationPrompt() {
           ✓ ჩართე შეტყობინება
         </button>
       </div>
-    </div>
     </div>
   );
 }
