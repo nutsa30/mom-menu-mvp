@@ -1,12 +1,19 @@
 import './globals.css';
-import type { Metadata } from 'next';
+import type { Metadata, Viewport } from 'next';
 import NavWrapper from '@/components/NavWrapper';
 import FooterWrapper from '@/components/FooterWrapper';
 import Analytics from '@/components/Analytics';
 import CookieBanner from '@/components/CookieBanner';
+import ServiceWorkerRegistration from '@/components/ServiceWorkerRegistration';
 import { Suspense } from 'react';
 import { getSession } from '@/lib/auth';
 import { prisma } from '@/lib/prisma';
+
+export const viewport: Viewport = {
+  themeColor: '#465940',
+  width: 'device-width',
+  initialScale: 1,
+};
 
 const SITE_URL = process.env.NEXT_PUBLIC_APP_URL || 'https://mommenu.ge';
 const OG_IMAGE = '/og-image.png';
@@ -28,6 +35,7 @@ export const metadata: Metadata = {
   publisher: 'MomMenu',
   formatDetection: { email: false, address: false, telephone: false },
   alternates: { canonical: SITE_URL },
+  manifest: '/site.webmanifest',
   icons: {
     icon: [
       { url: '/favicon.ico', sizes: 'any' },
@@ -36,9 +44,6 @@ export const metadata: Metadata = {
     ],
     shortcut: '/favicon-32x32.png',
     apple: '/apple-touch-icon.png',
-    other: [
-      { rel: 'manifest', url: '/site.webmanifest' },
-    ],
   },
   openGraph: {
     type: 'website',
@@ -134,6 +139,7 @@ export default async function RootLayout({ children }: { children: React.ReactNo
         <Suspense fallback={null}>
           <Analytics gaId={gaId} gtmId={gtmId} />
         </Suspense>
+        <ServiceWorkerRegistration />
       </body>
     </html>
   );

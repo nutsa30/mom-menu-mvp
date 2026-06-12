@@ -3,6 +3,7 @@
 import { useRouter, useSearchParams } from 'next/navigation';
 import { useState, useEffect, useRef } from 'react';
 import { ga } from '@/lib/gtag';
+import PWAInstallButton from '@/components/PWAInstallButton';
 
 type S = Record<string, string | number>;
 type Dish = { titleKa: string; titleEn: string; imageUrl: string | null } | null;
@@ -198,6 +199,8 @@ export default function HomeClient({ s, dishes, dishCount, recentBlogs }: {
                   {t('heroCta2Ka', 'heroCta2En')}
                 </a>
               </div>
+
+              <PWAInstallButton ka={ka} />
             </div>
 
             {/* Desktop image */}
