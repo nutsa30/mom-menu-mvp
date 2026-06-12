@@ -214,9 +214,9 @@ export default function EditMealForm({ dish }: { dish: any }) {
               <input required className={inp} value={titleEn} onChange={(e) => setTitleEn(e.target.value)} /></div>
           </div>
           <div className="grid grid-cols-2 gap-4">
-            <div><label className={lbl}>აღწერა ქართულად</label>
+            <div><label className={lbl}>მომზადების წესი ქართულად</label>
               <textarea className={`${inp} min-h-[90px] resize-none`} value={descKa} onChange={(e) => setDescKa(e.target.value)} /></div>
-            <div><label className={lbl}>აღწერა ინგლისურად</label>
+            <div><label className={lbl}>მომზადების წესი ინგლისურად</label>
               <textarea className={`${inp} min-h-[90px] resize-none`} value={descEn} onChange={(e) => setDescEn(e.target.value)} /></div>
           </div>
           <div className="grid grid-cols-2 gap-4">

@@ -224,11 +224,11 @@ export default function NewMealPage() {
 
           <div className="grid grid-cols-2 gap-4">
             <div>
-              <label className={lbl}>აღწერა ქართულად</label>
+              <label className={lbl}>მომზადების წესი ქართულად</label>
               <textarea className={`${inp} min-h-[90px] resize-none`} value={descKa} onChange={(e) => setDescKa(e.target.value)} placeholder="ნაზი, თბილი საუზმე..." />
             </div>
             <div>
-              <label className={lbl}>აღწერა ინგლისურად</label>
+              <label className={lbl}>მომზადების წესი ინგლისურად</label>
               <textarea className={`${inp} min-h-[90px] resize-none`} value={descEn} onChange={(e) => setDescEn(e.target.value)} placeholder="A soft warm breakfast..." />
             </div>
           </div>
