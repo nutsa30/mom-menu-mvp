@@ -114,12 +114,12 @@ export default function ContactClient({ locale, settings }: { locale: 'ka' | 'en
   );
 }
 
-const inputCls = 'w-full px-4 py-3 rounded-xl border border-[#465940]/20 text-[#465940] text-sm outline-none focus:border-[#465940] transition placeholder:text-[#465940]/30 bg-white';
+const inputCls = 'w-full px-4 py-3 rounded-xl border border-[#465940]/20 text-[#465940] text-sm outline-none focus:border-[#465940] transition placeholder:text-[#465940]/40 bg-white font-semibold';
 
 function Field({ label, children }: { label: string; children: React.ReactNode }) {
   return (
     <div>
-      <label className="block text-xs font-bold text-[#465940]/60 uppercase tracking-wider mb-1.5">{label} *</label>
+      <label className="block text-sm font-bold text-[#465940] mb-1.5">{label} *</label>
       {children}
     </div>
   );
