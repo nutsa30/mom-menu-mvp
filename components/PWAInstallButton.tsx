@@ -63,49 +63,41 @@ export default function PWAInstallButton({ ka }: { ka: boolean }) {
 
   return (
     <>
-      {/* ── Install Banner ── */}
+      {/* ── Install Banner — full-width top bar ── */}
       <div
         style={{
+          background: '#3a4d35',
+          borderBottom: '1px solid rgba(253,251,240,0.1)',
+          padding: '0.65rem 1rem',
           display: 'flex',
           alignItems: 'center',
+          justifyContent: 'center',
           gap: '0.75rem',
-          background: 'rgba(253,251,240,0.10)',
-          border: '1px solid rgba(253,251,240,0.18)',
-          borderRadius: '16px',
-          padding: '0.85rem 1.1rem',
-          marginTop: '1.25rem',
-          maxWidth: '420px',
           cursor: 'pointer',
+          width: '100%',
         }}
         onClick={handleClick}
         role="button"
         aria-label={ka ? 'დაამატე MomMenu აპლიკაციად' : 'Install MomMenu app'}
       >
-        {/* Icon */}
-        <div
-          style={{
-            width: 40, height: 40, borderRadius: '10px',
-            background: '#F5F1E8', flexShrink: 0,
-            display: 'flex', alignItems: 'center', justifyContent: 'center',
-          }}
-        >
-          <span style={{ fontSize: 22 }}>📲</span>
-        </div>
+        <span style={{ fontSize: '1.1rem', flexShrink: 0 }}>📲</span>
 
-        {/* Text */}
-        <div style={{ flex: 1, minWidth: 0 }}>
-          <p style={{ fontWeight: 800, fontSize: '0.88rem', color: '#FDFBF0', margin: 0, lineHeight: 1.3 }}>
+        <div style={{ display: 'flex', alignItems: 'baseline', gap: '0.45rem', flexWrap: 'wrap', justifyContent: 'center' }}>
+          <span style={{ fontWeight: 800, fontSize: '0.88rem', color: '#FDFBF0', lineHeight: 1.2 }}>
             {ka ? 'დაამატე MomMenu აპლიკაციად' : 'Install MomMenu App'}
-          </p>
-          <p style={{ fontSize: '0.72rem', color: '#FDFBF0', opacity: 0.55, margin: '2px 0 0', lineHeight: 1.3 }}>
-            {ka
-              ? 'გახსენი ერთი დაჭერით, როგორც ჩვეულებრივი აპლიკაცია'
-              : 'Open with one tap, like a native app'}
-          </p>
+          </span>
+          <span style={{ fontSize: '0.75rem', color: '#FDFBF0', opacity: 0.55, lineHeight: 1.2 }}>
+            {ka ? '— ერთი დაჭერით გახსნა' : '— open with one tap'}
+          </span>
         </div>
 
-        {/* Arrow */}
-        <span style={{ color: '#FDFBF0', opacity: 0.5, fontSize: '1rem', flexShrink: 0 }}>›</span>
+        <span style={{
+          background: '#FDFBF0', color: '#465940',
+          borderRadius: '999px', padding: '4px 14px',
+          fontSize: '0.75rem', fontWeight: 800, flexShrink: 0,
+        }}>
+          {ka ? 'დაამატე' : 'Install'}
+        </span>
       </div>
 
       {/* ── Fallback Modal ── */}

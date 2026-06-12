@@ -152,6 +152,9 @@ export default function HomeClient({ s, dishes, dishCount, recentBlogs }: {
   return (
     <main style={{ color: '#FDFBF0' }}>
 
+      {/* ── PWA Install Banner ── */}
+      <PWAInstallButton ka={ka} />
+
       {/* ── Hero ─────────────────────────────────────────────── */}
       <section className="relative overflow-hidden pt-6 pb-10 md:pt-10 md:pb-14" style={{ background: '#465940' }}>
         <div className="max-w-7xl mx-auto px-4 sm:px-6">
@@ -199,8 +202,6 @@ export default function HomeClient({ s, dishes, dishCount, recentBlogs }: {
                   {t('heroCta2Ka', 'heroCta2En')}
                 </a>
               </div>
-
-              <PWAInstallButton ka={ka} />
             </div>
 
             {/* Desktop image */}
