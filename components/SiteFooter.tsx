@@ -25,8 +25,9 @@ export default function SiteFooter() {
   ];
 
   const legalLinks = [
-    { href: `/privacy?lang=${locale}`, label: ka ? 'კონფიდენციალურობა' : 'Privacy Policy' },
-    { href: `/terms?lang=${locale}`,   label: ka ? 'გამოყენების წესები' : 'Terms of Use' },
+    { href: `/privacy?lang=${locale}`,  label: ka ? 'კონფიდენციალურობა' : 'Privacy Policy' },
+    { href: `/terms?lang=${locale}`,    label: ka ? 'გამოყენების წესები' : 'Terms of Use' },
+    { href: `/contact?lang=${locale}`,  label: ka ? 'კონტაქტი'           : 'Contact' },
   ];
 
   return (
