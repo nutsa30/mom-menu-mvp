@@ -3,7 +3,6 @@
 import { useRouter, useSearchParams } from 'next/navigation';
 import { useState, useEffect, useRef } from 'react';
 import { ga } from '@/lib/gtag';
-import PWAInstallButton from '@/components/PWAInstallButton';
 
 type S = Record<string, string | number>;
 type Dish = { titleKa: string; titleEn: string; imageUrl: string | null } | null;
@@ -151,9 +150,6 @@ export default function HomeClient({ s, dishes, dishCount, recentBlogs }: {
 
   return (
     <main style={{ color: '#FDFBF0' }}>
-
-      {/* ── PWA Install Banner ── */}
-      <PWAInstallButton ka={ka} />
 
       {/* ── Hero ─────────────────────────────────────────────── */}
       <section className="relative overflow-hidden pt-6 pb-10 md:pt-10 md:pb-14" style={{ background: '#465940' }}>

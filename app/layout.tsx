@@ -5,6 +5,9 @@ import FooterWrapper from '@/components/FooterWrapper';
 import Analytics from '@/components/Analytics';
 import CookieBanner from '@/components/CookieBanner';
 import ServiceWorkerRegistration from '@/components/ServiceWorkerRegistration';
+import PWAInstallBanner from '@/components/PWAInstallBanner';
+import NotificationPrompt from '@/components/NotificationPrompt';
+import OneSignalProvider from '@/components/OneSignalProvider';
 import { Suspense } from 'react';
 import { getSession } from '@/lib/auth';
 import { prisma } from '@/lib/prisma';
@@ -13,6 +16,8 @@ export const viewport: Viewport = {
   themeColor: '#465940',
   width: 'device-width',
   initialScale: 1,
+  minimumScale: 1,
+  viewportFit: 'cover',          // full-bleed on iPhone notch/Dynamic Island
 };
 
 const SITE_URL = process.env.NEXT_PUBLIC_APP_URL || 'https://mommenu.ge';
@@ -24,11 +29,19 @@ export const metadata: Metadata = {
     default: 'MomMenu - ჯანსაღი მენიუები ბავშვებისთვის',
     template: '%s | MomMenu',
   },
-  description: 'ასაკზე მორგებული მენიუები, რეცეპტები და კვების გეგმები ბავშვებისთვის. მარტივი დაგეგმვა მშობლებისთვის და დაბალანსებული კვება პატარებისთვის.',
+  description:
+    'ასაკზე მორგებული მენიუები, რეცეპტები და კვების გეგმები ბავშვებისთვის. მარტივი დაგეგმვა მშობლებისთვის და დაბალანსებული კვება პატარებისთვის.',
   keywords: [
-    'ბავშვის კვება', 'კვების გეგმა ბავშვისთვის', 'ბავშვის მენიუ',
-    'ბავშვის რეცეპტები', 'დამატებითი კვება', 'ჩვილის კვება',
-    'MomMenu', 'mommenu.ge', 'child meal plan georgia', 'baby food georgia',
+    'ბავშვის კვება',
+    'კვების გეგმა ბავშვისთვის',
+    'ბავშვის მენიუ',
+    'ბავშვის რეცეპტები',
+    'დამატებითი კვება',
+    'ჩვილის კვება',
+    'MomMenu',
+    'mommenu.ge',
+    'child meal plan georgia',
+    'baby food georgia',
   ],
   authors: [{ name: 'MomMenu', url: SITE_URL }],
   creator: 'MomMenu',
@@ -43,16 +56,29 @@ export const metadata: Metadata = {
       { url: '/favicon-32x32.png', sizes: '32x32', type: 'image/png' },
     ],
     shortcut: '/favicon-32x32.png',
-    apple: '/apple-touch-icon.png',
+    apple: [{ url: '/apple-touch-icon.png', sizes: '180x180', type: 'image/png' }],
+  },
+  appleWebApp: {
+    capable: true,
+    title: 'MomMenu',
+    statusBarStyle: 'black-translucent',
   },
   openGraph: {
     type: 'website',
     locale: 'ka_GE',
     siteName: 'MomMenu',
     title: 'MomMenu - ჯანსაღი მენიუები ბავშვებისთვის',
-    description: 'ასაკზე მორგებული მენიუები, რეცეპტები და კვების გეგმები ბავშვებისთვის. მარტივი დაგეგმვა მშობლებისთვის და დაბალანსებული კვება პატარებისთვის.',
+    description:
+      'ასაკზე მორგებული მენიუები, რეცეპტები და კვების გეგმები ბავშვებისთვის. მარტივი დაგეგმვა მშობლებისთვის და დაბალანსებული კვება პატარებისთვის.',
     url: SITE_URL,
-    images: [{ url: OG_IMAGE, width: 1200, height: 630, alt: 'MomMenu - ჯანსაღი მენიუები ბავშვებისთვის' }],
+    images: [
+      {
+        url: OG_IMAGE,
+        width: 1200,
+        height: 630,
+        alt: 'MomMenu - ჯანსაღი მენიუები ბავშვებისთვის',
+      },
+    ],
   },
   robots: {
     index: true,
@@ -73,8 +99,12 @@ const organizationJsonLd = {
   name: 'MomMenu',
   url: SITE_URL,
   logo: `${SITE_URL}/og-image.png`,
-  contactPoint: { '@type': 'ContactPoint', email: 'info@mommenu.ge', contactType: 'customer service' },
-  sameAs: [`${SITE_URL}`],
+  contactPoint: {
+    '@type': 'ContactPoint',
+    email: 'info@mommenu.ge',
+    contactType: 'customer service',
+  },
+  sameAs: [SITE_URL],
 };
 
 const websiteJsonLd = {
@@ -96,16 +126,22 @@ export default async function RootLayout({ children }: { children: React.ReactNo
     prisma.seoSettings.findUnique({ where: { id: 'singleton' } }).catch(() => null),
   ]);
 
-  const gaId  = seo?.gaId  || process.env.NEXT_PUBLIC_GA_ID  || 'G-YXNN1XCX9V';
-  const gtmId = seo?.gtmId || process.env.NEXT_PUBLIC_GTM_ID || '';
+  const gaId   = seo?.gaId  || process.env.NEXT_PUBLIC_GA_ID  || 'G-YXNN1XCX9V';
+  const gtmId  = seo?.gtmId || process.env.NEXT_PUBLIC_GTM_ID || '';
   const googleVerification = seo?.googleVerification;
 
   return (
     <html lang="ka">
       <head>
+        {/* Google Search Console verification */}
         {googleVerification && (
           <meta name="google-site-verification" content={googleVerification} />
         )}
+
+        {/* iOS standalone PWA meta */}
+        <meta name="mobile-web-app-capable" content="yes" />
+
+        {/* Structured data */}
         <script
           type="application/ld+json"
           dangerouslySetInnerHTML={{ __html: JSON.stringify(organizationJsonLd) }}
@@ -115,6 +151,7 @@ export default async function RootLayout({ children }: { children: React.ReactNo
           dangerouslySetInnerHTML={{ __html: JSON.stringify(websiteJsonLd) }}
         />
       </head>
+
       <body className="min-h-screen overflow-x-hidden">
         {/* GTM noscript fallback */}
         {gtmId && (
@@ -128,18 +165,31 @@ export default async function RootLayout({ children }: { children: React.ReactNo
           </noscript>
         )}
 
+        {/* PWA install banner — shown at the very top on every page */}
+        <PWAInstallBanner />
+
         <Suspense fallback={null}>
           <NavWrapper isLoggedIn={!!session} />
         </Suspense>
+
         {children}
+
         <FooterWrapper />
+
         <Suspense fallback={null}>
           <CookieBanner />
         </Suspense>
+
         <Suspense fallback={null}>
           <Analytics gaId={gaId} gtmId={gtmId} />
         </Suspense>
+
+        {/* Push notification permission prompt (shown after 8 s) */}
+        <NotificationPrompt />
+
+        {/* Service worker + OneSignal SDK */}
         <ServiceWorkerRegistration />
+        <OneSignalProvider />
       </body>
     </html>
   );
