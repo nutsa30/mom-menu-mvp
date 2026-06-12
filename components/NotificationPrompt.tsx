@@ -78,31 +78,34 @@ export default function NotificationPrompt() {
 
   return (
     <div
+      style={{
+        position: 'fixed',
+        inset: 0,
+        zIndex: 10002,
+        background: 'rgba(0,0,0,0.45)',
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+        padding: '1rem',
+      }}
+      onClick={dismiss}
+    >
+    <div
       role="dialog"
       aria-modal="true"
       aria-label="შეტყობინებების ნებართვა"
+      onClick={(e) => e.stopPropagation()}
       style={{
-        position: 'fixed',
-        bottom: '1.5rem',
-        left: '1rem',
-        right: '1rem',
+        width: '100%',
         maxWidth: '400px',
-        margin: '0 auto',
-        zIndex: 10000,
+        zIndex: 10003,
         background: '#FDFBF0',
         borderRadius: '20px',
-        boxShadow: '0 8px 48px rgba(0,0,0,0.18)',
+        boxShadow: '0 8px 48px rgba(0,0,0,0.25)',
         padding: '1.4rem 1.4rem 1.3rem',
         border: '1px solid rgba(70,89,64,0.12)',
-        animation: 'slideUp 0.3s ease',
       }}
     >
-      <style>{`
-        @keyframes slideUp {
-          from { opacity: 0; transform: translateY(20px); }
-          to   { opacity: 1; transform: translateY(0); }
-        }
-      `}</style>
 
       <button
         onClick={dismiss}
@@ -202,6 +205,7 @@ export default function NotificationPrompt() {
           ✓ ჩართე შეტყობინება
         </button>
       </div>
+    </div>
     </div>
   );
 }
