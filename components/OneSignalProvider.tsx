@@ -1,60 +1,43 @@
 'use client';
 
 /**
- * OneSignalProvider
- *
- * Loads the OneSignal Web SDK (v16) from CDN once the page is interactive.
- * The SDK is configured to use the same /sw.js service worker (which already
- * importScripts the OneSignal SW code), so no second SW is registered.
- *
- * Required env var: NEXT_PUBLIC_ONESIGNAL_APP_ID
- * Get yours at https://onesignal.com → New App → Web Push
+ * Loads OneSignal Web SDK v16 using Next.js Script (afterInteractive).
+ * OneSignalSDKWorker.js in /public handles push events + caching.
+ * Required env: NEXT_PUBLIC_ONESIGNAL_APP_ID
  */
 
-import { useEffect } from 'react';
+import Script from 'next/script';
 
 declare global {
   interface Window {
     OneSignalDeferred: ((fn: (os: unknown) => void | Promise<void>) => void)[];
+    OneSignal: unknown;
   }
 }
 
 export default function OneSignalProvider() {
-  useEffect(() => {
-    const appId = process.env.NEXT_PUBLIC_ONESIGNAL_APP_ID;
+  const appId = process.env.NEXT_PUBLIC_ONESIGNAL_APP_ID;
+  if (!appId || appId === 'YOUR_ONESIGNAL_APP_ID') return null;
 
-    // Skip if no App ID configured yet
-    if (!appId || appId === 'YOUR_ONESIGNAL_APP_ID') return;
+  return (
+    <>
+      {/* 1. Queue init BEFORE the SDK script loads */}
+      <Script id="onesignal-init" strategy="afterInteractive">{`
+        window.OneSignalDeferred = window.OneSignalDeferred || [];
+        window.OneSignalDeferred.push(async function(OneSignal) {
+          await OneSignal.init({
+            appId: "${appId}",
+            notifyButton: { enable: false }
+          });
+        });
+      `}</Script>
 
-    // Initialise deferred queue before SDK loads
-    window.OneSignalDeferred = window.OneSignalDeferred || [];
-    window.OneSignalDeferred.push(async (OneSignal: unknown) => {
-      const os = OneSignal as {
-        init(cfg: Record<string, unknown>): Promise<void>;
-      };
-      await os.init({
-        appId,
-        // Dedicated OneSignal SW — avoids conflicts with our caching sw.js
-        serviceWorkerPath: '/OneSignalSDKWorker.js',
-        serviceWorkerParam: { scope: '/' },
-        // Suppress OneSignal's built-in notify button — we have our own UI
-        notifyButton: { enable: false },
-        // Never auto-prompt; we show our own NotificationPrompt component
-        promptOptions: { slidedown: { prompts: [] } },
-        // Allow localhost during development
-        allowLocalhostAsSecureOrigin: process.env.NODE_ENV === 'development',
-      });
-    });
-
-    // Inject SDK script once
-    if (!document.getElementById('onesignal-sdk')) {
-      const script = document.createElement('script');
-      script.id   = 'onesignal-sdk';
-      script.src  = 'https://cdn.onesignal.com/sdks/web/v16/OneSignalSDK.page.js';
-      script.defer = true;
-      document.head.appendChild(script);
-    }
-  }, []);
-
-  return null;
+      {/* 2. SDK script — processes the queue above once loaded */}
+      <Script
+        id="onesignal-sdk"
+        src="https://cdn.onesignal.com/sdks/web/v16/OneSignalSDK.page.js"
+        strategy="afterInteractive"
+      />
+    </>
+  );
 }
