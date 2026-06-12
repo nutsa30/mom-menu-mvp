@@ -234,12 +234,12 @@ export default async function BlogPostPage({
 
         {/* ── Related Articles ── */}
         {related.length > 0 && (
-          <section style={{ background: '#FDFBF0', marginTop: '0' }}>
-            <div className="max-w-4xl mx-auto px-6 py-14">
-              <h2 style={{ fontWeight: 900, color: '#465940', fontSize: '1.35rem', marginBottom: '1.75rem' }}>
+          <section style={{ background: '#465940', borderTop: '1px solid rgba(253,251,240,0.1)' }}>
+            <div className="max-w-4xl mx-auto px-6 py-12">
+              <h2 style={{ fontWeight: 900, color: '#FDFBF0', fontSize: '1.25rem', marginBottom: '1.5rem', opacity: 0.9 }}>
                 {ka ? 'მსგავსი სტატიები' : 'Related Articles'}
               </h2>
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
+              <div style={{ display: 'flex', gap: '1rem', overflowX: 'auto', paddingBottom: '0.5rem' }}>
                 {related.map((r) => {
                   const rTitle = ka ? r.titleKa : r.titleEn;
                   const rSlug = (r as any).slug ?? r.id;
@@ -251,10 +251,15 @@ export default async function BlogPostPage({
                     <a
                       key={r.id}
                       href={`/blog/${rSlug}?lang=${locale}`}
-                      style={{ background: '#fff', borderRadius: '20px', overflow: 'hidden', display: 'flex', flexDirection: 'column', textDecoration: 'none', border: '1.5px solid rgba(70,89,64,0.08)' }}
+                      style={{
+                        minWidth: '220px', maxWidth: '240px', flex: '0 0 auto',
+                        background: 'rgba(253,251,240,0.07)', borderRadius: '18px',
+                        overflow: 'hidden', display: 'flex', flexDirection: 'column',
+                        textDecoration: 'none', border: '1px solid rgba(253,251,240,0.12)',
+                      }}
                     >
                       {r.imageUrl && (
-                        <div style={{ aspectRatio: '16/9', overflow: 'hidden' }}>
+                        <div style={{ aspectRatio: '16/9', overflow: 'hidden', flexShrink: 0 }}>
                           <img
                             src={r.imageUrl}
                             alt={rTitle}
@@ -262,10 +267,10 @@ export default async function BlogPostPage({
                           />
                         </div>
                       )}
-                      <div style={{ padding: '1.1rem 1.25rem 1.25rem' }}>
-                        <p style={{ fontSize: '0.7rem', color: '#465940', opacity: 0.45, marginBottom: '0.45rem', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.05em' }}>{rDateStr}</p>
-                        <p style={{ fontWeight: 800, color: '#465940', fontSize: '0.92rem', lineHeight: 1.45 }}>{rTitle}</p>
-                        <p style={{ color: '#ff7f50', fontSize: '0.78rem', marginTop: '0.6rem', fontWeight: 700 }}>
+                      <div style={{ padding: '1rem', flex: 1 }}>
+                        <p style={{ fontSize: '0.65rem', color: '#FDFBF0', opacity: 0.4, marginBottom: '0.4rem', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.05em' }}>{rDateStr}</p>
+                        <p style={{ fontWeight: 800, color: '#FDFBF0', fontSize: '0.88rem', lineHeight: 1.45, opacity: 0.92 }}>{rTitle}</p>
+                        <p style={{ color: '#ff7f50', fontSize: '0.75rem', marginTop: '0.6rem', fontWeight: 700 }}>
                           {ka ? 'წაიკითხე →' : 'Read →'}
                         </p>
                       </div>
