@@ -39,6 +39,11 @@ export async function POST(req: Request) {
         fatGrams: body.fatGrams ? Number(body.fatGrams) : null,
         carbsGrams: body.carbsGrams ? Number(body.carbsGrams) : null,
         omega3Mg: body.omega3Mg ? Number(body.omega3Mg) : null,
+
+        blwNoteKa: body.blwNoteKa || null,
+        blwNoteEn: body.blwNoteEn || null,
+        pureeNoteKa: body.pureeNoteKa || null,
+        pureeNoteEn: body.pureeNoteEn || null,
       },
     }));
 

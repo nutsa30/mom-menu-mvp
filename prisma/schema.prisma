@@ -161,6 +161,11 @@ model Dish {
   allergens     String[] @default([])
   mealType      MealType @default(BREAKFAST)
 
+  blwNoteKa     String?
+  blwNoteEn     String?
+  pureeNoteKa   String?
+  pureeNoteEn   String?
+
   createdAt     DateTime @default(now())
   updatedAt     DateTime @updatedAt
 

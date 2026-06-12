@@ -75,6 +75,11 @@ export default function NewMealPage() {
   const [allergens, setAllergens] = useState<string[]>([]);
   const [nutrients, setNutrients] = useState<Record<string, string>>({});
 
+  const [blwNoteKa, setBlwNoteKa] = useState('');
+  const [blwNoteEn, setBlwNoteEn] = useState('');
+  const [pureeNoteKa, setPureeNoteKa] = useState('');
+  const [pureeNoteEn, setPureeNoteEn] = useState('');
+
   const [imageFile, setImageFile] = useState<File | null>(null);
   const [imagePreview, setImagePreview] = useState('');
   const [dragOver, setDragOver] = useState(false);
@@ -141,6 +146,10 @@ export default function NewMealPage() {
           calories: calories ? Number(calories) : null,
           proteinGrams: protein ? Number(protein) : null,
           ...nutrientPayload,
+          blwNoteKa: blwNoteKa || null,
+          blwNoteEn: blwNoteEn || null,
+          pureeNoteKa: pureeNoteKa || null,
+          pureeNoteEn: pureeNoteEn || null,
         }),
       });
       if (!res.ok) {
@@ -335,6 +344,23 @@ export default function NewMealPage() {
                 </div>
               );
             })}
+          </div>
+        </div>
+
+        {/* BLW & Puree */}
+        <div className={`${sec} space-y-4`}>
+          <p className="text-sm font-bold text-[#465940]/70 uppercase tracking-wide">BLW & Puree რჩევები</p>
+          <div className="grid grid-cols-2 gap-4">
+            <div><label className={lbl}>BLW რჩევა (ქართ.)</label>
+              <textarea className={`${inp} min-h-[80px] resize-none`} value={blwNoteKa} onChange={(e) => setBlwNoteKa(e.target.value)} placeholder="BLW მიწოდების წესი..." /></div>
+            <div><label className={lbl}>BLW note (English)</label>
+              <textarea className={`${inp} min-h-[80px] resize-none`} value={blwNoteEn} onChange={(e) => setBlwNoteEn(e.target.value)} placeholder="BLW serving tips..." /></div>
+          </div>
+          <div className="grid grid-cols-2 gap-4">
+            <div><label className={lbl}>Puree რჩევა (ქართ.)</label>
+              <textarea className={`${inp} min-h-[80px] resize-none`} value={pureeNoteKa} onChange={(e) => setPureeNoteKa(e.target.value)} placeholder="ბლენდერში..." /></div>
+            <div><label className={lbl}>Puree note (English)</label>
+              <textarea className={`${inp} min-h-[80px] resize-none`} value={pureeNoteEn} onChange={(e) => setPureeNoteEn(e.target.value)} placeholder="Blend until smooth..." /></div>
           </div>
         </div>
 
