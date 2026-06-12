@@ -4,7 +4,6 @@ import NavWrapper from '@/components/NavWrapper';
 import FooterWrapper from '@/components/FooterWrapper';
 import Analytics from '@/components/Analytics';
 import CookieBanner from '@/components/CookieBanner';
-import ServiceWorkerRegistration from '@/components/ServiceWorkerRegistration';
 import PWAInstallBanner from '@/components/PWAInstallBanner';
 import NotificationPrompt from '@/components/NotificationPrompt';
 import OneSignalProvider from '@/components/OneSignalProvider';
@@ -187,8 +186,7 @@ export default async function RootLayout({ children }: { children: React.ReactNo
         {/* Push notification permission prompt (shown after 8 s) */}
         <NotificationPrompt />
 
-        {/* Service worker + OneSignal SDK */}
-        <ServiceWorkerRegistration />
+        {/* OneSignal SDK — registers OneSignalSDKWorker.js (handles both push + caching) */}
         <OneSignalProvider />
       </body>
     </html>
