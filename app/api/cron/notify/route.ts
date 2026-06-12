@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 
 const APP_ID   = process.env.NEXT_PUBLIC_ONESIGNAL_APP_ID!;
 const REST_KEY = process.env.ONESIGNAL_REST_API_KEY!;
-const SECRET   = process.env.CRON_SECRET ?? '';
+const SECRET   = process.env.CRON_SECRET || 'mm2026';
 
 // Georgia Standard Time = UTC+4, no DST
 function geoHour() { return (new Date().getUTCHours() + 4) % 24; }
