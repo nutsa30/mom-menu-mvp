@@ -27,21 +27,7 @@ export default function OneSignalProvider() {
         window.OneSignalDeferred.push(async function(OneSignal) {
           await OneSignal.init({
             appId: "${appId}",
-            notifyButton: { enable: false },
-            promptOptions: {
-              slidedown: {
-                prompts: [{
-                  type: "push",
-                  autoPrompt: true,
-                  text: {
-                    actionMessage: "MomMenu-სგან მიიღე შეხსენება სადილის გეგმაზე და ახალ რეცეპტებზე",
-                    acceptButton: "ჩართვა",
-                    cancelButton: "გვიანდელ"
-                  },
-                  delay: { pageViews: 1, timeDelay: 8 }
-                }]
-              }
-            }
+            notifyButton: { enable: false }
           });
         });
       `}</Script>

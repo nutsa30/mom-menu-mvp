@@ -58,13 +58,10 @@ export default function NotificationPrompt() {
 
   const enable = useCallback(async () => {
     try {
-      const appId = process.env.NEXT_PUBLIC_ONESIGNAL_APP_ID;
-
-      if (appId && window.OneSignalDeferred) {
-        // Request via OneSignal (handles all platforms correctly)
-        window.OneSignalDeferred.push(async (os: OneSignalAPI) => {
-          await os.Notifications.requestPermission();
-        });
+      // Use window.OneSignal directly — must be called from user gesture (iOS requirement)
+      const os = (window as unknown as { OneSignal?: { Notifications?: { requestPermission(): Promise<void> } } }).OneSignal;
+      if (os?.Notifications?.requestPermission) {
+        await os.Notifications.requestPermission();
       } else {
         // Fallback: native browser API
         await Notification.requestPermission();
