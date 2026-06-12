@@ -56,21 +56,17 @@ export default function NotificationPrompt() {
     setShow(false);
   }, []);
 
-  const enable = useCallback(async () => {
-    try {
-      // Use window.OneSignal directly — must be called from user gesture (iOS requirement)
-      const os = (window as unknown as { OneSignal?: { Notifications?: { requestPermission(): Promise<void> } } }).OneSignal;
-      if (os?.Notifications?.requestPermission) {
-        await os.Notifications.requestPermission();
-      } else {
-        // Fallback: native browser API
-        await Notification.requestPermission();
-      }
-    } catch {
-      // User denied or browser blocked — silently ignore
-    } finally {
-      snooze();
-      setShow(false);
+  // Non-async — iOS requires the permission call to start in the SAME synchronous tick as the tap
+  const enable = useCallback(() => {
+    snooze();
+    setShow(false);
+
+    const os = (window as unknown as { OneSignal?: { Notifications?: { requestPermission(): Promise<void> } } }).OneSignal;
+
+    if (os?.Notifications?.requestPermission) {
+      os.Notifications.requestPermission().catch(() => {});
+    } else if ('Notification' in window) {
+      Notification.requestPermission().catch(() => {});
     }
   }, []);
 
