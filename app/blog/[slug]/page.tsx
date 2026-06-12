@@ -239,7 +239,7 @@ export default async function BlogPostPage({
               <h2 style={{ fontWeight: 900, color: '#FDFBF0', fontSize: '1.25rem', marginBottom: '1.5rem', opacity: 0.9 }}>
                 {ka ? 'მსგავსი სტატიები' : 'Related Articles'}
               </h2>
-              <div style={{ display: 'flex', gap: '1rem', overflowX: 'auto', paddingBottom: '0.5rem' }}>
+              <div className="no-scrollbar" style={{ display: 'flex', gap: '1rem', overflowX: 'auto', paddingBottom: '0.5rem' }}>
                 {related.map((r) => {
                   const rTitle = ka ? r.titleKa : r.titleEn;
                   const rSlug = (r as any).slug ?? r.id;

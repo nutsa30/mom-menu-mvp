@@ -4,6 +4,9 @@
 
 html { scroll-behavior: smooth; }
 
+.no-scrollbar { scrollbar-width: none; -ms-overflow-style: none; }
+.no-scrollbar::-webkit-scrollbar { display: none; }
+
 
 /* Mobile: space above fixed bottom nav */
 @media (max-width: 767px) {
