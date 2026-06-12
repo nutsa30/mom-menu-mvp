@@ -13,29 +13,34 @@ export const metadata: Metadata = {
     title: 'ბლოგი — კვება და ჯანმრთელობა ბავშვებისთვის',
     description: 'სტატიები ბავშვის კვების შესახებ: დამატებითი კვება, ალერგენები, ჯანსაღი ჩვევები, რეცეპტები.',
     url: '/blog',
-    images: [{ url: `/og?title=Blog&sub=Child+Nutrition+%26+Health`, width: 1200, height: 630, alt: 'mom menu Blog' }],
+    images: [{ url: '/og-image.png', width: 1200, height: 630, alt: 'MomMenu ბლოგი — ბავშვის კვება' }],
   },
 };
 
-// WatercolorBlob is referenced but not defined in the original — keeping as no-op
-function WatercolorBlob({ color, opacity, size, style }: any) {
-  return null;
-}
+const POSTS_PER_PAGE = 6;
 
-export default async function BlogListPage({ searchParams }: { searchParams: { lang?: string } }) {
+export default async function BlogListPage({ searchParams }: { searchParams: { lang?: string; page?: string } }) {
   const locale = searchParams.lang === 'en' ? 'en' : 'ka';
   const ka = locale === 'ka';
+  const page = Math.max(1, parseInt(searchParams.page ?? '1', 10));
 
-  const blogs = await prisma.blog.findMany({
-    where: { isPublished: true },
-    orderBy: { createdAt: 'desc' },
-    select: {
-      id: true, slug: true,
-      titleKa: true, titleEn: true,
-      contentKa: true, contentEn: true,
-      imageUrl: true, createdAt: true,
-    },
-  });
+  const [blogs, total] = await Promise.all([
+    prisma.blog.findMany({
+      where: { isPublished: true },
+      orderBy: { createdAt: 'desc' },
+      skip: (page - 1) * POSTS_PER_PAGE,
+      take: POSTS_PER_PAGE,
+      select: {
+        id: true, slug: true,
+        titleKa: true, titleEn: true,
+        contentKa: true, contentEn: true,
+        imageUrl: true, createdAt: true,
+      },
+    }),
+    prisma.blog.count({ where: { isPublished: true } }),
+  ]);
+
+  const totalPages = Math.ceil(total / POSTS_PER_PAGE);
 
   const KA_M = ['იანვ','თებ','მარ','აპრ','მაი','ივნ','ივლ','აგვ','სექ','ოქტ','ნოე','დეკ'];
   const EN_M = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
@@ -45,7 +50,7 @@ export default async function BlogListPage({ searchParams }: { searchParams: { l
     return `${dt.getDate()} ${ka ? KA_M[dt.getMonth()] : EN_M[dt.getMonth()]}, ${dt.getFullYear()}`;
   };
 
-  const getExcerpt = (b: typeof blogs[0], max = 100) => {
+  const getExcerpt = (b: typeof blogs[0], max = 155) => {
     const raw = ka ? b.contentKa : b.contentEn;
     const plain = raw.replace(/<[^>]*>/g, ' ').replace(/\s+/g, ' ').trim();
     return plain.length > max ? plain.slice(0, max).trimEnd() + '…' : plain;
@@ -105,7 +110,7 @@ export default async function BlogListPage({ searchParams }: { searchParams: { l
             <div className="max-w-5xl mx-auto divide-y divide-[#FDFBF0]/10">
               {blogs.map((blog) => {
                 const title = ka ? blog.titleKa : blog.titleEn;
-                const excerpt = getExcerpt(blog, 180);
+                const excerpt = getExcerpt(blog);
                 const date = fmtDate(blog.createdAt);
                 const href = `/blog/${blog.slug ?? blog.id}?lang=${locale}`;
 
@@ -146,6 +151,31 @@ export default async function BlogListPage({ searchParams }: { searchParams: { l
                   </a>
                 );
               })}
+            </div>
+          )}
+
+          {/* Pagination */}
+          {totalPages > 1 && (
+            <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', gap: '1rem', paddingTop: '3rem', paddingBottom: '2rem' }}>
+              {page > 1 && (
+                <a
+                  href={`/blog?lang=${locale}&page=${page - 1}`}
+                  style={{ display: 'inline-flex', alignItems: 'center', gap: '0.4rem', background: '#FDFBF0', color: '#465940', borderRadius: '999px', padding: '10px 22px', fontWeight: 700, fontSize: '0.88rem', textDecoration: 'none' }}
+                >
+                  ← {ka ? 'წინა' : 'Previous'}
+                </a>
+              )}
+              <span style={{ color: '#FDFBF0', fontSize: '0.85rem', opacity: 0.6 }}>
+                {page} / {totalPages}
+              </span>
+              {page < totalPages && (
+                <a
+                  href={`/blog?lang=${locale}&page=${page + 1}`}
+                  style={{ display: 'inline-flex', alignItems: 'center', gap: '0.4rem', background: '#FDFBF0', color: '#465940', borderRadius: '999px', padding: '10px 22px', fontWeight: 700, fontSize: '0.88rem', textDecoration: 'none' }}
+                >
+                  {ka ? 'შემდეგი' : 'Next'} →
+                </a>
+              )}
             </div>
           )}
         </div>

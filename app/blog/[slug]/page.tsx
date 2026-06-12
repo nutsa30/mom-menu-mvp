@@ -85,13 +85,25 @@ export default async function BlogPostPage({
     author: { '@type': 'Organization', name: 'MomMenu', url: siteUrl },
     publisher: { '@type': 'Organization', name: 'MomMenu', url: siteUrl, logo: { '@type': 'ImageObject', url: `${siteUrl}/og-image.png`, width: 1200, height: 630 } },
     mainEntityOfPage: { '@type': 'WebPage', '@id': `${siteUrl}/blog/${slugPath}` },
-    url: `${siteUrl}/blog/${slugPath}`, image: blog.imageUrl || `${siteUrl}/og?title=${encodeURIComponent(blog.titleEn)}`,
-    inLanguage: locale, keywords: 'ბავშვის კვება, child nutrition, mom menu',
+    url: `${siteUrl}/blog/${slugPath}`,
+    image: blog.imageUrl ? { '@type': 'ImageObject', url: blog.imageUrl, alt: title } : `${siteUrl}/og-image.png`,
+    inLanguage: locale, keywords: 'ბავშვის კვება, child nutrition, MomMenu',
+  };
+
+  const breadcrumbJsonLd = {
+    '@context': 'https://schema.org',
+    '@type': 'BreadcrumbList',
+    itemListElement: [
+      { '@type': 'ListItem', position: 1, name: ka ? 'მთავარი' : 'Home', item: siteUrl },
+      { '@type': 'ListItem', position: 2, name: ka ? 'ბლოგი' : 'Blog', item: `${siteUrl}/blog` },
+      { '@type': 'ListItem', position: 3, name: title, item: `${siteUrl}/blog/${slugPath}` },
+    ],
   };
 
   return (
     <>
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(articleJsonLd) }} />
+      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(breadcrumbJsonLd) }} />
       <BlogViewTracker title={title} />
 
       <main style={{ background: '#465940', minHeight: '100vh' }}>
@@ -159,7 +171,7 @@ export default async function BlogPostPage({
                     <div className="columns-2 sm:columns-3 gap-3">
                       {images.slice(1).map((url, i) => (
                         <div key={i} style={{ marginBottom: '0.75rem', borderRadius: '20px', overflow: 'hidden' }} className="break-inside-avoid">
-                          <img src={url} alt={`${title} — ${i + 1}`} className="w-full object-cover" />
+                          <img src={url} alt={`${title} — ${ka ? 'ფოტო' : 'photo'} ${i + 2}`} className="w-full object-cover" />
                         </div>
                       ))}
                     </div>
@@ -219,6 +231,52 @@ export default async function BlogPostPage({
 
             </div>
           </div>
+
+        {/* ── Related Articles ── */}
+        {related.length > 0 && (
+          <section style={{ background: '#FDFBF0', marginTop: '0' }}>
+            <div className="max-w-4xl mx-auto px-6 py-14">
+              <h2 style={{ fontWeight: 900, color: '#465940', fontSize: '1.35rem', marginBottom: '1.75rem' }}>
+                {ka ? 'მსგავსი სტატიები' : 'Related Articles'}
+              </h2>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
+                {related.map((r) => {
+                  const rTitle = ka ? r.titleKa : r.titleEn;
+                  const rSlug = (r as any).slug ?? r.id;
+                  const rDate = new Date(r.createdAt);
+                  const KA_M = ['იანვ','თებ','მარ','აპრ','მაი','ივნ','ივლ','აგვ','სექ','ოქტ','ნოე','დეკ'];
+                  const EN_M = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+                  const rDateStr = `${rDate.getDate()} ${ka ? KA_M[rDate.getMonth()] : EN_M[rDate.getMonth()]}, ${rDate.getFullYear()}`;
+                  return (
+                    <a
+                      key={r.id}
+                      href={`/blog/${rSlug}?lang=${locale}`}
+                      style={{ background: '#fff', borderRadius: '20px', overflow: 'hidden', display: 'flex', flexDirection: 'column', textDecoration: 'none', border: '1.5px solid rgba(70,89,64,0.08)' }}
+                    >
+                      {r.imageUrl && (
+                        <div style={{ aspectRatio: '16/9', overflow: 'hidden' }}>
+                          <img
+                            src={r.imageUrl}
+                            alt={rTitle}
+                            style={{ width: '100%', height: '100%', objectFit: 'cover' }}
+                          />
+                        </div>
+                      )}
+                      <div style={{ padding: '1.1rem 1.25rem 1.25rem' }}>
+                        <p style={{ fontSize: '0.7rem', color: '#465940', opacity: 0.45, marginBottom: '0.45rem', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.05em' }}>{rDateStr}</p>
+                        <p style={{ fontWeight: 800, color: '#465940', fontSize: '0.92rem', lineHeight: 1.45 }}>{rTitle}</p>
+                        <p style={{ color: '#ff7f50', fontSize: '0.78rem', marginTop: '0.6rem', fontWeight: 700 }}>
+                          {ka ? 'წაიკითხე →' : 'Read →'}
+                        </p>
+                      </div>
+                    </a>
+                  );
+                })}
+              </div>
+            </div>
+          </section>
+        )}
+
       </main>
     </>
   );
