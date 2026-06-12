@@ -32,11 +32,7 @@ export default async function ContactPage({ searchParams }: { searchParams: { la
     <main className="min-h-screen" style={{ background: '#465940' }}>
       <div style={{ background: 'rgba(0,0,0,.15)', borderBottom: '1px solid rgba(253,251,240,.1)' }}>
         <div className="max-w-5xl mx-auto px-5 py-14">
-          <div className="inline-flex items-center gap-2.5 px-5 py-2.5 rounded-full text-sm font-bold mb-6"
-            style={{ background: 'rgba(253,251,240,.18)', color: '#FDFBF0', border: '1px solid rgba(253,251,240,.25)', fontSize: '1rem' }}>
-            ✉️ {locale === 'ka' ? 'კონტაქტი' : 'Contact'}
-          </div>
-          <h1 className="text-4xl md:text-5xl font-black text-[#FDFBF0] leading-tight mb-4">
+<h1 className="text-4xl md:text-5xl font-black text-[#FDFBF0] leading-tight mb-4">
             {locale === 'ka' ? s.titleKa : s.titleEn}
           </h1>
           <p className="text-[#FDFBF0]/65 text-lg max-w-lg">
