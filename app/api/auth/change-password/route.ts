@@ -20,7 +20,9 @@ export async function POST(req: Request) {
   const passwordHash = await hashPassword(newPassword);
   await prisma.user.update({ where: { id: session.id }, data: { passwordHash } });
 
-  sendPasswordChangedEmail(user.email, user.name).catch(() => {});
+  sendPasswordChangedEmail(user.email, user.name ?? 'მომხმარებელი').catch((err) => {
+    console.error('[change-password] email send failed:', err);
+  });
 
   return NextResponse.json({ success: true });
 }

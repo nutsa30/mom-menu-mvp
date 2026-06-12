@@ -678,12 +678,12 @@ function ShoppingListTab({ child, planStart }: { child: any; planStart: string }
                       onClick={() => parsed ? adjust(item.display, 1, neededQty) : toggleSimple(item.display)}>
                       {!parsed && (
                         <span className={`w-5 h-5 rounded-full border-2 flex-shrink-0 flex items-center justify-center transition ${
-                          isDone ? 'bg-[#465940] border-[#465940]' : 'border-[#465940]/30'
+                          isDone ? 'bg-[#465940] border-[#465940]' : 'border-[#FDFBF0]/60'
                         }`}>
                           {isDone && <svg width="10" height="10" viewBox="0 0 12 12" fill="none"><polyline points="2,6 5,9 10,3" stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/></svg>}
                         </span>
                       )}
-                      <span className={`text-sm font-medium truncate transition ${isDone ? 'line-through text-[#465940]/60' : 'text-[#465940]'}`}>
+                      <span className={`text-sm font-medium truncate transition ${isDone ? 'line-through text-[#465940]/60' : 'text-[#FDFBF0]'}`}>
                         {item.display}
                       </span>
                     </button>
@@ -692,10 +692,12 @@ function ShoppingListTab({ child, planStart }: { child: any; planStart: string }
                     {parsed ? (
                       <div className="flex items-center gap-1.5 flex-shrink-0">
                         <button onClick={() => adjust(item.display, -1, neededQty)}
-                          className="w-7 h-7 rounded-full bg-[#465940]/10 hover:bg-[#465940]/15 text-[#465940]/80 font-bold flex items-center justify-center transition text-base leading-none">
+                          className={`w-7 h-7 rounded-full font-bold flex items-center justify-center transition text-base leading-none ${
+                            isDone ? 'bg-[#465940]/10 hover:bg-[#465940]/15 text-[#465940]/80' : 'bg-[#FDFBF0]/20 hover:bg-[#FDFBF0]/30 text-[#FDFBF0]'
+                          }`}>
                           −
                         </button>
-                        <span className={`text-xs font-bold text-center leading-tight ${isDone ? 'text-[#465940]' : 'text-[#465940]'}`}
+                        <span className={`text-xs font-bold text-center leading-tight ${isDone ? 'text-[#465940]' : 'text-[#FDFBF0]'}`}
                           style={{ minWidth: '52px' }}>
                           {boughtQty} / {parsed.qty}{parsed.unit ? ` ${parsed.unit}` : ''}
                         </span>
@@ -1416,7 +1418,7 @@ function SettingsTab({ user }: { user: any }) {
     }
   };
 
-  const inp = 'w-full px-4 py-3 rounded-xl border border-[#465940]/20 focus:outline-none focus:border-[#465940] transition text-sm';
+  const inp = 'w-full px-4 py-3 rounded-xl border border-[#465940]/20 focus:outline-none focus:border-[#465940] transition text-sm bg-white settings-input';
 
   return (
     <div className="space-y-5 max-w-lg">
