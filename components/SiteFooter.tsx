@@ -48,14 +48,14 @@ export default function SiteFooter() {
                 ? 'ჯანსაღი კვება ბავშვებისთვის, მარტივად და სახალისოდ.'
                 : 'Healthy nutrition for children, simply and joyfully.'}
             </p>
-            <div className="flex items-center gap-2">
-              <a href="https://www.tiktok.com/@mommenu0" target="_blank" rel="noopener noreferrer" aria-label="TikTok"
-                className="w-9 h-9 rounded-full border border-[#FDFBF0]/30 flex items-center justify-center text-[#FDFBF0]/70 hover:text-[#FDFBF0] hover:border-[#FDFBF0]/60 transition">
-                <svg width="15" height="15" viewBox="0 0 24 24" fill="currentColor">
-                  <path d="M19.59 6.69a4.83 4.83 0 0 1-3.77-4.25V2h-3.45v13.67a2.89 2.89 0 0 1-2.88 2.5 2.89 2.89 0 0 1-2.89-2.89 2.89 2.89 0 0 1 2.89-2.89c.28 0 .54.04.79.1V9.01a6.33 6.33 0 0 0-.79-.05 6.34 6.34 0 0 0-6.34 6.34 6.34 6.34 0 0 0 6.34 6.34 6.34 6.34 0 0 0 6.33-6.34V8.69a8.18 8.18 0 0 0 4.78 1.52V6.75a4.85 4.85 0 0 1-1.01-.06z"/>
-                </svg>
-              </a>
-            </div>
+            <a href="https://www.tiktok.com/@mommenu0" target="_blank" rel="noopener noreferrer"
+              className="inline-flex items-center gap-2.5 px-4 py-2.5 rounded-full font-bold text-sm transition-all hover:scale-105 active:scale-95"
+              style={{ background: '#FDFBF0', color: '#465940' }}>
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="#465940">
+                <path d="M19.59 6.69a4.83 4.83 0 0 1-3.77-4.25V2h-3.45v13.67a2.89 2.89 0 0 1-2.88 2.5 2.89 2.89 0 0 1-2.89-2.89 2.89 2.89 0 0 1 2.89-2.89c.28 0 .54.04.79.1V9.01a6.33 6.33 0 0 0-.79-.05 6.34 6.34 0 0 0-6.34 6.34 6.34 6.34 0 0 0 6.34 6.34 6.34 6.34 0 0 0 6.33-6.34V8.69a8.18 8.18 0 0 0 4.78 1.52V6.75a4.85 4.85 0 0 1-1.01-.06z"/>
+              </svg>
+              @mommenu0
+            </a>
           </div>
 
           {/* Nav links */}
