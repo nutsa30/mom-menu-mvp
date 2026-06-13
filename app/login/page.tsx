@@ -35,6 +35,8 @@ export default function Login({ searchParams }: { searchParams: { lang?: Locale;
   const errorMsg =
     searchParams.error === 'blocked'
       ? locale === 'ka' ? 'ანგარიში დაბლოკილია. დაუკავშირდი მხარდაჭერას.' : 'Account is blocked. Contact support.'
+      : searchParams.error === 'google'
+      ? locale === 'ka' ? 'Google-ით შესვლა ვერ მოხერხდა. სცადეთ თავიდან.' : 'Google sign-in failed. Please try again.'
       : searchParams.error
       ? locale === 'ka' ? 'არასწორი ელფოსტა ან პაროლი' : 'Invalid email or password'
       : null;
