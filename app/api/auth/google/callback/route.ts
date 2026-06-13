@@ -6,7 +6,13 @@ const BASE = process.env.NEXT_PUBLIC_APP_URL!;
 
 export async function GET(req: NextRequest) {
   const code = req.nextUrl.searchParams.get('code');
-  if (!code) return NextResponse.redirect(`${BASE}/login?error=google`);
+  if (!code) {
+    console.error('[google/callback] no code in request');
+    return NextResponse.redirect(`${BASE}/login?error=google`);
+  }
+
+  const redirectUri = `${BASE}/api/auth/google/callback`;
+  console.log('[google/callback] BASE:', BASE, 'redirect_uri:', redirectUri);
 
   // Exchange code for access token
   const tokenRes = await fetch('https://oauth2.googleapis.com/token', {
@@ -16,12 +22,16 @@ export async function GET(req: NextRequest) {
       code,
       client_id: process.env.GOOGLE_CLIENT_ID!,
       client_secret: process.env.GOOGLE_CLIENT_SECRET!,
-      redirect_uri: `${BASE}/api/auth/google/callback`,
+      redirect_uri: redirectUri,
       grant_type: 'authorization_code',
     }),
   });
 
-  if (!tokenRes.ok) return NextResponse.redirect(`${BASE}/login?error=google`);
+  if (!tokenRes.ok) {
+    const err = await tokenRes.text();
+    console.error('[google/callback] token exchange failed:', tokenRes.status, err);
+    return NextResponse.redirect(`${BASE}/login?error=google`);
+  }
 
   const { access_token } = await tokenRes.json();
 
@@ -30,10 +40,16 @@ export async function GET(req: NextRequest) {
     headers: { Authorization: `Bearer ${access_token}` },
   });
 
-  if (!profileRes.ok) return NextResponse.redirect(`${BASE}/login?error=google`);
+  if (!profileRes.ok) {
+    console.error('[google/callback] profile fetch failed:', profileRes.status);
+    return NextResponse.redirect(`${BASE}/login?error=google`);
+  }
 
   const { id: googleId, email, name } = await profileRes.json();
-  if (!email) return NextResponse.redirect(`${BASE}/login?error=google`);
+  if (!email) {
+    console.error('[google/callback] no email in profile');
+    return NextResponse.redirect(`${BASE}/login?error=google`);
+  }
 
   // Find existing user by googleId or email
   let user = await prisma.user.findFirst({
@@ -49,7 +65,6 @@ export async function GET(req: NextRequest) {
       },
     });
   } else if (!user.googleId) {
-    // Existing email/password user — link Google account
     user = await prisma.user.update({
       where: { id: user.id },
       data: { googleId },
