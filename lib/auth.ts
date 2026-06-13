@@ -9,7 +9,10 @@ const COOKIE = 'mom_menu_token';
 export type SessionUser = { id: string; email: string; name: string; role: 'USER' | 'ADMIN' };
 
 export async function hashPassword(password: string) { return bcrypt.hash(password, 10); }
-export async function verifyPassword(password: string, hash: string) { return bcrypt.compare(password, hash); }
+export async function verifyPassword(password: string, hash: string | null | undefined) {
+  if (!hash) return false;
+  return bcrypt.compare(password, hash);
+}
 
 export function signToken(user: SessionUser) {
   return jwt.sign(user, process.env.JWT_SECRET || 'dev-secret', { expiresIn: '7d' });
