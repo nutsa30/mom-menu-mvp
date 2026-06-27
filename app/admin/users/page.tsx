@@ -38,7 +38,7 @@ function UserTable({ users, subLabel, locale }: { users: any[]; subLabel: Record
                   </div>
                   <div>
                     <p className="text-sm font-semibold text-[#465940]">{user.name}</p>
-                    {user.role === 'ADMIN' && <span className="text-[10px] font-bold text-[#465940]">ADMIN</span>}
+                    {user.role === 'ADMIN' && <span className="text-[10px] font-bold text-[#FDFBF0] bg-[#465940] px-1.5 py-0.5 rounded">ADMIN</span>}
                     {user.isBlocked && <span className="text-[10px] font-bold text-[#FDFBF0]">{locale === 'ka' ? 'დაბლოკილი' : 'BLOCKED'}</span>}
                   </div>
                 </div>

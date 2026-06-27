@@ -126,7 +126,7 @@ export function ToggleAdminButton({ userId, role, locale = 'ka' }: { userId: str
       disabled={loading}
       className={`rounded-full px-3 py-1 text-xs font-bold transition disabled:opacity-50 ${
         isAdmin
-          ? 'bg-[#465940] text-[#465940] hover:bg-[#465940]/20'
+          ? 'bg-[#465940] text-[#FDFBF0] hover:bg-[#465940]/80'
           : 'bg-[#465940]/10 text-[#465940]/70 hover:bg-[#465940]/15'
       }`}
     >
