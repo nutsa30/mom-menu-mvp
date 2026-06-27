@@ -54,7 +54,7 @@ const ALLERGEN_LIST = [
   { key: 'lupin',      label: 'ლუპინი'            },
 ];
 
-const inp = 'w-full px-4 py-3 rounded-xl border border-[#465940]/20 focus:outline-none focus:border-[#465940] transition text-sm bg-[#FDFBF0]';
+const inp = 'w-full px-4 py-3 rounded-xl border border-[#465940]/20 focus:outline-none focus:border-[#465940] transition text-sm bg-[#FDFBF0] text-[#465940]';
 const lbl = 'block text-sm font-semibold text-[#465940] mb-1.5';
 const sec = 'bg-[#FDFBF0] rounded-2xl border border-[#465940]/10 shadow-sm p-6';
 
@@ -310,7 +310,7 @@ export default function EditMealForm({ dish }: { dish: any }) {
                       <input type="number" min="0" step="0.1" placeholder="0"
                         value={nutrients[n.key]}
                         onChange={(e) => setNutrients((p) => ({ ...p, [n.key]: e.target.value }))}
-                        className="w-24 px-3 py-1.5 rounded-lg border border-[#465940]/20 focus:outline-none focus:border-[#465940] text-sm text-right" />
+                        className="w-24 px-3 py-1.5 rounded-lg border border-[#465940]/20 focus:outline-none focus:border-[#465940] text-sm text-right text-[#465940]" />
                       <span className="text-xs text-[#465940]/60 w-8">{n.unit}</span>
                     </div>
                   ) : (
