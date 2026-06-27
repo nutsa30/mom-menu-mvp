@@ -78,10 +78,10 @@ export default function DishesAdminList({ dishes, locale, labels, ageLabel }: Pr
         <table className="w-full min-w-[600px]">
           <thead className="bg-[#465940]">
             <tr>
-              <th className="text-left px-6 py-3 text-xs font-semibold text-[#465940]/60 uppercase tracking-wide">{labels.meal}</th>
-              <th className="text-left px-4 py-3 text-xs font-semibold text-[#465940]/60 uppercase tracking-wide">{labels.type}</th>
-              <th className="text-left px-4 py-3 text-xs font-semibold text-[#465940]/60 uppercase tracking-wide">{labels.ageGroups}</th>
-              <th className="text-right px-6 py-3 text-xs font-semibold text-[#465940]/60 uppercase tracking-wide">{labels.actions}</th>
+              <th className="text-left px-6 py-3 text-xs font-semibold text-[#FDFBF0]/80 uppercase tracking-wide">{labels.meal}</th>
+              <th className="text-left px-4 py-3 text-xs font-semibold text-[#FDFBF0]/80 uppercase tracking-wide">{labels.type}</th>
+              <th className="text-left px-4 py-3 text-xs font-semibold text-[#FDFBF0]/80 uppercase tracking-wide">{labels.ageGroups}</th>
+              <th className="text-right px-6 py-3 text-xs font-semibold text-[#FDFBF0]/80 uppercase tracking-wide">{labels.actions}</th>
             </tr>
           </thead>
           <tbody className="divide-y divide-[#465940]/5">

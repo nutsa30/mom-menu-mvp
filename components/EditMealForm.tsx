@@ -180,7 +180,7 @@ export default function EditMealForm({ dish }: { dish: any }) {
         <div className="mb-5 rounded-xl bg-[#465940] border border-[#FDFBF0]/30 px-4 py-3 text-sm font-medium text-[#FDFBF0]">{error}</div>
       )}
 
-      <form onSubmit={handleSubmit} className="space-y-5">
+      <form onSubmit={handleSubmit} className="space-y-5" noValidate>
 
         {/* Image */}
         <div className={sec}>
