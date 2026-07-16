@@ -6,34 +6,29 @@ import crypto from "crypto";
 
 export async function POST(req: Request) {
   try {
-    const { token, newPassword } = await req.json();
+    const { email, code, newPassword } = await req.json();
 
-    if (!token || !newPassword || newPassword.length < 6) {
+    if (!email || !code || !newPassword || newPassword.length < 6) {
       return NextResponse.json({ error: "invalid_input" }, { status: 400 });
     }
 
-    const tokenHash = crypto.createHash("sha256").update(token).digest("hex");
+    const user = await prisma.user.findUnique({ where: { email } });
+    if (!user) return NextResponse.json({ error: "invalid_code" }, { status: 400 });
+
+    const tokenHash = crypto.createHash("sha256").update(user.id + ":" + code).digest("hex");
 
     const record = await prisma.passwordResetToken.findUnique({
       where: { tokenHash },
       include: { user: true },
     });
 
-    if (!record) {
-      return NextResponse.json({ error: "invalid_token" }, { status: 400 });
-    }
-    if (record.usedAt) {
-      return NextResponse.json({ error: "token_used" }, { status: 400 });
-    }
-    if (record.expiresAt < new Date()) {
-      return NextResponse.json({ error: "token_expired" }, { status: 400 });
-    }
-
-    const passwordHash = await hashPassword(newPassword);
+    if (!record) return NextResponse.json({ error: "invalid_code" }, { status: 400 });
+    if (record.usedAt) return NextResponse.json({ error: "token_used" }, { status: 400 });
+    if (record.expiresAt < new Date()) return NextResponse.json({ error: "token_expired" }, { status: 400 });
 
     await prisma.user.update({
       where: { id: record.userId },
-      data: { passwordHash },
+      data: { passwordHash: await hashPassword(newPassword) },
     });
 
     await prisma.passwordResetToken.update({

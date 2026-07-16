@@ -70,13 +70,16 @@ export const TEMPLATE_DEFAULTS: Record<string, { subject: string; body: string }
   },
 
   password_reset: {
-    subject: "MomMenu — პაროლის აღდგენა 🔐",
+    subject: "MomMenu — პაროლის აღდგენის კოდი 🔐",
     body: `<h2 style="margin:0 0 16px;font-size:22px;font-weight:800;">პაროლის აღდგენა 🔐</h2>
-<p style="margin:0 0 14px;font-size:15px;line-height:1.7;">მიიღეთ პაროლის აღდგენის მოთხოვნა თქვენი MomMenu ანგარიშისთვის.</p>
-<p style="margin:0 0 4px;font-size:15px;line-height:1.7;">დააჭირეთ ღილაკს ახალი პაროლის დასაყენებლად. ბმული მოქმედებს <strong>30 წუთის</strong> განმავლობაში.</p>
-<div style="text-align:center;margin:28px 0;"><a href="{{resetUrl}}" style="display:inline-block;background:#465940;color:#FDFBF0;padding:14px 36px;border-radius:50px;text-decoration:none;font-weight:700;font-size:15px;font-family:Arial,sans-serif;">პაროლის შეცვლა →</a></div>
-<p style="margin:0 0 8px;font-size:13px;color:#888;text-align:center;">თუ ეს მოთხოვნა თქვენი არ არის, უბრალოდ უგულებელყავით ეს მეილი.</p>
-<p style="margin:0;font-size:12px;color:#bbb;text-align:center;word-break:break-all;">{{resetUrl}}</p>`,
+<p style="margin:0 0 20px;font-size:15px;line-height:1.7;">მოითხოვეთ MomMenu ანგარიშის პაროლის აღდგენა. გამოიყენეთ ქვემოთ მოცემული კოდი:</p>
+<div style="text-align:center;margin:28px 0;">
+  <div style="display:inline-block;background:#f5f2ea;border-radius:16px;padding:20px 40px;">
+    <div style="font-size:42px;font-weight:900;letter-spacing:14px;color:#465940;font-family:monospace;">{{code}}</div>
+  </div>
+</div>
+<p style="margin:0 0 8px;font-size:13px;color:#888;text-align:center;">კოდი მოქმედებს <strong>30 წუთის</strong> განმავლობაში.</p>
+<p style="margin:0;font-size:13px;color:#bbb;text-align:center;">თუ ეს მოთხოვნა თქვენი არ არის, უბრალოდ უგულებელყავით ეს მეილი.</p>`,
   },
 
   password_changed: {
@@ -155,9 +158,9 @@ export async function sendSubscriptionConfirmationEmail(
 
 // ─── Password Reset ───────────────────────────────────────────────────────────
 
-export async function sendPasswordResetEmail(to: string, resetUrl: string) {
+export async function sendPasswordResetEmail(to: string, code: string) {
   const { subject, body } = await getTemplate("password_reset");
-  const html = layout(body.replace(/\{\{resetUrl\}\}/g, resetUrl));
+  const html = layout(body.replace(/\{\{code\}\}/g, code));
   await resend.emails.send({ from: FROM, to, subject, html });
 }
 

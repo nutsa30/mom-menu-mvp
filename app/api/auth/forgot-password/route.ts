@@ -4,7 +4,7 @@ import { NextResponse } from "next/server";
 import crypto from "crypto";
 
 const GENERIC = NextResponse.json({
-  message: "თუ ეს ელფოსტა რეგისტრირებულია, აღდგენის ბმული გაიგზავნება.",
+  message: "თუ ეს ელფოსტა რეგისტრირებულია, კოდი გაიგზავნება.",
 });
 
 export async function POST(req: Request) {
@@ -15,21 +15,19 @@ export async function POST(req: Request) {
     const user = await prisma.user.findUnique({ where: { email } });
     if (!user) return GENERIC;
 
-    // Delete existing unused tokens for this user
     await prisma.passwordResetToken.deleteMany({ where: { userId: user.id } });
 
-    const rawToken = crypto.randomBytes(32).toString("hex");
-    const tokenHash = crypto.createHash("sha256").update(rawToken).digest("hex");
-    const expiresAt = new Date(Date.now() + 30 * 60 * 1000); // 30 minutes
+    const code = String(Math.floor(100000 + Math.random() * 900000));
+    const tokenHash = crypto.createHash("sha256").update(user.id + ":" + code).digest("hex");
+    const expiresAt = new Date(Date.now() + 30 * 60 * 1000);
 
     await prisma.passwordResetToken.create({
       data: { userId: user.id, tokenHash, expiresAt },
     });
 
-    const resetUrl = `https://mommenu.ge/reset-password?token=${rawToken}`;
-    await sendPasswordResetEmail(email, resetUrl);
+    await sendPasswordResetEmail(email, code);
   } catch {
-    // Swallow errors — always return generic response to prevent enumeration
+    // Swallow errors — always return generic response
   }
 
   return GENERIC;
