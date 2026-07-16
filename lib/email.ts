@@ -78,7 +78,7 @@ export const TEMPLATE_DEFAULTS: Record<string, { subject: string; body: string }
     <div style="font-size:42px;font-weight:900;letter-spacing:14px;color:#465940;font-family:monospace;">{{code}}</div>
   </div>
 </div>
-<p style="margin:0 0 8px;font-size:13px;color:#888;text-align:center;">კოდი მოქმედებს <strong>30 წუთის</strong> განმავლობაში.</p>
+<p style="margin:0 0 8px;font-size:13px;color:#888;text-align:center;">კოდი მოქმედებს <strong>5 წუთის</strong> განმავლობაში.</p>
 <p style="margin:0;font-size:13px;color:#bbb;text-align:center;">თუ ეს მოთხოვნა თქვენი არ არის, უბრალოდ უგულებელყავით ეს მეილი.</p>`,
   },
 
