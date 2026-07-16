@@ -620,6 +620,7 @@ export default function EmailCenterClient({
                       placeholder="email1@gmail.com, email2@gmail.com"
                       rows={3}
                       className="w-full px-3 py-2 rounded-xl border border-gray-200 text-xs focus:outline-none focus:border-[#465940] resize-none"
+                      style={{ color: '#111' }}
                     />
                   </div>
                 )}
