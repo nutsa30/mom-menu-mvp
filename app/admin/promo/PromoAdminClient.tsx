@@ -202,7 +202,7 @@ export default function PromoAdminClient({ codes }: { codes: PromoCode[] }) {
                   <button
                     onClick={() => handleDelete(code.id, code.code)}
                     className="promo-delete-btn"
-                    style={{ fontSize: '0.75rem', fontWeight: 600, padding: '3px 12px', borderRadius: 999 }}
+                    style={{ fontSize: '0.75rem', fontWeight: 600, padding: '3px 12px', borderRadius: 999, background: '#dc2626' }}
                   >
                     წაშლა
                   </button>

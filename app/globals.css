@@ -24,8 +24,8 @@ body { background: #465940; color: #FDFBF0; antialiased: true; }
 .input { @apply w-full rounded-2xl border border-[#FDFBF0]/20 bg-[#FDFBF0]/10 px-4 py-3 text-[#FDFBF0] outline-none transition focus:border-[#FDFBF0]/60; }
 .settings-input { color: #465940 !important; background-color: #ffffff !important; }
 .settings-input::placeholder { color: rgba(70, 89, 64, 0.45) !important; }
-.promo-delete-btn { color: #dc2626 !important; background: #fee2e2 !important; border: none; cursor: pointer; }
-.promo-delete-btn:hover { color: #b91c1c !important; background: #fecaca !important; }
+.promo-delete-btn { background: #dc2626 !important; border: none !important; cursor: pointer; }
+.promo-delete-btn:hover { background: #b91c1c !important; }
 .label { @apply text-sm font-semibold text-[#FDFBF0]/75; }
 .btn { @apply inline-flex items-center justify-center rounded-2xl px-5 py-3 font-bold transition active:scale-[.98]; }
 .btn-primary { @apply btn bg-[#FDFBF0] text-[#465940] shadow-sm hover:bg-[#FDFBF0]/90; }
