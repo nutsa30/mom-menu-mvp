@@ -13,11 +13,16 @@ function geoDay()  {
 }
 
 async function getMealType(hour: number, day: number): Promise<string | null> {
-  if (day === 0 && hour === 10) return 'weekly';
-  if (hour === 8)  return 'breakfast';
-  if (hour === 12) return 'lunch';
-  if (hour === 15) return 'snack';
-  if (hour === 18) return 'dinner';
+  const schedule = await prisma.pushSchedule.upsert({
+    where: { id: 'singleton' },
+    update: {},
+    create: { id: 'singleton' },
+  });
+  if (day === 0 && hour === schedule.weeklyHour) return 'weekly';
+  if (hour === schedule.breakfastHour) return 'breakfast';
+  if (hour === schedule.lunchHour)     return 'lunch';
+  if (hour === schedule.snackHour)     return 'snack';
+  if (hour === schedule.dinnerHour)    return 'dinner';
   return null;
 }
 
