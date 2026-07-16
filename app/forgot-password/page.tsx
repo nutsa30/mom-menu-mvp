@@ -122,8 +122,8 @@ export default function ForgotPassword({ searchParams }: { searchParams: { lang?
   };
 
   return (
-    <div className="min-h-screen bg-[#465940] flex items-center justify-center p-6">
-      <div className="w-full max-w-4xl bg-[#FDFBF0] rounded-[32px] shadow-2xl overflow-hidden grid lg:grid-cols-[45%_55%]" style={{ minHeight: 480 }}>
+    <div className="min-h-screen bg-[#465940] flex items-center justify-center p-3 sm:p-6">
+      <div className="w-full max-w-4xl bg-[#FDFBF0] rounded-3xl sm:rounded-[32px] shadow-2xl overflow-hidden grid lg:grid-cols-[45%_55%]" style={{ minHeight: 480 }}>
 
         {/* Left panel */}
         <div className="hidden lg:flex bg-[#465940] flex-col p-10 relative">
@@ -140,7 +140,7 @@ export default function ForgotPassword({ searchParams }: { searchParams: { lang?
         </div>
 
         {/* Right panel */}
-        <div className="flex items-center justify-center bg-[#FDFBF0] px-5 py-8 sm:px-10 sm:py-12">
+        <div className="flex items-center justify-center bg-[#FDFBF0] px-4 py-7 sm:px-10 sm:py-12">
           <div className="w-full max-w-sm">
 
             {/* ── success ── */}
@@ -163,7 +163,7 @@ export default function ForgotPassword({ searchParams }: { searchParams: { lang?
             {/* ── Step 1: email ── */}
             {step === 'email' && (
               <>
-                <h1 className="text-3xl font-black text-[#465940] mb-1">
+                <h1 className="text-2xl sm:text-3xl font-black text-[#465940] mb-1">
                   {locale === 'ka' ? 'პაროლის აღდგენა' : 'Reset password'}
                 </h1>
                 <p className="text-[#465940]/60 text-sm mb-8">
@@ -194,12 +194,12 @@ export default function ForgotPassword({ searchParams }: { searchParams: { lang?
             {/* ── Step 2: enter code ── */}
             {step === 'code' && (
               <>
-                <div className="mb-6">
-                  <div className="text-3xl mb-2">📬</div>
-                  <h1 className="text-2xl font-black text-[#465940] mb-1">
+                <div className="mb-5">
+                  <div className="text-2xl sm:text-3xl mb-2">📬</div>
+                  <h1 className="text-lg sm:text-2xl font-black text-[#465940] mb-1">
                     {locale === 'ka' ? 'კოდი გამოგზავნილია' : 'Code sent'}
                   </h1>
-                  <p className="text-[#465940]/60 text-sm">
+                  <p className="text-[#465940]/60 text-xs sm:text-sm break-all">
                     {locale === 'ka' ? `შეამოწმეთ ${email}` : `Check ${email}`}
                   </p>
                 </div>
@@ -208,20 +208,20 @@ export default function ForgotPassword({ searchParams }: { searchParams: { lang?
                     <label className="block text-sm font-semibold text-[#465940] mb-3">
                       {locale === 'ka' ? 'შეიყვანეთ 6-ნიშნა კოდი' : 'Enter 6-digit code'}
                     </label>
-                    <div className="flex gap-1.5 sm:gap-2">
+                    <div className="flex gap-1 sm:gap-2">
                       {digits.map((d, i) => (
                         <input key={i} ref={(el) => { inputRefs.current[i] = el; }}
                           type="text" inputMode="numeric" maxLength={1} value={d}
                           onChange={(e) => handleDigitChange(i, e.target.value)}
                           onKeyDown={(e) => handleDigitKeyDown(i, e)}
-                          className="flex-1 min-w-0 h-12 sm:h-14 text-center text-lg sm:text-xl font-bold border-2 rounded-xl focus:outline-none focus:border-[#465940] transition text-[#465940]"
+                          className="flex-1 min-w-0 h-11 sm:h-14 text-center text-base sm:text-xl font-bold border-2 rounded-lg sm:rounded-xl focus:outline-none focus:border-[#465940] transition text-[#465940]"
                           style={{ borderColor: d ? '#465940' : undefined }} />
                       ))}
                     </div>
                   </div>
                   {error && <p className="text-red-600 text-sm">{error}</p>}
                   <button type="submit" disabled={loading || digits.join('').length < 6}
-                    className="w-full bg-[#465940] text-[#FDFBF0] py-3.5 rounded-full font-bold text-sm shadow-md hover:opacity-90 transition disabled:opacity-40">
+                    className="w-full bg-[#465940] text-[#FDFBF0] py-3 sm:py-3.5 rounded-full font-bold text-sm shadow-md hover:opacity-90 transition disabled:opacity-40">
                     {loading ? (locale === 'ka' ? 'მოწმდება...' : 'Verifying...') : (locale === 'ka' ? 'კოდის დადასტურება' : 'Verify code')}
                   </button>
                 </form>
@@ -238,9 +238,9 @@ export default function ForgotPassword({ searchParams }: { searchParams: { lang?
             {/* ── Step 3: new password ── */}
             {step === 'password' && (
               <>
-                <div className="mb-6">
-                  <div className="text-3xl mb-2">🔐</div>
-                  <h1 className="text-2xl font-black text-[#465940] mb-1">
+                <div className="mb-5">
+                  <div className="text-2xl sm:text-3xl mb-2">🔐</div>
+                  <h1 className="text-lg sm:text-2xl font-black text-[#465940] mb-1">
                     {locale === 'ka' ? 'ახალი პაროლი' : 'New password'}
                   </h1>
                   <p className="text-[#465940]/60 text-sm">
