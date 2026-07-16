@@ -111,7 +111,7 @@ export default function ForgotPassword({ searchParams }: { searchParams: { lang?
         </div>
 
         {/* Right panel */}
-        <div className="flex items-center justify-center bg-[#FDFBF0] px-10 py-12">
+        <div className="flex items-center justify-center bg-[#FDFBF0] px-5 py-8 sm:px-10 sm:py-12">
           <div className="w-full max-w-sm">
 
             {/* ── Step: success ── */}
@@ -197,7 +197,7 @@ export default function ForgotPassword({ searchParams }: { searchParams: { lang?
                     <label className="block text-sm font-semibold text-[#465940] mb-3">
                       {locale === 'ka' ? 'შეიყვანეთ კოდი' : 'Enter code'}
                     </label>
-                    <div className="flex gap-2 justify-between">
+                    <div className="flex gap-1.5 sm:gap-2">
                       {digits.map((d, i) => (
                         <input
                           key={i}
@@ -208,7 +208,7 @@ export default function ForgotPassword({ searchParams }: { searchParams: { lang?
                           value={d}
                           onChange={(e) => handleDigitChange(i, e.target.value)}
                           onKeyDown={(e) => handleDigitKeyDown(i, e)}
-                          className="w-12 h-14 text-center text-xl font-bold border-2 rounded-xl focus:outline-none focus:border-[#465940] transition text-[#465940]"
+                          className="flex-1 min-w-0 h-12 sm:h-14 text-center text-lg sm:text-xl font-bold border-2 rounded-xl focus:outline-none focus:border-[#465940] transition text-[#465940]"
                           style={{ borderColor: d ? '#465940' : undefined }}
                         />
                       ))}
