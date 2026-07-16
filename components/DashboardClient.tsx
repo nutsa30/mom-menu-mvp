@@ -939,7 +939,7 @@ function TagInput({ tags, onChange, color }: { tags: string[]; onChange: (t: str
         <input value={input} onChange={(e) => setInput(e.target.value)}
           onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); add(); } }}
           placeholder="დაამატე და Enter..."
-          className="flex-1 px-3 py-2 rounded-xl border border-[#465940]/20 focus:outline-none focus:border-[#465940] text-sm" />
+          className="flex-1 px-3 py-2 rounded-xl border border-[#465940]/20 focus:outline-none focus:border-[#465940] text-sm settings-input" />
         <button type="button" onClick={add} className="px-3 py-2 rounded-xl bg-[#465940]/10 hover:bg-[#465940]/15 text-sm font-bold text-[#465940]/80 transition">+</button>
       </div>
     </div>
@@ -1121,12 +1121,12 @@ function ChildTab({ children: kids, userId, onUpdate, onDelete }: {
             <div>
               <label className="block text-sm font-semibold text-[#465940] mb-1.5">სახელი</label>
               <input value={newName} onChange={(e) => setNewName(e.target.value)}
-                className="w-full px-4 py-3 rounded-xl border border-[#465940]/20 focus:outline-none focus:border-[#465940] text-sm" />
+                className="w-full px-4 py-3 rounded-xl border border-[#465940]/20 focus:outline-none focus:border-[#465940] text-sm settings-input" />
             </div>
             <div>
               <label className="block text-sm font-semibold text-[#465940] mb-1.5">დაბადების თარიღი</label>
               <input type="date" value={newBirth} onChange={(e) => setNewBirth(e.target.value)}
-                className="w-full px-4 py-3 rounded-xl border border-[#465940]/20 focus:outline-none focus:border-[#465940] text-sm" />
+                className="w-full px-4 py-3 rounded-xl border border-[#465940]/20 focus:outline-none focus:border-[#465940] text-sm settings-input" />
             </div>
           </div>
           <div>
@@ -1163,12 +1163,12 @@ function ChildTab({ children: kids, userId, onUpdate, onDelete }: {
             <div>
               <label className="block text-sm font-semibold text-[#465940] mb-1.5">სახელი</label>
               <input value={name} onChange={(e) => setName(e.target.value)}
-                className="w-full px-4 py-3 rounded-xl border border-[#465940]/20 focus:outline-none focus:border-[#465940] text-sm" />
+                className="w-full px-4 py-3 rounded-xl border border-[#465940]/20 focus:outline-none focus:border-[#465940] text-sm settings-input" />
             </div>
             <div>
               <label className="block text-sm font-semibold text-[#465940] mb-1.5">დაბადების თარიღი</label>
               <input type="date" value={birthDate} onChange={(e) => setBirthDate(e.target.value)}
-                className="w-full px-4 py-3 rounded-xl border border-[#465940]/20 focus:outline-none focus:border-[#465940] text-sm" />
+                className="w-full px-4 py-3 rounded-xl border border-[#465940]/20 focus:outline-none focus:border-[#465940] text-sm settings-input" />
             </div>
           </div>
           <div>
@@ -1265,7 +1265,7 @@ function ChildTab({ children: kids, userId, onUpdate, onDelete }: {
             <input value={newFood} onChange={e => setNewFood(e.target.value)}
               onKeyDown={e => e.key === 'Enter' && addFood()}
               placeholder="ახალი პროდუქტი (მაგ. გოგრა)"
-              className="flex-1 px-4 py-2.5 rounded-xl border border-[#465940]/20 text-sm text-[#465940] bg-white focus:outline-none focus:border-[#465940]" />
+              className="flex-1 px-4 py-2.5 rounded-xl border border-[#465940]/20 text-sm bg-white focus:outline-none focus:border-[#465940] settings-input" />
             <button onClick={addFood} disabled={addingFood || !newFood.trim()}
               className="px-4 py-2.5 rounded-xl bg-[#465940] text-[#FDFBF0] text-sm font-bold disabled:opacity-50 transition">
               {addingFood ? '...' : '+ დაწყება'}
