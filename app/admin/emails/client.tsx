@@ -92,10 +92,13 @@ interface EmailTemplate {
 }
 
 const TEMPLATE_META: Record<string, { name: string; vars: string[] }> = {
-  welcome:               { name: 'Welcome Email 💚',          vars: ['{{name}}'] },
-  subscription_confirmed:{ name: 'Subscription Activated ✅', vars: ['{{name}}','{{planName}}','{{amount}}','{{startDate}}','{{endDate}}'] },
-  password_reset:        { name: 'Password Reset 🔐',         vars: ['{{resetUrl}}'] },
-  password_changed:      { name: 'Password Changed ✔',        vars: ['{{name}}'] },
+  welcome:                { name: 'Welcome Email 💚',            vars: ['{{name}}'] },
+  subscription_confirmed: { name: 'Subscription Activated ✅',  vars: ['{{name}}','{{planName}}','{{amount}}','{{startDate}}','{{endDate}}'] },
+  subscription_expiring:  { name: 'Subscription Expiring ⏰',   vars: ['{{name}}'] },
+  password_reset:         { name: 'Password Reset 🔐',           vars: ['{{resetUrl}}'] },
+  password_changed:       { name: 'Password Changed ✔',          vars: ['{{name}}'] },
+  weekly_menu:            { name: 'Weekly Menu 🗓',              vars: ['{{name}}'] },
+  new_blog:               { name: 'New Blog Post 📝',            vars: ['{{name}}','{{blogTitle}}','{{blogUrl}}'] },
 };
 
 function fmt(dateStr: string | null) {

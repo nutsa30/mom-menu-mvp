@@ -3,7 +3,15 @@ import { getSession } from "@/lib/auth";
 import { TEMPLATE_DEFAULTS } from "@/lib/email";
 import { NextResponse } from "next/server";
 
-const TEMPLATE_KEYS = ["welcome", "subscription_confirmed", "password_reset", "password_changed"];
+const TEMPLATE_KEYS = [
+  "welcome",
+  "subscription_confirmed",
+  "subscription_expiring",
+  "password_reset",
+  "password_changed",
+  "weekly_menu",
+  "new_blog",
+];
 
 async function adminGuard() {
   const session = await getSession();

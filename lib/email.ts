@@ -87,6 +87,30 @@ export const TEMPLATE_DEFAULTS: Record<string, { subject: string; body: string }
 <p style="margin:0 0 4px;font-size:15px;line-height:1.7;color:#c0392b;">⚠️ თუ ეს თქვენ არ გაგიკეთებიათ, დაუყოვნებლივ დაგვიკავშირდით: <a href="mailto:info@mommenu.ge" style="color:#465940;font-weight:bold;">info@mommenu.ge</a></p>
 <div style="text-align:center;margin:28px 0;"><a href="https://mommenu.ge/dashboard" style="display:inline-block;background:#465940;color:#FDFBF0;padding:14px 36px;border-radius:50px;text-decoration:none;font-weight:700;font-size:15px;font-family:Arial,sans-serif;">ანგარიშის ნახვა →</a></div>`,
   },
+
+  subscription_expiring: {
+    subject: "თქვენი MomMenu პაკეტი იწურება ⏰",
+    body: `<h2 style="margin:0 0 16px;font-size:22px;font-weight:800;">პაკეტი იწურება ⏰</h2>
+<p style="margin:0 0 14px;font-size:15px;line-height:1.7;">გამარჯობა, <strong>{{name}}</strong>!</p>
+<p style="margin:0 0 14px;font-size:15px;line-height:1.7;">შეგახსენებთ, რომ თქვენი MomMenu პაკეტი მალე გასდის. გააგრძელეთ გამოწერა, რათა არ შეგიწყდეთ წვდომა კვების გეგმებსა და რეცეპტებზე.</p>
+<div style="text-align:center;margin:28px 0;"><a href="https://mommenu.ge/dashboard" style="display:inline-block;background:#465940;color:#FDFBF0;padding:14px 36px;border-radius:50px;text-decoration:none;font-weight:700;font-size:15px;font-family:Arial,sans-serif;">გამოწერის განახლება →</a></div>`,
+  },
+
+  weekly_menu: {
+    subject: "🗓 თქვენი კვირის კვების გეგმა მზადაა!",
+    body: `<h2 style="margin:0 0 16px;font-size:22px;font-weight:800;">🗓 კვირის კვების გეგმა მზადაა!</h2>
+<p style="margin:0 0 14px;font-size:15px;line-height:1.7;">გამარჯობა, <strong>{{name}}</strong>! ახალი კვირა დაიწყო და თქვენი ბავშვის კვების გეგმა განახლდა.</p>
+<p style="margin:0 0 4px;font-size:15px;line-height:1.7;">შედით პირად კაბინეტში, რომ ნახოთ კვირის სრული მენიუ, რეცეპტები და საყიდლების სია.</p>
+<div style="text-align:center;margin:28px 0;"><a href="https://mommenu.ge/dashboard" style="display:inline-block;background:#465940;color:#FDFBF0;padding:14px 36px;border-radius:50px;text-decoration:none;font-weight:700;font-size:15px;font-family:Arial,sans-serif;">კვების გეგმის ნახვა →</a></div>`,
+  },
+
+  new_blog: {
+    subject: "📝 MomMenu-ზე ახალი სტატია გამოქვეყნდა",
+    body: `<h2 style="margin:0 0 16px;font-size:22px;font-weight:800;">📝 ახალი სტატია გამოქვეყნდა</h2>
+<p style="margin:0 0 14px;font-size:15px;line-height:1.7;">გამარჯობა, <strong>{{name}}</strong>!</p>
+<p style="margin:0 0 14px;font-size:15px;line-height:1.7;">MomMenu-ზე გამოქვეყნდა ახალი სტატია: <strong>{{blogTitle}}</strong></p>
+<div style="text-align:center;margin:28px 0;"><a href="{{blogUrl}}" style="display:inline-block;background:#465940;color:#FDFBF0;padding:14px 36px;border-radius:50px;text-decoration:none;font-weight:700;font-size:15px;font-family:Arial,sans-serif;">სტატიის წაკითხვა →</a></div>`,
+  },
 };
 
 // ─── DB template fetcher with hardcoded fallback ──────────────────────────────
