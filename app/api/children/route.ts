@@ -41,6 +41,7 @@ export async function POST(req: Request) {
       ageGroup: getAgeGroup(birthDate),
       allergies: body.allergies || [],
       dislikes: body.dislikes || [],
+      likes: body.likes || [],
       userId: body.userId,
     },
   });

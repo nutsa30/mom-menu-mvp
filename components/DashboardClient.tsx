@@ -971,6 +971,9 @@ function ChildTab({ children: kids, userId, onUpdate, onDelete }: {
   const [newChildMode, setNewChildMode] = useState(false);
   const [newName, setNewName] = useState('');
   const [newBirth, setNewBirth] = useState('');
+  const [newAllergies, setNewAllergies] = useState<string[]>([]);
+  const [newDislikes, setNewDislikes] = useState<string[]>([]);
+  const [newLikes, setNewLikes] = useState<string[]>([]);
   const [addingChild, setAddingChild] = useState(false);
 
   // Food introduction state
@@ -1074,11 +1077,16 @@ function ChildTab({ children: kids, userId, onUpdate, onDelete }: {
     const res = await fetch('/api/children', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ userId, name: newName, birthDate: newBirth }),
+      body: JSON.stringify({ userId, name: newName, birthDate: newBirth, allergies: newAllergies, dislikes: newDislikes, likes: newLikes }),
     });
     const child = await res.json();
     setAddingChild(false);
-    if (child.id) { onUpdate(child); setNewChildMode(false); setNewName(''); setNewBirth(''); }
+    if (child.id) {
+      onUpdate(child);
+      setNewChildMode(false);
+      setNewName(''); setNewBirth('');
+      setNewAllergies([]); setNewDislikes([]); setNewLikes([]);
+    }
   };
 
   const fmtDate = (bd: any) => bd
@@ -1107,9 +1115,9 @@ function ChildTab({ children: kids, userId, onUpdate, onDelete }: {
 
       {/* Add new child */}
       {newChildMode && (
-        <div className={`${card} p-5`}>
-          <h3 className="font-bold text-[#465940] mb-4">ახალი შვილის მიმატება</h3>
-          <div className="grid grid-cols-2 gap-4 mb-4">
+        <div className={`${card} p-5 space-y-4`}>
+          <h3 className="font-bold text-[#465940]">ახალი შვილის მიმატება</h3>
+          <div className="grid grid-cols-2 gap-4">
             <div>
               <label className="block text-sm font-semibold text-[#465940] mb-1.5">სახელი</label>
               <input value={newName} onChange={(e) => setNewName(e.target.value)}
@@ -1121,12 +1129,24 @@ function ChildTab({ children: kids, userId, onUpdate, onDelete }: {
                 className="w-full px-4 py-3 rounded-xl border border-[#465940]/20 focus:outline-none focus:border-[#465940] text-sm" />
             </div>
           </div>
+          <div>
+            <label className="block text-sm font-semibold text-[#465940] mb-2">🚨 ალერგიები</label>
+            <TagInput tags={newAllergies} onChange={setNewAllergies} color="bg-red-100 text-red-700" />
+          </div>
+          <div>
+            <label className="block text-sm font-semibold text-[#465940] mb-2">😤 არ უყვარს</label>
+            <TagInput tags={newDislikes} onChange={setNewDislikes} color="bg-[#465940]/10 text-[#465940]" />
+          </div>
+          <div>
+            <label className="block text-sm font-semibold text-[#465940] mb-2">😋 უყვარს</label>
+            <TagInput tags={newLikes} onChange={setNewLikes} color="bg-[#465940]/20 text-[#465940]" />
+          </div>
           <div className="flex gap-2">
             <button onClick={addChild} disabled={addingChild}
               className="bg-[#465940] hover:bg-[#465940] text-[#FDFBF0] px-5 py-2.5 rounded-full text-sm font-bold transition disabled:opacity-60">
               {addingChild ? 'ემატება...' : 'დამატება'}
             </button>
-            <button onClick={() => setNewChildMode(false)}
+            <button onClick={() => { setNewChildMode(false); setNewName(''); setNewBirth(''); setNewAllergies([]); setNewDislikes([]); setNewLikes([]); }}
               className="bg-[#465940]/10 hover:bg-[#465940]/15 text-[#465940] px-5 py-2.5 rounded-full text-sm font-bold transition">გაუქმება</button>
           </div>
         </div>
