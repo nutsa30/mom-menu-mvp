@@ -149,15 +149,11 @@ export default function PromoAdminClient({ codes }: { codes: PromoCode[] }) {
       <div className="bg-[#FDFBF0] rounded-2xl border border-[#465940]/10 shadow-sm overflow-hidden">
         <div className="overflow-x-auto">
         <table className="w-full min-w-[600px]">
-          <thead className="bg-[#465940]">
+          <thead style={{ background: '#465940' }}>
             <tr>
-              <th className="text-left px-6 py-3 text-xs font-semibold text-[#FDFBF0]/70 uppercase tracking-wide">კოდი</th>
-              <th className="text-left px-4 py-3 text-xs font-semibold text-[#FDFBF0]/70 uppercase tracking-wide">გეგმა</th>
-              <th className="text-left px-4 py-3 text-xs font-semibold text-[#FDFBF0]/70 uppercase tracking-wide">ფასდაკლება</th>
-              <th className="text-left px-4 py-3 text-xs font-semibold text-[#FDFBF0]/70 uppercase tracking-wide">გამოყენება</th>
-              <th className="text-left px-4 py-3 text-xs font-semibold text-[#FDFBF0]/70 uppercase tracking-wide">სტატუსი</th>
-              <th className="text-left px-4 py-3 text-xs font-semibold text-[#FDFBF0]/70 uppercase tracking-wide">შექმნილია</th>
-              <th className="text-right px-6 py-3 text-xs font-semibold text-[#FDFBF0]/70 uppercase tracking-wide">მოქმედება</th>
+              {['კოდი','გეგმა','ფასდაკლება','გამოყენება','სტატუსი','შექმნილია','მოქმედება'].map((h, i) => (
+                <th key={h} style={{ color: 'rgba(253,251,240,0.8)', fontSize: '0.7rem', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.05em', padding: '10px 16px', textAlign: i === 6 ? 'right' : 'left' }}>{h}</th>
+              ))}
             </tr>
           </thead>
           <tbody className="divide-y divide-[#465940]/5">
@@ -205,7 +201,7 @@ export default function PromoAdminClient({ codes }: { codes: PromoCode[] }) {
                 <td className="px-6 py-4 text-right">
                   <button
                     onClick={() => handleDelete(code.id, code.code)}
-                    className="text-xs font-semibold px-3 py-1 rounded-full bg-red-50 text-red-600 hover:bg-red-100 transition"
+                    style={{ fontSize: '0.75rem', fontWeight: 600, padding: '3px 12px', borderRadius: 999, background: '#fee2e2', color: '#dc2626', border: 'none', cursor: 'pointer' }}
                   >
                     წაშლა
                   </button>
