@@ -201,6 +201,8 @@ export default function PromoAdminClient({ codes }: { codes: PromoCode[] }) {
                 <td className="px-6 py-4 text-right">
                   <button
                     onClick={() => handleDelete(code.id, code.code)}
+                    onMouseEnter={e => { (e.currentTarget as HTMLButtonElement).style.background = '#fecaca'; (e.currentTarget as HTMLButtonElement).style.color = '#b91c1c'; }}
+                    onMouseLeave={e => { (e.currentTarget as HTMLButtonElement).style.background = '#fee2e2'; (e.currentTarget as HTMLButtonElement).style.color = '#dc2626'; }}
                     style={{ fontSize: '0.75rem', fontWeight: 600, padding: '3px 12px', borderRadius: 999, background: '#fee2e2', color: '#dc2626', border: 'none', cursor: 'pointer' }}
                   >
                     წაშლა
