@@ -281,12 +281,7 @@ function TodayTab({ child, allDishes, planStart }: { child: any; allDishes: any[
                 <div className="flex-1 min-w-0">
                   {/* Meal type badge */}
                   <div className="flex items-center gap-2 mb-1.5">
-                    <span className={`text-[10px] font-black uppercase tracking-widest px-2.5 py-0.5 rounded-full ${
-                      mealType === 'BREAKFAST' ? 'bg-[#FDFBF0]/20 text-[#FDFBF0]' :
-                      mealType === 'LUNCH'     ? 'bg-[#FDFBF0]/20 text-[#465940]' :
-                      mealType === 'SNACK'     ? 'bg-[#FDFBF0]/20 text-[#FDFBF0]' :
-                                                 'bg-[#FDFBF0]/20 text-[#FDFBF0]'
-                    }`}>
+                    <span className="text-[10px] font-black uppercase tracking-widest px-2.5 py-0.5 rounded-full bg-[#465940]/10 text-[#465940]">
                       {MEAL_ICON[mealType]} {MEAL_LABEL[mealType]}
                     </span>
                     {eaten && (

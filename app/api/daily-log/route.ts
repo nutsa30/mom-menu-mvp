@@ -49,6 +49,11 @@ export async function GET(req: NextRequest) {
   const missing = ageMealTypes.filter((m) => !existing.has(m));
 
   if (missing.length) {
+    // Track already-used dish IDs (from existing logs + newly picked) to avoid repeats
+    const usedDishIds = new Set<string>(
+      logs.map((l) => l.dishId).filter(Boolean) as string[]
+    );
+
     for (const mealType of missing) {
       let logData: any = { childId, date, mealType, wasEaten: false };
 
@@ -56,7 +61,12 @@ export async function GET(req: NextRequest) {
       if (child.allergies.length) where.NOT = { allergens: { hasSome: child.allergies } };
       const candidates = await prisma.dish.findMany({ where });
 
-      const picked = pickDish(candidates, child.likes, child.dislikes);
+      // Prefer dishes not already used today; fall back to full pool if needed
+      const fresh = candidates.filter((d) => !usedDishIds.has(d.id));
+      const pool = fresh.length > 0 ? fresh : candidates;
+      const picked = pickDish(pool, child.likes, child.dislikes);
+      if (picked) usedDishIds.add(picked.id);
+
       await prisma.dailyLog.upsert({
         where: { childId_date_mealType: { childId, date, mealType } },
         update: { dishId: picked?.id ?? null, ingredientId: null },
