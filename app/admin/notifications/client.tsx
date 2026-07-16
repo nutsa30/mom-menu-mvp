@@ -122,10 +122,10 @@ export default function NotificationsClient({
 
   return (
     <div style={{ maxWidth: 760, margin: '0 auto', padding: '2rem 1rem' }}>
-      <h1 style={{ fontSize: '1.5rem', fontWeight: 900, color: '#465940', marginBottom: '0.25rem' }}>
+      <h1 style={{ fontSize: '1.5rem', fontWeight: 900, color: '#FDFBF0', marginBottom: '0.25rem' }}>
         🔔 Push შეტყობინებების შაბლონები
       </h1>
-      <p style={{ color: '#465940', opacity: 0.6, fontSize: '0.85rem', marginBottom: '2rem' }}>
+      <p style={{ color: '#FDFBF0', opacity: 0.6, fontSize: '0.85rem', marginBottom: '2rem' }}>
         ყოველდღე ერთ-ერთი შეტყობინება შემთხვევით გაიგზავნება. გამორთული შეტყობინებები არ გაიგზავნება.
       </p>
 
