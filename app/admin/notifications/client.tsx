@@ -125,11 +125,11 @@ export default function NotificationsClient({ initial }: { initial: Template[] }
                   <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
                     <input value={newTitle} onChange={e => setNewTitle(e.target.value)}
                       placeholder="სათაური (მაგ: ☀️ საუზმის დრო!)"
-                      style={{ padding: '0.5rem 0.75rem', borderRadius: 8, border: '1.5px solid rgba(70,89,64,.3)', fontSize: '0.85rem', outline: 'none' }} />
+                      style={{ padding: '0.5rem 0.75rem', borderRadius: 8, border: '1.5px solid rgba(70,89,64,.3)', fontSize: '0.85rem', outline: 'none', color: '#1a1a1a' }} />
                     <textarea value={newBody} onChange={e => setNewBody(e.target.value)}
                       placeholder="ტექსტი"
                       rows={2}
-                      style={{ padding: '0.5rem 0.75rem', borderRadius: 8, border: '1.5px solid rgba(70,89,64,.3)', fontSize: '0.82rem', resize: 'vertical', outline: 'none' }} />
+                      style={{ padding: '0.5rem 0.75rem', borderRadius: 8, border: '1.5px solid rgba(70,89,64,.3)', fontSize: '0.82rem', resize: 'vertical', outline: 'none', color: '#1a1a1a' }} />
                     <div style={{ display: 'flex', gap: '0.5rem' }}>
                       <button onClick={save} disabled={saving}
                         style={{ padding: '6px 16px', background: '#465940', color: '#FDFBF0', border: 'none', borderRadius: 8, fontWeight: 700, fontSize: '0.8rem', cursor: 'pointer' }}>
@@ -171,12 +171,12 @@ export default function NotificationsClient({ initial }: { initial: Template[] }
               <div style={{ padding: '0.75rem 1.25rem', display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
                 <input value={newTitle} onChange={e => setNewTitle(e.target.value)}
                   placeholder="სათაური (მაგ: ☀️ საუზმის დრო!)"
-                  style={{ padding: '0.5rem 0.75rem', borderRadius: 8, border: '1.5px solid #465940', fontSize: '0.85rem', outline: 'none' }}
+                  style={{ padding: '0.5rem 0.75rem', borderRadius: 8, border: '1.5px solid #465940', fontSize: '0.85rem', outline: 'none', color: '#1a1a1a' }}
                   autoFocus />
                 <textarea value={newBody} onChange={e => setNewBody(e.target.value)}
                   placeholder="ტექსტი"
                   rows={2}
-                  style={{ padding: '0.5rem 0.75rem', borderRadius: 8, border: '1.5px solid #465940', fontSize: '0.82rem', resize: 'vertical', outline: 'none' }} />
+                  style={{ padding: '0.5rem 0.75rem', borderRadius: 8, border: '1.5px solid #465940', fontSize: '0.82rem', resize: 'vertical', outline: 'none', color: '#1a1a1a' }} />
                 <div style={{ display: 'flex', gap: '0.5rem' }}>
                   <button onClick={save} disabled={saving}
                     style={{ padding: '6px 16px', background: '#465940', color: '#FDFBF0', border: 'none', borderRadius: 8, fontWeight: 700, fontSize: '0.8rem', cursor: 'pointer' }}>
