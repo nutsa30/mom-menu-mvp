@@ -9,10 +9,10 @@ export async function GET(req: NextRequest) {
   if (secret !== SECRET) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
   const now = new Date();
-  // Find users whose subscription expires in ~3 days:
-  // subscriptionStartedAt + 30 days = expiry → started 27 days ago (±24h window)
-  const windowEnd = new Date(now.getTime() - 27 * 24 * 3600_000);
-  const windowStart = new Date(now.getTime() - 28 * 24 * 3600_000);
+  // Subscription = 7-day free trial + 30-day paid period = 37 days total.
+  // Send "expiring" email 3 days before end → started 34 days ago (±24h window).
+  const windowEnd = new Date(now.getTime() - 34 * 24 * 3600_000);
+  const windowStart = new Date(now.getTime() - 35 * 24 * 3600_000);
 
   const users = await prisma.user.findMany({
     where: {
