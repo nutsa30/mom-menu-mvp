@@ -470,6 +470,7 @@ export default function EmailCenterClient({
                   onChange={(e) => setSubject(e.target.value)}
                   placeholder="მეილის სათაური..."
                   className="w-full px-3 py-2.5 rounded-xl border border-gray-200 text-sm focus:outline-none focus:border-[#465940]"
+                  style={{ color: '#111' }}
                 />
               </div>
 
