@@ -23,21 +23,31 @@ export async function GET() {
   const session = await adminGuard();
   if (!session) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
-  // Ensure all 4 templates exist in DB (create defaults if missing)
+  // Ensure all templates exist in DB; reset stale (short) content to current defaults
   await Promise.all(
-    TEMPLATE_KEYS.map((key) =>
-      prisma.emailTemplate.upsert({
-        where: { key },
-        create: {
-          key,
-          subjectKa: TEMPLATE_DEFAULTS[key].subject,
-          subjectEn: TEMPLATE_DEFAULTS[key].subject,
-          bodyKa: TEMPLATE_DEFAULTS[key].body,
-          bodyEn: TEMPLATE_DEFAULTS[key].body,
-        },
-        update: {},
-      }),
-    ),
+    TEMPLATE_KEYS.map(async (key) => {
+      const defaults = TEMPLATE_DEFAULTS[key];
+      if (!defaults) return;
+      const existing = await prisma.emailTemplate.findUnique({ where: { key } });
+      if (!existing) {
+        return prisma.emailTemplate.create({
+          data: {
+            key,
+            subjectKa: defaults.subject,
+            subjectEn: defaults.subject,
+            bodyKa: defaults.body,
+            bodyEn: defaults.body,
+          },
+        });
+      }
+      // If content is stale/short (not yet user-customized), reset to defaults
+      if (existing.bodyKa.length < defaults.body.length * 0.5) {
+        return prisma.emailTemplate.update({
+          where: { key },
+          data: { subjectKa: defaults.subject, bodyKa: defaults.body },
+        });
+      }
+    }),
   );
 
   const templates = await prisma.emailTemplate.findMany({
