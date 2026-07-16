@@ -151,13 +151,13 @@ export default function PromoAdminClient({ codes }: { codes: PromoCode[] }) {
         <table className="w-full min-w-[600px]">
           <thead className="bg-[#465940]">
             <tr>
-              <th className="text-left px-6 py-3 text-xs font-semibold text-[#465940]/60 uppercase tracking-wide">კოდი</th>
-              <th className="text-left px-4 py-3 text-xs font-semibold text-[#465940]/60 uppercase tracking-wide">გეგმა</th>
-              <th className="text-left px-4 py-3 text-xs font-semibold text-[#465940]/60 uppercase tracking-wide">ფასდაკლება</th>
-              <th className="text-left px-4 py-3 text-xs font-semibold text-[#465940]/60 uppercase tracking-wide">გამოყენება</th>
-              <th className="text-left px-4 py-3 text-xs font-semibold text-[#465940]/60 uppercase tracking-wide">სტატუსი</th>
-              <th className="text-left px-4 py-3 text-xs font-semibold text-[#465940]/60 uppercase tracking-wide">შექმნილია</th>
-              <th className="text-right px-6 py-3 text-xs font-semibold text-[#465940]/60 uppercase tracking-wide">მოქმედება</th>
+              <th className="text-left px-6 py-3 text-xs font-semibold text-[#FDFBF0]/70 uppercase tracking-wide">კოდი</th>
+              <th className="text-left px-4 py-3 text-xs font-semibold text-[#FDFBF0]/70 uppercase tracking-wide">გეგმა</th>
+              <th className="text-left px-4 py-3 text-xs font-semibold text-[#FDFBF0]/70 uppercase tracking-wide">ფასდაკლება</th>
+              <th className="text-left px-4 py-3 text-xs font-semibold text-[#FDFBF0]/70 uppercase tracking-wide">გამოყენება</th>
+              <th className="text-left px-4 py-3 text-xs font-semibold text-[#FDFBF0]/70 uppercase tracking-wide">სტატუსი</th>
+              <th className="text-left px-4 py-3 text-xs font-semibold text-[#FDFBF0]/70 uppercase tracking-wide">შექმნილია</th>
+              <th className="text-right px-6 py-3 text-xs font-semibold text-[#FDFBF0]/70 uppercase tracking-wide">მოქმედება</th>
             </tr>
           </thead>
           <tbody className="divide-y divide-[#465940]/5">
@@ -205,7 +205,7 @@ export default function PromoAdminClient({ codes }: { codes: PromoCode[] }) {
                 <td className="px-6 py-4 text-right">
                   <button
                     onClick={() => handleDelete(code.id, code.code)}
-                    className="text-xs text-[#FDFBF0]/70 hover:text-[#FDFBF0] font-semibold transition"
+                    className="text-xs font-semibold px-3 py-1 rounded-full bg-red-50 text-red-600 hover:bg-red-100 transition"
                   >
                     წაშლა
                   </button>
