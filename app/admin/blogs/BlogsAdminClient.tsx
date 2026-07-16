@@ -119,7 +119,8 @@ export default function BlogsAdminClient({ blogs }: { blogs: BlogItem[] }) {
                   </a>
                   <button
                     onClick={() => handleDelete(blog.id, blog.titleKa)}
-                    className="text-xs text-[#FDFBF0]/70 hover:text-[#FDFBF0] font-semibold transition"
+                    className="promo-delete-btn"
+                    style={{ fontSize: '0.75rem', fontWeight: 600, padding: '3px 12px', borderRadius: 999, background: '#dc2626' }}
                   >
                     წაშლა
                   </button>
