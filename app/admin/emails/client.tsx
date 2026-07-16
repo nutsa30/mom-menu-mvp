@@ -140,10 +140,9 @@ export default function EmailCenterClient({
   const [templatesLoading, setTemplatesLoading] = useState(false);
   const [editingTemplate, setEditingTemplate] = useState<EmailTemplate | null>(null);
   const [editSubject, setEditSubject] = useState('');
-  const [editBody, setEditBody] = useState('');
   const [savingTemplate, setSavingTemplate] = useState(false);
   const [templateSaveResult, setTemplateSaveResult] = useState<{ type: 'success' | 'error'; msg: string } | null>(null);
-  const bodyTextareaRef = useRef<HTMLTextAreaElement>(null);
+  const templateEditorRef = useRef<HTMLDivElement>(null);
 
   // History state
   const [filter, setFilter] = useState('all');
@@ -163,6 +162,16 @@ export default function EmailCenterClient({
     const url = window.prompt('ბმულის URL:');
     if (url) exec('createLink', url);
   }, [exec]);
+
+  const execT = useCallback((cmd: string, value?: string) => {
+    templateEditorRef.current?.focus();
+    document.execCommand(cmd, false, value ?? '');
+  }, []);
+
+  const insertTemplateLink = useCallback(() => {
+    const url = window.prompt('ბმულის URL:');
+    if (url) execT('createLink', url);
+  }, [execT]);
 
   const insertImage = useCallback(() => {
     const url = window.prompt('სურათის URL:');
@@ -295,29 +304,27 @@ export default function EmailCenterClient({
   const openEditTemplate = (t: EmailTemplate) => {
     setEditingTemplate(t);
     setEditSubject(t.subjectKa);
-    setEditBody(t.bodyKa);
     setTemplateSaveResult(null);
+    setTimeout(() => {
+      if (templateEditorRef.current) templateEditorRef.current.innerHTML = t.bodyKa;
+    }, 30);
   };
 
   const insertVar = (variable: string) => {
-    const ta = bodyTextareaRef.current;
-    if (!ta) { setEditBody(prev => prev + variable); return; }
-    const start = ta.selectionStart;
-    const end = ta.selectionEnd;
-    const next = editBody.slice(0, start) + variable + editBody.slice(end);
-    setEditBody(next);
-    setTimeout(() => { ta.selectionStart = ta.selectionEnd = start + variable.length; ta.focus(); }, 0);
+    templateEditorRef.current?.focus();
+    document.execCommand('insertText', false, variable);
   };
 
   const saveTemplate = async () => {
     if (!editingTemplate) return;
+    const bodyKa = templateEditorRef.current?.innerHTML ?? '';
     setSavingTemplate(true);
     setTemplateSaveResult(null);
     try {
       const res = await fetch('/api/admin/emails/templates', {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ key: editingTemplate.key, subjectKa: editSubject, bodyKa: editBody }),
+        body: JSON.stringify({ key: editingTemplate.key, subjectKa: editSubject, bodyKa }),
       });
       if (res.ok) {
         setTemplateSaveResult({ type: 'success', msg: 'შაბლონი წარმატებით შენახულია.' });
@@ -803,31 +810,35 @@ export default function EmailCenterClient({
                 </div>
               </div>
 
-              {/* HTML Body */}
+              {/* Rich Text Body */}
               <div>
-                <label className="block text-xs font-bold text-[#465940]/60 uppercase tracking-wider mb-1.5">შინაარსი (HTML)</label>
-                <textarea
-                  ref={bodyTextareaRef}
-                  value={editBody}
-                  onChange={(e) => setEditBody(e.target.value)}
-                  rows={14}
-                  spellCheck={false}
-                  className="w-full px-3 py-3 rounded-xl border border-gray-200 text-xs text-[#465940] font-mono focus:outline-none focus:border-[#465940] resize-y"
+                <label className="block text-xs font-bold text-[#465940]/60 uppercase tracking-wider mb-1.5">შინაარსი</label>
+                <div className="flex flex-wrap gap-1 p-2 border border-gray-200 border-b-0 rounded-t-xl bg-gray-50">
+                  {[
+                    { label: 'B', title: 'Bold',      cmd: () => execT('bold'),      style: 'font-bold' },
+                    { label: 'I', title: 'Italic',    cmd: () => execT('italic'),    style: 'italic' },
+                    { label: 'U', title: 'Underline', cmd: () => execT('underline'), style: 'underline' },
+                  ].map((btn) => (
+                    <button key={btn.label} type="button" title={btn.title}
+                      onMouseDown={(e) => { e.preventDefault(); btn.cmd(); }}
+                      className={`w-8 h-8 rounded-lg text-sm text-[#465940] hover:bg-[#465940]/10 transition ${btn.style}`}>
+                      {btn.label}
+                    </button>
+                  ))}
+                  <div className="w-px h-8 bg-gray-200 mx-1" />
+                  <button type="button" title="Bullet List" onMouseDown={(e) => { e.preventDefault(); execT('insertUnorderedList'); }} className="w-8 h-8 rounded-lg text-sm text-[#465940] hover:bg-[#465940]/10 transition">•≡</button>
+                  <button type="button" title="Ordered List" onMouseDown={(e) => { e.preventDefault(); execT('insertOrderedList'); }} className="w-8 h-8 rounded-lg text-sm text-[#465940] hover:bg-[#465940]/10 transition">1≡</button>
+                  <div className="w-px h-8 bg-gray-200 mx-1" />
+                  <button type="button" title="Link" onMouseDown={(e) => { e.preventDefault(); insertTemplateLink(); }} className="px-2 h-8 rounded-lg text-xs text-[#465940] hover:bg-[#465940]/10 transition">🔗 Link</button>
+                </div>
+                <div
+                  ref={templateEditorRef}
+                  contentEditable
+                  suppressContentEditableWarning
+                  className="min-h-[220px] p-4 border border-gray-200 rounded-b-xl text-sm text-[#465940] focus:outline-none focus:border-[#465940] overflow-auto"
+                  style={{ fontFamily: 'Arial, sans-serif', lineHeight: 1.7 }}
                 />
               </div>
-
-              {/* Preview */}
-              {editBody && (
-                <div>
-                  <label className="block text-xs font-bold text-[#465940]/60 uppercase tracking-wider mb-2">გადახედვა</label>
-                  <iframe
-                    srcDoc={`<!DOCTYPE html><html><head><meta charset="utf-8"><style>body{font-family:Arial,sans-serif;color:#465940;padding:20px;line-height:1.7;}a{color:#465940;}img{max-width:100%;}</style></head><body>${editBody}</body></html>`}
-                    className="w-full border border-gray-100 rounded-xl"
-                    style={{ height: 240 }}
-                    title="Template Preview"
-                  />
-                </div>
-              )}
 
               {/* Save result */}
               {templateSaveResult && (
