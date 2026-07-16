@@ -15,8 +15,13 @@ export async function GET(req: NextRequest) {
   const secret = req.nextUrl.searchParams.get("secret");
   if (secret !== SECRET) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
-  // "3 days from now" in Georgia time — this is the day we're warning about
-  const warningTargetDay = geoDate(3).getUTCDate(); // e.g. 14
+  // "3 days from now" in Georgia time — this is the renewal day we're warning about
+  const warningTarget = geoDate(3);
+  const warningTargetDay = warningTarget.getUTCDate(); // e.g. 14
+  // Days in the month of the warning target (handles short months: Feb, Apr, Jun...)
+  const daysInWarningMonth = new Date(
+    Date.UTC(warningTarget.getUTCFullYear(), warningTarget.getUTCMonth() + 1, 0)
+  ).getUTCDate();
 
   const users = await prisma.user.findMany({
     where: {
@@ -38,8 +43,11 @@ export async function GET(req: NextRequest) {
     // Renewal happens every month on the same day as first payment
     const renewalDay = new Date(firstPaymentDate.getTime() + 4 * 3600_000).getUTCDate();
 
-    // Send warning email when today + 3 days = renewal day
-    if (warningTargetDay !== renewalDay) continue;
+    // Send warning email when today + 3 days = renewal day.
+    // Edge case: if renewal day > days in current month (e.g. paid on 31st, Feb only has 28),
+    // treat the last day of the month as the renewal day for that month.
+    const effectiveRenewalDay = Math.min(renewalDay, daysInWarningMonth);
+    if (warningTargetDay !== effectiveRenewalDay) continue;
 
     try {
       await sendSubscriptionExpiringEmail(user.email, user.name);
