@@ -208,13 +208,13 @@ export default function ForgotPassword({ searchParams }: { searchParams: { lang?
                     <label className="block text-sm font-semibold text-[#465940] mb-3">
                       {locale === 'ka' ? 'შეიყვანეთ 6-ნიშნა კოდი' : 'Enter 6-digit code'}
                     </label>
-                    <div className="flex gap-1 sm:gap-2">
+                    <div className="grid gap-1 sm:gap-2" style={{ gridTemplateColumns: 'repeat(6, 1fr)' }}>
                       {digits.map((d, i) => (
                         <input key={i} ref={(el) => { inputRefs.current[i] = el; }}
                           type="text" inputMode="numeric" maxLength={1} value={d}
                           onChange={(e) => handleDigitChange(i, e.target.value)}
                           onKeyDown={(e) => handleDigitKeyDown(i, e)}
-                          className="flex-1 min-w-0 h-11 sm:h-14 text-center text-base sm:text-xl font-bold border-2 rounded-lg sm:rounded-xl focus:outline-none focus:border-[#465940] transition text-[#465940]"
+                          className="w-full h-11 sm:h-14 text-center text-base sm:text-xl font-bold border-2 rounded-lg sm:rounded-xl focus:outline-none focus:border-[#465940] transition text-[#465940]"
                           style={{ borderColor: d ? '#465940' : undefined }} />
                       ))}
                     </div>
