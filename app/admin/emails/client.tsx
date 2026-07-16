@@ -178,10 +178,26 @@ export default function EmailCenterClient({
     if (url) exec('insertHTML', `<img src="${url}" alt="" style="max-width:100%;height:auto;border-radius:8px;margin:8px 0;" />`);
   }, [exec]);
 
+  const DB_KEY_MAP: Record<TemplateKey, string | null> = {
+    welcome: 'welcome',
+    sub_active: 'subscription_confirmed',
+    sub_expiring: 'subscription_expiring',
+    weekly: 'weekly_menu',
+    blog: 'new_blog',
+    custom: null,
+  };
+
   const applyTemplate = (key: TemplateKey) => {
-    const t = TEMPLATES[key];
-    setSubject(t.subject);
-    if (editorRef.current) editorRef.current.innerHTML = t.body;
+    const dbKey = DB_KEY_MAP[key];
+    const dbT = dbKey ? templates.find(t => t.key === dbKey) : null;
+    if (dbT) {
+      setSubject(dbT.subjectKa);
+      if (editorRef.current) editorRef.current.innerHTML = dbT.bodyKa;
+    } else {
+      const t = TEMPLATES[key];
+      setSubject(t.subject);
+      if (editorRef.current) editorRef.current.innerHTML = t.body;
+    }
   };
 
   const refreshData = async () => {
@@ -296,6 +312,10 @@ export default function EmailCenterClient({
       setTemplatesLoading(false);
     }
   }, []);
+
+  useEffect(() => {
+    fetchTemplates();
+  }, [fetchTemplates]);
 
   useEffect(() => {
     if (tab === 'templates' && templates.length === 0) fetchTemplates();
