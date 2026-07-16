@@ -1093,6 +1093,19 @@ function ChildTab({ children: kids, userId, onUpdate, onDelete }: {
     ? new Date(bd).toLocaleDateString('ka-GE', { year: 'numeric', month: 'long', day: 'numeric' })
     : '—';
 
+  const getAge = (bd: any): string => {
+    if (!bd) return '';
+    const birth = new Date(bd);
+    const now = new Date();
+    let years = now.getFullYear() - birth.getFullYear();
+    let months = now.getMonth() - birth.getMonth();
+    if (now.getDate() < birth.getDate()) months--;
+    if (months < 0) { years--; months += 12; }
+    if (years === 0) return `${months} თვე`;
+    if (months === 0) return `${years} წელი`;
+    return `${years} წელი ${months} თვე`;
+  };
+
   return (
     <div className="space-y-5">
       {/* Child pills */}
@@ -1309,6 +1322,9 @@ function ChildTab({ children: kids, userId, onUpdate, onDelete }: {
               <div>
                 <p className="text-xs text-[#FDFBF0]/70 font-bold uppercase tracking-wide mb-0.5">შვილის პროფილი</p>
                 <h3 className="text-xl font-black text-[#FDFBF0]">{viewModal.name}</h3>
+                {viewModal.birthDate && (
+                  <p className="text-sm text-[#FDFBF0]/80 font-semibold mt-0.5">{getAge(viewModal.birthDate)}</p>
+                )}
               </div>
               <button onClick={() => setViewModal(null)} className="w-8 h-8 rounded-full bg-[#FDFBF0]/20 hover:bg-[#FDFBF0]/30 flex items-center justify-center text-[#FDFBF0] text-xl leading-none transition">×</button>
             </div>
