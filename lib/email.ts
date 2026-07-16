@@ -171,3 +171,37 @@ export async function sendPasswordChangedEmail(to: string, name: string) {
   const html = layout(body.replace(/\{\{name\}\}/g, name));
   await resend.emails.send({ from: FROM, to, subject, html });
 }
+
+// ─── Subscription Expiring ────────────────────────────────────────────────────
+
+export async function sendSubscriptionExpiringEmail(to: string, name: string) {
+  const { subject, body } = await getTemplate("subscription_expiring");
+  const html = layout(body.replace(/\{\{name\}\}/g, name));
+  await resend.emails.send({ from: FROM, to, subject, html });
+}
+
+// ─── Weekly Menu ──────────────────────────────────────────────────────────────
+
+export async function sendWeeklyMenuEmail(to: string, name: string) {
+  const { subject, body } = await getTemplate("weekly_menu");
+  const html = layout(body.replace(/\{\{name\}\}/g, name));
+  await resend.emails.send({ from: FROM, to, subject, html });
+}
+
+// ─── New Blog ─────────────────────────────────────────────────────────────────
+
+export async function sendNewBlogEmail(
+  to: string,
+  name: string,
+  blogTitle: string,
+  blogUrl: string,
+) {
+  const { subject, body } = await getTemplate("new_blog");
+  const html = layout(
+    body
+      .replace(/\{\{name\}\}/g, name)
+      .replace(/\{\{blogTitle\}\}/g, blogTitle)
+      .replace(/\{\{blogUrl\}\}/g, blogUrl),
+  );
+  await resend.emails.send({ from: FROM, to, subject, html });
+}
