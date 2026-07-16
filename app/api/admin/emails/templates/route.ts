@@ -40,8 +40,11 @@ export async function GET() {
           },
         });
       }
-      // If content is stale/short (not yet user-customized), reset to defaults
-      if (existing.bodyKa.length < defaults.body.length * 0.5) {
+      // Reset if stale/short OR if body contains old resetUrl pattern
+      const isStale = existing.bodyKa.length < defaults.body.length * 0.5
+        || existing.bodyKa.includes('{{resetUrl}}')
+        || existing.bodyKa.includes('resetUrl');
+      if (isStale) {
         return prisma.emailTemplate.update({
           where: { key },
           data: { subjectKa: defaults.subject, bodyKa: defaults.body },
