@@ -10,42 +10,51 @@ async function adminGuard() {
   return session;
 }
 
+type Recipient = { email: string; name: string };
+
+function fallbackName(email: string) {
+  return email.split("@")[0];
+}
+
 async function resolveRecipients(
   audienceType: string,
   audienceFilter?: string,
-): Promise<string[]> {
+): Promise<Recipient[]> {
   switch (audienceType) {
     case "all": {
-      const users = await prisma.user.findMany({ select: { email: true } });
-      return users.map((u) => u.email);
+      const users = await prisma.user.findMany({ select: { email: true, name: true } });
+      return users.map((u) => ({ email: u.email, name: u.name ?? fallbackName(u.email) }));
     }
     case "active": {
       const users = await prisma.user.findMany({
         where: { subscriptionStatus: { in: ["RECIPE_PLAN", "FULL_PLAN"] } },
-        select: { email: true },
+        select: { email: true, name: true },
       });
-      return users.map((u) => u.email);
+      return users.map((u) => ({ email: u.email, name: u.name ?? fallbackName(u.email) }));
     }
     case "inactive": {
       const users = await prisma.user.findMany({
         where: { subscriptionStatus: "FREE" },
-        select: { email: true },
+        select: { email: true, name: true },
       });
-      return users.map((u) => u.email);
+      return users.map((u) => ({ email: u.email, name: u.name ?? fallbackName(u.email) }));
     }
     case "age_group": {
       const users = await prisma.user.findMany({
         where: { children: { some: { ageGroup: audienceFilter as any } } },
-        select: { email: true },
+        select: { email: true, name: true },
       });
-      return users.map((u) => u.email);
+      return users.map((u) => ({ email: u.email, name: u.name ?? fallbackName(u.email) }));
     }
     default: {
       if (!audienceFilter) return [];
-      return audienceFilter
-        .split(",")
-        .map((e) => e.trim())
-        .filter(Boolean);
+      const emails = audienceFilter.split(",").map((e) => e.trim()).filter(Boolean);
+      const dbUsers = await prisma.user.findMany({
+        where: { email: { in: emails } },
+        select: { email: true, name: true },
+      });
+      const nameMap = Object.fromEntries(dbUsers.map((u) => [u.email, u.name ?? fallbackName(u.email)]));
+      return emails.map((email) => ({ email, name: nameMap[email] ?? fallbackName(email) }));
     }
   }
 }
@@ -134,23 +143,22 @@ export async function POST(req: Request) {
   });
 
   await prisma.emailRecipient.createMany({
-    data: recipients.map((email) => ({
+    data: recipients.map(({ email }) => ({
       campaignId: campaign.id,
       email,
       status: "PENDING" as const,
     })),
   });
 
-  const wrappedHtml = layout(htmlContent);
   const fromLabel = FROM_NAME[senderEmail] ?? "MomMenu";
 
   const results = await Promise.allSettled(
-    recipients.map((email) =>
+    recipients.map(({ email, name }) =>
       resend.emails.send({
         from: `${fromLabel} <${senderEmail}>`,
         to: email,
         subject,
-        html: wrappedHtml,
+        html: layout(htmlContent.replace(/\{\{name\}\}/g, name)),
       }),
     ),
   );
@@ -159,16 +167,17 @@ export async function POST(req: Request) {
   const failedEmails: string[] = [];
 
   for (let i = 0; i < results.length; i++) {
+    const { email } = recipients[i];
     if (results[i].status === "fulfilled") {
       sentCount++;
       await prisma.emailRecipient.updateMany({
-        where: { campaignId: campaign.id, email: recipients[i] },
+        where: { campaignId: campaign.id, email },
         data: { status: "SENT", sentAt: new Date() },
       });
     } else {
-      failedEmails.push(recipients[i]);
+      failedEmails.push(email);
       await prisma.emailRecipient.updateMany({
-        where: { campaignId: campaign.id, email: recipients[i] },
+        where: { campaignId: campaign.id, email },
         data: { status: "FAILED" },
       });
     }
