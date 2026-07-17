@@ -309,7 +309,7 @@ function TodayTab({ child, allDishes, planStart }: { child: any; allDishes: any[
                       <button
                         onClick={() => markEaten(log.id, !log.wasEaten)}
                         className={`px-3 py-1.5 rounded-full text-xs font-bold transition ${
-                          eaten ? 'bg-[#465940]/20 text-[#465940]' : 'bg-[#465940] text-[#FDFBF0] hover:bg-[#465940]'
+                          eaten ? 'bg-[#465940]/20 text-[#465940] hover:bg-[#465940]/30' : 'bg-[#465940] text-[#FDFBF0] hover:bg-[#3a4d35] active:scale-95'
                         }`}
                       >
                         {eaten ? '✓ ჭამა' : 'ჭამა'}
@@ -317,7 +317,7 @@ function TodayTab({ child, allDishes, planStart }: { child: any; allDishes: any[
                       {!isIngredient && (
                         <button
                           onClick={() => setSubstituteFor(log.id)}
-                          className="px-3 py-1.5 rounded-full text-xs font-bold bg-[#465940]/10 text-[#465940]/80 hover:bg-[#465940]/15 transition"
+                          className="px-3 py-1.5 rounded-full text-xs font-bold bg-[#465940]/10 text-[#465940]/80 hover:bg-[#465940]/20 hover:text-[#465940] active:scale-95 transition"
                         >
                           სხვა
                         </button>
