@@ -1,28 +1,73 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getSession } from '@/lib/auth';
 import { prisma } from '@/lib/prisma';
-import { getSuitableAgeGroups, getMealTypesForAge } from '@/lib/meal';
+import { getMealTypesForAge } from '@/lib/meal';
 
 function todayStr() {
   return new Date().toISOString().split('T')[0];
 }
 
-function pickDish(dishes: any[], likes: string[], dislikes: string[]) {
-  if (!dishes.length) return null;
-  const scored = dishes.map((d) => {
-    const text = `${d.titleKa} ${d.titleEn} ${d.ingredientsKa.join(' ')} ${d.ingredientsEn.join(' ')}`.toLowerCase();
-    const likeScore = likes.filter((l) => text.includes(l.toLowerCase())).length;
-    const dislikeScore = dislikes.filter((dl) => text.includes(dl.toLowerCase())).length;
-    return { d, score: likeScore - dislikeScore };
+function dishMatchesText(dish: any, terms: string[]): boolean {
+  const text = [
+    dish.titleKa, dish.titleEn,
+    ...(dish.ingredientsKa || []),
+    ...(dish.ingredientsEn || []),
+    ...(dish.allergens || []),
+  ].join(' ').toLowerCase();
+  return terms.some((t) => text.includes(t.toLowerCase()));
+}
+
+function nutritionScore(dish: any): number {
+  return (
+    (dish.ironMg || 0) * 4 +
+    (dish.calciumMg || 0) / 30 +
+    (dish.vitaminCmg || 0) / 5 +
+    (dish.vitaminAmcg || 0) / 80 +
+    (dish.proteinGrams || 0) / 3 +
+    (dish.vitaminDmcg || 0) * 2 +
+    (dish.fiberGrams || 0) / 2
+  );
+}
+
+function pickDish(
+  candidates: any[],
+  likes: string[],
+  dislikes: string[],
+  recentIds: Set<string>,
+  todayIds: Set<string>
+): any | null {
+  if (!candidates.length) return null;
+
+  // Prefer dishes not used today; fall back to full pool only if nothing else
+  const notToday = candidates.filter((d) => !todayIds.has(d.id));
+  const pool = notToday.length > 0 ? notToday : candidates;
+
+  const scored = pool.map((d) => {
+    let score = nutritionScore(d);
+
+    // Small like bonus
+    if (likes.length && dishMatchesText(d, likes)) score += 2;
+
+    // Dislike penalty (soft — dish still appears but rarely)
+    if (dislikes.length && dishMatchesText(d, dislikes)) score -= 6;
+
+    // Heavy penalty for dishes seen in last 7 days (variety)
+    if (recentIds.has(d.id)) score -= 10;
+
+    // Small random nudge so identical-score dishes vary
+    score += Math.random() * 0.5;
+
+    return { d, score };
   });
+
   scored.sort((a, b) => b.score - a.score);
-  // pick randomly from top-scored group
-  const topScore = scored[0].score;
-  const top = scored.filter((s) => s.score === topScore);
+
+  // Pick from top 3 for variety
+  const top = scored.slice(0, Math.min(3, scored.length));
   return top[Math.floor(Math.random() * top.length)].d;
 }
 
-// GET /api/daily-log?childId=X&date=YYYY-MM-DD — also auto-generates if missing
+// GET /api/daily-log?childId=X&date=YYYY-MM-DD
 export async function GET(req: NextRequest) {
   const session = await getSession();
   if (!session) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
@@ -31,7 +76,6 @@ export async function GET(req: NextRequest) {
   const date = req.nextUrl.searchParams.get('date') ?? todayStr();
   if (!childId) return NextResponse.json({ error: 'Missing childId' }, { status: 400 });
 
-  // Verify child belongs to user
   const child = await prisma.child.findFirst({ where: { id: childId, userId: session.id } });
   if (!child) return NextResponse.json({ error: 'Not found' }, { status: 404 });
 
@@ -41,7 +85,6 @@ export async function GET(req: NextRequest) {
     orderBy: { mealType: 'asc' },
   });
 
-  // Auto-generate missing meal slots — age-appropriate meal types
   const ageMealTypes = getMealTypesForAge(child.birthDate);
   const existing = new Set(
     logs.filter((l) => l.dishId !== null || l.ingredientId !== null).map((l) => l.mealType)
@@ -49,28 +92,31 @@ export async function GET(req: NextRequest) {
   const missing = ageMealTypes.filter((m) => !existing.has(m));
 
   if (missing.length) {
-    // Track already-used dish IDs (from existing logs + newly picked) to avoid repeats
-    const usedDishIds = new Set<string>(
-      logs.map((l) => l.dishId).filter(Boolean) as string[]
-    );
+    // Dishes used in last 7 days (for variety penalty)
+    const weekAgo = new Date();
+    weekAgo.setDate(weekAgo.getDate() - 7);
+    const recentLogs = await prisma.dailyLog.findMany({
+      where: { childId, date: { gte: weekAgo.toISOString().split('T')[0] }, dishId: { not: null } },
+      select: { dishId: true },
+    });
+    const recentIds = new Set<string>(recentLogs.map((l) => l.dishId).filter(Boolean) as string[]);
+
+    // Dishes already picked today (no same-day repeats)
+    const todayIds = new Set<string>(logs.map((l) => l.dishId).filter(Boolean) as string[]);
 
     for (const mealType of missing) {
-      let logData: any = { childId, date, mealType, wasEaten: false };
-
+      // Strict allergy filter
       const where: any = { mealType, ageGroups: { has: child.ageGroup } };
       if (child.allergies.length) where.NOT = { allergens: { hasSome: child.allergies } };
       const candidates = await prisma.dish.findMany({ where });
 
-      // Prefer dishes not already used today; fall back to full pool if needed
-      const fresh = candidates.filter((d) => !usedDishIds.has(d.id));
-      const pool = fresh.length > 0 ? fresh : candidates;
-      const picked = pickDish(pool, child.likes, child.dislikes);
-      if (picked) usedDishIds.add(picked.id);
+      const picked = pickDish(candidates, child.likes, child.dislikes, recentIds, todayIds);
+      if (picked) todayIds.add(picked.id);
 
       await prisma.dailyLog.upsert({
         where: { childId_date_mealType: { childId, date, mealType } },
         update: { dishId: picked?.id ?? null, ingredientId: null },
-        create: { ...logData, dishId: picked?.id ?? null },
+        create: { childId, date, mealType, wasEaten: false, dishId: picked?.id ?? null },
       });
     }
 
@@ -84,7 +130,7 @@ export async function GET(req: NextRequest) {
   return NextResponse.json(logs);
 }
 
-// POST /api/daily-log — update dishId or wasEaten inline (also used for substitute)
+// POST /api/daily-log
 export async function POST(req: NextRequest) {
   const session = await getSession();
   if (!session) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
