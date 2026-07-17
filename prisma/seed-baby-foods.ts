@@ -15,14 +15,26 @@ const VEGETABLES = [
 ];
 
 const FRUITS = [
-  { nameKa: 'ვაშლი',   nameEn: 'Apple',    minAgeMonths: 6 },
-  { nameKa: 'ბანანი',  nameEn: 'Banana',   minAgeMonths: 6 },
-  { nameKa: 'მსხალი',  nameEn: 'Pear',     minAgeMonths: 6 },
-  { nameKa: 'ატამი',   nameEn: 'Peach',    minAgeMonths: 6 },
-  { nameKa: 'ქლიავი',  nameEn: 'Plum',     minAgeMonths: 6 },
-  { nameKa: 'ავოკადო', nameEn: 'Avocado',  minAgeMonths: 6 },
-  { nameKa: 'ნესვი',   nameEn: 'Melon',    minAgeMonths: 8 },
-  { nameKa: 'ჟოლო',   nameEn: 'Raspberry', minAgeMonths: 8 },
+  { nameKa: 'ვაშლი',      nameEn: 'Apple',        minAgeMonths: 6 },
+  { nameKa: 'ბანანი',     nameEn: 'Banana',        minAgeMonths: 6 },
+  { nameKa: 'მსხალი',     nameEn: 'Pear',          minAgeMonths: 6 },
+  { nameKa: 'ატამი',      nameEn: 'Peach',         minAgeMonths: 6 },
+  { nameKa: 'ქლიავი',     nameEn: 'Plum',          minAgeMonths: 6 },
+  { nameKa: 'ავოკადო',    nameEn: 'Avocado',       minAgeMonths: 6 },
+  { nameKa: 'ნესვი',      nameEn: 'Melon',         minAgeMonths: 8 },
+  { nameKa: 'ჟოლო',      nameEn: 'Raspberry',      minAgeMonths: 8 },
+  { nameKa: 'მარწყვი',   nameEn: 'Strawberry',     minAgeMonths: 8 },
+  { nameKa: 'მანგო',     nameEn: 'Mango',           minAgeMonths: 6 },
+  { nameKa: 'კივი',      nameEn: 'Kiwi',            minAgeMonths: 8 },
+  { nameKa: 'ბლუბერი',   nameEn: 'Blueberry',      minAgeMonths: 8 },
+  { nameKa: 'ალუბალი',   nameEn: 'Cherry',          minAgeMonths: 8 },
+  { nameKa: 'მანდარინი', nameEn: 'Mandarin',        minAgeMonths: 8 },
+  { nameKa: 'ყურძენი',   nameEn: 'Grape',           minAgeMonths: 10 },
+  { nameKa: 'ანანასი',   nameEn: 'Pineapple',       minAgeMonths: 8 },
+  { nameKa: 'საზამთრო',  nameEn: 'Watermelon',      minAgeMonths: 8 },
+  { nameKa: 'ლეღვი',     nameEn: 'Fig',             minAgeMonths: 8 },
+  { nameKa: 'კომში',     nameEn: 'Quince',          minAgeMonths: 8 },
+  { nameKa: 'ბროწეული',  nameEn: 'Pomegranate',     minAgeMonths: 10 },
 ];
 
 // Each suggestion: { titleKa, titleEn, texture, minAge, ingredientNames[] }
@@ -62,22 +74,14 @@ const SUGGESTIONS = [
 async function run() {
   console.log('Seeding baby ingredients...');
 
-  // Upsert all vegetables
-  const vegs = await Promise.all(
-    VEGETABLES.map(v => p.babyIngredient.upsert({
-      where: { nameEn: v.nameEn } as any,
-      update: {},
-      create: { ...v, category: 'vegetable' },
-    }))
-  );
+  async function upsertIngredient(data: { nameKa: string; nameEn: string; minAgeMonths: number }, category: string) {
+    const existing = await p.babyIngredient.findFirst({ where: { nameEn: data.nameEn } });
+    if (existing) return existing;
+    return p.babyIngredient.create({ data: { ...data, category } });
+  }
 
-  const fruits = await Promise.all(
-    FRUITS.map(f => p.babyIngredient.upsert({
-      where: { nameEn: f.nameEn } as any,
-      update: {},
-      create: { ...f, category: 'fruit' },
-    }))
-  );
+  const vegs = await Promise.all(VEGETABLES.map(v => upsertIngredient(v, 'vegetable')));
+  const fruits = await Promise.all(FRUITS.map(f => upsertIngredient(f, 'fruit')));
 
   const allIngredients = [...vegs, ...fruits];
   const byKa = Object.fromEntries(allIngredients.map(i => [i.nameKa, i]));
