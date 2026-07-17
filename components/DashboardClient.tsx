@@ -154,14 +154,6 @@ function TodayTab({ child, allDishes, planStart }: { child: any; allDishes: any[
       .catch(() => {});
   }, [child?.id]);
 
-  // Pre-generate all 7 days in the background so the full week is ready
-  useEffect(() => {
-    if (!child) return;
-    weekDays.forEach(date => {
-      fetch(`/api/daily-log?childId=${child.id}&date=${date}`).catch(() => {});
-    });
-  }, [child?.id, planStart]);
-
   useEffect(() => { fetchLogs(selectedDate); }, [fetchLogs, selectedDate]);
 
   const markEaten = async (logId: string, wasEaten: boolean) => {
