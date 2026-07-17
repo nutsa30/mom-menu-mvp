@@ -1541,6 +1541,14 @@ export default function DashboardClient({ user }: { user: any }) {
     }
   }, [activeChild?.id]);
 
+  // Auto-switch tab when active child changes age group
+  useEffect(() => {
+    if (!activeChild) return;
+    const young = activeChild.ageGroup === 'FROM_6' || activeChild.ageGroup === 'FROM_9';
+    if (young && tab === 'today') setTab('firstfoods');
+    if (!young && tab === 'firstfoods') setTab('today');
+  }, [activeChild?.id]);
+
   const onChildUpdate = (updated: any) => {
     setChildren((prev) => {
       const exists = prev.find((c) => c.id === updated.id);
