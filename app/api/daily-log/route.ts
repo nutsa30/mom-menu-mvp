@@ -113,9 +113,10 @@ export async function GET(req: NextRequest) {
       const picked = pickDish(candidates, child.likes, child.dislikes, recentIds, todayIds);
       if (picked) todayIds.add(picked.id);
 
+      // Only set dishId on create; never overwrite an already-assigned dish
       await prisma.dailyLog.upsert({
         where: { childId_date_mealType: { childId, date, mealType } },
-        update: { dishId: picked?.id ?? null, ingredientId: null },
+        update: {},
         create: { childId, date, mealType, wasEaten: false, dishId: picked?.id ?? null },
       });
     }
