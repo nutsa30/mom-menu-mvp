@@ -325,7 +325,7 @@ function TodayTab({ child, allDishes, planStart }: { child: any; allDishes: any[
                       {dish && (
                         <button
                           onClick={() => setRecipeModal(dish)}
-                          className="px-3 py-1.5 rounded-full text-xs font-bold bg-[#465940] text-[#465940] hover:bg-[#d4edda] transition"
+                          className="px-3 py-1.5 rounded-full text-xs font-bold bg-[#465940]/15 text-[#465940] hover:bg-[#465940]/25 transition"
                         >
                           რეცეპტი
                         </button>
