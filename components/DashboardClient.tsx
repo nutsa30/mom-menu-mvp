@@ -1592,7 +1592,7 @@ export default function DashboardClient({ user }: { user: any }) {
               onChange={(e) => setActiveChild(children.find((c) => c.id === e.target.value) ?? null)}
               className="text-sm border border-[#FDFBF0]/30 bg-[#FDFBF0]/20 text-[#FDFBF0] rounded-full px-3 py-1.5 focus:outline-none"
             >
-              {children.map((c) => <option key={c.id} value={c.id}>{c.name}</option>)}
+              {children.map((c) => <option key={c.id} value={c.id} style={{ color: '#465940', background: '#FDFBF0' }}>{c.name}</option>)}
             </select>
           )}
           {children.length === 1 && (
