@@ -284,6 +284,8 @@ export default function FirstFoodsTab({ child }: { child: any }) {
 
   useEffect(() => { fetchIngredients(); fetchAllowed(); }, [fetchIngredients, fetchAllowed]);
 
+  const ageMonths = Math.floor((Date.now() - new Date(child.birthDate).getTime()) / (1000 * 60 * 60 * 24 * 30.44));
+
   const triedCount = ingredients.filter(i => i.status?.tried).length;
   const allergicCount = ingredients.filter(i => i.status?.allergic).length;
   const safeIngredients = ingredients.filter(i => i.status?.tried && !i.status?.allergic);
@@ -297,8 +299,6 @@ export default function FirstFoodsTab({ child }: { child: any }) {
   );
   const vegetables = filteredIng.filter(i => i.category === 'vegetable');
   const fruits = filteredIng.filter(i => i.category === 'fruit');
-
-  const ageMonths = Math.floor((Date.now() - new Date(child.birthDate).getTime()) / (1000 * 60 * 60 * 24 * 30.44));
 
   const blwSoftPieces = allowed.filter(s => s.texture === 'softPieces');
   const suggestionsCount = blwMode ? blwSoftPieces.length : allowed.length;
