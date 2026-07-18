@@ -426,13 +426,13 @@ function TodayTab({ child, allDishes, planStart }: { child: any; allDishes: any[
               {displayDishes.length === 0 && <p className="text-[#465940]/60 text-sm text-center py-8">სხვა კერძი ვერ მოიძებნა</p>}
               {displayDishes.map((d: any) => (
                 <button key={d.id} onClick={() => substitute(substituteFor, d.id)}
-                  className="w-full flex items-center gap-3 p-3 rounded-2xl hover:bg-[#465940] transition text-left border border-transparent hover:border-[#465940]/20">
+                  className="group w-full flex items-center gap-3 p-3 rounded-2xl hover:bg-[#465940] transition text-left border border-transparent hover:border-[#465940]">
                   <div className="w-12 h-12 rounded-xl bg-[#465940]/10 overflow-hidden flex-shrink-0">
                     {d.imageUrl ? <img src={d.imageUrl} className="w-full h-full object-cover" alt="" /> : <div className="w-full h-full flex items-center justify-center text-xl">🍽️</div>}
                   </div>
                   <div className="flex-1 min-w-0">
-                    <p className="font-bold text-[#465940] text-sm truncate">{d.titleKa}</p>
-                    {d.calories && <p className="text-xs text-[#465940]/60">{d.calories} kcal{d.proteinGrams ? ` · ${d.proteinGrams}g ცილა` : ''}</p>}
+                    <p className="font-bold text-[#465940] group-hover:text-[#FDFBF0] text-sm truncate transition-colors">{d.titleKa}</p>
+                    {d.calories && <p className="text-xs text-[#465940]/60 group-hover:text-[#FDFBF0]/70 transition-colors">{d.calories} kcal{d.proteinGrams ? ` · ${d.proteinGrams}g ცილა` : ''}</p>}
                   </div>
                 </button>
               ))}

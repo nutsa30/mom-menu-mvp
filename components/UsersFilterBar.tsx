@@ -62,7 +62,7 @@ export default function UsersFilterBar({
             className={`px-4 py-2 rounded-full text-sm font-bold transition flex items-center gap-2 ${
               activeTab === tab.key
                 ? 'bg-[#465940] text-[#FDFBF0]'
-                : 'bg-[#FDFBF0] border border-[#465940]/20 text-[#465940]/70 hover:border-[#465940] hover:text-[#FDFBF0]'
+                : 'bg-[#FDFBF0] border border-[#465940]/20 text-[#465940]/70 hover:bg-[#465940] hover:border-[#465940] hover:text-[#FDFBF0]'
             }`}
           >
             {tab.label}
