@@ -4,7 +4,7 @@ import { useState, useEffect, useCallback } from 'react';
 
 const TEXTURE_KA: Record<string, string> = {
   puree: '🥣 პიურე',
-  mashed: '🍽️ დაწნეხილი',
+  mashed: '🍽️ ჩანგლით დაჭყლეტილი',
   softPieces: '✂️ ლმობიერი ნაჭრები',
 };
 
