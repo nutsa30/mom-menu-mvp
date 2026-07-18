@@ -156,6 +156,20 @@ function TodayTab({ child, allDishes, planStart }: { child: any; allDishes: any[
 
   useEffect(() => { fetchLogs(selectedDate); }, [fetchLogs, selectedDate]);
 
+  // Pre-generate all 7 days sequentially to avoid exhausting Neon connection pool
+  useEffect(() => {
+    if (!child) return;
+    let cancelled = false;
+    const prefetch = async () => {
+      for (const date of weekDays) {
+        if (cancelled) break;
+        try { await fetch(`/api/daily-log?childId=${child.id}&date=${date}`); } catch {}
+      }
+    };
+    prefetch();
+    return () => { cancelled = true; };
+  }, [child?.id, planStart]);
+
   const markEaten = async (logId: string, wasEaten: boolean) => {
     const res = await fetch(`/api/daily-log/${logId}`, {
       method: 'PATCH', headers: { 'Content-Type': 'application/json' },
