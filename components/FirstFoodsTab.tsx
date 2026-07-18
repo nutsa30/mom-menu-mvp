@@ -23,14 +23,19 @@ type Suggestion = {
 };
 
 function blwCutSize(ageMonths: number): string {
-  if (ageMonths < 9) return '~10 სმ ჯოხი (ბავშვის ხელის სიგრძე, ლმობიერი)';
+  if (ageMonths < 9) return '~10 სმ ჯოხი (ბავშვის ხელის სიგრძე)';
   if (ageMonths < 12) return '1–2 სმ კუბი ან ზოლი';
   return 'კბენის ზომის ნაჭრები';
 }
 
 function blwPrep(category: string): string {
-  if (category === 'vegetable') return 'ჩაამუშავეთ/მოხარშეთ სანამ ძალიან ლმობიერი გახდება';
-  return 'ლმობიერი ხილი — ნედლი ან მოხარშული';
+  if (category === 'vegetable') return 'მოხარშეთ სანამ ძალიან ლმობიერია';
+  return 'ლმობიერი — ნედლი ან მოხარშული';
+}
+
+function pureePrep(category: string): string {
+  if (category === 'vegetable') return 'მოხარშეთ და გახეხეთ პიურედ';
+  return 'გახეხეთ / გახადეთ პიურე';
 }
 
 function StatusBadge({ tried, allergic, liked, ateWell }: any) {
@@ -41,7 +46,11 @@ function StatusBadge({ tried, allergic, liked, ateWell }: any) {
   return <span className="text-[10px] bg-[#465940]/10 text-[#465940] font-bold px-2 py-0.5 rounded-full">✓ გასინჯა</span>;
 }
 
-function IngredientCard({ ing, childId, onUpdate }: { ing: Ingredient; childId: string; onUpdate: () => void }) {
+function IngredientCard({
+  ing, childId, onUpdate, blwMode, ageMonths,
+}: {
+  ing: Ingredient; childId: string; onUpdate: () => void; blwMode: boolean; ageMonths: number;
+}) {
   const [open, setOpen] = useState(false);
   const [saving, setSaving] = useState(false);
   const [comment, setComment] = useState(ing.status?.comment ?? '');
@@ -70,7 +79,7 @@ function IngredientCard({ ing, childId, onUpdate }: { ing: Ingredient; childId: 
   return (
     <div className={`rounded-xl border-2 transition ${s?.allergic ? 'border-red-200 bg-red-50' : s?.tried ? 'border-[#465940]/30 bg-[#465940]/5' : 'border-[#465940]/10'}`}>
       <button className="w-full flex items-center justify-between px-4 py-3 text-left" onClick={() => setOpen(!open)}>
-        <div className="flex items-center gap-3">
+        <div className="flex items-center gap-3 min-w-0">
           <div className={`w-8 h-8 rounded-full border-2 flex items-center justify-center flex-shrink-0 transition ${
             s?.allergic ? 'bg-red-100 border-red-300' :
             s?.tried ? 'bg-[#465940] border-[#465940]' : 'border-[#465940]/30'
@@ -78,9 +87,19 @@ function IngredientCard({ ing, childId, onUpdate }: { ing: Ingredient; childId: 
             {s?.tried && !s?.allergic && <svg width="12" height="10" viewBox="0 0 12 10" fill="none"><path d="M1 5L4 8L11 1" stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/></svg>}
             {s?.allergic && <span className="text-red-500 text-xs">✕</span>}
           </div>
-          <span className="font-semibold text-sm text-[#465940]">{ing.nameKa}</span>
+          <div className="min-w-0">
+            <span className="font-semibold text-sm text-[#465940]">{ing.nameKa}</span>
+            {/* Prep hint when tried */}
+            {s?.tried && !s?.allergic && (
+              <p className="text-[10px] text-[#465940]/50 mt-0.5">
+                {blwMode
+                  ? `✂️ ${blwCutSize(ageMonths)} · ${blwPrep(ing.category)}`
+                  : `🥣 ${pureePrep(ing.category)}`}
+              </p>
+            )}
+          </div>
         </div>
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-2 flex-shrink-0">
           <StatusBadge tried={s?.tried} allergic={s?.allergic} liked={s?.liked} ateWell={s?.ateWell} />
           <span className="text-[#465940]/40 text-xs">{open ? '▲' : '▼'}</span>
         </div>
@@ -142,7 +161,7 @@ function BlwIngCard({ ing, ageMonths }: { ing: Ingredient; ageMonths: number }) 
       <div className="flex-1 min-w-0">
         <p className="font-bold text-[#465940] text-sm">{ing.nameKa}</p>
         <p className="text-[11px] text-[#465940]/70 mt-0.5">{blwPrep(ing.category)}</p>
-        <div className="mt-1.5 inline-flex items-center gap-1 bg-[#465940]/8 rounded-lg px-2 py-0.5">
+        <div className="mt-1.5 inline-flex items-center gap-1 bg-[#465940]/10 rounded-lg px-2 py-0.5">
           <span className="text-[10px]">✂️</span>
           <span className="text-[10px] font-semibold text-[#465940]">{blwCutSize(ageMonths)}</span>
         </div>
@@ -276,7 +295,10 @@ export default function FirstFoodsTab({ child }: { child: any }) {
 
   const ageMonths = Math.floor((Date.now() - new Date(child.birthDate).getTime()) / (1000 * 60 * 60 * 24 * 30.44));
 
-  const suggestionsCount = blwMode ? safeIngredients.length : allowed.length;
+  const blwSoftPieces = allowed.filter(s => s.texture === 'softPieces');
+  const suggestionsCount = blwMode
+    ? safeIngredients.length + blwSoftPieces.length
+    : allowed.length;
 
   return (
     <div className="space-y-4">
@@ -312,12 +334,12 @@ export default function FirstFoodsTab({ child }: { child: any }) {
         </div>
         <p className="text-[10px] text-[#465940]/50 mt-1">{triedCount} / {ingredients.length} ინგრედიენტი გასინჯული</p>
 
-        {/* BLW toggle — always visible in header */}
+        {/* BLW toggle */}
         <div className="mt-3 pt-3 border-t border-[#465940]/10 flex items-center justify-between">
           <div>
             <span className="text-xs font-bold text-[#465940]">✂️ BLW კვება</span>
             <span className="ml-2 text-[10px] text-[#465940]/50">
-              {blwMode ? 'ჩართულია — ნაჭრებად, პიურეს გარეშე' : 'გამორთულია'}
+              {blwMode ? 'ჩართულია — ნაჭრებად, პიურეს გარეშე' : 'გამორთულია — პიურე რეჟიმი'}
             </span>
           </div>
           <button onClick={toggleBlw}
@@ -358,7 +380,7 @@ export default function FirstFoodsTab({ child }: { child: any }) {
                 <div className="bg-[#FDFBF0] rounded-2xl border border-[#465940]/10 shadow-sm p-4 space-y-2">
                   <p className="text-xs font-black text-[#465940]/60 uppercase tracking-wide mb-3">🥦 ბოსტნეული</p>
                   {vegetables.map(ing => (
-                    <IngredientCard key={ing.id} ing={ing} childId={child.id}
+                    <IngredientCard key={ing.id} ing={ing} childId={child.id} blwMode={blwMode} ageMonths={ageMonths}
                       onUpdate={() => { fetchIngredients(); fetchAllowed(); }} />
                   ))}
                 </div>
@@ -367,7 +389,7 @@ export default function FirstFoodsTab({ child }: { child: any }) {
                 <div className="bg-[#FDFBF0] rounded-2xl border border-[#465940]/10 shadow-sm p-4 space-y-2">
                   <p className="text-xs font-black text-[#465940]/60 uppercase tracking-wide mb-3">🍎 ხილი</p>
                   {fruits.map(ing => (
-                    <IngredientCard key={ing.id} ing={ing} childId={child.id}
+                    <IngredientCard key={ing.id} ing={ing} childId={child.id} blwMode={blwMode} ageMonths={ageMonths}
                       onUpdate={() => { fetchIngredients(); fetchAllowed(); }} />
                   ))}
                 </div>
@@ -381,38 +403,48 @@ export default function FirstFoodsTab({ child }: { child: any }) {
       {activeSection === 'suggestions' && (
         <div className="space-y-3">
 
-          {/* BLW mode: show each safe ingredient as a prep card */}
+          {/* BLW mode: tried ingredients as prep cards + softPieces combos, all in one list */}
           {blwMode ? (
             safeIngredients.length === 0 ? (
               <div className="bg-[#FDFBF0] rounded-2xl border border-[#465940]/10 shadow-sm p-10 text-center">
                 <p className="text-4xl mb-3">✂️</p>
                 <p className="font-bold text-[#465940] mb-1">ჯერ ინგრედიენტი არ გასინჯულა</p>
-                <p className="text-sm text-[#465940]/60">მონიშნე "ინგრედიენტები" ჩანართში რომელი პროდუქტები გასინჯა ბავშვმა</p>
+                <p className="text-sm text-[#465940]/60">მონიშნე ინგრედიენტები ჩანართში და BLW წინადადებები გამოჩნდება</p>
               </div>
             ) : (
               <div className="bg-[#FDFBF0] rounded-2xl border border-[#465940]/10 shadow-sm p-4 space-y-2">
                 <div className="mb-3">
-                  <p className="text-xs font-black text-[#465940]/60 uppercase tracking-wide">BLW — გასინჯული პროდუქტები</p>
+                  <p className="text-xs font-black text-[#465940]/60 uppercase tracking-wide">BLW — ერთი ინგრედიენტი</p>
                   <p className="text-[10px] text-[#465940]/50 mt-0.5">
-                    {ageMonths < 9
-                      ? '6–8 თვე: ჯოხები — ბავშვი კუჭ­ნად ეჭი­რება და ღეჭავს'
-                      : ageMonths < 12
-                      ? '9–11 თვე: პატარა კუბები — ორი თითით სწავლობს აყრას'
+                    {ageMonths < 9 ? '6–8 თვე: ჯოხები — ბავშვი ხელში იჭერს'
+                      : ageMonths < 12 ? '9–11 თვე: კუბები — ორი თითით სწავლობს'
                       : '12+ თვე: კბენის ზომის ნაჭრები'}
                   </p>
                 </div>
                 {safeIngredients.map(ing => (
                   <BlwIngCard key={ing.id} ing={ing} ageMonths={ageMonths} />
                 ))}
+
+                {/* BLW combo suggestions from DB */}
+                {loadingAllowed ? null : blwSoftPieces.length > 0 && (
+                  <>
+                    <p className="text-xs font-black text-[#465940]/60 uppercase tracking-wide mt-4 pt-3 border-t border-[#465940]/10">
+                      BLW — კომბინაციები
+                    </p>
+                    {blwSoftPieces.map(s => (
+                      <SuggestionCard key={s.id} s={s} childId={child.id} onLogged={() => fetchAllowed()} />
+                    ))}
+                  </>
+                )}
               </div>
             )
 
-          /* Normal mode: combo suggestions */
+          /* Puree mode: DB combo suggestions */
           ) : safeCount === 0 ? (
             <div className="bg-[#FDFBF0] rounded-2xl border border-[#465940]/10 shadow-sm p-10 text-center">
-              <p className="text-4xl mb-3">🥕</p>
+              <p className="text-4xl mb-3">🥣</p>
               <p className="font-bold text-[#465940] mb-1">ჯერ ინგრედიენტი არ გასინჯულა</p>
-              <p className="text-sm text-[#465940]/60">მონიშნე "ინგრედიენტები" ჩანართში რომელი პროდუქტები გასინჯა ბავშვმა</p>
+              <p className="text-sm text-[#465940]/60">მონიშნე ინგრედიენტები ჩანართში რომელი პროდუქტები გასინჯა ბავშვმა</p>
             </div>
           ) : loadingAllowed ? (
             <div className="space-y-2">{[1,2,3].map(i => <div key={i} className="h-16 rounded-xl bg-[#465940]/10 animate-pulse" />)}</div>
@@ -420,7 +452,7 @@ export default function FirstFoodsTab({ child }: { child: any }) {
             <div className="bg-[#FDFBF0] rounded-2xl border border-[#465940]/10 shadow-sm p-10 text-center">
               <p className="text-4xl mb-3">🍲</p>
               <p className="font-bold text-[#465940] mb-1">ჯერ კომბინაცია არ არის</p>
-              <p className="text-sm text-[#465940]/60">გასინჯე მეტი ინგრედიენტი — კომბინირებული კერძები გამოჩნდება</p>
+              <p className="text-sm text-[#465940]/60">გასინჯე მეტი ინგრედიენტი — პიურე კომბინაციები გამოჩნდება</p>
             </div>
           ) : (
             <div className="bg-[#FDFBF0] rounded-2xl border border-[#465940]/10 shadow-sm p-4 space-y-2">
@@ -428,8 +460,7 @@ export default function FirstFoodsTab({ child }: { child: any }) {
                 {safeCount} გასინჯული ინგრედიენტიდან შეგიძლია მოამზადო:
               </p>
               {allowed.map(s => (
-                <SuggestionCard key={s.id} s={s} childId={child.id}
-                  onLogged={() => fetchAllowed()} />
+                <SuggestionCard key={s.id} s={s} childId={child.id} onLogged={() => fetchAllowed()} />
               ))}
             </div>
           )}
