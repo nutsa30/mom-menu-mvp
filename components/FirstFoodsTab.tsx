@@ -296,9 +296,7 @@ export default function FirstFoodsTab({ child }: { child: any }) {
   const ageMonths = Math.floor((Date.now() - new Date(child.birthDate).getTime()) / (1000 * 60 * 60 * 24 * 30.44));
 
   const blwSoftPieces = allowed.filter(s => s.texture === 'softPieces');
-  const suggestionsCount = blwMode
-    ? safeIngredients.length + blwSoftPieces.length
-    : allowed.length;
+  const suggestionsCount = blwMode ? blwSoftPieces.length : allowed.length;
 
   return (
     <div className="space-y-4">
@@ -403,39 +401,24 @@ export default function FirstFoodsTab({ child }: { child: any }) {
       {activeSection === 'suggestions' && (
         <div className="space-y-3">
 
-          {/* BLW mode: tried ingredients as prep cards + softPieces combos, all in one list */}
+          {/* BLW mode: only softPieces combo suggestions from DB */}
           {blwMode ? (
-            safeIngredients.length === 0 ? (
+            loadingAllowed ? (
+              <div className="space-y-2">{[1,2,3].map(i => <div key={i} className="h-16 rounded-xl bg-[#465940]/10 animate-pulse" />)}</div>
+            ) : blwSoftPieces.length === 0 ? (
               <div className="bg-[#FDFBF0] rounded-2xl border border-[#465940]/10 shadow-sm p-10 text-center">
                 <p className="text-4xl mb-3">✂️</p>
-                <p className="font-bold text-[#465940] mb-1">ჯერ ინგრედიენტი არ გასინჯულა</p>
-                <p className="text-sm text-[#465940]/60">მონიშნე ინგრედიენტები ჩანართში და BLW წინადადებები გამოჩნდება</p>
+                <p className="font-bold text-[#465940] mb-1">BLW კომბინაცია ჯერ არ არის</p>
+                <p className="text-sm text-[#465940]/60">გასინჯე მეტი ინგრედიენტი — ლმობიერი ნაჭრების კომბინაციები გამოჩნდება</p>
               </div>
             ) : (
               <div className="bg-[#FDFBF0] rounded-2xl border border-[#465940]/10 shadow-sm p-4 space-y-2">
-                <div className="mb-3">
-                  <p className="text-xs font-black text-[#465940]/60 uppercase tracking-wide">BLW — ერთი ინგრედიენტი</p>
-                  <p className="text-[10px] text-[#465940]/50 mt-0.5">
-                    {ageMonths < 9 ? '6–8 თვე: ჯოხები — ბავშვი ხელში იჭერს'
-                      : ageMonths < 12 ? '9–11 თვე: კუბები — ორი თითით სწავლობს'
-                      : '12+ თვე: კბენის ზომის ნაჭრები'}
-                  </p>
-                </div>
-                {safeIngredients.map(ing => (
-                  <BlwIngCard key={ing.id} ing={ing} ageMonths={ageMonths} />
+                <p className="text-xs font-black text-[#465940]/60 uppercase tracking-wide mb-3">
+                  BLW — კომბინაციები
+                </p>
+                {blwSoftPieces.map(s => (
+                  <SuggestionCard key={s.id} s={s} childId={child.id} onLogged={() => fetchAllowed()} />
                 ))}
-
-                {/* BLW combo suggestions from DB */}
-                {loadingAllowed ? null : blwSoftPieces.length > 0 && (
-                  <>
-                    <p className="text-xs font-black text-[#465940]/60 uppercase tracking-wide mt-4 pt-3 border-t border-[#465940]/10">
-                      BLW — კომბინაციები
-                    </p>
-                    {blwSoftPieces.map(s => (
-                      <SuggestionCard key={s.id} s={s} childId={child.id} onLogged={() => fetchAllowed()} />
-                    ))}
-                  </>
-                )}
               </div>
             )
 
