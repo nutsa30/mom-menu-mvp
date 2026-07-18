@@ -111,6 +111,19 @@ export default async function AdminUsersPage({
   const promoRecipe = users.filter((u) => u.promoCode?.planType === 'RECIPE_PLAN' && u.subscriptionStatus === 'RECIPE_PLAN').length;
   const promoFull = users.filter((u) => u.promoCode?.planType === 'FULL_PLAN' && u.subscriptionStatus === 'FULL_PLAN').length;
 
+  // Revenue
+  const mrr = recipePlan * 15 + fullPlan * 30;
+  const payingUsers = recipePlan + fullPlan;
+  const arpu = payingUsers > 0 ? Math.round(mrr / payingUsers) : 0;
+  const thirtyDaysAgo = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000);
+  const newMrr = users
+    .filter((u) =>
+      u.subscriptionStartedAt &&
+      new Date(u.subscriptionStartedAt) > thirtyDaysAgo &&
+      (u.subscriptionStatus === 'RECIPE_PLAN' || u.subscriptionStatus === 'FULL_PLAN')
+    )
+    .reduce((sum, u) => sum + (u.subscriptionStatus === 'RECIPE_PLAN' ? 15 : 30), 0);
+
   const subLabel: Record<string, string> = {
     FREE: 'Free',
     RECIPE_PLAN: d.recipePlan,
@@ -148,6 +161,30 @@ export default async function AdminUsersPage({
             <p className={`text-3xl font-black ${s.color}`}>{s.value}</p>
           </div>
         ))}
+      </div>
+
+      {/* Revenue cards */}
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4 mb-6 lg:mb-8">
+        <div className="bg-[#465940] rounded-2xl p-5 shadow-sm">
+          <p className="text-xs font-semibold text-[#FDFBF0]/70 mb-3">MRR (ყოველთვიური)</p>
+          <p className="text-3xl font-black text-[#FDFBF0]">{mrr}₾</p>
+          <p className="text-[10px] text-[#FDFBF0]/50 mt-1">{payingUsers} გადამხდელი</p>
+        </div>
+        <div className="bg-[#FDFBF0] rounded-2xl p-5 border border-[#465940]/10 shadow-sm">
+          <p className="text-xs font-semibold text-[#465940] mb-3">ARR (წლიური)</p>
+          <p className="text-3xl font-black text-[#465940]">{mrr * 12}₾</p>
+          <p className="text-[10px] text-[#465940]/50 mt-1">MRR × 12</p>
+        </div>
+        <div className="bg-[#FDFBF0] rounded-2xl p-5 border border-[#465940]/10 shadow-sm">
+          <p className="text-xs font-semibold text-[#465940] mb-3">ახალი MRR (30 დღე)</p>
+          <p className="text-3xl font-black text-[#465940]">{newMrr}₾</p>
+          <p className="text-[10px] text-[#465940]/50 mt-1">ახალი გამოწერები</p>
+        </div>
+        <div className="bg-[#FDFBF0] rounded-2xl p-5 border border-[#465940]/10 shadow-sm">
+          <p className="text-xs font-semibold text-[#465940] mb-3">ARPU (საშ. / გადამხდელი)</p>
+          <p className="text-3xl font-black text-[#465940]">{arpu}₾</p>
+          <p className="text-[10px] text-[#465940]/50 mt-1">Recipe: 15₾ · Full: 30₾</p>
+        </div>
       </div>
 
       <UsersFilterBar
