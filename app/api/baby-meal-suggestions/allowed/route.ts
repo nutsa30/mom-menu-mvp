@@ -47,12 +47,16 @@ export async function GET(req: NextRequest) {
     (Date.now() - new Date(child.birthDate).getTime()) / (1000 * 60 * 60 * 24 * 30.44)
   );
 
-  // Filter: all ingredients must be safe, none can be allergic, age must match
+  // Filter: all ingredients must be safe (tried + non-allergic), none allergic.
+  // Age check is skipped when all ingredients are already individually tried —
+  // if each ingredient has been safely introduced, the combo is fine regardless of minAgeMonths.
   const allowed = suggestions.filter(s => {
-    if (s.minAgeMonths > ageMonths) return false;
     const ingIds = s.ingredientLinks.map(l => l.ingredientId);
     if (ingIds.some(id => allergicIds.has(id))) return false;
-    return ingIds.every(id => safeIds.has(id));
+    const allTried = ingIds.every(id => safeIds.has(id));
+    if (allTried) return true;
+    // Not all tried yet — still show single-ingredient suggestions within age range
+    return ingIds.length === 1 && s.minAgeMonths <= ageMonths;
   });
 
   // Also get meal logs for this child to mark already eaten ones
