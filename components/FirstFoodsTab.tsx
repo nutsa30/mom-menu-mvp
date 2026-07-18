@@ -262,6 +262,7 @@ export default function FirstFoodsTab({ child }: { child: any }) {
     const next = !blwMode;
     setBlwMode(next);
     localStorage.setItem(`blw_${child.id}`, String(next));
+    if (next) setActiveSection('ingredients');
   };
 
   const fetchIngredients = useCallback(async () => {
@@ -347,16 +348,18 @@ export default function FirstFoodsTab({ child }: { child: any }) {
         </div>
       </div>
 
-      {/* Tab switcher */}
+      {/* Tab switcher — suggestions hidden in BLW mode */}
       <div className="flex gap-2">
         <button onClick={() => setActiveSection('ingredients')}
           className={`flex-1 py-2.5 rounded-full text-sm font-bold transition ${activeSection === 'ingredients' ? 'bg-[#465940] text-[#FDFBF0]' : 'bg-[#FDFBF0] border border-[#465940]/20 text-[#465940]/70'}`}>
           🥕 ინგრედიენტები ({triedCount}/{ingredients.length})
         </button>
-        <button onClick={() => setActiveSection('suggestions')}
-          className={`flex-1 py-2.5 rounded-full text-sm font-bold transition ${activeSection === 'suggestions' ? 'bg-[#465940] text-[#FDFBF0]' : 'bg-[#FDFBF0] border border-[#465940]/20 text-[#465940]/70'}`}>
-          🍲 შეიძლება ({suggestionsCount})
-        </button>
+        {!blwMode && (
+          <button onClick={() => setActiveSection('suggestions')}
+            className={`flex-1 py-2.5 rounded-full text-sm font-bold transition ${activeSection === 'suggestions' ? 'bg-[#465940] text-[#FDFBF0]' : 'bg-[#FDFBF0] border border-[#465940]/20 text-[#465940]/70'}`}>
+            🍲 შეიძლება ({suggestionsCount})
+          </button>
+        )}
       </div>
 
       {/* INGREDIENTS SECTION */}
