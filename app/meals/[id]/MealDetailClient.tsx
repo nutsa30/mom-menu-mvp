@@ -37,8 +37,8 @@ export default function MealDetailClient({ dish }: { dish: any }) {
     return (
       <main className="min-h-screen bg-[#465940] px-6 py-10">
         <div className="max-w-3xl mx-auto">
-          <Link href="/dashboard" className="text-[#465940] font-semibold">
-            ← Back to dashboard
+          <Link href="/dashboard" className="text-[#FDFBF0]/70 hover:text-[#FDFBF0] font-semibold transition">
+            ← დაბრუნება
           </Link>
           <div className="mt-8 bg-[#FDFBF0] rounded-[40px] shadow-xl overflow-hidden">
             {dish.imageUrl && (
@@ -48,15 +48,15 @@ export default function MealDetailClient({ dish }: { dish: any }) {
               <div className="w-24 h-24 rounded-full bg-[#465940] flex items-center justify-center text-5xl mx-auto mb-6">
                 🔒
               </div>
-              <h1 className="text-4xl font-bold mb-4 text-[#465940]">Recipe Locked</h1>
+              <h1 className="text-4xl font-bold mb-4 text-[#465940]">რეცეპტი დაბლოკილია</h1>
               <p className="text-[#465940]/80 text-lg mb-8 leading-8">
-                რეცეპტის სანახავად საჭიროა 15₾ Recipe Plan ან 30₾ Full Plan.
+                რეცეპტის სანახავად საჭიროა 15₾ ან 30₾ პაკეტი.
               </p>
               <Link
                 href="/subscription"
                 className="inline-flex items-center justify-center rounded-full bg-[#465940] px-8 py-4 font-semibold text-[#FDFBF0] shadow-lg hover:scale-105 transition"
               >
-                Upgrade subscription
+                პაკეტის შეძენა
               </Link>
             </div>
           </div>
@@ -68,8 +68,8 @@ export default function MealDetailClient({ dish }: { dish: any }) {
   return (
     <main className="min-h-screen bg-[#465940] px-6 py-10">
       <div className="max-w-5xl mx-auto">
-        <Link href="/dashboard" className="text-[#465940] font-semibold">
-          ← Back to dashboard
+        <Link href="/dashboard" className="text-[#FDFBF0]/70 hover:text-[#FDFBF0] font-semibold transition">
+          ← დაბრუნება
         </Link>
         <div className="mt-8 bg-[#FDFBF0] rounded-[40px] shadow-xl overflow-hidden">
           {dish.imageUrl && (
