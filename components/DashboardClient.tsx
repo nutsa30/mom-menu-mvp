@@ -317,14 +317,14 @@ function TodayTab({ child, allDishes, planStart }: { child: any; allDishes: any[
                     </p>
                   )}
 
-                  {/* Actions – today only */}
-                  {log && selectedDate === todayStr && (
+                  {/* Actions — all days */}
+                  {log && (
                     <div className="flex gap-2">
                       <button
                         onClick={() => markEaten(log.id, !log.wasEaten)}
                         className={`px-3 py-1.5 rounded-full text-xs font-bold transition ${
                           eaten
-                            ? 'bg-[#465940]/10 text-[#465940] hover:bg-[#465940] hover:text-[#FDFBF0]'
+                            ? 'bg-[#465940] text-[#FDFBF0] hover:bg-[#465940]/80'
                             : 'bg-[#465940]/10 text-[#465940] hover:bg-[#465940] hover:text-[#FDFBF0]'
                         }`}
                       >
@@ -347,12 +347,6 @@ function TodayTab({ child, allDishes, planStart }: { child: any; allDishes: any[
                         </button>
                       )}
                     </div>
-                  )}
-                  {log?.wasEaten && selectedDate !== todayStr && !log && (
-                    <span className="inline-flex items-center gap-1 text-xs text-[#465940] font-semibold">
-                      <svg width="10" height="10" viewBox="0 0 12 12" fill="none"><polyline points="2,6 5,9 10,3" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"/></svg>
-                      ჭამა
-                    </span>
                   )}
                 </div>
 
