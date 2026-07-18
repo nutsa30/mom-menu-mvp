@@ -177,11 +177,11 @@ const SUGGESTIONS = [
   { titleKa: 'სტაფილო + გოგრა + ვაშლი',      titleEn: 'Carrot Pumpkin Apple Puree',    texture: 'puree',      min: 8, ing: ['სტაფილო', 'გოგრა', 'ვაშლი'] },
 
   // ── დაწნეხილი (mashed) ──────────────────────────────────────────────────────
-  { titleKa: 'კარტოფ. + ბარდა (დაწნეხილი)',   titleEn: 'Potato & Pea Mash',             texture: 'mashed',     min: 8, ing: ['კარტოფილი', 'ბარდა'] },
-  { titleKa: 'ავოკადო + ბანანი (დაწნეხილი)',   titleEn: 'Avocado & Banana Mash',         texture: 'mashed',     min: 8, ing: ['ავოკადო', 'ბანანი'] },
-  { titleKa: 'ტკბ.კარტ + ბანანი (დაწნეხილი)',  titleEn: 'Sweet Potato & Banana Mash',    texture: 'mashed',     min: 8, ing: ['ტკბილი კარტოფილი', 'ბანანი'] },
-  { titleKa: 'კარტოფ. + ბროკოლი (დაწნეხილი)', titleEn: 'Potato & Broccoli Mash',        texture: 'mashed',     min: 8, ing: ['კარტოფილი', 'ბროკოლი'] },
-  { titleKa: 'სტაფილო + ბარდა (დაწნეხილი)',    titleEn: 'Carrot & Pea Mash',             texture: 'mashed',     min: 8, ing: ['სტაფილო', 'ბარდა'] },
+  { titleKa: 'კარტოფ. + ბარდა (ჩანგლ. დაჭყლ.)',   titleEn: 'Potato & Pea Mash',             texture: 'mashed',     min: 8, ing: ['კარტოფილი', 'ბარდა'] },
+  { titleKa: 'ავოკადო + ბანანი (ჩანგლ. დაჭყლ.)',   titleEn: 'Avocado & Banana Mash',         texture: 'mashed',     min: 8, ing: ['ავოკადო', 'ბანანი'] },
+  { titleKa: 'ტკბ.კარტ + ბანანი (ჩანგლ. დაჭყლ.)',  titleEn: 'Sweet Potato & Banana Mash',    texture: 'mashed',     min: 8, ing: ['ტკბილი კარტოფილი', 'ბანანი'] },
+  { titleKa: 'კარტოფ. + ბროკოლი (ჩანგლ. დაჭყლ.)', titleEn: 'Potato & Broccoli Mash',        texture: 'mashed',     min: 8, ing: ['კარტოფილი', 'ბროკოლი'] },
+  { titleKa: 'სტაფილო + ბარდა (ჩანგლ. დაჭყლ.)',    titleEn: 'Carrot & Pea Mash',             texture: 'mashed',     min: 8, ing: ['სტაფილო', 'ბარდა'] },
 
   // ── ლმობიერი ნაჭრები (soft pieces) ─────────────────────────────────────────
   { titleKa: 'ბროკოლი (ლმობიერი ნაჭრები)',    titleEn: 'Soft Broccoli Pieces',          texture: 'softPieces', min: 8, ing: ['ბროკოლი'] },
