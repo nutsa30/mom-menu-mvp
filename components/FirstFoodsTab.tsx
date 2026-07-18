@@ -89,8 +89,8 @@ function IngredientCard({
           </div>
           <div className="min-w-0">
             <span className="font-semibold text-sm text-[#465940]">{ing.nameKa}</span>
-            {/* Prep hint when tried */}
-            {s?.tried && !s?.allergic && (
+            {/* Prep hint — always visible so parent knows how to prepare */}
+            {!s?.allergic && (
               <p className="text-[10px] text-[#465940]/50 mt-0.5">
                 {blwMode
                   ? `✂️ ${blwCutSize(ageMonths)} · ${blwPrep(ing.category)}`
