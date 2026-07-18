@@ -111,13 +111,25 @@ export default async function AdminUsersPage({
   const promoRecipe = users.filter((u) => u.promoCode?.planType === 'RECIPE_PLAN' && u.subscriptionStatus === 'RECIPE_PLAN').length;
   const promoFull = users.filter((u) => u.promoCode?.planType === 'FULL_PLAN' && u.subscriptionStatus === 'FULL_PLAN').length;
 
-  // Revenue
-  const mrr = recipePlan * 15 + fullPlan * 30;
-  const payingUsers = recipePlan + fullPlan;
-  const arpu = payingUsers > 0 ? Math.round(mrr / payingUsers) : 0;
+  // Gifted subscriptions (have sub but paid nothing)
+  const giftedPaying = users.filter(
+    (u) => u.isGifted && (u.subscriptionStatus === 'RECIPE_PLAN' || u.subscriptionStatus === 'FULL_PLAN')
+  );
+  const giftedCount = giftedPaying.length;
+  const giftedValue = giftedPaying.reduce(
+    (sum, u) => sum + (u.subscriptionStatus === 'RECIPE_PLAN' ? 15 : 30), 0
+  );
+
+  // Revenue — gifted users excluded (they bring no cash)
   const thirtyDaysAgo = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000);
+  const realRecipe = users.filter((u) => !u.isGifted && u.subscriptionStatus === 'RECIPE_PLAN').length;
+  const realFull   = users.filter((u) => !u.isGifted && u.subscriptionStatus === 'FULL_PLAN').length;
+  const mrr = realRecipe * 15 + realFull * 30;
+  const payingUsers = realRecipe + realFull;
+  const arpu = payingUsers > 0 ? Math.round(mrr / payingUsers) : 0;
   const newMrr = users
     .filter((u) =>
+      !u.isGifted &&
       u.subscriptionStartedAt &&
       new Date(u.subscriptionStartedAt) > thirtyDaysAgo &&
       (u.subscriptionStatus === 'RECIPE_PLAN' || u.subscriptionStatus === 'FULL_PLAN')
@@ -135,9 +147,10 @@ export default async function AdminUsersPage({
   let filteredUsers = users;
   if (activeTab === 'promo15') filteredUsers = filteredUsers.filter((u) => u.promoCode?.planType === 'RECIPE_PLAN' && u.subscriptionStatus === 'RECIPE_PLAN');
   else if (activeTab === 'promo30') filteredUsers = filteredUsers.filter((u) => u.promoCode?.planType === 'FULL_PLAN' && u.subscriptionStatus === 'FULL_PLAN');
+  else if (activeTab === 'gifted') filteredUsers = filteredUsers.filter((u) => u.isGifted && (u.subscriptionStatus === 'RECIPE_PLAN' || u.subscriptionStatus === 'FULL_PLAN'));
   if (activePromo) filteredUsers = filteredUsers.filter((u) => u.promoCode?.id === activePromo);
 
-  const counts = { all: total, promo15: promoRecipe, promo30: promoFull };
+  const counts = { all: total, promo15: promoRecipe, promo30: promoFull, gifted: giftedCount };
 
   return (
     <div className="p-4 sm:p-6 lg:p-8">
@@ -168,7 +181,7 @@ export default async function AdminUsersPage({
         <div className="bg-[#465940] rounded-2xl p-5 shadow-sm">
           <p className="text-xs font-semibold text-[#FDFBF0]/70 mb-3">MRR (ყოველთვიური)</p>
           <p className="text-3xl font-black text-[#FDFBF0]">{mrr}₾</p>
-          <p className="text-[10px] text-[#FDFBF0]/50 mt-1">{payingUsers} გადამხდელი</p>
+          <p className="text-[10px] text-[#FDFBF0]/50 mt-1">{payingUsers} გადამხდელი · გაჩუქ. გამოკლ.</p>
         </div>
         <div className="bg-[#FDFBF0] rounded-2xl p-5 border border-[#465940]/10 shadow-sm">
           <p className="text-xs font-semibold text-[#465940] mb-3">ARR (წლიური)</p>
@@ -178,12 +191,12 @@ export default async function AdminUsersPage({
         <div className="bg-[#FDFBF0] rounded-2xl p-5 border border-[#465940]/10 shadow-sm">
           <p className="text-xs font-semibold text-[#465940] mb-3">ახალი MRR (30 დღე)</p>
           <p className="text-3xl font-black text-[#465940]">{newMrr}₾</p>
-          <p className="text-[10px] text-[#465940]/50 mt-1">ახალი გამოწერები</p>
+          <p className="text-[10px] text-[#465940]/50 mt-1">გაჩუქებული არ შედის</p>
         </div>
-        <div className="bg-[#FDFBF0] rounded-2xl p-5 border border-[#465940]/10 shadow-sm">
-          <p className="text-xs font-semibold text-[#465940] mb-3">ARPU (საშ. / გადამხდელი)</p>
-          <p className="text-3xl font-black text-[#465940]">{arpu}₾</p>
-          <p className="text-[10px] text-[#465940]/50 mt-1">Recipe: 15₾ · Full: 30₾</p>
+        <div className="bg-amber-50 rounded-2xl p-5 border border-amber-200 shadow-sm">
+          <p className="text-xs font-semibold text-amber-700 mb-3">🎁 გაჩუქებული</p>
+          <p className="text-3xl font-black text-amber-600">{giftedCount}</p>
+          <p className="text-[10px] text-amber-500 mt-1">{giftedValue}₾/თვე · MRR-ში არ ითვლება</p>
         </div>
       </div>
 

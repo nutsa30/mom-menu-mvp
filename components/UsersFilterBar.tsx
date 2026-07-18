@@ -8,6 +8,7 @@ const TABS = [
   { key: 'all', label: 'ყველა' },
   { key: 'promo15', label: '15₾ პრომო' },
   { key: 'promo30', label: '30₾ პრომო' },
+  { key: 'gifted', label: '🎁 გაჩუქებული' },
 ];
 
 export default function UsersFilterBar({
