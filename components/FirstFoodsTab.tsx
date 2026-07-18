@@ -288,7 +288,11 @@ export default function FirstFoodsTab({ child }: { child: any }) {
   const allergicCount = ingredients.filter(i => i.status?.allergic).length;
   const safeIngredients = ingredients.filter(i => i.status?.tried && !i.status?.allergic);
 
-  const filteredIng = ingredients.filter(i =>
+  // Age-appropriate filter: show only if minAgeMonths <= baby's age, OR already tried
+  const ageAppropriate = ingredients.filter(i =>
+    i.minAgeMonths <= ageMonths || i.status?.tried
+  );
+  const filteredIng = ageAppropriate.filter(i =>
     categoryFilter === 'all' || i.category === categoryFilter
   );
   const vegetables = filteredIng.filter(i => i.category === 'vegetable');
@@ -313,10 +317,12 @@ export default function FirstFoodsTab({ child }: { child: any }) {
               <p className="text-xl font-black text-[#465940]">{triedCount}</p>
               <p className="text-[10px] text-[#465940]/60">გასინჯული</p>
             </div>
-            <div className="bg-[#465940]/5 rounded-xl px-3 py-2">
-              <p className="text-xl font-black text-[#465940]">{suggestionsCount}</p>
-              <p className="text-[10px] text-[#465940]/60">შეიძლება</p>
-            </div>
+            {!blwMode && (
+              <div className="bg-[#465940]/5 rounded-xl px-3 py-2">
+                <p className="text-xl font-black text-[#465940]">{suggestionsCount}</p>
+                <p className="text-[10px] text-[#465940]/60">შეიძლება</p>
+              </div>
+            )}
             {allergicCount > 0 && (
               <div className="bg-red-50 rounded-xl px-3 py-2">
                 <p className="text-xl font-black text-red-500">{allergicCount}</p>
@@ -329,9 +335,9 @@ export default function FirstFoodsTab({ child }: { child: any }) {
         {/* Progress bar */}
         <div className="h-2 bg-[#465940]/10 rounded-full overflow-hidden">
           <div className="h-2 bg-[#465940] rounded-full transition-all"
-            style={{ width: ingredients.length ? `${(triedCount / ingredients.length) * 100}%` : '0%' }} />
+            style={{ width: ageAppropriate.length ? `${(triedCount / ageAppropriate.length) * 100}%` : '0%' }} />
         </div>
-        <p className="text-[10px] text-[#465940]/50 mt-1">{triedCount} / {ingredients.length} ინგრედიენტი გასინჯული</p>
+        <p className="text-[10px] text-[#465940]/50 mt-1">{triedCount} / {ageAppropriate.length} ინგრედიენტი გასინჯული ({ageMonths} თვის ასაკისთვის)</p>
 
         {/* BLW toggle */}
         <div className="mt-3 pt-3 border-t border-[#465940]/10 flex items-center justify-between">
@@ -352,7 +358,7 @@ export default function FirstFoodsTab({ child }: { child: any }) {
       <div className="flex gap-2">
         <button onClick={() => setActiveSection('ingredients')}
           className={`flex-1 py-2.5 rounded-full text-sm font-bold transition ${activeSection === 'ingredients' ? 'bg-[#465940] text-[#FDFBF0]' : 'bg-[#FDFBF0] border border-[#465940]/20 text-[#465940]/70'}`}>
-          🥕 ინგრედიენტები ({triedCount}/{ingredients.length})
+          🥕 ინგრედიენტები ({triedCount}/{ageAppropriate.length})
         </button>
         {!blwMode && (
           <button onClick={() => setActiveSection('suggestions')}
