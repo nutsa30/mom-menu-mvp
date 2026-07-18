@@ -7,7 +7,7 @@ const subBadge: Record<string, string> = {
   FREE: 'bg-[#465940]/10 text-[#465940]/70',
   RECIPE_PLAN: 'bg-[#FDFBF0]/10 text-[#465940]',
   FULL_PLAN: 'bg-[#465940]/20 text-[#465940]',
-  CANCELED: 'bg-[#465940]/10 text-[#FDFBF0]',
+  CANCELED: 'bg-[#465940]/10 text-[#465940]/60',
 };
 
 function UserTable({ users, subLabel, locale }: { users: any[]; subLabel: Record<string, string>; locale: AdminLocale }) {
@@ -137,7 +137,7 @@ export default async function AdminUsersPage({
     .reduce((sum, u) => sum + (u.subscriptionStatus === 'RECIPE_PLAN' ? 15 : 30), 0);
 
   const subLabel: Record<string, string> = {
-    FREE: 'Free',
+    FREE: locale === 'ka' ? 'უფასო' : 'Free',
     RECIPE_PLAN: d.recipePlan,
     FULL_PLAN: d.fullPlan,
     CANCELED: locale === 'ka' ? 'გაუქმებული' : 'Canceled',

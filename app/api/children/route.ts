@@ -1,4 +1,5 @@
 import { prisma } from '@/lib/prisma';
+import { getSession } from '@/lib/auth';
 import { NextResponse } from 'next/server';
 
 function getAgeGroup(birthDate: Date) {
@@ -14,11 +15,18 @@ function getAgeGroup(birthDate: Date) {
 }
 
 export async function GET(req: Request) {
+  const session = await getSession();
+  if (!session) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+
   const { searchParams } = new URL(req.url);
   const userId = searchParams.get('userId');
 
   if (!userId) {
     return NextResponse.json({ error: 'User ID is required' }, { status: 400 });
+  }
+
+  if (userId !== session.id && session.role !== 'ADMIN') {
+    return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
   }
 
   const children = await prisma.child.findMany({
@@ -30,6 +38,9 @@ export async function GET(req: Request) {
 }
 
 export async function POST(req: Request) {
+  const session = await getSession();
+  if (!session) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+
   const body = await req.json();
 
   const birthDate = new Date(body.birthDate);
@@ -42,7 +53,7 @@ export async function POST(req: Request) {
       allergies: body.allergies || [],
       dislikes: body.dislikes || [],
       likes: body.likes || [],
-      userId: body.userId,
+      userId: session.id,
     },
   });
 
