@@ -3,7 +3,8 @@ import { redirect } from 'next/navigation';
 import { prisma } from '@/lib/prisma';
 import { clearAuthCookie, hashPassword, setAuthCookie, verifyPassword } from '@/lib/auth';
 import { getAgeGroup } from '@/lib/meal';
-import { sendWelcomeEmail } from '@/lib/email';
+import { sendWelcomeEmail, sendVerificationEmail } from '@/lib/email';
+import crypto from 'crypto';
 
 function str(form: FormData, key: string) { return String(form.get(key) || '').trim(); }
 function list(form: FormData, key: string) { return str(form, key).split(',').map(x => x.trim()).filter(Boolean); }
@@ -19,9 +20,12 @@ export async function registerAction(form: FormData) {
   if (existing) redirect('/register?error=exists');
 
   const passwordHash = await hashPassword(password);
-  const user = await prisma.user.create({
+  const emailVerifyToken = crypto.randomUUID();
+  await prisma.user.create({
     data: {
       name, email, passwordHash,
+      emailVerified: false,
+      emailVerifyToken,
       children: {
         create: {
           name: childName,
@@ -32,9 +36,8 @@ export async function registerAction(form: FormData) {
       },
     },
   });
-  await setAuthCookie({ id: user.id, email: user.email, name: user.name, role: user.role });
-  try { await sendWelcomeEmail(email, name); } catch {}
-  redirect('/dashboard?lang=ka&new=1');
+  try { await sendVerificationEmail(email, name, emailVerifyToken); } catch {}
+  redirect('/verify-email?sent=1');
 }
 
 export async function loginAction(form: FormData) {
@@ -43,6 +46,8 @@ export async function loginAction(form: FormData) {
   const user = await prisma.user.findUnique({ where: { email } });
   if (!user || !(await verifyPassword(password, user.passwordHash))) redirect('/login?error=1');
   if (user!.isBlocked) redirect('/login?error=blocked');
+  // Block only newly registered (unverified) users — old accounts pass through
+  if (!user!.emailVerified && user!.emailVerifyToken) redirect('/login?error=unverified&email=' + encodeURIComponent(email));
   await setAuthCookie({ id: user!.id, email: user!.email, name: user!.name, role: user!.role });
   redirect(user!.role === 'ADMIN' ? '/admin?lang=ka' : '/dashboard?lang=ka&in=1');
 }

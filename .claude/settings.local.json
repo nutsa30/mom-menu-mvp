@@ -34,10 +34,14 @@
       "Bash(Select-Object -ExpandProperty FullName)",
       "Bash(git commit -m 'Fix admin users table header text color — white on green background *)",
       "Bash(gh run *)",
-      "Bash(node -p \"JSON.stringify\\(Object.keys\\(require\\('./package.json'\\).dependencies\\).concat\\(Object.keys\\(require\\('./package.json'\\).devDependencies || {}\\)\\)\\)\")"
+      "Bash(node -p \"JSON.stringify\\(Object.keys\\(require\\('./package.json'\\).dependencies\\).concat\\(Object.keys\\(require\\('./package.json'\\).devDependencies || {}\\)\\)\\)\")",
+      "Bash(rm \"c:\\\\Users\\\\gstore\\\\OneDrive\\\\Desktop\\\\mom-menu-mvp\\\\scripts\\\\delete-admin.js\")",
+      "Bash(git commit *)",
+      "Bash(npx tsx *)"
     ],
     "additionalDirectories": [
-      "C:\\Users\\gstore\\Downloads"
+      "C:\\Users\\gstore\\Downloads",
+      "c:\\Users\\gstore\\OneDrive\\Desktop\\mom-menu-mvp\\scripts"
     ]
   }
 }

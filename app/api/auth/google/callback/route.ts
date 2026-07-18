@@ -62,6 +62,7 @@ export async function GET(req: NextRequest) {
         email,
         name: name || email.split('@')[0],
         googleId,
+        emailVerified: true,
       },
     });
   } else if (!user.googleId) {

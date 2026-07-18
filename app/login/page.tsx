@@ -32,11 +32,14 @@ export default function Login({ searchParams }: { searchParams: { lang?: Locale;
   const d = dict[locale];
   const [showPwd, setShowPwd] = useState(false);
 
+  const unverifiedEmail = searchParams.error === 'unverified' ? (searchParams as any).email : null;
   const errorMsg =
     searchParams.error === 'blocked'
       ? locale === 'ka' ? 'ანგარიში დაბლოკილია. დაუკავშირდი მხარდაჭერას.' : 'Account is blocked. Contact support.'
       : searchParams.error === 'google'
       ? locale === 'ka' ? 'Google-ით შესვლა ვერ მოხერხდა. სცადეთ თავიდან.' : 'Google sign-in failed. Please try again.'
+      : searchParams.error === 'unverified'
+      ? locale === 'ka' ? 'გთხოვთ, პირველ ელფოსტაში დაადასტუროთ თქვენი ანგარიში.' : 'Please verify your email address first.'
       : searchParams.error
       ? locale === 'ka' ? 'არასწორი ელფოსტა ან პაროლი' : 'Invalid email or password'
       : null;
@@ -114,6 +117,14 @@ export default function Login({ searchParams }: { searchParams: { lang?: Locale;
             {errorMsg && (
               <div className="mb-6 rounded-xl border border-[#465940]/30 px-4 py-3 text-sm font-semibold" style={{ background: '#465940', color: '#FDFBF0' }}>
                 {errorMsg}
+                {unverifiedEmail && (
+                  <a
+                    href={`/verify-email?email=${encodeURIComponent(unverifiedEmail)}`}
+                    className="block mt-2 underline opacity-80 hover:opacity-100"
+                  >
+                    {locale === 'ka' ? 'ბმულის ხელახლა გაგზავნა →' : 'Resend verification link →'}
+                  </a>
+                )}
               </div>
             )}
 
