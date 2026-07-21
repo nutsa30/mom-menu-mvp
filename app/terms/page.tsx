@@ -113,7 +113,35 @@ export default function TermsPage({ searchParams }: { searchParams: { lang?: str
           </div>
         </Section>
 
-        <Section num="04" title={ka ? 'დაუშვებელი გამოყენება' : 'Prohibited use'}>
+        <Section num="04" title={ka ? 'გაუქმება და თანხის დაბრუნება' : 'Cancellation and refunds'}>
+          <div className="space-y-4 text-sm text-[#465940]/80 leading-relaxed">
+            <p>
+              {ka
+                ? 'mom menu ციფრული სერვისია. გამოწერის გაუქმება შეგიძლიათ ნებისმიერ დროს პარამეტრების გვერდიდან.'
+                : 'mom menu is a digital service. You can cancel your subscription at any time from the settings page.'}
+            </p>
+            <ul className="space-y-2">
+              {(ka ? [
+                'გაუქმების შემდეგ წვდომა გრძელდება მიმდინარე ანაზღაურებული პერიოდის ბოლომდე',
+                'ციფრული კონტენტის სპეციფიკიდან გამომდინარე, უკვე გადახდილ პერიოდზე თანხის დაბრუნება არ ხდება',
+                'გამონაკლის შემთხვევებში (ტექნიკური ხარვეზი ჩვენი მხრიდან) თანხის დაბრუნება განიხილება ინდივიდუალურად',
+                'დაბრუნების მოთხოვნა უნდა გამოიგზავნოს info@mommenu.ge-ზე 48 საათის განმავლობაში',
+              ] : [
+                'After cancellation, access continues until the end of the current paid period',
+                'Due to the nature of digital content, no refunds are issued for already-paid periods',
+                'In exceptional cases (technical error on our part), refunds are considered individually',
+                'Refund requests must be sent to info@mommenu.ge within 48 hours',
+              ]).map((item, i) => (
+                <li key={i} className="flex gap-3">
+                  <span className="flex-shrink-0 text-[#465940] font-black leading-none mt-0.5">—</span>
+                  {item}
+                </li>
+              ))}
+            </ul>
+          </div>
+        </Section>
+
+        <Section num="05" title={ka ? 'დაუშვებელი გამოყენება' : 'Prohibited use'}>
           <p className="text-[#465940]/80 text-sm leading-relaxed mb-4">
             {ka ? 'სერვისის გამოყენება აკრძალულია შემდეგი მიზნებისთვის:' : 'Use of the service is prohibited for the following purposes:'}
           </p>
@@ -137,7 +165,7 @@ export default function TermsPage({ searchParams }: { searchParams: { lang?: str
           </ul>
         </Section>
 
-        <Section num="05" title={ka ? 'ინტელექტუალური საკუთრება' : 'Intellectual property'}>
+        <Section num="06" title={ka ? 'ინტელექტუალური საკუთრება' : 'Intellectual property'}>
           <p className="text-[#465940]/80 text-sm leading-relaxed">
             {ka
               ? 'პლატფორმაზე განთავსებული ყველა კონტენტი — კერძების რეცეპტები, ტექსტები, დიზაინი და ლოგო — წარმოადგენს mom menu-ის ინტელექტუალურ საკუთრებას. ამ კონტენტის კოპირება, გავრცელება ან კომერციული მიზნებისთვის გამოყენება დასაშვებია მხოლოდ წინასწარი წერილობითი თანხმობით.'
@@ -145,7 +173,7 @@ export default function TermsPage({ searchParams }: { searchParams: { lang?: str
           </p>
         </Section>
 
-        <Section num="06" title={ka ? 'სერვისის ხელმისაწვდომობა' : 'Service availability'}>
+        <Section num="07" title={ka ? 'სერვისის ხელმისაწვდომობა' : 'Service availability'}>
           <p className="text-[#465940]/80 text-sm leading-relaxed">
             {ka
               ? 'ვცდილობთ სერვისი მუდმივად ხელმისაწვდომი იყოს, თუმცა არ ვიძლევით გარანტიას შეუფერხებელ მუშაობაზე. ტექნიკური სამუშაოების ან გაუთვალისწინებელი გარემოებების შემთხვევაში სერვისი შეიძლება დროებით მიუწვდომელი გახდეს.'
@@ -153,7 +181,7 @@ export default function TermsPage({ searchParams }: { searchParams: { lang?: str
           </p>
         </Section>
 
-        <Section num="07" title={ka ? 'ანგარიშის შეჩერება' : 'Account suspension'}>
+        <Section num="08" title={ka ? 'ანგარიშის შეჩერება' : 'Account suspension'}>
           <p className="text-[#465940]/80 text-sm leading-relaxed">
             {ka
               ? 'mom menu იტოვებს უფლებას შეაჩეროს ან წაშალოს ანგარიში, თუ მომხმარებელი არღვევს ამ პირობებს. ასეთ შემთხვევაში მომხმარებელი წინასწარ ან დარღვევისთანავე ეცნობება.'
@@ -161,7 +189,7 @@ export default function TermsPage({ searchParams }: { searchParams: { lang?: str
           </p>
         </Section>
 
-        <Section num="08" title={ka ? 'პირობების ცვლილება' : 'Changes to terms'}>
+        <Section num="09" title={ka ? 'პირობების ცვლილება' : 'Changes to terms'}>
           <p className="text-[#465940]/80 text-sm leading-relaxed">
             {ka
               ? 'mom menu იტოვებს უფლებას შეცვალოს ეს პირობები. ცვლილების შემთხვევაში მომხმარებლები ეცნობებიან ელ.ფოსტით ან სერვისში შეტყობინებით. სერვისის შემდგომი გამოყენება ახალ პირობებზე თანხმობად ჩაითვლება.'

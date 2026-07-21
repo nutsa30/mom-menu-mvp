@@ -51,10 +51,22 @@ export default function ContactClient({ locale, settings }: { locale: 'ka' | 'en
         </p>
 
         <div className="space-y-5">
+          <InfoRow icon="phone" label={ka ? 'ტელეფონი' : 'Phone'}>
+            <a href="tel:+995557466668" className="text-[#FDFBF0] font-semibold hover:opacity-80 transition text-sm">
+              +995 557 46 66 68
+            </a>
+          </InfoRow>
+
           <InfoRow icon="email" label={ka ? 'ელ-ფოსტა' : 'Email'}>
             <a href={`mailto:${s.email}`} className="text-[#FDFBF0] font-semibold hover:opacity-80 transition text-sm">
               {s.email}
             </a>
+          </InfoRow>
+
+          <InfoRow icon="location" label={ka ? 'მისამართი' : 'Address'}>
+            <p className="text-[#FDFBF0] font-semibold text-sm">
+              {ka ? 'თბილისი, საქართველო' : 'Tbilisi, Georgia'}
+            </p>
           </InfoRow>
 
           <InfoRow icon="clock" label={ka ? 'პასუხის დრო' : 'Response time'}>
@@ -127,7 +139,9 @@ function Field({ label, children }: { label: string; children: React.ReactNode }
 
 function InfoRow({ icon, label, children }: { icon: string; label: string; children: React.ReactNode }) {
   const icons: Record<string, React.ReactNode> = {
+    phone: <><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07A19.5 19.5 0 0 1 4.69 12a19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 3.6 1.18h3a2 2 0 0 1 2 1.72c.127.96.361 1.903.7 2.81a2 2 0 0 1-.45 2.11L7.91 8.77a16 16 0 0 0 6.29 6.29l.95-.86a2 2 0 0 1 2.11-.45c.907.339 1.85.573 2.81.7A2 2 0 0 1 22 16.92z"/></>,
     email: <path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/>,
+    location: <><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></>,
     clock: <><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></>,
     calendar: <><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></>,
   };
