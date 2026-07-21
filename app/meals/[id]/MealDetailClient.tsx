@@ -1,23 +1,28 @@
-﻿'use client';
+'use client';
 
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
 
-const nutrients = [
-  { key: 'ironMg', label: 'Iron / რკინა' },
-  { key: 'calciumMg', label: 'Calcium / კალციუმი' },
-  { key: 'vitaminCmg', label: 'Vitamin C / C ვიტამინი' },
-  { key: 'vitaminAmcg', label: 'Vitamin A / A ვიტამინი' },
-  { key: 'fiberGrams', label: 'Fiber / ბოჭკო' },
-  { key: 'fatGrams', label: 'Fat / ცხიმი' },
-  { key: 'carbsGrams', label: 'Carbs / ნახშირწყლები' },
+const VITAMINS: { key: string; label: string; benefit: string; emoji: string; unit: string }[] = [
+  { key: 'vitaminAmcg',   label: 'A ვიტამინი',  benefit: 'მხედველობა და იმუნიტეტი',    emoji: '👁️',  unit: 'mcg' },
+  { key: 'vitaminCmg',    label: 'C ვიტამინი',  benefit: 'იმუნიტეტი, რკინის შეწოვა',   emoji: '🍊',  unit: 'მგ'  },
+  { key: 'vitaminDmcg',   label: 'D ვიტამინი',  benefit: 'ძვლები და კბილები',           emoji: '☀️',  unit: 'mcg' },
+  { key: 'vitaminEmg',    label: 'E ვიტამინი',  benefit: 'უჯრედების დაცვა',             emoji: '🌿',  unit: 'მგ'  },
+  { key: 'vitaminKmcg',   label: 'K ვიტამინი',  benefit: 'სისხლის შედედება',            emoji: '🩸',  unit: 'mcg' },
+  { key: 'vitaminB6mg',   label: 'B6 ვიტამინი', benefit: 'ტვინის განვითარება',          emoji: '🧠',  unit: 'მგ'  },
+  { key: 'vitaminB12mcg', label: 'B12 ვიტამინი',benefit: 'სისხლი და ნერვული სისტემა',  emoji: '💉',  unit: 'mcg' },
+  { key: 'folateMcg',     label: 'ფოლატი',       benefit: 'ზრდა და განვითარება',         emoji: '🌱',  unit: 'mcg' },
 ];
 
-function getLevel(value: number | null | undefined) {
-  if (!value || value <= 0) return null;
-  if (value >= 2) return 'good';
-  return 'some';
-}
+const MINERALS: { key: string; label: string; benefit: string; emoji: string; unit: string }[] = [
+  { key: 'ironMg',        label: 'რკინა',        benefit: 'სისხლი, ენერგია',             emoji: '⚡',  unit: 'მგ'  },
+  { key: 'calciumMg',     label: 'კალციუმი',     benefit: 'ძვლები და კბილები',           emoji: '🦷',  unit: 'მგ'  },
+  { key: 'zincMg',        label: 'თუთია',        benefit: 'იმუნიტეტი და ზრდა',          emoji: '🛡️',  unit: 'მგ'  },
+  { key: 'potassiumMg',   label: 'კალიუმი',      benefit: 'გული და კუნთები',             emoji: '❤️',  unit: 'მგ'  },
+  { key: 'magnesiumMg',   label: 'მაგნიუმი',     benefit: 'ძვლები და კუნთები',           emoji: '💪',  unit: 'მგ'  },
+  { key: 'omega3Mg',      label: 'ომეგა-3',      benefit: 'ტვინის განვითარება',          emoji: '🐟',  unit: 'მგ'  },
+  { key: 'fiberGrams',    label: 'ბოჭკო',        benefit: 'საჭმლის მონელება',            emoji: '🌾',  unit: 'გ'   },
+];
 
 export default function MealDetailClient({ dish }: { dish: any }) {
   const [user, setUser] = useState<any>(null);
@@ -42,20 +47,13 @@ export default function MealDetailClient({ dish }: { dish: any }) {
           </Link>
           <div className="mt-8 bg-[#FDFBF0] rounded-[40px] shadow-xl overflow-hidden">
             {dish.imageUrl && (
-              <img src={dish.imageUrl} alt={dish.titleEn || dish.titleKa} className="w-full h-[420px] object-cover" />
+              <img src={dish.imageUrl} alt={dish.titleKa} className="w-full h-[420px] object-cover" />
             )}
             <div className="p-10 text-center">
-              <div className="w-24 h-24 rounded-full bg-[#465940] flex items-center justify-center text-5xl mx-auto mb-6">
-                🔒
-              </div>
+              <div className="w-24 h-24 rounded-full bg-[#465940] flex items-center justify-center text-5xl mx-auto mb-6">🔒</div>
               <h1 className="text-4xl font-bold mb-4 text-[#465940]">რეცეპტი დაბლოკილია</h1>
-              <p className="text-[#465940]/80 text-lg mb-8 leading-8">
-                რეცეპტის სანახავად საჭიროა 15₾ ან 30₾ პაკეტი.
-              </p>
-              <Link
-                href="/subscription"
-                className="inline-flex items-center justify-center rounded-full bg-[#465940] px-8 py-4 font-semibold text-[#FDFBF0] shadow-lg hover:scale-105 transition"
-              >
+              <p className="text-[#465940]/80 text-lg mb-8 leading-8">რეცეპტის სანახავად საჭიროა 15₾ ან 30₾ პაკეტი.</p>
+              <Link href="/subscription" className="inline-flex items-center justify-center rounded-full bg-[#465940] px-8 py-4 font-semibold text-[#FDFBF0] shadow-lg hover:scale-105 transition">
                 პაკეტის შეძენა
               </Link>
             </div>
@@ -65,80 +63,134 @@ export default function MealDetailClient({ dish }: { dish: any }) {
     );
   }
 
+  const presentVitamins = VITAMINS.filter(v => dish[v.key] && dish[v.key] > 0);
+  const presentMinerals = MINERALS.filter(m => dish[m.key] && dish[m.key] > 0);
+
   return (
     <main className="min-h-screen bg-[#465940] px-6 py-10">
       <div className="max-w-5xl mx-auto">
         <Link href="/dashboard" className="text-[#FDFBF0]/70 hover:text-[#FDFBF0] font-semibold transition">
           ← დაბრუნება
         </Link>
+
         <div className="mt-8 bg-[#FDFBF0] rounded-[40px] shadow-xl overflow-hidden">
           {dish.imageUrl && (
-            <img src={dish.imageUrl} alt={dish.titleEn || dish.titleKa} className="w-full h-[420px] object-cover" />
+            <img src={dish.imageUrl} alt={dish.titleKa} className="w-full h-[420px] object-cover" />
           )}
-          <div className="p-10">
-            <span className="inline-block mb-4 px-4 py-1 rounded-full bg-[#465940] text-[#a43c12] font-semibold">
-              {dish.mealType}
-            </span>
-            <h1 className="text-4xl font-bold mb-2">{dish.titleKa}</h1>
-            <p className="text-[#465940]/70 mb-8">{dish.titleEn}</p>
 
-            <div className="grid md:grid-cols-2 gap-8 mb-10">
+          <div className="p-8 sm:p-10">
+            {/* Title */}
+            <h1 className="text-4xl font-bold mb-1 text-[#465940]">{dish.titleKa}</h1>
+            <p className="text-[#465940]/50 mb-8 text-sm">{dish.titleEn}</p>
+
+            {/* Description */}
+            <div className="grid md:grid-cols-2 gap-6 mb-10">
               <div>
-                <h2 className="text-xl font-bold mb-3">აღწერა</h2>
-                <p className="text-[#465940] leading-7">{dish.descriptionKa}</p>
+                <h2 className="text-lg font-bold text-[#465940] mb-2">აღწერა</h2>
+                <p className="text-[#465940]/70 leading-7 text-sm">{dish.descriptionKa}</p>
               </div>
               <div>
-                <h2 className="text-xl font-bold mb-3">Description</h2>
-                <p className="text-[#465940] leading-7">{dish.descriptionEn}</p>
+                <h2 className="text-lg font-bold text-[#465940] mb-2">Description</h2>
+                <p className="text-[#465940]/70 leading-7 text-sm">{dish.descriptionEn}</p>
               </div>
             </div>
 
-            <section className="mb-10 rounded-3xl bg-[#465940] p-6">
-              <h2 className="mb-4 text-xl font-bold">ვიტამინები და მინერალები</h2>
-              <div className="flex flex-wrap gap-3">
-                {nutrients.map((nutrient) => {
-                  const value = dish[nutrient.key];
-                  const level = getLevel(value);
-                  if (!level) return null;
-                  return (
-                    <span key={nutrient.key} className="inline-flex items-center gap-2 rounded-full bg-[#FDFBF0] px-4 py-2 text-sm font-semibold text-[#465940]">
-                      <span className={`h-4 w-4 rounded-full ${level === 'good' ? 'bg-[#465940]' : 'bg-[#FDFBF0]/10'}`} />
-                      {nutrient.label}
-                    </span>
-                  );
-                })}
+            {/* Macros */}
+            {(dish.calories || dish.proteinGrams) && (
+              <div className="grid grid-cols-3 gap-3 mb-10">
+                {dish.calories && (
+                  <div className="bg-[#465940]/8 rounded-2xl p-4 text-center border border-[#465940]/10">
+                    <p className="text-xs text-[#465940]/50 mb-1">კალორია</p>
+                    <p className="text-2xl font-black text-[#465940]">{dish.calories}</p>
+                    <p className="text-xs text-[#465940]/40">კკალ</p>
+                  </div>
+                )}
+                {dish.proteinGrams && (
+                  <div className="bg-[#465940]/8 rounded-2xl p-4 text-center border border-[#465940]/10">
+                    <p className="text-xs text-[#465940]/50 mb-1">ცილა</p>
+                    <p className="text-2xl font-black text-[#465940]">{dish.proteinGrams}</p>
+                    <p className="text-xs text-[#465940]/40">გ</p>
+                  </div>
+                )}
+                {dish.carbsGrams && (
+                  <div className="bg-[#465940]/8 rounded-2xl p-4 text-center border border-[#465940]/10">
+                    <p className="text-xs text-[#465940]/50 mb-1">ნახშირწყალი</p>
+                    <p className="text-2xl font-black text-[#465940]">{dish.carbsGrams}</p>
+                    <p className="text-xs text-[#465940]/40">გ</p>
+                  </div>
+                )}
               </div>
-            </section>
+            )}
 
-            <div className="grid sm:grid-cols-3 gap-4 mb-10">
-              <div className="bg-[#465940] p-5 rounded-2xl">
-                <p className="text-sm text-[#465940]/70">Calories</p>
-                <p className="text-2xl font-bold">{dish.calories || '-'} kcal</p>
-              </div>
-              <div className="bg-[#465940] p-5 rounded-2xl">
-                <p className="text-sm text-[#465940]/70">Protein</p>
-                <p className="text-2xl font-bold">{dish.proteinGrams || '-'} g</p>
-              </div>
-              <div className="bg-[#465940] p-5 rounded-2xl">
-                <p className="text-sm text-[#465940]/70">Age groups</p>
-                <p className="text-lg font-bold">{dish.ageGroups?.join(', ')}</p>
-              </div>
-            </div>
-
-            <div className="grid md:grid-cols-2 gap-8">
+            {/* Ingredients */}
+            <div className="grid md:grid-cols-2 gap-6 mb-10">
               <div>
-                <h2 className="text-xl font-bold mb-3">ინგრედიენტები</h2>
-                <ul className="list-disc pl-5 space-y-2 text-[#465940]">
-                  {dish.ingredientsKa?.map((item: string) => <li key={item}>{item}</li>)}
+                <h2 className="text-lg font-bold text-[#465940] mb-3">ინგრედიენტები</h2>
+                <ul className="space-y-1.5">
+                  {dish.ingredientsKa?.map((item: string) => (
+                    <li key={item} className="flex gap-2 text-sm text-[#465940]/80">
+                      <span className="text-[#465940]/30 flex-shrink-0 mt-0.5">—</span>
+                      {item}
+                    </li>
+                  ))}
                 </ul>
               </div>
               <div>
-                <h2 className="text-xl font-bold mb-3">Ingredients</h2>
-                <ul className="list-disc pl-5 space-y-2 text-[#465940]">
-                  {dish.ingredientsEn?.map((item: string) => <li key={item}>{item}</li>)}
+                <h2 className="text-lg font-bold text-[#465940] mb-3">Ingredients</h2>
+                <ul className="space-y-1.5">
+                  {dish.ingredientsEn?.map((item: string) => (
+                    <li key={item} className="flex gap-2 text-sm text-[#465940]/80">
+                      <span className="text-[#465940]/30 flex-shrink-0 mt-0.5">—</span>
+                      {item}
+                    </li>
+                  ))}
                 </ul>
               </div>
             </div>
+
+            {/* Vitamins & Minerals */}
+            {(presentVitamins.length > 0 || presentMinerals.length > 0) && (
+              <div className="rounded-3xl bg-[#465940] p-6 sm:p-8">
+                <h2 className="text-xl font-black text-[#FDFBF0] mb-1">ვიტამინები და მინერალები</h2>
+                <p className="text-[#FDFBF0]/50 text-xs mb-6">ამ კერძში შემავალი სასარგებლო ნივთიერებები</p>
+
+                {presentVitamins.length > 0 && (
+                  <div className="mb-6">
+                    <p className="text-[#FDFBF0]/60 text-xs font-bold uppercase tracking-widest mb-3">ვიტამინები</p>
+                    <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-2">
+                      {presentVitamins.map(v => (
+                        <div key={v.key} className="bg-[#FDFBF0]/10 rounded-2xl p-3">
+                          <span className="text-xl">{v.emoji}</span>
+                          <p className="text-[#FDFBF0] font-bold text-sm mt-1">{v.label}</p>
+                          <p className="text-[#FDFBF0]/50 text-xs leading-tight">{v.benefit}</p>
+                          <p className="text-[#FDFBF0]/80 text-xs font-mono mt-1">
+                            {dish[v.key]} {v.unit}
+                          </p>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+                {presentMinerals.length > 0 && (
+                  <div>
+                    <p className="text-[#FDFBF0]/60 text-xs font-bold uppercase tracking-widest mb-3">მინერალები</p>
+                    <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-2">
+                      {presentMinerals.map(m => (
+                        <div key={m.key} className="bg-[#FDFBF0]/10 rounded-2xl p-3">
+                          <span className="text-xl">{m.emoji}</span>
+                          <p className="text-[#FDFBF0] font-bold text-sm mt-1">{m.label}</p>
+                          <p className="text-[#FDFBF0]/50 text-xs leading-tight">{m.benefit}</p>
+                          <p className="text-[#FDFBF0]/80 text-xs font-mono mt-1">
+                            {dish[m.key]} {m.unit}
+                          </p>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+              </div>
+            )}
           </div>
         </div>
       </div>
