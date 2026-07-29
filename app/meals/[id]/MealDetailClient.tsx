@@ -3,25 +3,25 @@
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
 
-const VITAMINS: { key: string; label: string; benefit: string; emoji: string; unit: string }[] = [
-  { key: 'vitaminAmcg',   label: 'A ვიტამინი',  benefit: 'მხედველობა და იმუნიტეტი',    emoji: '👁️',  unit: 'mcg' },
-  { key: 'vitaminCmg',    label: 'C ვიტამინი',  benefit: 'იმუნიტეტი, რკინის შეწოვა',   emoji: '🍊',  unit: 'მგ'  },
-  { key: 'vitaminDmcg',   label: 'D ვიტამინი',  benefit: 'ძვლები და კბილები',           emoji: '☀️',  unit: 'mcg' },
-  { key: 'vitaminEmg',    label: 'E ვიტამინი',  benefit: 'უჯრედების დაცვა',             emoji: '🌿',  unit: 'მგ'  },
-  { key: 'vitaminKmcg',   label: 'K ვიტამინი',  benefit: 'სისხლის შედედება',            emoji: '🩸',  unit: 'mcg' },
-  { key: 'vitaminB6mg',   label: 'B6 ვიტამინი', benefit: 'ტვინის განვითარება',          emoji: '🧠',  unit: 'მგ'  },
-  { key: 'vitaminB12mcg', label: 'B12 ვიტამინი',benefit: 'სისხლი და ნერვული სისტემა',  emoji: '💉',  unit: 'mcg' },
-  { key: 'folateMcg',     label: 'ფოლატი',       benefit: 'ზრდა და განვითარება',         emoji: '🌱',  unit: 'mcg' },
+const VITAMINS: { key: string; label: string; emoji: string; unit: string }[] = [
+  { key: 'vitaminAmcg',   label: 'A ვიტამინი',  emoji: '👁️',  unit: 'mcg' },
+  { key: 'vitaminCmg',    label: 'C ვიტამინი',  emoji: '🍊',  unit: 'მგ'  },
+  { key: 'vitaminDmcg',   label: 'D ვიტამინი',  emoji: '☀️',  unit: 'mcg' },
+  { key: 'vitaminEmg',    label: 'E ვიტამინი',  emoji: '🌿',  unit: 'მგ'  },
+  { key: 'vitaminKmcg',   label: 'K ვიტამინი',  emoji: '🩸',  unit: 'mcg' },
+  { key: 'vitaminB6mg',   label: 'B6 ვიტამინი', emoji: '🧠',  unit: 'მგ'  },
+  { key: 'vitaminB12mcg', label: 'B12 ვიტამინი',emoji: '💉',  unit: 'mcg' },
+  { key: 'folateMcg',     label: 'ფოლატი',       emoji: '🌱',  unit: 'mcg' },
 ];
 
-const MINERALS: { key: string; label: string; benefit: string; emoji: string; unit: string }[] = [
-  { key: 'ironMg',        label: 'რკინა',        benefit: 'სისხლი, ენერგია',             emoji: '⚡',  unit: 'მგ'  },
-  { key: 'calciumMg',     label: 'კალციუმი',     benefit: 'ძვლები და კბილები',           emoji: '🦷',  unit: 'მგ'  },
-  { key: 'zincMg',        label: 'თუთია',        benefit: 'იმუნიტეტი და ზრდა',          emoji: '🛡️',  unit: 'მგ'  },
-  { key: 'potassiumMg',   label: 'კალიუმი',      benefit: 'გული და კუნთები',             emoji: '❤️',  unit: 'მგ'  },
-  { key: 'magnesiumMg',   label: 'მაგნიუმი',     benefit: 'ძვლები და კუნთები',           emoji: '💪',  unit: 'მგ'  },
-  { key: 'omega3Mg',      label: 'ომეგა-3',      benefit: 'ტვინის განვითარება',          emoji: '🐟',  unit: 'მგ'  },
-  { key: 'fiberGrams',    label: 'ბოჭკო',        benefit: 'საჭმლის მონელება',            emoji: '🌾',  unit: 'გ'   },
+const MINERALS: { key: string; label: string; emoji: string; unit: string }[] = [
+  { key: 'ironMg',        label: 'რკინა',        emoji: '⚡',  unit: 'მგ'  },
+  { key: 'calciumMg',     label: 'კალციუმი',     emoji: '🦷',  unit: 'მგ'  },
+  { key: 'zincMg',        label: 'თუთია',        emoji: '🛡️',  unit: 'მგ'  },
+  { key: 'potassiumMg',   label: 'კალიუმი',      emoji: '❤️',  unit: 'მგ'  },
+  { key: 'magnesiumMg',   label: 'მაგნიუმი',     emoji: '💪',  unit: 'მგ'  },
+  { key: 'omega3Mg',      label: 'ომეგა-3',      emoji: '🐟',  unit: 'მგ'  },
+  { key: 'fiberGrams',    label: 'ბოჭკო',        emoji: '🌾',  unit: 'გ'   },
 ];
 
 export default function MealDetailClient({ dish }: { dish: any }) {
@@ -152,7 +152,7 @@ export default function MealDetailClient({ dish }: { dish: any }) {
             {(presentVitamins.length > 0 || presentMinerals.length > 0) && (
               <div className="rounded-3xl bg-[#465940] p-6 sm:p-8">
                 <h2 className="text-xl font-black text-[#FDFBF0] mb-1">ვიტამინები და მინერალები</h2>
-                <p className="text-[#FDFBF0]/50 text-xs mb-6">ამ კერძში შემავალი სასარგებლო ნივთიერებები</p>
+                <p className="text-[#FDFBF0]/50 text-xs mb-6">ამ კერძის საკვები შემადგენლობა</p>
 
                 {presentVitamins.length > 0 && (
                   <div className="mb-6">
@@ -162,7 +162,6 @@ export default function MealDetailClient({ dish }: { dish: any }) {
                         <div key={v.key} className="bg-[#FDFBF0]/10 rounded-2xl p-3">
                           <span className="text-xl">{v.emoji}</span>
                           <p className="text-[#FDFBF0] font-bold text-sm mt-1">{v.label}</p>
-                          <p className="text-[#FDFBF0]/50 text-xs leading-tight">{v.benefit}</p>
                           <p className="text-[#FDFBF0]/80 text-xs font-mono mt-1">
                             {dish[v.key]} {v.unit}
                           </p>
@@ -180,7 +179,6 @@ export default function MealDetailClient({ dish }: { dish: any }) {
                         <div key={m.key} className="bg-[#FDFBF0]/10 rounded-2xl p-3">
                           <span className="text-xl">{m.emoji}</span>
                           <p className="text-[#FDFBF0] font-bold text-sm mt-1">{m.label}</p>
-                          <p className="text-[#FDFBF0]/50 text-xs leading-tight">{m.benefit}</p>
                           <p className="text-[#FDFBF0]/80 text-xs font-mono mt-1">
                             {dish[m.key]} {m.unit}
                           </p>
