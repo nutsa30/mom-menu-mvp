@@ -70,4 +70,10 @@ Global CSS classes defined in `app/globals.css`: `.input`, `.label`, `.btn`, `.b
 - `RECIPE_PLAN` (15₾) — can view full recipes
 - `FULL_PLAN` (30₾) — can generate daily meal plans via `/api/meal-plan/generate`
 
-Subscription activation is mocked (no real payment); `activateSubscriptionAction` / `cancelSubscriptionAction` in `app/actions.ts` toggle the status directly.
+Paid plans are purchased through **Lemon Squeezy** (Merchant of Record, bills in USD — no Georgian merchant account needed):
+- `/api/subscription/checkout` — creates a Lemon Squeezy Checkout session for a plan and returns the redirect URL (called from `app/subscription/page.tsx` and the pricing section in `app/HomeClient.tsx`)
+- `/api/webhooks/lemonsqueezy` — receives `subscription_*` events, verifies the HMAC signature (`lib/lemonsqueezy.ts`), and updates `User.subscriptionStatus` / `lsSubscriptionId` / `lsCustomerId` / `subscriptionRenewsAt`
+- `/api/subscription/portal` — returns the Lemon Squeezy hosted customer-portal URL so paying users can update payment method or cancel (self-service; cancellation must go through Lemon Squeezy, not our DB, since that's what actually stops billing)
+- `/api/subscription/update` — legacy endpoint, now **only** grants a plan when a valid `PromoCode` is supplied (gifted access with no real payment); it refuses to touch accounts that have a live `lsSubscriptionId`
+
+Required env vars: `LEMONSQUEEZY_API_KEY`, `LEMONSQUEEZY_STORE_ID`, `LEMONSQUEEZY_WEBHOOK_SECRET`, `LEMONSQUEEZY_RECIPE_PLAN_VARIANT_ID`, `LEMONSQUEEZY_FULL_PLAN_VARIANT_ID`.

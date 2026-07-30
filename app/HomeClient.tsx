@@ -118,15 +118,16 @@ export default function HomeClient({ s, dishes, dishCount, recentBlogs }: {
     const planPrice = plan === 'RECIPE_PLAN' ? 15 : 30;
     ga.subscribe(planLabel, planPrice);
     try {
-      const code = promoStatus[plan]?.valid ? promoInput[plan]?.trim() : undefined;
-      const res = await fetch('/api/subscription/update', {
+      const discountCode = promoStatus[plan]?.valid ? promoInput[plan]?.trim() : undefined;
+      const res = await fetch('/api/subscription/checkout', {
         method: 'POST', headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ plan, promoCode: code }),
+        body: JSON.stringify({ plan, discountCode }),
       });
       if (res.status === 401) { router.push(`/login?lang=${locale}`); return; }
-      if (res.ok) router.push(`/dashboard?lang=${locale}`);
-      else alert((await res.json()).error || 'Error');
-    } catch { alert('Error'); }
+      const data = await res.json();
+      if (res.ok && data.url) { window.location.href = data.url; return; }
+      alert(ka ? 'ვერ მოხერხდა გახსნა, სცადეთ მოგვიანებით' : 'Could not start checkout, please try again');
+    } catch { alert(ka ? 'შეცდომა' : 'Error'); }
     finally { setLoadingPlan(null); }
   };
 

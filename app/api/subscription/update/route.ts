@@ -13,6 +13,11 @@ const PLAN_PRICES: Record<string, number> = {
   FULL_PLAN: 30,
 };
 
+// This endpoint no longer grants paid plans directly — real purchases go through
+// /api/subscription/checkout (Lemon Squeezy). It only handles: (1) a valid gift/promo
+// code activating a plan for free, and (2) downgrading to FREE for accounts that were
+// never billed (gifted/promo access). Paying subscribers must cancel via the Lemon
+// Squeezy customer portal (/api/subscription/portal) so their real billing actually stops.
 export async function POST(req: Request) {
   const session = await getSession();
   if (!session) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
@@ -24,21 +29,32 @@ export async function POST(req: Request) {
     return NextResponse.json({ error: "Invalid plan" }, { status: 400 });
   }
 
+  const existing = await prisma.user.findUnique({ where: { id: session.id } });
+  if (!existing) return NextResponse.json({ error: "Not found" }, { status: 404 });
+
+  if (existing.lsSubscriptionId) {
+    return NextResponse.json({ error: "use_portal" }, { status: 409 });
+  }
+
   let promoCodeId: string | undefined;
 
-  if (promoCode) {
+  if (plan !== "FREE") {
+    if (!promoCode) {
+      return NextResponse.json({ error: "promo_required" }, { status: 400 });
+    }
     const promo = await prisma.promoCode.findUnique({
       where: { code: promoCode.trim().toUpperCase() },
       include: { _count: { select: { users: true } } },
     });
     if (
-      promo &&
-      promo.isActive &&
-      promo.planType === plan &&
-      (promo.maxUses === null || promo._count.users < promo.maxUses)
+      !promo ||
+      !promo.isActive ||
+      promo.planType !== plan ||
+      (promo.maxUses !== null && promo._count.users >= promo.maxUses)
     ) {
-      promoCodeId = promo.id;
+      return NextResponse.json({ error: "invalid_promo" }, { status: 400 });
     }
+    promoCodeId = promo.id;
   }
 
   const startDate = new Date();
@@ -49,6 +65,7 @@ export async function POST(req: Request) {
       subscriptionStatus: plan,
       subscriptionStartedAt: plan === "FREE" ? null : startDate,
       subscriptionCanceledAt: null,
+      isGifted: plan !== "FREE",
       ...(promoCodeId && { promoCodeId }),
     },
   });

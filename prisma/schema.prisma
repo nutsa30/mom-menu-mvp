@@ -54,6 +54,9 @@ model User {
   subscriptionStatus     SubscriptionStatus @default(FREE)
   subscriptionStartedAt  DateTime?
   subscriptionCanceledAt DateTime?
+  subscriptionRenewsAt   DateTime?
+  lsCustomerId           String?
+  lsSubscriptionId       String?            @unique
 
   isBlocked              Boolean            @default(false)
   isGifted               Boolean            @default(false)
@@ -338,10 +341,10 @@ model HomePageSettings {
   featuresTitleKa  String @default("შექმნილია გადატვირთული, მზრუნველი მშობლებისთვის")
   featuresTitleEn  String @default("Designed for Busy, Mindful Parents")
   feature1Icon     String @default("❤️")
-  feature1TitleKa  String @default("მეცნიერულად დაფუძნებული კვება")
-  feature1TitleEn  String @default("Science-Backed Nutrition")
-  feature1DescKa   String @default("თითოეული კერძი შერჩეულია იმისთვის, რომ ბავშვმა მიიღოს ყველა საჭირო ვიტამინი და საკვები ნივთიერება.")
-  feature1DescEn   String @default("Every meal is curated to ensure your child gets essential vitamins and nutrients.")
+  feature1TitleKa  String @default("ასობით შემოწმებული რეცეპტი")
+  feature1TitleEn  String @default("Hundreds of Tried Recipes")
+  feature1DescKa   String @default("ყველა კერძი ორგანიზებულია ბავშვის ასაკის მიხედვით — რომ ყოველდღე იცოდე, ზუსტად რა მოამზადო.")
+  feature1DescEn   String @default("Every recipe is organized by your child's age — so you always know exactly what to cook.")
   feature2Icon     String @default("⚡")
   feature2TitleKa  String @default("სტრესის გარეშე მომზადება")
   feature2TitleEn  String @default("Stress-Free Prep")
@@ -583,6 +586,7 @@ model PushTemplate {
 
 model PushSchedule {
   id            String   @id @default("singleton")
+  paused        Boolean  @default(false)
   breakfastHour Int      @default(8)
   lunchHour     Int      @default(12)
   snackHour     Int      @default(15)

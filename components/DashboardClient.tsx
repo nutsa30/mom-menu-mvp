@@ -1503,8 +1503,42 @@ function SettingsTab({ user }: { user: any }) {
       {/* Account info */}
       <div className={`${card} p-6`}>
         <h2 className="font-black text-[#465940] mb-3">ანგარიში</h2>
-        <p className="text-sm text-[#465940]/70"><span className="font-semibold text-[#465940]">სტატუსი:</span> {user.subscriptionStatus}</p>
+        <p className="text-sm text-[#465940]/70 mb-4"><span className="font-semibold text-[#465940]">სტატუსი:</span> {user.subscriptionStatus}</p>
+        {user.lsSubscriptionId && <ManageSubscriptionButton />}
       </div>
+    </div>
+  );
+}
+
+function ManageSubscriptionButton() {
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState('');
+
+  const openPortal = async () => {
+    setLoading(true);
+    setError('');
+    try {
+      const res = await fetch('/api/subscription/portal');
+      const data = await res.json();
+      if (res.ok && data.url) {
+        window.location.href = data.url;
+        return;
+      }
+      setError('ვერ მოხერხდა გახსნა, სცადეთ მოგვიანებით');
+    } catch {
+      setError('ვერ მოხერხდა გახსნა, სცადეთ მოგვიანებით');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  return (
+    <div>
+      <button onClick={openPortal} disabled={loading}
+        className="bg-[#465940]/10 hover:bg-[#465940]/15 text-[#465940] px-5 py-2.5 rounded-full text-sm font-bold transition disabled:opacity-60">
+        {loading ? 'იხსნება...' : 'გამოწერის მართვა / გაუქმება'}
+      </button>
+      {error && <p className="text-red-500 text-xs mt-2">{error}</p>}
     </div>
   );
 }
