@@ -1,15 +1,23 @@
 'use client';
 
 import { useRouter } from 'next/navigation';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { ga } from '@/lib/gtag';
 
 export default function SubscriptionPage() {
   const router = useRouter();
   const [loadingPlan, setLoadingPlan] = useState<string | null>(null);
+  const [currentPlan, setCurrentPlan] = useState<string | null>(null);
   const [promoInput, setPromoInput] = useState<Record<string, string>>({ RECIPE_PLAN: '', FULL_PLAN: '' });
   const [promoStatus, setPromoStatus] = useState<Record<string, { discount: number; valid: boolean; msg: string }>>({});
   const [promoLoading, setPromoLoading] = useState<string | null>(null);
+
+  useEffect(() => {
+    fetch('/api/auth/me')
+      .then(r => (r.ok ? r.json() : null))
+      .then(d => { if (d?.subscriptionStatus) setCurrentPlan(d.subscriptionStatus); })
+      .catch(() => {});
+  }, []);
 
   const validatePromo = async (plan: string) => {
     const code = promoInput[plan]?.trim();
@@ -48,7 +56,11 @@ export default function SubscriptionPage() {
         window.location.href = data.url;
         return;
       }
-      alert('ვერ მოხერხდა გახსნა, სცადეთ მოგვიანებით');
+      if (data.error === 'already_subscribed') {
+        alert('ეს პაკეტი უკვე აქტიური გაქვთ');
+      } else {
+        alert('ვერ მოხერხდა გახსნა, სცადეთ მოგვიანებით');
+      }
     } catch {
       alert('შეცდომა');
     } finally {
@@ -112,10 +124,10 @@ export default function SubscriptionPage() {
             )}
             <button
               onClick={() => handleSubscribe('RECIPE_PLAN')}
-              disabled={loadingPlan !== null}
+              disabled={loadingPlan !== null || currentPlan === 'RECIPE_PLAN'}
               className="w-full py-3.5 mt-3 border border-[#465940] text-[#465940] rounded-full font-semibold hover:bg-[#465940]/10 transition disabled:opacity-60"
             >
-              {loadingPlan === 'RECIPE_PLAN' ? 'მუშავდება...' : 'დაწყება'}
+              {currentPlan === 'RECIPE_PLAN' ? '✓ აქტიურია' : loadingPlan === 'RECIPE_PLAN' ? 'მუშავდება...' : 'დაწყება'}
             </button>
           </div>
 
@@ -174,11 +186,11 @@ export default function SubscriptionPage() {
             )}
             <button
               onClick={() => handleSubscribe('FULL_PLAN')}
-              disabled={loadingPlan !== null}
+              disabled={loadingPlan !== null || currentPlan === 'FULL_PLAN'}
               className="w-full py-3.5 mt-3 text-[#FDFBF0] rounded-full font-bold shadow-lg transition disabled:opacity-60"
               style={{ background: '#465940' }}
             >
-              {loadingPlan === 'FULL_PLAN' ? 'მუშავდება...' : 'დაწყება'}
+              {currentPlan === 'FULL_PLAN' ? '✓ აქტიურია' : loadingPlan === 'FULL_PLAN' ? 'მუშავდება...' : 'დაწყება'}
             </button>
           </div>
 

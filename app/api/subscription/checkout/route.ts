@@ -15,6 +15,13 @@ export async function POST(req: Request) {
   const user = await prisma.user.findUnique({ where: { id: session.id } });
   if (!user) return NextResponse.json({ error: 'Not found' }, { status: 404 });
 
+  if (user.subscriptionStatus === plan && user.lsSubscriptionId) {
+    // Already has this exact plan active — buying it again would just start a fresh
+    // 7-day trial and cancel the running subscription, letting a paying customer
+    // reset their trial forever instead of ever being charged.
+    return NextResponse.json({ error: 'already_subscribed' }, { status: 400 });
+  }
+
   try {
     const url = await createCheckout({
       plan,
