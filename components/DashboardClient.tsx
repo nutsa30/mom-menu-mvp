@@ -1528,6 +1528,7 @@ export default function DashboardClient({ user }: { user: any }) {
     const young = activeChild.ageGroup === 'FROM_6' || activeChild.ageGroup === 'FROM_9';
     if (young && tab === 'today') setTab('firstfoods');
     if (!young && tab === 'firstfoods') setTab('today');
+    if (activeChild.ageGroup === 'FROM_6' && tab === 'nutrition') setTab('firstfoods');
   }, [activeChild?.id]);
 
   const onChildUpdate = (updated: any) => {
@@ -1554,13 +1555,16 @@ export default function DashboardClient({ user }: { user: any }) {
 
   const isFullPlan = user.subscriptionStatus === 'FULL_PLAN';
   const isYoungBaby = activeChild?.ageGroup === 'FROM_6' || activeChild?.ageGroup === 'FROM_9';
+  // At 6mo, feeding is still first-taste introduction — vitamin tracking isn't
+  // meaningful yet. It becomes relevant once solids become a real part of the diet.
+  const isNewborn = activeChild?.ageGroup === 'FROM_6';
 
   const tabs: { key: Tab; label: string }[] = [
     ...(isYoungBaby
       ? [{ key: 'firstfoods' as Tab, label: 'პირველი საკვები' }]
       : [{ key: 'today' as Tab, label: 'დღის გეგმა' }]
     ),
-    { key: 'nutrition', label: 'კვება' },
+    ...(isNewborn ? [] : [{ key: 'nutrition' as Tab, label: 'კვება' }]),
     ...(isFullPlan && !isYoungBaby ? [{ key: 'shopping' as Tab, label: 'საყიდლები' }] : []),
     { key: 'child', label: 'შვილი' },
     { key: 'settings', label: 'პარამეტრები' },
