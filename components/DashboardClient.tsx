@@ -522,27 +522,16 @@ function TodayTab({ child, allDishes, planStart, isFullPlan }: { child: any; all
 // ── Shopping List Tab ──────────────────────────────────────────────────────
 type IngItem = { display: string; amount: string };
 
-// Parse "12 ც" → {qty:12, unit:"ც"}, "×3" → {qty:3, unit:""}, null if complex/empty
-function parseAmount(amount: string): { qty: number; unit: string } | null {
-  if (!amount || amount.includes('+')) return null;
-  const xm = amount.match(/^×(\d+)$/);
-  if (xm) return { qty: parseInt(xm[1]), unit: '' };
-  const FRAC: Record<string, number> = { '½': 0.5, '¼': 0.25, '¾': 0.75, '⅓': 1/3, '⅔': 2/3 };
-  const m = amount.match(/^([½¼¾⅓⅔]|\d+\.?\d*)\s+(.+)$/);
-  if (m) return { qty: FRAC[m[1]] ?? parseFloat(m[1]), unit: m[2] };
-  return null;
-}
-
 function ShoppingListTab({ child, planStart }: { child: any; planStart: string }) {
   const STORE_KEY = child ? `shopping_${child.id}` : null;
 
   const [ingredients, setIngredients] = useState<IngItem[]>([]);
-  const [bought, setBought] = useState<Record<string, number>>({});
+  const [bought, setBought] = useState<Record<string, boolean>>({});
   const [loading, setLoading] = useState(false);
   const [generated, setGenerated] = useState(false);
   const [apiError, setApiError] = useState('');
 
-  const saveLocal = (ing: IngItem[], bt: Record<string, number>) => {
+  const saveLocal = (ing: IngItem[], bt: Record<string, boolean>) => {
     if (!STORE_KEY) return;
     localStorage.setItem(STORE_KEY, JSON.stringify({ ingredients: ing, bought: bt }));
   };
@@ -603,27 +592,15 @@ function ShoppingListTab({ child, planStart }: { child: any; planStart: string }
     saveLocal(ing, {});
   };
 
-  const adjust = (display: string, delta: number, max: number) => {
+  const toggle = (display: string) => {
     setBought(prev => {
-      const cur = prev[display] ?? 0;
-      const next = { ...prev, [display]: Math.max(0, delta > 0 ? Math.min(max, cur + delta) : cur + delta) };
+      const next = { ...prev, [display]: !prev[display] };
       saveLocal(ingredients, next);
       return next;
     });
   };
 
-  const toggleSimple = (display: string) => {
-    setBought(prev => {
-      const next = { ...prev, [display]: (prev[display] ?? 0) >= 1 ? 0 : 1 };
-      saveLocal(ingredients, next);
-      return next;
-    });
-  };
-
-  const doneCount = ingredients.filter(item => {
-    const p = parseAmount(item.amount);
-    return (bought[item.display] ?? 0) >= (p ? p.qty : 1);
-  }).length;
+  const doneCount = ingredients.filter(item => bought[item.display]).length;
 
   const clearBought = () => { setBought({}); saveLocal(ingredients, {}); };
 
@@ -679,10 +656,7 @@ function ShoppingListTab({ child, planStart }: { child: any; planStart: string }
 
             <div className="space-y-2">
               {ingredients.map((item) => {
-                const parsed = parseAmount(item.amount);
-                const boughtQty = bought[item.display] ?? 0;
-                const neededQty = parsed ? parsed.qty : 1;
-                const isDone = boughtQty >= neededQty;
+                const isDone = !!bought[item.display];
 
                 return (
                   <div key={item.display}
@@ -690,51 +664,18 @@ function ShoppingListTab({ child, planStart }: { child: any; planStart: string }
                       isDone ? 'bg-[#465940]/10 border border-[#465940]/30' : 'bg-[#465940] border border-transparent'
                     }`}>
 
-                    {/* Name – tap to +1 (quantified) or toggle (simple) */}
                     <button
                       className="flex-1 flex items-center gap-3 text-left min-w-0"
-                      onClick={() => parsed ? adjust(item.display, 1, neededQty) : toggleSimple(item.display)}>
-                      {!parsed && (
-                        <span className={`w-5 h-5 rounded-full border-2 flex-shrink-0 flex items-center justify-center transition ${
-                          isDone ? 'bg-[#465940] border-[#465940]' : 'border-[#FDFBF0]/60'
-                        }`}>
-                          {isDone && <svg width="10" height="10" viewBox="0 0 12 12" fill="none"><polyline points="2,6 5,9 10,3" stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/></svg>}
-                        </span>
-                      )}
+                      onClick={() => toggle(item.display)}>
+                      <span className={`w-5 h-5 rounded-full border-2 flex-shrink-0 flex items-center justify-center transition ${
+                        isDone ? 'bg-[#465940] border-[#465940]' : 'border-[#FDFBF0]/60'
+                      }`}>
+                        {isDone && <svg width="10" height="10" viewBox="0 0 12 12" fill="none"><polyline points="2,6 5,9 10,3" stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/></svg>}
+                      </span>
                       <span className={`text-sm font-medium truncate transition ${isDone ? 'line-through text-[#465940]/60' : 'text-[#FDFBF0]'}`}>
                         {item.display}
                       </span>
                     </button>
-
-                    {/* Stepper for quantified items */}
-                    {parsed ? (
-                      <div className="flex items-center gap-1.5 flex-shrink-0">
-                        <button onClick={() => adjust(item.display, -1, neededQty)}
-                          className={`w-7 h-7 rounded-full font-bold flex items-center justify-center transition text-base leading-none ${
-                            isDone ? 'bg-[#465940]/10 hover:bg-[#465940]/15 text-[#465940]/80' : 'bg-[#FDFBF0]/20 hover:bg-[#FDFBF0]/30 text-[#FDFBF0]'
-                          }`}>
-                          −
-                        </button>
-                        <span className={`text-xs font-bold text-center leading-tight ${isDone ? 'text-[#465940]' : 'text-[#FDFBF0]'}`}
-                          style={{ minWidth: '52px' }}>
-                          {boughtQty} / {parsed.qty}{parsed.unit ? ` ${parsed.unit}` : ''}
-                        </span>
-                        <button onClick={() => adjust(item.display, 1, neededQty)}
-                          className={`w-7 h-7 rounded-full text-[#FDFBF0] font-bold flex items-center justify-center transition text-base leading-none ${
-                            isDone ? 'bg-[#465940] hover:bg-[#465940]/80' : 'bg-[#465940] hover:bg-[#465940]'
-                          }`}>
-                          +
-                        </button>
-                      </div>
-                    ) : (
-                      item.amount && (
-                        <span className={`text-xs font-bold px-2 py-0.5 rounded-full flex-shrink-0 ${
-                          isDone ? 'bg-[#465940]/10 text-[#465940]/60' : 'bg-[#465940] text-[#465940]'
-                        }`}>
-                          {item.amount}
-                        </span>
-                      )
-                    )}
                   </div>
                 );
               })}
