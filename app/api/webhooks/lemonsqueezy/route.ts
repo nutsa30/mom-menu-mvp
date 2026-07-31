@@ -51,7 +51,9 @@ export async function POST(req: Request) {
   const status: string = attrs.status;
   const isActive = ACTIVE_STATUSES.has(status);
   const previousLsSubscriptionId = user.lsSubscriptionId;
-  const isNewSubscription = lsSubscriptionId !== previousLsSubscriptionId;
+  const previousPlan = user.subscriptionStatus;
+  const isNewSubscriptionRecord = lsSubscriptionId !== previousLsSubscriptionId;
+  const planChanged = isActive && !!plan && plan !== previousPlan;
 
   const data: Record<string, any> = {
     lsSubscriptionId,
@@ -73,21 +75,24 @@ export async function POST(req: Request) {
 
   await prisma.user.update({ where: { id: user.id }, data });
 
-  if (isActive && plan && isNewSubscription) {
-    // Switching plans (e.g. Recipe Plan -> Full Plan) buys a second, separate Lemon
-    // Squeezy subscription — cancel the old one so the customer isn't billed for both.
-    if (previousLsSubscriptionId && previousLsSubscriptionId !== lsSubscriptionId) {
-      try {
-        await cancelSubscription(previousLsSubscriptionId);
-      } catch (err: any) {
-        console.error('Failed to cancel previous Lemon Squeezy subscription:', previousLsSubscriptionId, err.message);
-      }
+  // Switching plans via a fresh checkout buys a second, separate Lemon Squeezy
+  // subscription — cancel the old one so the customer isn't billed for both.
+  // (Plan swaps done through the Lemon Squeezy customer portal update the same
+  // subscription in place, so previousLsSubscriptionId === lsSubscriptionId there
+  // and this is a no-op.)
+  if (isActive && plan && isNewSubscriptionRecord && previousLsSubscriptionId && previousLsSubscriptionId !== lsSubscriptionId) {
+    try {
+      await cancelSubscription(previousLsSubscriptionId);
+    } catch (err: any) {
+      console.error('Failed to cancel previous Lemon Squeezy subscription:', previousLsSubscriptionId, err.message);
     }
+  }
 
-    const price = PLAN_PRICES[plan];
+  if (planChanged) {
+    const price = PLAN_PRICES[plan!];
     const start = new Date();
     const end = data.subscriptionRenewsAt ?? new Date(start.getTime() + 30 * 24 * 60 * 60 * 1000);
-    sendSubscriptionConfirmationEmail(user.email, user.name, PLAN_LABELS[plan], price, start, end).catch(() => {});
+    sendSubscriptionConfirmationEmail(user.email, user.name, PLAN_LABELS[plan!], price, start, end).catch(() => {});
   }
 
   return NextResponse.json({ received: true });
