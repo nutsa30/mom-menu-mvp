@@ -64,6 +64,9 @@ model User {
   emailVerified          Boolean            @default(false)
   emailVerifyToken       String?            @unique
 
+  pendingEmail           String?
+  pendingEmailToken      String?            @unique
+
   promoCodeId            String?
   promoCode              PromoCode?         @relation(fields: [promoCodeId], references: [id], onDelete: SetNull)
 

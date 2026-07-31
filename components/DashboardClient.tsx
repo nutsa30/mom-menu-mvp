@@ -10,43 +10,11 @@ function localToday(): string {
   return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
 }
 
-type Tab = 'today' | 'firstfoods' | 'nutrition' | 'shopping' | 'child' | 'settings';
+type Tab = 'today' | 'firstfoods' | 'shopping' | 'child' | 'settings';
 
 const MEAL_ORDER = ['BREAKFAST', 'SNACK', 'LUNCH', 'DINNER'] as const;
 const MEAL_LABEL: Record<string, string> = { BREAKFAST: 'საუზმე', SNACK: 'სნექი', LUNCH: 'სადილი', DINNER: 'ვახშამი' };
 const KA_DAYS_SHORT = ['კვ', 'ორშ', 'სამშ', 'ოთხ', 'ხუთ', 'პარ', 'შაბ'];
-
-const NUTRIENT_LABELS: Record<string, string> = {
-  calories: 'კალორიები',
-  proteinGrams: 'ცილა',
-  carbsGrams: 'ნახშირწყლები',
-  fatGrams: 'ცხიმი',
-  fiberGrams: 'ბოჭკო',
-  calciumMg: 'კალციუმი',
-  ironMg: 'რკინა',
-  zincMg: 'თუთია',
-  potassiumMg: 'კალიუმი',
-  magnesiumMg: 'მაგნიუმი',
-  phosphorusMg: 'ფოსფორი',
-  sodiumMg: 'ნატრიუმი',
-  vitaminAmcg: 'A ვიტამინი',
-  vitaminCmg: 'C ვიტამინი',
-  vitaminDmcg: 'D ვიტამინი',
-  vitaminEmg: 'E ვიტამინი',
-  vitaminKmcg: 'K ვიტამინი',
-  vitaminB6mg: 'B6 ვიტამინი',
-  vitaminB12mcg: 'B12 ვიტამინი',
-  folateMcg: 'ფოლატი',
-};
-const NUTRIENT_UNIT: Record<string, string> = {
-  calories: 'kcal',
-  proteinGrams: 'g', carbsGrams: 'g', fatGrams: 'g', fiberGrams: 'g',
-  zincMg: 'mg', potassiumMg: 'mg', magnesiumMg: 'mg', phosphorusMg: 'mg',
-  sodiumMg: 'mg', calciumMg: 'mg', ironMg: 'mg', vitaminCmg: 'mg',
-  vitaminEmg: 'mg', vitaminB6mg: 'mg',
-  vitaminAmcg: 'mcg', vitaminDmcg: 'mcg', vitaminKmcg: 'mcg',
-  vitaminB12mcg: 'mcg', folateMcg: 'mcg',
-};
 
 const card = 'bg-[#FDFBF0] rounded-2xl border border-[#465940]/10 shadow-sm';
 const btn = 'px-4 py-2 rounded-full text-sm font-bold transition';
@@ -758,182 +726,6 @@ function ShoppingListTab({ child, planStart }: { child: any; planStart: string }
   );
 }
 
-// WHO/AAP daily requirements by ageGroup
-const AGE_REQUIREMENTS: Record<string, { label: string; values: { nutrient: string; amount: string; note?: string }[] }> = {
-  FROM_6: {
-    label: '6–8 თვე',
-    values: [
-      { nutrient: 'კალორია', amount: '600–800 kcal' },
-      { nutrient: 'რკინა', amount: '11 მგ', note: 'ყველაზე მნიშვნელოვანი' },
-      { nutrient: 'ცილა', amount: '9.1 გ' },
-      { nutrient: 'კალციუმი', amount: '200 მგ' },
-      { nutrient: 'D ვიტამინი', amount: '10 მკგ' },
-      { nutrient: 'C ვიტამინი', amount: '40 მგ' },
-      { nutrient: 'A ვიტამინი', amount: '400 მკგ' },
-      { nutrient: 'ბოჭკო', amount: '—', note: 'ჯერ არ სჭირდება' },
-    ],
-  },
-  FROM_9: {
-    label: '9–11 თვე',
-    values: [
-      { nutrient: 'კალორია', amount: '700–900 kcal' },
-      { nutrient: 'რკინა', amount: '11 მგ', note: 'კვლავ კრიტიკული' },
-      { nutrient: 'ცილა', amount: '11 გ' },
-      { nutrient: 'კალციუმი', amount: '260 მგ' },
-      { nutrient: 'D ვიტამინი', amount: '10 მკგ' },
-      { nutrient: 'C ვიტამინი', amount: '50 მგ' },
-      { nutrient: 'A ვიტამინი', amount: '500 მკგ' },
-      { nutrient: 'ომეგა-3', amount: '500 მგ' },
-    ],
-  },
-  FROM_12: {
-    label: '1–2 წელი',
-    values: [
-      { nutrient: 'კალორია', amount: '1000–1400 kcal' },
-      { nutrient: 'რკინა', amount: '7 მგ' },
-      { nutrient: 'ცილა', amount: '13 გ' },
-      { nutrient: 'კალციუმი', amount: '700 მგ' },
-      { nutrient: 'D ვიტამინი', amount: '15 მკგ' },
-      { nutrient: 'C ვიტამინი', amount: '15 მგ' },
-      { nutrient: 'A ვიტამინი', amount: '300 მკგ' },
-      { nutrient: 'ბოჭკო', amount: '19 გ' },
-    ],
-  },
-  FROM_24: {
-    label: '2–3 წელი',
-    values: [
-      { nutrient: 'კალორია', amount: '1000–1400 kcal' },
-      { nutrient: 'რკინა', amount: '7 მგ' },
-      { nutrient: 'ცილა', amount: '13 გ' },
-      { nutrient: 'კალციუმი', amount: '700 მგ' },
-      { nutrient: 'D ვიტამინი', amount: '15 მკგ' },
-      { nutrient: 'C ვიტამინი', amount: '15 მგ' },
-      { nutrient: 'A ვიტამინი', amount: '300 მკგ' },
-      { nutrient: 'ბოჭკო', amount: '19 გ' },
-    ],
-  },
-};
-
-// ── Nutrition Tab ────────────────────────────────────────────────────────────
-function NutritionTab({ child }: { child: any }) {
-  const [data, setData] = useState<any>(null);
-  const [days, setDays] = useState(7);
-  const [loading, setLoading] = useState(false);
-
-  const fetch_ = useCallback(async () => {
-    if (!child) return;
-    setLoading(true);
-    const res = await fetch(`/api/nutrition?childId=${child.id}&days=${days}`);
-    const d = await res.json();
-    setData(d);
-    setLoading(false);
-  }, [child?.id, days]);
-
-  useEffect(() => { fetch_(); }, [fetch_]);
-
-  if (!child) return (
-    <div className={`${card} p-10 text-center`}>
-      <p className="text-[#465940]/60 text-sm">შვილის მიმატება "შვილი" tab-ში.</p>
-    </div>
-  );
-
-  const deficient = data?.analysis?.filter((a: any) => a.pct < 70) ?? [];
-
-  const uniqueDays = data?.uniqueDays ?? 0;
-
-  return (
-    <div className="space-y-5">
-      <div className={`${card} p-5`}>
-        <div className="flex items-center justify-between mb-3">
-          <h2 className="text-xl font-black text-[#465940]">კვებითი ბალანსი</h2>
-          <div className="flex gap-2">
-            {[7, 14, 30].map((d) => (
-              <button key={d} onClick={() => setDays(d)}
-                className={`px-3 py-1.5 rounded-full text-xs font-bold transition ${days === d ? 'bg-[#465940] text-[#FDFBF0]' : 'bg-[#465940]/10 text-[#465940]/80 hover:bg-[#465940]/15'}`}>
-                {d} დღე
-              </button>
-            ))}
-          </div>
-        </div>
-        <p className="text-xs text-[#465940]/60 mt-1">{child.name} · {uniqueDays} / {days} დღე შევსებული</p>
-      </div>
-
-      {deficient.length > 0 && uniqueDays > 0 && (
-        <div className="bg-[#FDFBF0]/10 border border-[#FDFBF0]/20 rounded-2xl p-5">
-          <p className="font-bold text-[#FDFBF0] mb-2">ნაკლები {days} დღეში</p>
-          <div className="space-y-1">
-            {deficient.map((a: any) => (
-              <p key={a.key} className="text-sm text-[#FDFBF0]/80">
-                • <strong>{NUTRIENT_LABELS[a.key]}</strong>: {a.consumed} / {a.recommended} {NUTRIENT_UNIT[a.key]} ({a.pct}%)
-              </p>
-            ))}
-          </div>
-        </div>
-      )}
-
-      {loading ? (
-        <div className={`${card} h-64 animate-pulse`} />
-      ) : data?.analysis ? (
-        <div className={`${card} p-5 space-y-4`}>
-          {data.analysis.map((a: any) => (
-            <div key={a.key}>
-              <div className="flex items-center justify-between mb-1">
-                <span className="text-sm font-semibold text-[#465940]">{NUTRIENT_LABELS[a.key]}</span>
-                <span className="text-xs text-[#465940]/70">{a.consumed} / {a.recommended} {NUTRIENT_UNIT[a.key]}</span>
-              </div>
-              <div className="h-2.5 bg-[#465940]/10 rounded-full overflow-hidden">
-                <div
-                  className={`h-full rounded-full transition-all duration-500 ${a.pct >= 100 ? 'bg-[#465940]' : a.pct >= 70 ? 'bg-[#465940]' : 'bg-[#FDFBF0]/40'}`}
-                  style={{ width: `${Math.min(100, a.pct)}%` }}
-                />
-              </div>
-              <p className="text-xs text-[#465940]/60 mt-0.5 text-right">{a.pct}%</p>
-            </div>
-          ))}
-        </div>
-      ) : null}
-
-      {uniqueDays === 0 && !loading && (
-        <div className={`${card} p-10 text-center`}>
-          <p className="text-2xl mb-3"></p>
-          <p className="font-bold text-[#465940] mb-1">ჯერ ჩანაწერი არ არის</p>
-          <p className="text-sm text-[#465940]/60">მონიშნე "დღის გეგმა" tab-ში "ჭამა" ერთხელ მაინც რომ გამოჩნდეს კვებითი ბალანსი.</p>
-        </div>
-      )}
-
-      {/* Age-specific requirements */}
-      {AGE_REQUIREMENTS[child.ageGroup] && (
-        <div className={`${card} p-5`}>
-          <div className="flex items-center gap-2 mb-4">
-            <span className="text-xl"></span>
-            <div>
-              <h3 className="font-black text-[#465940] text-sm">დღიური ნორმა — {AGE_REQUIREMENTS[child.ageGroup].label}</h3>
-              <p className="text-[10px] text-[#465940]/60">WHO / AAP რეკომენდაციების მიხედვით</p>
-            </div>
-          </div>
-          <div className="grid grid-cols-2 gap-2">
-            {AGE_REQUIREMENTS[child.ageGroup].values.map(v => (
-              <div key={v.nutrient} className="bg-[#465940]/5 rounded-xl p-3">
-                <p className="text-xs font-bold text-[#465940]">{v.nutrient}</p>
-                <p className="text-sm font-black text-[#465940] mt-0.5">{v.amount}</p>
-                {v.note && <p className="text-[10px] text-[#465940]/60 mt-0.5">{v.note}</p>}
-              </div>
-            ))}
-          </div>
-          {child.milkType && child.milkType !== 'NONE' && !child.milkStopped && (
-            <div className="mt-3 p-3 rounded-xl bg-[#465940]/10 flex items-center gap-2">
-              <span></span>
-              <p className="text-xs text-[#465940]/80 font-medium">
-                {child.milkType === 'BREAST' ? 'დედის რძე' : child.milkType === 'FORMULA' ? 'ფორმულა' : 'დედის რძე + ფორმულა'} — ავსებს ვიტამინების ნაწილს
-              </p>
-            </div>
-          )}
-        </div>
-      )}
-    </div>
-  );
-}
-
 // ── Tag Input component ──────────────────────────────────────────────────────
 function TagInput({ tags, onChange, color }: { tags: string[]; onChange: (t: string[]) => void; color: string }) {
   const [input, setInput] = useState('');
@@ -1634,7 +1426,6 @@ export default function DashboardClient({ user }: { user: any }) {
       ? [{ key: 'firstfoods' as Tab, label: 'პირველი საკვები' }]
       : [{ key: 'today' as Tab, label: 'დღის გეგმა' }]
     ),
-    { key: 'nutrition', label: 'კვება' },
     ...(isFullPlan && !isYoungBaby ? [{ key: 'shopping' as Tab, label: 'საყიდლები' }] : []),
     { key: 'child', label: 'შვილი' },
     { key: 'settings', label: 'პარამეტრები' },
@@ -1700,7 +1491,6 @@ export default function DashboardClient({ user }: { user: any }) {
       <main className="flex-1 p-4 sm:p-6 max-w-4xl mx-auto w-full">
         {tab === 'firstfoods' && activeChild && <FirstFoodsTab child={activeChild} />}
         {tab === 'today' && <TodayTab child={activeChild} allDishes={allDishes} planStart={planStart} isFullPlan={isFullPlan} />}
-        {tab === 'nutrition' && <NutritionTab child={activeChild} />}
         {tab === 'shopping' && <ShoppingListTab child={activeChild} planStart={planStart} />}
         {tab === 'child' && <ChildTab children={children} userId={user.id} onUpdate={onChildUpdate} onDelete={onChildDelete} />}
         {tab === 'settings' && <SettingsTab user={user} />}

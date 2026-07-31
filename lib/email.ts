@@ -115,6 +115,14 @@ export const TEMPLATE_DEFAULTS: Record<string, { subject: string; body: string }
 <p style="margin:0;font-size:13px;color:#888;text-align:center;">ბმული მოქმედებს <strong>24 საათის</strong> განმავლობაში.<br>თუ ეს მოთხოვნა თქვენი არ არის, უბრალოდ უგულებელყავით ეს მეილი.</p>`,
   },
 
+  email_change: {
+    subject: "MomMenu — დაადასტურეთ ახალი ელფოსტა 📧",
+    body: `<h2 style="margin:0 0 16px;font-size:22px;font-weight:800;">გამარჯობა, {{name}}! 👋</h2>
+<p style="margin:0 0 14px;font-size:15px;line-height:1.7;">მიღებულია მოთხოვნა თქვენი MomMenu ანგარიშის ელფოსტის ამ მისამართზე შესაცვლელად. დასადასტურებლად დააჭირეთ ღილაკს — შეცვლა ძალაში შევა მხოლოდ დადასტურების შემდეგ.</p>
+<div style="text-align:center;margin:28px 0;"><a href="{{link}}" style="display:inline-block;background:#465940;color:#FDFBF0;padding:14px 36px;border-radius:50px;text-decoration:none;font-weight:700;font-size:15px;font-family:Arial,sans-serif;">ელფოსტის დადასტურება →</a></div>
+<p style="margin:0;font-size:13px;color:#888;text-align:center;">თუ ეს მოთხოვნა თქვენი არ არის, უბრალოდ უგულებელყავით ეს მეილი — თქვენი ძველი ელფოსტა უცვლელი დარჩება.</p>`,
+  },
+
   new_blog: {
     subject: "📝 MomMenu-ზე ახალი სტატია გამოქვეყნდა",
     body: `<h2 style="margin:0 0 16px;font-size:22px;font-weight:800;">📝 ახალი სტატია გამოქვეყნდა</h2>
@@ -139,6 +147,15 @@ async function getTemplate(key: string): Promise<{ subject: string; body: string
 export async function sendVerificationEmail(to: string, name: string, token: string) {
   const link = `${process.env.NEXT_PUBLIC_APP_URL}/api/auth/verify-email?token=${token}`;
   const { subject, body } = await getTemplate('email_verify');
+  const html = layout(body.replace(/\{\{name\}\}/g, name).replace(/\{\{link\}\}/g, link));
+  await resend.emails.send({ from: FROM, to, subject, html });
+}
+
+// ─── Email Change Confirmation ────────────────────────────────────────────────
+
+export async function sendEmailChangeConfirmation(to: string, name: string, token: string) {
+  const link = `${process.env.NEXT_PUBLIC_APP_URL}/api/auth/confirm-email-change?token=${token}`;
+  const { subject, body } = await getTemplate('email_change');
   const html = layout(body.replace(/\{\{name\}\}/g, name).replace(/\{\{link\}\}/g, link));
   await resend.emails.send({ from: FROM, to, subject, html });
 }

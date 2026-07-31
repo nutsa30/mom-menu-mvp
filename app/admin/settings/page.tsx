@@ -54,6 +54,7 @@ export default function AdminSettings() {
         data.error === 'wrong_password' ? d.wrongPassword :
         data.error === 'email_taken' ? 'ეს ელ-ფოსტა უკვე გამოყენებულია' :
         data.error === 'invalid_email' ? 'ელ-ფოსტის ფორმატი არასწორია' :
+        data.error === 'same_email' ? 'ეს უკვე თქვენი ელ-ფოსტაა' :
         d.errorTryAgain;
       setEmailError(msg); setEmailStatus('error');
     } else {
@@ -70,9 +71,15 @@ export default function AdminSettings() {
       {/* Email change */}
       <div className="bg-[#FDFBF0] rounded-2xl border border-[#465940]/10 shadow-sm p-8 mb-6">
         <h2 className="text-lg font-bold text-[#465940] mb-1">ელ-ფოსტის შეცვლა</h2>
-        <p className="text-sm text-[#465940]/60 mb-6">შეიყვანე ახალი ელ-ფოსტა და დაადასტურე მიმდინარე პაროლით</p>
+        <p className="text-sm text-[#465940]/60 mb-6">შეიყვანე ახალი ელ-ფოსტა და დაადასტურე მიმდინარე პაროლით. შეცვლა ძალაში შევა მხოლოდ მას შემდეგ, რაც ახალ მისამართზე მიღებულ ბმულს დაადასტურებ.</p>
 
         {emailStatus === 'success' && (
+          <div className="mb-5 rounded-xl bg-[#465940]/10 px-4 py-3 text-sm font-semibold text-[#465940]">
+            დადასტურების ბმული გაიგზავნა ახალ ელ-ფოსტაზე. გახსენი და დააჭირე ბმულს — მანამდე ძველი ელ-ფოსტა აქტიური რჩება.
+          </div>
+        )}
+
+        {searchParams.get('emailChanged') === '1' && (
           <div className="mb-5 rounded-xl bg-[#465940]/10 px-4 py-3 text-sm font-semibold text-[#465940]">
             ელ-ფოსტა წარმატებით შეიცვალა
           </div>

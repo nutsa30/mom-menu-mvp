@@ -20,14 +20,19 @@ const UNIT_CANON: Record<string, string> = {
   'მლ': 'მლ', 'მილილიტრი': 'მლ',
   'ლ': 'ლ', 'ლიტრი': 'ლ',
   'ჭიქა': 'ჭ', 'ჭ': 'ჭ',
-  'სუფ.კ': 'სკ', 'სუფ/კ': 'სკ', 'სტბ': 'სკ',
+  'სუფ.კ': 'სკ', 'სუფ/კ': 'სკ', 'სტბ': 'სკ', 'ს/კ': 'სკ', 'ს.კ': 'სკ',
   'ჩ.კ': 'ჩკ', 'ჩ/კ': 'ჩკ', 'ჩ': 'ჩკ',
   'ცალი': 'ც', 'ც': 'ც', 'ც.': 'ც',
+  'ნაჭერი': 'ნაჭ', 'ნაჭ': 'ნაჭ',
 };
 const UNIT_DISPLAY: Record<string, string> = {
   'გ': 'გ', 'კგ': 'კგ', 'მლ': 'მლ', 'ლ': 'ლ',
-  'ჭ': 'ჭიქა', 'სკ': 'სუფ.კ', 'ჩკ': 'ჩ.კ', 'ც': 'ც',
+  'ჭ': 'ჭიქა', 'სკ': 'სუფ.კ', 'ჩკ': 'ჩ.კ', 'ც': 'ც', 'ნაჭ': 'ნაჭერი',
 };
+
+// Descriptive words that precede an ingredient name but aren't part of its identity
+// e.g. "მწიფე ბანანი" (ripe banana) should still be grouped with plain "ბანანი"
+const LEADING_DESCRIPTORS = ['მწიფე', 'რბილი'];
 
 function fmtNum(n: number): string {
   if (Number.isInteger(n)) return `${n}`;
@@ -37,43 +42,70 @@ function fmtNum(n: number): string {
   return whole > 0 ? `${whole}${fracStr}` : fracStr;
 }
 
+function parseNum(token: string): number {
+  if (FRAC[token] !== undefined) return FRAC[token];
+  if (token.includes('/')) {
+    const [n, d] = token.split('/').map((t) => parseFloat(t));
+    return d ? n / d : (n || 0);
+  }
+  return parseFloat(token) || 0;
+}
+
+const NUM_TOKEN = '[\\d.\\/½¼¾⅓⅔]+';
+
+function normalizeName(name: string): string {
+  // Drop trailing clarifications like "ვაშლი, გაფცქვნილი"
+  let n = name.split(',')[0].trim();
+  for (const d of LEADING_DESCRIPTORS) {
+    if (n.startsWith(d + ' ')) { n = n.slice(d.length + 1).trim(); break; }
+  }
+  return n;
+}
+
+// Data format is consistently "სახელი - რაოდენობა", e.g. "ბანანი - 1/2 ცალი",
+// "ბროკოლი - 80-100 გ", "ბანანი - 1 მწიფე". Quantity comes AFTER the name, not before.
 function parseIng(raw: string): { key: string; display: string; qty: number; unit: string } {
   // Strip parenthetical notes  e.g. "(სურვილისამებრ)"
   const s = raw.trim().replace(/\s*\([^)]*\)/g, '').trim();
 
-  // Try: numeric/fraction + optional unit + rest
-  const numRe = /^([½¼¾⅓⅔]|\d+\.?\d*)\s+(\S+)\s+(.+)$/;
-  const numSimple = /^([½¼¾⅓⅔]|\d+\.?\d*)\s+(.+)$/;
+  const dashIdx = s.indexOf(' - ');
+  const namePart = normalizeName(dashIdx === -1 ? s : s.slice(0, dashIdx));
+  const amountPart = dashIdx === -1 ? '' : s.slice(dashIdx + 3).trim();
 
-  let m = s.match(numRe);
+  const key = namePart.toLowerCase();
+  const display = namePart;
+
+  if (!amountPart) return { key, display, qty: 0, unit: '' };
+
+  const rangeRe = new RegExp(`^(${NUM_TOKEN})\\s*-\\s*(${NUM_TOKEN})\\s*(\\S*)$`);
+  const singleRe = new RegExp(`^(${NUM_TOKEN})\\s*(\\S*)$`);
+
+  let m = amountPart.match(rangeRe);
   if (m) {
-    const qty = FRAC[m[1]] ?? parseFloat(m[1]);
-    const maybeUnit = m[2].toLowerCase().replace(/\.+$/, '');
-    if (UNIT_CANON[maybeUnit] !== undefined) {
-      const display = m[3];
-      return { key: display.toLowerCase(), display, qty, unit: UNIT_CANON[maybeUnit] };
-    }
-    // not a unit — include m[2] in the name
-    const display = `${m[2]} ${m[3]}`;
-    return { key: display.toLowerCase(), display, qty, unit: '' };
+    const qty = (parseNum(m[1]) + parseNum(m[2])) / 2;
+    const unitTok = m[3].toLowerCase().replace(/\.+$/, '');
+    const unit = unitTok ? (UNIT_CANON[unitTok] ?? 'ც') : 'ც';
+    return { key, display, qty, unit };
   }
 
-  m = s.match(numSimple);
+  m = amountPart.match(singleRe);
   if (m) {
-    const qty = FRAC[m[1]] ?? parseFloat(m[1]);
-    return { key: m[2].toLowerCase(), display: m[2], qty, unit: '' };
+    const qty = parseNum(m[1]);
+    const unitTok = m[2].toLowerCase().replace(/\.+$/, '');
+    const unit = unitTok ? (UNIT_CANON[unitTok] ?? 'ც') : 'ც';
+    return { key, display, qty, unit };
   }
 
-  // Try Georgian number words at start
-  const lc = s.toLowerCase();
+  if (amountPart.toLowerCase().startsWith('ნახევარი')) return { key, display, qty: 0.5, unit: 'ც' };
+
+  // Try Georgian number words at start (legacy free-text ingredients)
+  const lc = amountPart.toLowerCase();
   for (const [word, val] of GEO_NUMS) {
-    if (lc.startsWith(word + ' ')) {
-      const display = s.slice(word.length + 1).trim();
-      return { key: display.toLowerCase(), display, qty: val, unit: '' };
-    }
+    if (lc === word || lc.startsWith(word + ' ')) return { key, display, qty: val, unit: 'ც' };
   }
 
-  return { key: lc, display: s, qty: 0, unit: '' };
+  // No parseable quantity (e.g. "საჭიროებისამებრ" / "სურვილისამებრ")
+  return { key, display, qty: 0, unit: '' };
 }
 
 interface IngredientItem {
