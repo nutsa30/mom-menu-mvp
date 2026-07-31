@@ -3,25 +3,25 @@
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
 
-const VITAMINS: { key: string; label: string; emoji: string; unit: string }[] = [
-  { key: 'vitaminAmcg',   label: 'A ვიტამინი',  emoji: '👁️',  unit: 'mcg' },
-  { key: 'vitaminCmg',    label: 'C ვიტამინი',  emoji: '🍊',  unit: 'მგ'  },
-  { key: 'vitaminDmcg',   label: 'D ვიტამინი',  emoji: '☀️',  unit: 'mcg' },
-  { key: 'vitaminEmg',    label: 'E ვიტამინი',  emoji: '🌿',  unit: 'მგ'  },
-  { key: 'vitaminKmcg',   label: 'K ვიტამინი',  emoji: '🩸',  unit: 'mcg' },
-  { key: 'vitaminB6mg',   label: 'B6 ვიტამინი', emoji: '🧠',  unit: 'მგ'  },
-  { key: 'vitaminB12mcg', label: 'B12 ვიტამინი',emoji: '💉',  unit: 'mcg' },
-  { key: 'folateMcg',     label: 'ფოლატი',       emoji: '🌱',  unit: 'mcg' },
+const VITAMINS: { key: string; label: string; unit: string }[] = [
+  { key: 'vitaminAmcg',   label: 'A ვიტამინი',  unit: 'mcg' },
+  { key: 'vitaminCmg',    label: 'C ვიტამინი',  unit: 'მგ'  },
+  { key: 'vitaminDmcg',   label: 'D ვიტამინი',  unit: 'mcg' },
+  { key: 'vitaminEmg',    label: 'E ვიტამინი',  unit: 'მგ'  },
+  { key: 'vitaminKmcg',   label: 'K ვიტამინი',  unit: 'mcg' },
+  { key: 'vitaminB6mg',   label: 'B6 ვიტამინი', unit: 'მგ'  },
+  { key: 'vitaminB12mcg', label: 'B12 ვიტამინი',unit: 'mcg' },
+  { key: 'folateMcg',     label: 'ფოლატი',       unit: 'mcg' },
 ];
 
-const MINERALS: { key: string; label: string; emoji: string; unit: string }[] = [
-  { key: 'ironMg',        label: 'რკინა',        emoji: '⚡',  unit: 'მგ'  },
-  { key: 'calciumMg',     label: 'კალციუმი',     emoji: '🦷',  unit: 'მგ'  },
-  { key: 'zincMg',        label: 'თუთია',        emoji: '🛡️',  unit: 'მგ'  },
-  { key: 'potassiumMg',   label: 'კალიუმი',      emoji: '❤️',  unit: 'მგ'  },
-  { key: 'magnesiumMg',   label: 'მაგნიუმი',     emoji: '💪',  unit: 'მგ'  },
-  { key: 'omega3Mg',      label: 'ომეგა-3',      emoji: '🐟',  unit: 'მგ'  },
-  { key: 'fiberGrams',    label: 'ბოჭკო',        emoji: '🌾',  unit: 'გ'   },
+const MINERALS: { key: string; label: string; unit: string }[] = [
+  { key: 'ironMg',        label: 'რკინა',        unit: 'მგ'  },
+  { key: 'calciumMg',     label: 'კალციუმი',     unit: 'მგ'  },
+  { key: 'zincMg',        label: 'თუთია',        unit: 'მგ'  },
+  { key: 'potassiumMg',   label: 'კალიუმი',      unit: 'მგ'  },
+  { key: 'magnesiumMg',   label: 'მაგნიუმი',     unit: 'მგ'  },
+  { key: 'omega3Mg',      label: 'ომეგა-3',      unit: 'მგ'  },
+  { key: 'fiberGrams',    label: 'ბოჭკო',        unit: 'გ'   },
 ];
 
 export default function MealDetailClient({ dish }: { dish: any }) {
@@ -50,7 +50,7 @@ export default function MealDetailClient({ dish }: { dish: any }) {
               <img src={dish.imageUrl} alt={dish.titleKa} className="w-full h-[420px] object-cover" />
             )}
             <div className="p-10 text-center">
-              <div className="w-24 h-24 rounded-full bg-[#465940] flex items-center justify-center text-5xl mx-auto mb-6">🔒</div>
+              <div className="w-24 h-24 rounded-full bg-[#465940] flex items-center justify-center text-5xl mx-auto mb-6"></div>
               <h1 className="text-4xl font-bold mb-4 text-[#465940]">რეცეპტი დაბლოკილია</h1>
               <p className="text-[#465940]/80 text-lg mb-8 leading-8">რეცეპტის სანახავად საჭიროა 15₾ ან 30₾ პაკეტი.</p>
               <Link href="/subscription" className="inline-flex items-center justify-center rounded-full bg-[#465940] px-8 py-4 font-semibold text-[#FDFBF0] shadow-lg hover:scale-105 transition">
@@ -160,8 +160,7 @@ export default function MealDetailClient({ dish }: { dish: any }) {
                     <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-2">
                       {presentVitamins.map(v => (
                         <div key={v.key} className="bg-[#FDFBF0]/10 rounded-2xl p-3">
-                          <span className="text-xl">{v.emoji}</span>
-                          <p className="text-[#FDFBF0] font-bold text-sm mt-1">{v.label}</p>
+                          <p className="text-[#FDFBF0] font-bold text-sm">{v.label}</p>
                           <p className="text-[#FDFBF0]/80 text-xs font-mono mt-1">
                             {dish[v.key]} {v.unit}
                           </p>
@@ -177,8 +176,7 @@ export default function MealDetailClient({ dish }: { dish: any }) {
                     <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-2">
                       {presentMinerals.map(m => (
                         <div key={m.key} className="bg-[#FDFBF0]/10 rounded-2xl p-3">
-                          <span className="text-xl">{m.emoji}</span>
-                          <p className="text-[#FDFBF0] font-bold text-sm mt-1">{m.label}</p>
+                          <p className="text-[#FDFBF0] font-bold text-sm">{m.label}</p>
                           <p className="text-[#FDFBF0]/80 text-xs font-mono mt-1">
                             {dish[m.key]} {m.unit}
                           </p>

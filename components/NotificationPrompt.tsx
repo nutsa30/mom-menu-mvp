@@ -115,29 +115,12 @@ export default function NotificationPrompt() {
       </button>
 
       {/* Header */}
-      <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', marginBottom: '1rem' }}>
-        <div
-          style={{
-            width: 44,
-            height: 44,
-            background: '#465940',
-            borderRadius: '12px',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            fontSize: '1.4rem',
-            flexShrink: 0,
-          }}
-        >
-          🔔
+      <div style={{ marginBottom: '1rem' }}>
+        <div style={{ fontWeight: 900, color: '#465940', fontSize: '0.95rem', lineHeight: 1.2 }}>
+          ყოველდღიური შეხსენება
         </div>
-        <div>
-          <div style={{ fontWeight: 900, color: '#465940', fontSize: '0.95rem', lineHeight: 1.2 }}>
-            ყოველდღიური შეხსენება
-          </div>
-          <div style={{ fontSize: '0.73rem', color: '#465940', opacity: 0.55, marginTop: '0.15rem' }}>
-            MomMenu — კვების გეგმა
-          </div>
+        <div style={{ fontSize: '0.73rem', color: '#465940', opacity: 0.55, marginTop: '0.15rem' }}>
+          MomMenu — კვების გეგმა
         </div>
       </div>
 
@@ -148,10 +131,10 @@ export default function NotificationPrompt() {
       {/* Benefit list */}
       <ul style={{ listStyle: 'none', padding: 0, margin: '0 0 1.2rem', display: 'flex', flexDirection: 'column', gap: '0.3rem' }}>
         {[
-          '🍽️  ყოველდღიური კვების შეხსენება',
-          '📖  ახალი რეცეპტები და სტატიები',
-          '🛒  საყიდლების სიის შეხსენება',
-          '💌  გამოწერის სიახლეები',
+          'ყოველდღიური კვების შეხსენება',
+          'ახალი რეცეპტები და სტატიები',
+          'საყიდლების სიის შეხსენება',
+          'გამოწერის სიახლეები',
         ].map((item) => (
           <li key={item} style={{ fontSize: '0.8rem', color: '#465940', opacity: 0.8 }}>
             {item}

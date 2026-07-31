@@ -70,8 +70,6 @@ export default function PWAInstallButton({ ka }: { ka: boolean }) {
           gap: '0.65rem', cursor: 'pointer', width: '100%',
         }}
       >
-        <span style={{ fontSize: '1rem' }}>📲</span>
-
         <span style={{ fontWeight: 700, fontSize: '0.85rem', color: '#FDFBF0' }}>
           {ka ? 'დაამატე MomMenu აპლიკაციად' : 'Install MomMenu App'}
         </span>
@@ -118,8 +116,8 @@ export default function PWAInstallButton({ ka }: { ka: boolean }) {
             </p>
             <p style={{ color: '#465940', opacity: 0.65, fontSize: '0.9rem', lineHeight: 1.7, margin: 0 }}>
               {ka
-                ? '1. ქვემოთ Share ღილაკზე დააჭირე 📤\n2. "Add to Home Screen" აირჩიე ➕'
-                : '1. Tap Share at the bottom 📤\n2. Select "Add to Home Screen" ➕'}
+                ? '1. ქვემოთ Share ღილაკზე დააჭირე\n2. "Add to Home Screen" აირჩიე'
+                : '1. Tap Share at the bottom\n2. Select "Add to Home Screen"'}
             </p>
 
             <button

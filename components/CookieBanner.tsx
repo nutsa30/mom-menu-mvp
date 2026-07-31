@@ -30,7 +30,7 @@ export default function CookieBanner() {
       <div className="max-w-3xl mx-auto bg-[#FDFBF0] rounded-2xl shadow-2xl border border-[#465940]/20 p-5 flex flex-col sm:flex-row items-start sm:items-center gap-4">
         <div className="flex-1">
           <p className="text-sm font-semibold text-[#465940] mb-1">
-            {ka ? '🍪 ვიყენებთ Cookies-ებს' : '🍪 We use Cookies'}
+            {ka ? 'ვიყენებთ Cookies-ებს' : 'We use Cookies'}
           </p>
           <p className="text-xs text-[#465940]/70 leading-relaxed">
             {ka

@@ -146,7 +146,7 @@ export default function ForgotPassword({ searchParams }: { searchParams: { lang?
             {/* ── success ── */}
             {step === 'success' && (
               <div className="text-center">
-                <div className="text-5xl mb-4">✅</div>
+                <div className="text-5xl mb-4"></div>
                 <h2 className="text-2xl font-black text-[#465940] mb-2">
                   {locale === 'ka' ? 'პაროლი შეიცვალა!' : 'Password changed!'}
                 </h2>
@@ -195,7 +195,7 @@ export default function ForgotPassword({ searchParams }: { searchParams: { lang?
             {step === 'code' && (
               <>
                 <div className="mb-5">
-                  <div className="text-2xl sm:text-3xl mb-2">📬</div>
+                  <div className="text-2xl sm:text-3xl mb-2"></div>
                   <h1 className="text-lg sm:text-2xl font-black text-[#465940] mb-1">
                     {locale === 'ka' ? 'კოდი გამოგზავნილია' : 'Code sent'}
                   </h1>
@@ -239,7 +239,7 @@ export default function ForgotPassword({ searchParams }: { searchParams: { lang?
             {step === 'password' && (
               <>
                 <div className="mb-5">
-                  <div className="text-2xl sm:text-3xl mb-2">🔐</div>
+                  <div className="text-2xl sm:text-3xl mb-2"></div>
                   <h1 className="text-lg sm:text-2xl font-black text-[#465940] mb-1">
                     {locale === 'ka' ? 'ახალი პაროლი' : 'New password'}
                   </h1>

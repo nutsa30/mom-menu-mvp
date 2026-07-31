@@ -136,7 +136,7 @@ export default function PWAInstallBanner() {
               textOverflow: 'ellipsis',
             }}
           >
-            📱 MomMenu-ს აპლიკაცია
+            MomMenu-ს აპლიკაცია
           </div>
           <div
             style={{
@@ -274,22 +274,10 @@ export default function PWAInstallBanner() {
             {/* Steps */}
             <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem', marginBottom: '1.5rem' }}>
               {[
-                {
-                  num: '1',
-                  text: 'ბრაუზერის ქვეში Share ღილაკზე დააჭირე',
-                  icon: '📤',
-                },
-                {
-                  num: '2',
-                  text: '"Add to Home Screen" ვარიანტი აირჩიე',
-                  icon: '➕',
-                },
-                {
-                  num: '3',
-                  text: '"Add" ან "დამატება" ღილაკზე დააჭირე — მზადაა!',
-                  icon: '✅',
-                },
-              ].map(({ num, text, icon }) => (
+                { num: '1', text: 'ბრაუზერის ქვეში Share ღილაკზე დააჭირე' },
+                { num: '2', text: '"Add to Home Screen" ვარიანტი აირჩიე' },
+                { num: '3', text: '"Add" ან "დამატება" ღილაკზე დააჭირე — მზადაა!' },
+              ].map(({ num, text }) => (
                 <div key={num} style={{ display: 'flex', alignItems: 'flex-start', gap: '0.75rem' }}>
                   <span
                     style={{
@@ -309,7 +297,7 @@ export default function PWAInstallBanner() {
                     {num}
                   </span>
                   <p style={{ margin: 0, color: '#465940', fontSize: '0.9rem', lineHeight: 1.55 }}>
-                    {text} <strong>{icon}</strong>
+                    {text}
                   </p>
                 </div>
               ))}

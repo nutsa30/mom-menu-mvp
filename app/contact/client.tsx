@@ -87,7 +87,7 @@ export default function ContactClient({ locale, settings }: { locale: 'ka' | 'en
       <div className="bg-[#FDFBF0] rounded-2xl shadow-xl p-7">
         {status === 'sent' ? (
           <div className="text-center py-8">
-            <div className="text-5xl mb-4">✅</div>
+            <div className="text-5xl mb-4"></div>
             <h3 className="text-xl font-black text-[#465940] mb-2">
               {ka ? 'გაგზავნილია!' : 'Sent!'}
             </h3>

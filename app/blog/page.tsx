@@ -102,7 +102,7 @@ export default async function BlogListPage({ searchParams }: { searchParams: { l
 
           {blogs.length === 0 ? (
             <div className="bg-[#FDFBF0] rounded-3xl p-20 text-center shadow-sm">
-              <div className="text-6xl mb-5">✏️</div>
+              <div className="text-6xl mb-5"></div>
               <p className="font-black text-xl text-[#465940] mb-2">{ka ? 'სტატია ჯერ არ არის' : 'No articles yet'}</p>
               <p className="text-sm text-[#465940]/60">{ka ? 'მალე დაემატება.' : 'Coming soon.'}</p>
             </div>
@@ -145,7 +145,7 @@ export default async function BlogListPage({ searchParams }: { searchParams: { l
                           className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
                         />
                       ) : (
-                        <div className="w-full h-full flex items-center justify-center text-6xl" style={{ background: '#3a4d35' }}>🥗</div>
+                        <div className="w-full h-full flex items-center justify-center text-6xl" style={{ background: '#3a4d35' }}></div>
                       )}
                     </div>
                   </a>

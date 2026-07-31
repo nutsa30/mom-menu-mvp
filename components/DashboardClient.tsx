@@ -14,7 +14,6 @@ type Tab = 'today' | 'firstfoods' | 'nutrition' | 'shopping' | 'child' | 'settin
 
 const MEAL_ORDER = ['BREAKFAST', 'SNACK', 'LUNCH', 'DINNER'] as const;
 const MEAL_LABEL: Record<string, string> = { BREAKFAST: 'საუზმე', SNACK: 'სნექი', LUNCH: 'სადილი', DINNER: 'ვახშამი' };
-const MEAL_ICON: Record<string, string> = { BREAKFAST: '🌅', SNACK: '🍎', LUNCH: '🥗', DINNER: '🍲' };
 const KA_DAYS_SHORT = ['კვ', 'ორშ', 'სამშ', 'ოთხ', 'ხუთ', 'პარ', 'შაბ'];
 
 const NUTRIENT_LABELS: Record<string, string> = {
@@ -78,7 +77,7 @@ function IntroductionBanner({ childId, childName }: { childId: string; childName
   return (
     <div className={`${card} p-4 border-2 border-[#465940]/30`}>
       <div className="flex items-center gap-2 mb-3">
-        <span className="text-xl">🌱</span>
+        <span className="text-xl"></span>
         <div>
           <p className="font-black text-[#465940] text-sm">პირველი საკვების გაცნობა</p>
           <p className="text-[10px] text-[#465940]/60">ყოველ ახალ პროდუქტს 3 დღე მიეცი — შემდეგ გადავიდე შემდეგზე</p>
@@ -91,7 +90,7 @@ function IntroductionBanner({ childId, childName }: { childId: string; childName
             <div>
               <p className="font-bold text-[#465940] text-sm">ახლა: <span className="text-[#465940]">{intro.foodName}</span></p>
               <p className="text-xs text-[#465940]/60 mt-0.5">
-                {daysSince} დღე · {readyForNext ? '✅ მზადაა შემდეგ პროდუქტზე გადასასვლელად!' : `კიდევ ${3 - daysSince} დღე`}
+                {daysSince} დღე · {readyForNext ? 'მზადაა შემდეგ პროდუქტზე გადასასვლელად!' : `კიდევ ${3 - daysSince} დღე`}
               </p>
             </div>
             <div className={`w-10 h-10 rounded-full flex items-center justify-center text-sm font-black ${
@@ -225,7 +224,7 @@ function TodayTab({ child, allDishes, planStart, isFullPlan }: { child: any; all
 
   if (!isFullPlan) return (
     <div className={`${card} p-10 text-center`}>
-      <div className="w-16 h-16 rounded-full bg-[#465940] flex items-center justify-center text-3xl mx-auto mb-5">🔒</div>
+      <div className="w-16 h-16 rounded-full bg-[#465940] flex items-center justify-center text-3xl mx-auto mb-5"></div>
       <h2 className="text-xl font-black text-[#465940] mb-2">დღის კვების გეგმა დაბლოკილია</h2>
       <p className="text-[#465940]/70 text-sm mb-6 max-w-sm mx-auto">ყოველდღიური კვების გეგმის ავტომატური გენერაცია ხელმისაწვდომია მხოლოდ სრული პაკეტით.</p>
       <a href="/subscription" className="inline-flex items-center justify-center rounded-full bg-[#465940] px-8 py-3 font-semibold text-[#FDFBF0] shadow-lg hover:scale-105 transition">
@@ -307,7 +306,7 @@ function TodayTab({ child, allDishes, planStart, isFullPlan }: { child: any; all
                   {/* Meal type badge */}
                   <div className="flex items-center gap-2 mb-1.5">
                     <span className="text-[10px] font-black uppercase tracking-widest px-2.5 py-0.5 rounded-full bg-[#465940]/10 text-[#465940]">
-                      {MEAL_ICON[mealType]} {MEAL_LABEL[mealType]}
+                      {MEAL_LABEL[mealType]}
                     </span>
                     {eaten && (
                       <span className="flex items-center gap-1 text-[10px] font-bold text-[#465940]">
@@ -369,7 +368,7 @@ function TodayTab({ child, allDishes, planStart, isFullPlan }: { child: any; all
                 >
                   {imageUrl
                     ? <img src={imageUrl} className="w-full h-full object-cover" alt="" />
-                    : <div className="w-full h-full flex items-center justify-center text-2xl">{MEAL_ICON[mealType]}</div>
+                    : <div className="w-full h-full bg-[#465940]/10" />
                   }
                 </button>
               </div>
@@ -399,7 +398,7 @@ function TodayTab({ child, allDishes, planStart, isFullPlan }: { child: any; all
                 <div className="w-10 h-10 rounded-xl overflow-hidden flex-shrink-0 bg-[#465940]/10">
                   {f.imageUrl
                     ? <img src={f.imageUrl} alt={f.titleKa} className="w-full h-full object-cover" />
-                    : <div className="w-full h-full flex items-center justify-center text-lg">🍎</div>}
+                    : <div className="w-full h-full flex items-center justify-center text-lg"></div>}
                 </div>
                 <div className="flex-1 min-w-0">
                   <p className="font-bold text-[#465940] text-sm">{f.titleKa}</p>
@@ -439,7 +438,7 @@ function TodayTab({ child, allDishes, planStart, isFullPlan }: { child: any; all
                 <button key={d.id} onClick={() => substitute(substituteFor, d.id)}
                   className="group w-full flex items-center gap-3 p-3 rounded-2xl hover:bg-[#465940] transition text-left border border-transparent hover:border-[#465940]">
                   <div className="w-12 h-12 rounded-xl bg-[#465940]/10 overflow-hidden flex-shrink-0">
-                    {d.imageUrl ? <img src={d.imageUrl} className="w-full h-full object-cover" alt="" /> : <div className="w-full h-full flex items-center justify-center text-xl">🍽️</div>}
+                    {d.imageUrl ? <img src={d.imageUrl} className="w-full h-full object-cover" alt="" /> : <div className="w-full h-full flex items-center justify-center text-xl"></div>}
                   </div>
                   <div className="flex-1 min-w-0">
                     <p className="font-bold text-[#465940] group-hover:text-[#FDFBF0] text-sm truncate transition-colors">{d.titleKa}</p>
@@ -459,11 +458,11 @@ function TodayTab({ child, allDishes, planStart, isFullPlan }: { child: any; all
             <div className="relative h-48 bg-[#fdf0ea] flex-shrink-0">
               {recipeModal.imageUrl
                 ? <img src={recipeModal.imageUrl} alt={recipeModal.titleKa} className="w-full h-full object-cover" />
-                : <div className="w-full h-full flex items-center justify-center text-6xl">🍽️</div>}
+                : <div className="w-full h-full flex items-center justify-center text-6xl"></div>}
               <button onClick={() => setRecipeModal(null)}
                 className="absolute top-3 right-3 w-8 h-8 bg-black/40 hover:bg-black/60 rounded-full flex items-center justify-center text-[#FDFBF0] transition">✕</button>
               <span className={`absolute top-3 left-3 px-2.5 py-1 rounded-full text-xs font-bold bg-[#FDFBF0]/90`}>
-                {MEAL_ICON[recipeModal.mealType]} {MEAL_LABEL[recipeModal.mealType]}
+                {MEAL_LABEL[recipeModal.mealType]}
               </span>
             </div>
             <div className="overflow-y-auto p-6 space-y-5">
@@ -636,12 +635,12 @@ function ShoppingListTab({ child, planStart }: { child: any; planStart: string }
       <div className={`${card} p-5`}>
         <div className="flex items-center justify-between mb-1">
           <div>
-            <h2 className="text-xl font-black text-[#465940]">🛒 საყიდლების სია</h2>
+            <h2 className="text-xl font-black text-[#465940]">საყიდლების სია</h2>
             <p className="text-xs text-[#465940]/60 mt-0.5">{child.name} · მომდევნო 7 დღის გეგმა</p>
           </div>
           <button onClick={regenerate} disabled={loading}
             className={`${btn} bg-[#465940] text-[#FDFBF0] text-sm hover:bg-[#465940] disabled:opacity-60`}>
-            {loading ? '⏳ იტვირთება...' : '🔄 განახლება'}
+            {loading ? '⏳ იტვირთება...' : 'განახლება'}
           </button>
         </div>
       </div>
@@ -655,7 +654,7 @@ function ShoppingListTab({ child, planStart }: { child: any; planStart: string }
 
       {loading && (
         <div className={`${card} p-8 text-center`}>
-          <div className="text-4xl mb-3 animate-bounce">🛒</div>
+          <div className="text-4xl mb-3 animate-bounce"></div>
           <p className="text-sm text-[#465940]/70">7 დღის კვების გეგმა მზადდება...</p>
         </div>
       )}
@@ -745,7 +744,7 @@ function ShoppingListTab({ child, planStart }: { child: any; planStart: string }
 
           {doneCount === ingredients.length && ingredients.length > 0 && (
             <div className={`${card} p-6 text-center bg-[#465940]/10 border border-[#465940]/30`}>
-              <p className="text-2xl mb-2">🎉</p>
+              <p className="text-2xl mb-2"></p>
               <p className="font-bold text-[#465940]">ყველაფერი შეძენილი!</p>
               <p className="text-sm text-[#465940] mt-1">კვირის კვების გეგმა მზადაა.</p>
             </div>
@@ -762,7 +761,7 @@ const AGE_REQUIREMENTS: Record<string, { label: string; values: { nutrient: stri
     label: '6–8 თვე',
     values: [
       { nutrient: 'კალორია', amount: '600–800 kcal' },
-      { nutrient: 'რკინა', amount: '11 მგ', note: '⚠️ ყველაზე მნიშვნელოვანი' },
+      { nutrient: 'რკინა', amount: '11 მგ', note: 'ყველაზე მნიშვნელოვანი' },
       { nutrient: 'ცილა', amount: '9.1 გ' },
       { nutrient: 'კალციუმი', amount: '200 მგ' },
       { nutrient: 'D ვიტამინი', amount: '10 მკგ' },
@@ -775,7 +774,7 @@ const AGE_REQUIREMENTS: Record<string, { label: string; values: { nutrient: stri
     label: '9–11 თვე',
     values: [
       { nutrient: 'კალორია', amount: '700–900 kcal' },
-      { nutrient: 'რკინა', amount: '11 მგ', note: '⚠️ კვლავ კრიტიკული' },
+      { nutrient: 'რკინა', amount: '11 მგ', note: 'კვლავ კრიტიკული' },
       { nutrient: 'ცილა', amount: '11 გ' },
       { nutrient: 'კალციუმი', amount: '260 მგ' },
       { nutrient: 'D ვიტამინი', amount: '10 მკგ' },
@@ -858,7 +857,7 @@ function NutritionTab({ child }: { child: any }) {
 
       {deficient.length > 0 && uniqueDays > 0 && (
         <div className="bg-[#FDFBF0]/10 border border-[#FDFBF0]/20 rounded-2xl p-5">
-          <p className="font-bold text-[#FDFBF0] mb-2">⚠️ ნაკლები {days} დღეში</p>
+          <p className="font-bold text-[#FDFBF0] mb-2">ნაკლები {days} დღეში</p>
           <div className="space-y-1">
             {deficient.map((a: any) => (
               <p key={a.key} className="text-sm text-[#FDFBF0]/80">
@@ -893,7 +892,7 @@ function NutritionTab({ child }: { child: any }) {
 
       {uniqueDays === 0 && !loading && (
         <div className={`${card} p-10 text-center`}>
-          <p className="text-2xl mb-3">📊</p>
+          <p className="text-2xl mb-3"></p>
           <p className="font-bold text-[#465940] mb-1">ჯერ ჩანაწერი არ არის</p>
           <p className="text-sm text-[#465940]/60">მონიშნე "დღის გეგმა" tab-ში "ჭამა" ერთხელ მაინც რომ გამოჩნდეს კვებითი ბალანსი.</p>
         </div>
@@ -903,7 +902,7 @@ function NutritionTab({ child }: { child: any }) {
       {AGE_REQUIREMENTS[child.ageGroup] && (
         <div className={`${card} p-5`}>
           <div className="flex items-center gap-2 mb-4">
-            <span className="text-xl">💊</span>
+            <span className="text-xl"></span>
             <div>
               <h3 className="font-black text-[#465940] text-sm">დღიური ნორმა — {AGE_REQUIREMENTS[child.ageGroup].label}</h3>
               <p className="text-[10px] text-[#465940]/60">WHO / AAP რეკომენდაციების მიხედვით</p>
@@ -920,7 +919,7 @@ function NutritionTab({ child }: { child: any }) {
           </div>
           {child.milkType && child.milkType !== 'NONE' && !child.milkStopped && (
             <div className="mt-3 p-3 rounded-xl bg-[#465940]/10 flex items-center gap-2">
-              <span>🥛</span>
+              <span></span>
               <p className="text-xs text-[#465940]/80 font-medium">
                 {child.milkType === 'BREAST' ? 'დედის რძე' : child.milkType === 'FORMULA' ? 'ფორმულა' : 'დედის რძე + ფორმულა'} — ავსებს ვიტამინების ნაწილს
               </p>
@@ -963,10 +962,10 @@ function TagInput({ tags, onChange, color }: { tags: string[]; onChange: (t: str
 }
 
 const MILK_OPTIONS = [
-  { value: 'BREAST',  label: '🤱 დედის რძე' },
-  { value: 'FORMULA', label: '🍼 ფორმულა' },
-  { value: 'BOTH',    label: '🤱🍼 ორივე' },
-  { value: 'NONE',    label: '🥣 მხოლოდ მყარი' },
+  { value: 'BREAST',  label: 'დედის რძე' },
+  { value: 'FORMULA', label: 'ფორმულა' },
+  { value: 'BOTH',    label: 'ორივე' },
+  { value: 'NONE',    label: 'მხოლოდ მყარი' },
 ];
 
 // ── Child Tab ────────────────────────────────────────────────────────────────
@@ -1159,15 +1158,15 @@ function ChildTab({ children: kids, userId, onUpdate, onDelete }: {
             </div>
           </div>
           <div>
-            <label className="block text-sm font-semibold text-[#465940] mb-2">🚨 ალერგიები</label>
+            <label className="block text-sm font-semibold text-[#465940] mb-2">ალერგიები</label>
             <TagInput tags={newAllergies} onChange={setNewAllergies} color="bg-red-100 text-red-700" />
           </div>
           <div>
-            <label className="block text-sm font-semibold text-[#465940] mb-2">😤 არ უყვარს</label>
+            <label className="block text-sm font-semibold text-[#465940] mb-2">არ უყვარს</label>
             <TagInput tags={newDislikes} onChange={setNewDislikes} color="bg-[#465940]/10 text-[#465940]" />
           </div>
           <div>
-            <label className="block text-sm font-semibold text-[#465940] mb-2">😋 უყვარს</label>
+            <label className="block text-sm font-semibold text-[#465940] mb-2">უყვარს</label>
             <TagInput tags={newLikes} onChange={setNewLikes} color="bg-[#465940]/20 text-[#465940]" />
           </div>
           <div className="flex gap-2">
@@ -1201,21 +1200,21 @@ function ChildTab({ children: kids, userId, onUpdate, onDelete }: {
             </div>
           </div>
           <div>
-            <label className="block text-sm font-semibold text-[#465940] mb-2">🚨 ალერგიები</label>
+            <label className="block text-sm font-semibold text-[#465940] mb-2">ალერგიები</label>
             <TagInput tags={allergies} onChange={setAllergies} color="bg-[#FDFBF0]/10 text-[#465940]" />
           </div>
           <div>
-            <label className="block text-sm font-semibold text-[#465940] mb-2">😤 არ უყვარს</label>
+            <label className="block text-sm font-semibold text-[#465940] mb-2">არ უყვარს</label>
             <TagInput tags={dislikes} onChange={setDislikes} color="bg-[#FDFBF0]/10 text-[#465940]" />
           </div>
           <div>
-            <label className="block text-sm font-semibold text-[#465940] mb-2">😋 უყვარს</label>
+            <label className="block text-sm font-semibold text-[#465940] mb-2">უყვარს</label>
             <TagInput tags={likes} onChange={setLikes} color="bg-[#465940]/20 text-[#465940]" />
           </div>
 
           {/* Milk tracking */}
           <div className="border-t border-[#465940]/10 pt-4">
-            <label className="block text-sm font-semibold text-[#465940] mb-3">🥛 რძის კვება</label>
+            <label className="block text-sm font-semibold text-[#465940] mb-3">რძის კვება</label>
             <div className="grid grid-cols-2 gap-2 mb-3">
               {MILK_OPTIONS.map(opt => (
                 <button key={opt.value} type="button"
@@ -1252,7 +1251,7 @@ function ChildTab({ children: kids, userId, onUpdate, onDelete }: {
       {selected && introChild?.id === selected.id && (
         <div className={`${card} p-5 space-y-4`}>
           <div>
-            <h3 className="font-black text-[#465940] mb-0.5">🌱 ახალი პროდუქტების გაცნობა</h3>
+            <h3 className="font-black text-[#465940] mb-0.5">ახალი პროდუქტების გაცნობა</h3>
             <p className="text-xs text-[#465940]/60">გასინჯეთ ახალი პროდუქტი? დაამატეთ — 3 დღე დააკვირდით, შემდეგ მომდევნოზე გადახვიდეთ</p>
           </div>
 
@@ -1265,7 +1264,7 @@ function ChildTab({ children: kids, userId, onUpdate, onDelete }: {
                 <div className="flex items-center justify-between mb-2">
                   <div>
                     <p className="font-black text-[#465940]">{item.foodName}</p>
-                    <p className="text-xs text-[#465940]/60">{days} დღე გავიდა · {safe ? '✅ 3 დღე შესრულდა' : `${3 - days} დღე დარჩა`}</p>
+                    <p className="text-xs text-[#465940]/60">{days} დღე გავიდა · {safe ? '3 დღე შესრულდა' : `${3 - days} დღე დარჩა`}</p>
                   </div>
                   <div className={`w-12 h-12 rounded-full flex items-center justify-center text-xl font-black ${safe ? 'bg-green-100 text-green-700' : 'bg-[#465940]/10 text-[#465940]'}`}>
                     {days}/3
@@ -1278,7 +1277,7 @@ function ChildTab({ children: kids, userId, onUpdate, onDelete }: {
                   </button>
                   <button onClick={() => updateFoodStatus(item.id, 'ALLERGIC')}
                     className="px-3 py-1.5 rounded-full text-xs font-bold bg-red-100 text-red-600 transition">
-                    ⚠ ალერგია აქვს
+                    ალერგია აქვს
                   </button>
                   <button onClick={() => deleteFood(item.id)}
                     className="px-3 py-1.5 rounded-full text-xs font-bold bg-[#465940]/10 text-[#465940]/60 transition">
@@ -1310,7 +1309,7 @@ function ChildTab({ children: kids, userId, onUpdate, onDelete }: {
                 {introductions.filter(i => i.status !== 'INTRODUCING').map(item => (
                   <div key={item.id} className="flex items-center justify-between px-3 py-2 rounded-xl bg-[#465940]/5">
                     <div className="flex items-center gap-2">
-                      <span>{item.status === 'SAFE' ? '✅' : '⚠️'}</span>
+                      <span>{item.status === 'SAFE' ? '' : ''}</span>
                       <span className="text-sm font-semibold text-[#465940]">{item.foodName}</span>
                     </div>
                     <div className="flex items-center gap-2">
@@ -1354,7 +1353,7 @@ function ChildTab({ children: kids, userId, onUpdate, onDelete }: {
 
               {viewModal.allergies?.length > 0 && (
                 <div>
-                  <p className="text-xs text-[#465940]/60 font-semibold uppercase tracking-wide mb-2">🚨 ალერგიები</p>
+                  <p className="text-xs text-[#465940]/60 font-semibold uppercase tracking-wide mb-2">ალერგიები</p>
                   <div className="flex flex-wrap gap-1.5">
                     {viewModal.allergies.map((a: string) => (
                       <span key={a} className="px-3 py-1 rounded-full text-xs font-bold bg-[#465940]/10 text-[#465940]">{a}</span>
@@ -1365,7 +1364,7 @@ function ChildTab({ children: kids, userId, onUpdate, onDelete }: {
 
               {viewModal.dislikes?.length > 0 && (
                 <div>
-                  <p className="text-xs text-[#465940]/60 font-semibold uppercase tracking-wide mb-2">😤 არ უყვარს</p>
+                  <p className="text-xs text-[#465940]/60 font-semibold uppercase tracking-wide mb-2">არ უყვარს</p>
                   <div className="flex flex-wrap gap-1.5">
                     {viewModal.dislikes.map((d: string) => (
                       <span key={d} className="px-3 py-1 rounded-full text-xs font-bold bg-[#465940]/10 text-[#465940]">{d}</span>
@@ -1376,7 +1375,7 @@ function ChildTab({ children: kids, userId, onUpdate, onDelete }: {
 
               {viewModal.likes?.length > 0 && (
                 <div>
-                  <p className="text-xs text-[#465940]/60 font-semibold uppercase tracking-wide mb-2">😋 უყვარს</p>
+                  <p className="text-xs text-[#465940]/60 font-semibold uppercase tracking-wide mb-2">უყვარს</p>
                   <div className="flex flex-wrap gap-1.5">
                     {viewModal.likes.map((l: string) => (
                       <span key={l} className="px-3 py-1 rounded-full text-xs font-bold bg-[#465940]/20 text-[#465940]">{l}</span>
@@ -1627,15 +1626,15 @@ export default function DashboardClient({ user }: { user: any }) {
   const isFullPlan = user.subscriptionStatus === 'FULL_PLAN';
   const isYoungBaby = activeChild?.ageGroup === 'FROM_6' || activeChild?.ageGroup === 'FROM_9';
 
-  const tabs: { key: Tab; label: string; icon: string }[] = [
+  const tabs: { key: Tab; label: string }[] = [
     ...(isYoungBaby
-      ? [{ key: 'firstfoods' as Tab, label: 'პირველი საკვები', icon: '🍼' }]
-      : [{ key: 'today' as Tab, label: 'დღის გეგმა', icon: '📋' }]
+      ? [{ key: 'firstfoods' as Tab, label: 'პირველი საკვები' }]
+      : [{ key: 'today' as Tab, label: 'დღის გეგმა' }]
     ),
-    { key: 'nutrition', label: 'კვება', icon: '📊' },
-    ...(isFullPlan && !isYoungBaby ? [{ key: 'shopping' as Tab, label: 'საყიდლები', icon: '🛒' }] : []),
-    { key: 'child', label: 'შვილი', icon: '👶' },
-    { key: 'settings', label: 'პარამეტრები', icon: '⚙️' },
+    { key: 'nutrition', label: 'კვება' },
+    ...(isFullPlan && !isYoungBaby ? [{ key: 'shopping' as Tab, label: 'საყიდლები' }] : []),
+    { key: 'child', label: 'შვილი' },
+    { key: 'settings', label: 'პარამეტრები' },
   ];
 
   return (
@@ -1681,7 +1680,6 @@ export default function DashboardClient({ user }: { user: any }) {
           {tabs.map((t) => (
             <button key={t.key} onClick={() => setTab(t.key)}
               className={`flex-1 flex flex-col items-center gap-0.5 py-2.5 transition-colors ${tab === t.key ? 'text-[#465940]' : 'text-[#465940]/60 hover:text-[#465940]/80'}`}>
-              <span className="text-xl">{t.icon}</span>
               <span className="text-[10px] font-bold tracking-wide">{t.label}</span>
             </button>
           ))}

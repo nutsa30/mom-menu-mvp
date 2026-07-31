@@ -91,29 +91,25 @@ export default function AboutPage({ searchParams }: { searchParams: { lang?: str
           <div className="grid sm:grid-cols-3 gap-6">
             {[
               {
-                icon: '💛',
                 titleKa: 'სიმარტივე',
                 titleEn: 'Simplicity',
                 descKa: 'დედის დრო ძვირფასია. ყველა ფუნქცია შექმნილია სიჩქარისა და სიმარტივისთვის.',
                 descEn: "A mom's time is precious. Every feature is built for speed and ease.",
               },
               {
-                icon: '🥦',
                 titleKa: 'ჯანმრთელობა',
                 titleEn: 'Health',
                 descKa: 'ყველა კერძი შექმნილია ბავშვის ასაკობრივი საჭიროებების გათვალისწინებით.',
                 descEn: "Every dish is designed with a child's age-appropriate nutritional needs in mind.",
               },
               {
-                icon: '🤝',
                 titleKa: 'ნდობა',
                 titleEn: 'Trust',
                 descKa: 'შენი და შენი ბავშვის მონაცემები უსაფრთხოდ ინახება და არასდროს იყიდება.',
                 descEn: "Your data and your child's data is stored securely and never sold.",
               },
-            ].map(({ icon, titleKa, titleEn, descKa, descEn }) => (
+            ].map(({ titleKa, titleEn, descKa, descEn }) => (
               <div key={titleKa} className="bg-[#FDFBF0] rounded-2xl p-6 text-center border border-[#FDFBF0]/20">
-                <div className="text-4xl mb-4">{icon}</div>
                 <h3 className="font-black text-[#465940] mb-2">{ka ? titleKa : titleEn}</h3>
                 <p className="text-sm text-[#465940]/70 leading-relaxed">{ka ? descKa : descEn}</p>
               </div>

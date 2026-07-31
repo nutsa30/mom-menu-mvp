@@ -97,9 +97,6 @@ const MEAL_TYPE_COLOR: Record<string, string> = {
   SNACK:     'bg-[#FDFBF0]/10 text-[#465940]',
 };
 
-const MEAL_TYPE_ICON: Record<string, string> = {
-  BREAKFAST: '🌅', LUNCH: '🥗', DINNER: '🍲', SNACK: '🍎',
-};
 
 function parseSteps(text: string): string[] {
   const parts = text.split(/(?=\d+\.)/).map(s => s.replace(/^\d+\./, '').trim()).filter(Boolean);
@@ -218,7 +215,6 @@ export default function RecipesClient({ dishes, locale, canRead, isLoggedIn }: P
                         : 'bg-[#FDFBF0] text-[#465940]/80 border border-[#465940]/20 hover:border-[#465940]'
                     }`}
                   >
-                    {m.key !== 'ALL' && MEAL_TYPE_ICON[m.key] + ' '}
                     {locale === 'ka' ? m.ka : m.en}
                   </button>
                 ))}
@@ -248,7 +244,7 @@ export default function RecipesClient({ dishes, locale, canRead, isLoggedIn }: P
         {/* Grid */}
         {filtered.length === 0 ? (
           <div className="text-center py-24 text-[#FDFBF0]/60">
-            <div className="text-5xl mb-4">🍽️</div>
+            <div className="text-5xl mb-4"></div>
             <p className="font-semibold">{t('კერძი ვერ მოიძებნა', 'No recipes found')}</p>
           </div>
         ) : (
@@ -264,10 +260,10 @@ export default function RecipesClient({ dishes, locale, canRead, isLoggedIn }: P
                   {dish.imageUrl ? (
                     <img src={dish.imageUrl} alt={title(dish)} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300" />
                   ) : (
-                    <div className="w-full h-full flex items-center justify-center text-5xl">🍽️</div>
+                    <div className="w-full h-full flex items-center justify-center text-5xl"></div>
                   )}
                   <span className="absolute top-3 left-3 px-2.5 py-1 rounded-full text-xs font-bold bg-[#FDFBF0]/20 text-[#FDFBF0]">
-                    {MEAL_TYPE_ICON[dish.mealType]} {MEAL_TYPE_LABEL[dish.mealType]?.[locale] ?? dish.mealType}
+                    {MEAL_TYPE_LABEL[dish.mealType]?.[locale] ?? dish.mealType}
                   </span>
                   {!canRead && (
                     <div className="absolute top-3 right-3 w-7 h-7 bg-black/40 rounded-full flex items-center justify-center">
@@ -345,14 +341,14 @@ export default function RecipesClient({ dishes, locale, canRead, isLoggedIn }: P
               {selected.imageUrl ? (
                 <img src={selected.imageUrl} alt={title(selected)} className="w-full h-full object-cover" />
               ) : (
-                <div className="w-full h-full flex items-center justify-center text-6xl">🍽️</div>
+                <div className="w-full h-full flex items-center justify-center text-6xl"></div>
               )}
               <button onClick={() => setSelected(null)}
                 className="absolute top-3 right-3 w-8 h-8 bg-black/40 hover:bg-black/60 rounded-full flex items-center justify-center text-[#FDFBF0] transition">
                 ✕
               </button>
               <span className={`absolute top-3 left-3 px-2.5 py-1 rounded-full text-xs font-bold ${MEAL_TYPE_COLOR[selected.mealType]}`}>
-                {MEAL_TYPE_ICON[selected.mealType]} {MEAL_TYPE_LABEL[selected.mealType]?.[locale] ?? selected.mealType}
+                {MEAL_TYPE_LABEL[selected.mealType]?.[locale] ?? selected.mealType}
               </span>
             </div>
 
@@ -445,7 +441,7 @@ export default function RecipesClient({ dishes, locale, canRead, isLoggedIn }: P
                       <div className="flex flex-wrap gap-1.5">
                         {selected.allergens.map((a) => (
                           <span key={a} className="px-2.5 py-1 bg-[#465940] text-[#FDFBF0] text-xs font-bold rounded-full border border-[#FDFBF0]/30">
-                            ⚠ {ALLERGEN_LABELS[a]?.[locale] ?? a}
+                            {ALLERGEN_LABELS[a]?.[locale] ?? a}
                           </span>
                         ))}
                       </div>

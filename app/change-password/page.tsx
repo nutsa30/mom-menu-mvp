@@ -53,7 +53,7 @@ export default function ChangePassword({ searchParams }: { searchParams: { lang?
       <div className="w-full max-w-md bg-[#FDFBF0] rounded-[32px] shadow-xl p-10">
         {status === 'success' ? (
           <div className="text-center">
-            <div className="text-5xl mb-4">✅</div>
+            <div className="text-5xl mb-4"></div>
             <h2 className="text-2xl font-black text-[#465940] mb-2">
               {locale === 'ka' ? 'პაროლი შეიცვალა!' : 'Password changed!'}
             </h2>

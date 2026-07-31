@@ -231,7 +231,7 @@ export default function Register({ searchParams }: { searchParams: { lang?: Loca
 
               {ageMonths !== null && (
                 <div className="flex items-center gap-2 bg-[#465940]/10 border border-[#465940]/20 rounded-xl px-4 py-3 text-sm text-[#465940] font-medium">
-                  <span>😊</span>
+                  <span></span>
                   {locale === 'ka'
                     ? `თქვენი ბავშვი ${ageMonths} თვისაა`
                     : `Your child is ${ageMonths} months old`}

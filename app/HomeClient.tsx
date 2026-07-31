@@ -180,7 +180,7 @@ export default function HomeClient({ s, dishes, dishCount, recentBlogs }: {
                 <div className="absolute inset-0 bg-gradient-to-t from-black/40 via-transparent to-transparent" />
               </>
             ) : (
-              <div className="w-full h-full bg-[#FDFBF0]/20 flex items-center justify-center text-6xl">🍽️</div>
+              <div className="w-full h-full bg-[#FDFBF0]/20 flex items-center justify-center text-6xl"></div>
             )}
             <span className="absolute bottom-4 left-4 inline-block px-3 py-1.5 rounded-full bg-[#FDFBF0]/20 text-[#FDFBF0] font-semibold text-xs">
               {t('heroBadgeKa', 'heroBadgeEn')}
@@ -286,7 +286,7 @@ export default function HomeClient({ s, dishes, dishCount, recentBlogs }: {
                   <div className="h-36 relative bg-[#465940]/20">
                     {dish?.imageUrl
                       ? <img src={dish.imageUrl} className="w-full h-full object-cover" alt={key} />
-                      : <div className="w-full h-full flex items-center justify-center text-4xl">🍽️</div>
+                      : <div className="w-full h-full flex items-center justify-center text-4xl"></div>
                     }
                     <div className="absolute inset-0 bg-gradient-to-t from-black/30 to-transparent" />
                     <span className={`absolute top-3 left-3 text-[10px] font-bold px-2.5 py-1 rounded-full ${MEAL_COLORS[key]}`}>
@@ -308,7 +308,7 @@ export default function HomeClient({ s, dishes, dishCount, recentBlogs }: {
             <div className="col-span-2 row-span-2 relative overflow-hidden rounded-[40px] group shadow-lg bg-[#FDFBF0]/20">
               {dishes.breakfast?.imageUrl
                 ? <img src={dishes.breakfast.imageUrl} className="absolute w-full h-full object-cover group-hover:scale-105 transition duration-500" alt="breakfast" />
-                : <div className="absolute inset-0 flex flex-col items-center justify-center gap-2 text-[#FDFBF0]/50"><span className="text-5xl">🍳</span></div>
+                : <div className="absolute inset-0 flex flex-col items-center justify-center gap-2 text-[#FDFBF0]/50"><span className="text-5xl"></span></div>
               }
               <div className="absolute inset-0 bg-gradient-to-t from-black/55 to-transparent" />
               <div className="absolute bottom-0 left-0 p-8 text-[#FDFBF0]">
@@ -319,7 +319,7 @@ export default function HomeClient({ s, dishes, dishCount, recentBlogs }: {
             <div className="col-span-2 relative overflow-hidden rounded-[40px] group shadow-lg bg-[#FDFBF0]/20">
               {dishes.lunch?.imageUrl
                 ? <img src={dishes.lunch.imageUrl} className="absolute w-full h-full object-cover group-hover:scale-105 transition duration-500" alt="lunch" />
-                : <div className="absolute inset-0 flex items-center justify-center text-4xl text-[#FDFBF0]/50">🥗</div>
+                : <div className="absolute inset-0 flex items-center justify-center text-4xl text-[#FDFBF0]/50"></div>
               }
               <div className="absolute inset-0 bg-gradient-to-t from-black/55 to-transparent" />
               <div className="absolute bottom-0 left-0 p-6 text-[#FDFBF0]">
@@ -330,7 +330,7 @@ export default function HomeClient({ s, dishes, dishCount, recentBlogs }: {
             <div className="relative overflow-hidden rounded-[40px] group shadow-lg bg-[#FDFBF0]/20">
               {dishes.snack?.imageUrl
                 ? <img src={dishes.snack.imageUrl} className="absolute w-full h-full object-cover group-hover:scale-105 transition duration-500" alt="snack" />
-                : <div className="absolute inset-0 flex items-center justify-center text-3xl text-[#FDFBF0]/50">🍎</div>
+                : <div className="absolute inset-0 flex items-center justify-center text-3xl text-[#FDFBF0]/50"></div>
               }
               <div className="absolute inset-0 bg-gradient-to-t from-black/55 to-transparent" />
               <div className="absolute bottom-0 left-0 p-5 text-[#FDFBF0]">
@@ -341,7 +341,7 @@ export default function HomeClient({ s, dishes, dishCount, recentBlogs }: {
             <div className="relative overflow-hidden rounded-[40px] group shadow-lg bg-[#FDFBF0]/20">
               {dishes.dinner?.imageUrl
                 ? <img src={dishes.dinner.imageUrl} className="absolute w-full h-full object-cover group-hover:scale-105 transition duration-500" alt="dinner" />
-                : <div className="absolute inset-0 flex items-center justify-center text-3xl text-[#FDFBF0]/50">🍽️</div>
+                : <div className="absolute inset-0 flex items-center justify-center text-3xl text-[#FDFBF0]/50"></div>
               }
               <div className="absolute inset-0 bg-gradient-to-t from-black/55 to-transparent" />
               <div className="absolute bottom-0 left-0 p-5 text-[#FDFBF0]">
@@ -497,7 +497,7 @@ export default function HomeClient({ s, dishes, dishCount, recentBlogs }: {
                     style={{ background: '#465940' }}>
                     {blog.imageUrl
                       ? <div className="h-36 overflow-hidden"><img src={blog.imageUrl} alt={title} className="w-full h-full object-cover" /></div>
-                      : <div className="h-36 flex items-center justify-center text-4xl" style={{ background: '#3a4d35' }}>📝</div>
+                      : <div className="h-36 flex items-center justify-center text-4xl" style={{ background: '#3a4d35' }}></div>
                     }
                     <div className="p-4">
                       <h3 className="font-black text-[#FDFBF0] text-sm mb-1 leading-snug">{title}</h3>
@@ -526,7 +526,7 @@ export default function HomeClient({ s, dishes, dishCount, recentBlogs }: {
                     style={{ background: '#465940' }}>
                     {blog.imageUrl
                       ? <div className="h-44 overflow-hidden"><img src={blog.imageUrl} alt={title} className="w-full h-full object-cover group-hover:scale-105 transition duration-500" /></div>
-                      : <div className="h-44 flex items-center justify-center text-4xl" style={{ background: '#3a4d35' }}>📝</div>
+                      : <div className="h-44 flex items-center justify-center text-4xl" style={{ background: '#3a4d35' }}></div>
                     }
                     <div className="p-5">
                       <p className="text-xs font-bold mb-2 uppercase tracking-wide text-[#FDFBF0]/50">{date}</p>

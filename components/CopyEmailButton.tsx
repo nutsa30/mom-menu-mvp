@@ -18,7 +18,7 @@ export default function CopyEmailButton({ email, label }: { email: string; label
       </a>
       <button onClick={copy}
         className="inline-flex items-center gap-1.5 text-xs px-3 py-1.5 rounded-full border border-[#FDFBF0]/30 text-[#FDFBF0]/70 hover:text-[#FDFBF0] hover:border-[#FDFBF0]/60 transition">
-        {copied ? '✓ კოპირებულია' : '📋 კოპირება'}
+        {copied ? '✓ კოპირებულია' : 'კოპირება'}
       </button>
     </div>
   );

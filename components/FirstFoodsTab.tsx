@@ -3,9 +3,9 @@
 import { useState, useEffect, useCallback } from 'react';
 
 const TEXTURE_KA: Record<string, string> = {
-  puree: '🥣 პიურე',
-  mashed: '🍽️ ჩანგლით დაჭყლეტილი',
-  softPieces: '✂️ ლმობიერი ნაჭრები',
+  puree: 'პიურე',
+  mashed: 'ჩანგლით დაჭყლეტილი',
+  softPieces: 'ლმობიერი ნაჭრები',
 };
 
 type Ingredient = {
@@ -39,7 +39,7 @@ function pureePrep(category: string): string {
 }
 
 function StatusBadge({ tried, allergic, liked, ateWell }: any) {
-  if (allergic) return <span className="text-[10px] bg-red-100 text-red-600 font-bold px-2 py-0.5 rounded-full">⚠ ალერგია</span>;
+  if (allergic) return <span className="text-[10px] bg-red-100 text-red-600 font-bold px-2 py-0.5 rounded-full">ალერგია</span>;
   if (!tried) return <span className="text-[10px] bg-[#465940]/10 text-[#465940]/50 font-bold px-2 py-0.5 rounded-full">არ გასინჯულა</span>;
   if (liked) return <span className="text-[10px] bg-green-100 text-green-700 font-bold px-2 py-0.5 rounded-full">✓ მოეწონა</span>;
   if (ateWell) return <span className="text-[10px] bg-blue-100 text-blue-700 font-bold px-2 py-0.5 rounded-full">✓ კარგად ჭამა</span>;
@@ -93,8 +93,8 @@ function IngredientCard({
             {!s?.allergic && (
               <p className="text-[10px] text-[#465940]/50 mt-0.5">
                 {blwMode
-                  ? `✂️ ${blwCutSize(ageMonths)} · ${blwPrep(ing.category)}`
-                  : `🥣 ${pureePrep(ing.category)}`}
+                  ? `${blwCutSize(ageMonths)} · ${blwPrep(ing.category)}`
+                  : `${pureePrep(ing.category)}`}
               </p>
             )}
           </div>
@@ -115,11 +115,11 @@ function IngredientCard({
           ) : (
             <div className="grid grid-cols-2 gap-2">
               {[
-                { field: 'liked',    val: s.liked,    label: '😊 მოეწონა',     active: 'bg-green-500 text-white' },
-                { field: 'disliked', val: s.disliked, label: '😕 არ მოეწონა',  active: 'bg-orange-400 text-white' },
-                { field: 'ateWell',  val: s.ateWell,  label: '🍴 კარგად ჭამა', active: 'bg-blue-500 text-white' },
-                { field: 'refused',  val: s.refused,  label: '🚫 არ ჭამა',     active: 'bg-gray-400 text-white' },
-                { field: 'allergic', val: s.allergic, label: '⚠ ალერგია',     active: 'bg-red-500 text-white' },
+                { field: 'liked',    val: s.liked,    label: 'მოეწონა',     active: 'bg-green-500 text-white' },
+                { field: 'disliked', val: s.disliked, label: 'არ მოეწონა',  active: 'bg-orange-400 text-white' },
+                { field: 'ateWell',  val: s.ateWell,  label: 'კარგად ჭამა', active: 'bg-blue-500 text-white' },
+                { field: 'refused',  val: s.refused,  label: 'არ ჭამა',     active: 'bg-gray-400 text-white' },
+                { field: 'allergic', val: s.allergic, label: 'ალერგია',     active: 'bg-red-500 text-white' },
               ].map(opt => (
                 <button key={opt.field}
                   onClick={() => toggle(opt.field, opt.val ?? false)}
@@ -154,15 +154,12 @@ function IngredientCard({
 }
 
 function BlwIngCard({ ing, ageMonths }: { ing: Ingredient; ageMonths: number }) {
-  const emoji = ing.category === 'vegetable' ? '🥦' : '🍎';
   return (
     <div className="rounded-xl border-2 border-[#465940]/20 bg-white px-4 py-3 flex items-start gap-3">
-      <span className="text-xl mt-0.5">{emoji}</span>
       <div className="flex-1 min-w-0">
         <p className="font-bold text-[#465940] text-sm">{ing.nameKa}</p>
         <p className="text-[11px] text-[#465940]/70 mt-0.5">{blwPrep(ing.category)}</p>
         <div className="mt-1.5 inline-flex items-center gap-1 bg-[#465940]/10 rounded-lg px-2 py-0.5">
-          <span className="text-[10px]">✂️</span>
           <span className="text-[10px] font-semibold text-[#465940]">{blwCutSize(ageMonths)}</span>
         </div>
       </div>
@@ -199,7 +196,7 @@ function SuggestionCard({ s, childId, onLogged }: { s: Suggestion; childId: stri
         <div className="flex items-center gap-2">
           {lastLog?.ate && (
             <span className="text-[10px] bg-green-100 text-green-700 font-bold px-2 py-0.5 rounded-full">
-              {lastLog.liked ? '😊 მოეწონა' : '✓ ვაჭამე'}
+              {lastLog.liked ? 'მოეწონა' : '✓ ვაჭამე'}
             </span>
           )}
           <span className="text-[#465940]/40 text-xs">{open ? '▲' : '▼'}</span>
@@ -211,7 +208,7 @@ function SuggestionCard({ s, childId, onLogged }: { s: Suggestion; childId: stri
           <div className="grid grid-cols-3 gap-2">
             <button onClick={() => log({ ate: true, liked: true })} disabled={logging}
               className="py-2 rounded-xl bg-green-500 text-white text-xs font-bold disabled:opacity-50 transition">
-              😊 ვაჭამე & მოეწონა
+              ვაჭამე & მოეწონა
             </button>
             <button onClick={() => log({ ate: true, liked: false })} disabled={logging}
               className="py-2 rounded-xl bg-[#465940] text-[#FDFBF0] text-xs font-bold disabled:opacity-50 transition">
@@ -219,7 +216,7 @@ function SuggestionCard({ s, childId, onLogged }: { s: Suggestion; childId: stri
             </button>
             <button onClick={() => log({ ate: false, refused: true })} disabled={logging}
               className="py-2 rounded-xl bg-orange-400 text-white text-xs font-bold disabled:opacity-50 transition">
-              🚫 არ ჭამა
+              არ ჭამა
             </button>
           </div>
           <input value={comment} onChange={e => setComment(e.target.value)}
@@ -230,7 +227,7 @@ function SuggestionCard({ s, childId, onLogged }: { s: Suggestion; childId: stri
               <p className="text-[10px] text-[#465940]/50 uppercase font-semibold">ბოლო ჩანაწერები</p>
               {s.logs.slice(0, 3).map(lg => (
                 <div key={lg.id} className="flex items-center gap-2 text-xs text-[#465940]/70">
-                  <span>{lg.ate ? (lg.liked ? '😊' : '✓') : '🚫'}</span>
+                  <span>{lg.ate ? (lg.liked ? 'მოეწონა' : 'ვცადა') : 'არ ჭამა'}</span>
                   <span>{new Date(lg.eatenAt).toLocaleDateString('ka-GE')}</span>
                   {lg.comment && <span className="italic">— {lg.comment}</span>}
                 </div>
@@ -309,7 +306,7 @@ export default function FirstFoodsTab({ child }: { child: any }) {
       <div className="bg-[#FDFBF0] rounded-2xl border border-[#465940]/10 shadow-sm p-5">
         <div className="flex items-center justify-between mb-3">
           <div>
-            <h2 className="text-xl font-black text-[#465940]">🍼 პირველი საკვები</h2>
+            <h2 className="text-xl font-black text-[#465940]">პირველი საკვები</h2>
             <p className="text-xs text-[#465940]/60 mt-0.5">{child.name} · {ageMonths} თვე</p>
           </div>
           <div className="flex gap-3 text-center">
@@ -342,7 +339,7 @@ export default function FirstFoodsTab({ child }: { child: any }) {
         {/* BLW toggle */}
         <div className="mt-3 pt-3 border-t border-[#465940]/10 flex items-center justify-between">
           <div>
-            <span className="text-xs font-bold text-[#465940]">✂️ BLW კვება</span>
+            <span className="text-xs font-bold text-[#465940]">BLW კვება</span>
             <span className="ml-2 text-[10px] text-[#465940]/50">
               {blwMode ? 'ჩართულია — ნაჭრებად, პიურეს გარეშე' : 'გამორთულია — პიურე რეჟიმი'}
             </span>
@@ -358,12 +355,12 @@ export default function FirstFoodsTab({ child }: { child: any }) {
       <div className="flex gap-2">
         <button onClick={() => setActiveSection('ingredients')}
           className={`flex-1 py-2.5 rounded-full text-sm font-bold transition ${activeSection === 'ingredients' ? 'bg-[#465940] text-[#FDFBF0]' : 'bg-[#FDFBF0] border border-[#465940]/20 text-[#465940]/70'}`}>
-          🥕 ინგრედიენტები ({triedCount}/{ageAppropriate.length})
+          ინგრედიენტები ({triedCount}/{ageAppropriate.length})
         </button>
         {!blwMode && (
           <button onClick={() => setActiveSection('suggestions')}
             className={`flex-1 py-2.5 rounded-full text-sm font-bold transition ${activeSection === 'suggestions' ? 'bg-[#465940] text-[#FDFBF0]' : 'bg-[#FDFBF0] border border-[#465940]/20 text-[#465940]/70'}`}>
-            🍲 შეიძლება ({suggestionsCount})
+            შეიძლება ({suggestionsCount})
           </button>
         )}
       </div>
@@ -375,7 +372,7 @@ export default function FirstFoodsTab({ child }: { child: any }) {
             {(['all', 'vegetable', 'fruit'] as const).map(cat => (
               <button key={cat} onClick={() => setCategoryFilter(cat)}
                 className={`px-4 py-1.5 rounded-full text-xs font-bold transition ${categoryFilter === cat ? 'bg-[#465940] text-[#FDFBF0]' : 'bg-[#FDFBF0] border border-[#465940]/20 text-[#465940]/70'}`}>
-                {cat === 'all' ? 'ყველა' : cat === 'vegetable' ? '🥦 ბოსტნეული' : '🍎 ხილი'}
+                {cat === 'all' ? 'ყველა' : cat === 'vegetable' ? 'ბოსტნეული' : 'ხილი'}
               </button>
             ))}
           </div>
@@ -385,7 +382,7 @@ export default function FirstFoodsTab({ child }: { child: any }) {
             <>
               {(categoryFilter === 'all' || categoryFilter === 'vegetable') && vegetables.length > 0 && (
                 <div className="bg-[#FDFBF0] rounded-2xl border border-[#465940]/10 shadow-sm p-4 space-y-2">
-                  <p className="text-xs font-black text-[#465940]/60 uppercase tracking-wide mb-3">🥦 ბოსტნეული</p>
+                  <p className="text-xs font-black text-[#465940]/60 uppercase tracking-wide mb-3">ბოსტნეული</p>
                   {vegetables.map(ing => (
                     <IngredientCard key={ing.id} ing={ing} childId={child.id} blwMode={blwMode} ageMonths={ageMonths}
                       onUpdate={() => { fetchIngredients(); fetchAllowed(); }} />
@@ -394,7 +391,7 @@ export default function FirstFoodsTab({ child }: { child: any }) {
               )}
               {(categoryFilter === 'all' || categoryFilter === 'fruit') && fruits.length > 0 && (
                 <div className="bg-[#FDFBF0] rounded-2xl border border-[#465940]/10 shadow-sm p-4 space-y-2">
-                  <p className="text-xs font-black text-[#465940]/60 uppercase tracking-wide mb-3">🍎 ხილი</p>
+                  <p className="text-xs font-black text-[#465940]/60 uppercase tracking-wide mb-3">ხილი</p>
                   {fruits.map(ing => (
                     <IngredientCard key={ing.id} ing={ing} childId={child.id} blwMode={blwMode} ageMonths={ageMonths}
                       onUpdate={() => { fetchIngredients(); fetchAllowed(); }} />
@@ -416,7 +413,7 @@ export default function FirstFoodsTab({ child }: { child: any }) {
               <div className="space-y-2">{[1,2,3].map(i => <div key={i} className="h-16 rounded-xl bg-[#465940]/10 animate-pulse" />)}</div>
             ) : blwSoftPieces.length === 0 ? (
               <div className="bg-[#FDFBF0] rounded-2xl border border-[#465940]/10 shadow-sm p-10 text-center">
-                <p className="text-4xl mb-3">✂️</p>
+                <p className="text-4xl mb-3"></p>
                 <p className="font-bold text-[#465940] mb-1">BLW კომბინაცია ჯერ არ არის</p>
                 <p className="text-sm text-[#465940]/60">გასინჯე მეტი ინგრედიენტი — ლმობიერი ნაჭრების კომბინაციები გამოჩნდება</p>
               </div>
@@ -434,7 +431,7 @@ export default function FirstFoodsTab({ child }: { child: any }) {
           /* Puree mode: DB combo suggestions */
           ) : safeCount === 0 ? (
             <div className="bg-[#FDFBF0] rounded-2xl border border-[#465940]/10 shadow-sm p-10 text-center">
-              <p className="text-4xl mb-3">🥣</p>
+              <p className="text-4xl mb-3"></p>
               <p className="font-bold text-[#465940] mb-1">ჯერ ინგრედიენტი არ გასინჯულა</p>
               <p className="text-sm text-[#465940]/60">მონიშნე ინგრედიენტები ჩანართში რომელი პროდუქტები გასინჯა ბავშვმა</p>
             </div>
@@ -442,7 +439,7 @@ export default function FirstFoodsTab({ child }: { child: any }) {
             <div className="space-y-2">{[1,2,3].map(i => <div key={i} className="h-16 rounded-xl bg-[#465940]/10 animate-pulse" />)}</div>
           ) : allowed.length === 0 ? (
             <div className="bg-[#FDFBF0] rounded-2xl border border-[#465940]/10 shadow-sm p-10 text-center">
-              <p className="text-4xl mb-3">🍲</p>
+              <p className="text-4xl mb-3"></p>
               <p className="font-bold text-[#465940] mb-1">ჯერ კომბინაცია არ არის</p>
               <p className="text-sm text-[#465940]/60">გასინჯე მეტი ინგრედიენტი — პიურე კომბინაციები გამოჩნდება</p>
             </div>

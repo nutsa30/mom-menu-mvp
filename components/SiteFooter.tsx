@@ -89,7 +89,7 @@ export default function SiteFooter() {
                 </a>
                 <button onClick={copyEmail} title={ka ? 'კოპირება' : 'Copy'}
                   className="ml-1 text-[#FDFBF0]/40 hover:text-[#FDFBF0] transition text-xs">
-                  {copied ? '✓' : '📋'}
+                  {copied ? '✓' : (ka ? 'კოპირება' : 'Copy')}
                 </button>
               </li>
               <li className="flex items-start gap-2 text-sm text-[#FDFBF0]/70">

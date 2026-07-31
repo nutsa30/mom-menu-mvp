@@ -30,7 +30,7 @@ export default function VerifyEmailPage({
 
         {searchParams.error ? (
           <>
-            <div className="w-16 h-16 rounded-full bg-red-100 flex items-center justify-center text-3xl mx-auto mb-6">❌</div>
+            <div className="w-16 h-16 rounded-full bg-red-100 flex items-center justify-center text-3xl mx-auto mb-6"></div>
             <h1 className="text-2xl font-black text-[#465940] mb-3">ბმული არასწორია</h1>
             <p className="text-[#465940]/70 text-sm mb-6">
               დადასტურების ბმული არასწორია ან ვადა გასულია.
@@ -64,7 +64,7 @@ export default function VerifyEmailPage({
           </>
         ) : (
           <>
-            <div className="w-16 h-16 rounded-full bg-[#465940]/10 flex items-center justify-center text-3xl mx-auto mb-6">📧</div>
+            <div className="w-16 h-16 rounded-full bg-[#465940]/10 flex items-center justify-center text-3xl mx-auto mb-6"></div>
             <h1 className="text-2xl font-black text-[#465940] mb-3">შეამოწმეთ ელფოსტა</h1>
             <p className="text-[#465940]/70 text-sm mb-6 leading-6">
               დადასტურების ბმული გამოგზავნილია. გთხოვთ გახსნათ ელფოსტა და დააჭიროთ ბმულს.
