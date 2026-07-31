@@ -130,6 +130,8 @@ function TodayTab({ child, allDishes, planStart, isFullPlan }: { child: any; all
   const [selectedDate, setSelectedDate] = useState(() =>
     weekDays.includes(todayStr) ? todayStr : weekDays[0]
   );
+  const isToday = selectedDate === todayStr;
+  const isFutureDay = selectedDate > todayStr;
 
   useEffect(() => {
     const today = localToday();
@@ -327,12 +329,13 @@ function TodayTab({ child, allDishes, planStart, isFullPlan }: { child: any; all
                     </p>
                   )}
 
-                  {/* Actions — all days */}
-                  {log && (
+                  {/* Actions — only today is fully interactive */}
+                  {log && !isFutureDay && (
                     <div className="flex gap-2">
                       <button
-                        onClick={() => markEaten(log.id, !log.wasEaten)}
-                        className={`px-3 py-1.5 rounded-full text-xs font-bold transition ${
+                        onClick={() => isToday && markEaten(log.id, !log.wasEaten)}
+                        disabled={!isToday}
+                        className={`px-3 py-1.5 rounded-full text-xs font-bold transition ${!isToday ? 'cursor-default' : ''} ${
                           eaten
                             ? 'bg-[#465940] text-[#FDFBF0] hover:bg-[#465940]/80'
                             : 'bg-[#465940]/10 text-[#465940] hover:bg-[#465940] hover:text-[#FDFBF0]'
@@ -340,7 +343,7 @@ function TodayTab({ child, allDishes, planStart, isFullPlan }: { child: any; all
                       >
                         {eaten ? '✓ ჭამა' : 'ჭამა'}
                       </button>
-                      {!isIngredient && (
+                      {!isIngredient && isToday && (
                         <button
                           onClick={() => setSubstituteFor(log.id)}
                           className="px-3 py-1.5 rounded-full text-xs font-bold bg-[#465940]/10 text-[#465940] hover:bg-[#465940] hover:text-[#FDFBF0] transition"
@@ -348,7 +351,7 @@ function TodayTab({ child, allDishes, planStart, isFullPlan }: { child: any; all
                           სხვა
                         </button>
                       )}
-                      {dish && (
+                      {dish && isToday && (
                         <button
                           onClick={() => setRecipeModal(dish)}
                           className="px-3 py-1.5 rounded-full text-xs font-bold bg-[#465940]/10 text-[#465940] hover:bg-[#465940] hover:text-[#FDFBF0] transition"
@@ -362,9 +365,9 @@ function TodayTab({ child, allDishes, planStart, isFullPlan }: { child: any; all
 
                 {/* Right – circular image */}
                 <button
-                  className={`flex-shrink-0 w-[72px] h-[72px] rounded-full overflow-hidden bg-[#f0f8ee] transition ${dish ? 'hover:ring-2 hover:ring-[#465940]/40' : ''}`}
-                  onClick={() => dish && setRecipeModal(dish)}
-                  disabled={!dish}
+                  className={`flex-shrink-0 w-[72px] h-[72px] rounded-full overflow-hidden bg-[#f0f8ee] transition ${dish && isToday ? 'hover:ring-2 hover:ring-[#465940]/40' : ''}`}
+                  onClick={() => dish && isToday && setRecipeModal(dish)}
+                  disabled={!dish || !isToday}
                 >
                   {imageUrl
                     ? <img src={imageUrl} className="w-full h-full object-cover" alt="" />
