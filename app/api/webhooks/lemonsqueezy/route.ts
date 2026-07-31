@@ -30,6 +30,13 @@ export async function POST(req: Request) {
     return NextResponse.json({ received: true });
   }
 
+  // subscription_payment_success/failed/recovered carry a subscription-invoice object
+  // in `data` (its `id` is an invoice ID, not a subscription ID) — only events whose
+  // `data` is an actual subscription object should ever write to lsSubscriptionId.
+  if (payload?.data?.type !== 'subscriptions') {
+    return NextResponse.json({ received: true });
+  }
+
   const attrs = payload?.data?.attributes;
   const lsSubscriptionId: string | undefined = payload?.data?.id;
   if (!attrs || !lsSubscriptionId) return NextResponse.json({ received: true });
