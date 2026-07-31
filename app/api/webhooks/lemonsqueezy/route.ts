@@ -1,11 +1,16 @@
 import { prisma } from '@/lib/prisma';
-import { verifyWebhookSignature, variantIdToPlan } from '@/lib/lemonsqueezy';
+import { verifyWebhookSignature, variantIdToPlan, cancelSubscription } from '@/lib/lemonsqueezy';
 import { sendSubscriptionConfirmationEmail } from '@/lib/email';
 import { NextResponse } from 'next/server';
 
 const PLAN_LABELS: Record<string, string> = {
   RECIPE_PLAN: 'რეცეპტების წვდომა',
   FULL_PLAN: 'სრული პაკეტი',
+};
+
+const PLAN_PRICES: Record<string, number> = {
+  RECIPE_PLAN: 15,
+  FULL_PLAN: 21,
 };
 
 const ACTIVE_STATUSES = new Set(['on_trial', 'active']);
@@ -45,7 +50,8 @@ export async function POST(req: Request) {
 
   const status: string = attrs.status;
   const isActive = ACTIVE_STATUSES.has(status);
-  const wasFirstActivation = !user.lsSubscriptionId;
+  const previousLsSubscriptionId = user.lsSubscriptionId;
+  const isNewSubscription = lsSubscriptionId !== previousLsSubscriptionId;
 
   const data: Record<string, any> = {
     lsSubscriptionId,
@@ -67,8 +73,18 @@ export async function POST(req: Request) {
 
   await prisma.user.update({ where: { id: user.id }, data });
 
-  if (isActive && plan && wasFirstActivation) {
-    const price = plan === 'RECIPE_PLAN' ? 15 : 30;
+  if (isActive && plan && isNewSubscription) {
+    // Switching plans (e.g. Recipe Plan -> Full Plan) buys a second, separate Lemon
+    // Squeezy subscription — cancel the old one so the customer isn't billed for both.
+    if (previousLsSubscriptionId && previousLsSubscriptionId !== lsSubscriptionId) {
+      try {
+        await cancelSubscription(previousLsSubscriptionId);
+      } catch (err: any) {
+        console.error('Failed to cancel previous Lemon Squeezy subscription:', previousLsSubscriptionId, err.message);
+      }
+    }
+
+    const price = PLAN_PRICES[plan];
     const start = new Date();
     const end = data.subscriptionRenewsAt ?? new Date(start.getTime() + 30 * 24 * 60 * 60 * 1000);
     sendSubscriptionConfirmationEmail(user.email, user.name, PLAN_LABELS[plan], price, start, end).catch(() => {});

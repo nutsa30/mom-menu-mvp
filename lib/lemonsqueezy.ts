@@ -82,6 +82,24 @@ export async function getSubscriptionPortalUrl(lsSubscriptionId: string) {
   return json.data.attributes.urls.customer_portal as string;
 }
 
+export async function cancelSubscription(lsSubscriptionId: string) {
+  const res = await fetch(`${API_BASE}/subscriptions/${lsSubscriptionId}`, {
+    method: 'PATCH',
+    headers: apiHeaders(),
+    body: JSON.stringify({
+      data: {
+        type: 'subscriptions',
+        id: lsSubscriptionId,
+        attributes: { cancelled: true },
+      },
+    }),
+  });
+  if (!res.ok) {
+    const text = await res.text();
+    throw new Error(`Lemon Squeezy subscription cancel failed (${res.status}): ${text}`);
+  }
+}
+
 export function verifyWebhookSignature(rawBody: string, signatureHeader: string | null): boolean {
   const secret = process.env.LEMONSQUEEZY_WEBHOOK_SECRET;
   if (!secret || !signatureHeader) return false;
