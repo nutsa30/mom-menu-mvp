@@ -136,6 +136,10 @@ export default function HomeClient({ s, dishes, dishCount, recentBlogs }: {
       if (res.ok && data.url) { window.location.href = data.url; return; }
       if (data.error === 'already_subscribed') {
         alert(ka ? 'ეს პაკეტი უკვე აქტიური გაქვთ' : 'You already have this plan active');
+      } else if (data.error === 'downgrade_not_allowed') {
+        alert(ka
+          ? 'სრული პაკეტიდან რეცეპტების პაკეტზე პირდაპირ გადასვლა ვერ ხერხდება — ჯერ გააუქმეთ არსებული პაკეტი დეშბორდიდან, პერიოდის დასრულების შემდეგ შეძლებთ რეცეპტების პაკეტის დაწყებას.'
+          : 'You can’t switch directly from Full Plan to Recipe Plan — cancel your current plan from the dashboard first, then start Recipe Plan once it ends.');
       } else {
         alert(ka ? 'ვერ მოხერხდა გახსნა, სცადეთ მოგვიანებით' : 'Could not start checkout, please try again');
       }

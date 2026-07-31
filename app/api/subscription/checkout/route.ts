@@ -22,6 +22,13 @@ export async function POST(req: Request) {
     return NextResponse.json({ error: 'already_subscribed' }, { status: 400 });
   }
 
+  if (user.subscriptionStatus === 'FULL_PLAN' && plan === 'RECIPE_PLAN') {
+    // Downgrading isn't a direct switch — cancel Full Plan first (access continues
+    // until the paid period ends), then Recipe Plan becomes available once the
+    // subscription actually expires and the account drops to FREE.
+    return NextResponse.json({ error: 'downgrade_not_allowed' }, { status: 400 });
+  }
+
   try {
     const url = await createCheckout({
       plan,
@@ -29,6 +36,9 @@ export async function POST(req: Request) {
       email: user.email,
       name: user.name,
       discountCode: discountCode || undefined,
+      // Once someone has ever had a subscription, later checkouts (upgrades,
+      // resubscribing after expiry) skip the trial — it's a one-time new-customer perk.
+      skipTrial: !!user.subscriptionStartedAt,
     });
     return NextResponse.json({ url });
   } catch (err: any) {

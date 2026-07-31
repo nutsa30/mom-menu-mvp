@@ -27,6 +27,7 @@ export async function createCheckout(opts: {
   email: string;
   name: string;
   discountCode?: string;
+  skipTrial?: boolean;
 }) {
   const variantId = PLAN_VARIANT_IDS[opts.plan];
   const storeId = process.env.LEMONSQUEEZY_STORE_ID;
@@ -49,6 +50,7 @@ export async function createCheckout(opts: {
         type: 'checkouts',
         attributes: {
           checkout_data: checkoutData,
+          checkout_options: opts.skipTrial ? { skip_trial: true } : undefined,
           product_options: {
             redirect_url: `${process.env.NEXT_PUBLIC_APP_URL}/dashboard?lang=ka&sub=success`,
           },
