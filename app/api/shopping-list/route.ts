@@ -34,6 +34,12 @@ const UNIT_DISPLAY: Record<string, string> = {
 // e.g. "მწიფე ბანანი" (ripe banana) should still be grouped with plain "ბანანი"
 const LEADING_DESCRIPTORS = ['მწიფე', 'რბილი'];
 
+// Ground flour is made from the whole grain you'd buy anyway — don't list it separately
+const FLOUR_MERGE: Record<string, string> = {
+  'შვრიის ფქვილი': 'შვრია',
+  'წიწიბურას ფქვილი': 'წიწიბურა',
+};
+
 function fmtNum(n: number): string {
   if (Number.isInteger(n)) return `${n}`;
   const whole = Math.floor(n);
@@ -59,6 +65,9 @@ function normalizeName(name: string): string {
   for (const d of LEADING_DESCRIPTORS) {
     if (n.startsWith(d + ' ')) { n = n.slice(d.length + 1).trim(); break; }
   }
+  // "წყალი ან რძე" (water or milk) — water is free, list the actual thing to buy
+  if (n.startsWith('წყალი ან ')) n = n.slice('წყალი ან '.length).trim();
+  if (FLOUR_MERGE[n]) n = FLOUR_MERGE[n];
   return n;
 }
 
@@ -113,11 +122,18 @@ interface IngredientItem {
   amount: string;   // e.g. "3 ც", "150 გ", "×3", ""
 }
 
-function aggregateIngredients(all: string[]): IngredientItem[] {
+function aggregateIngredients(
+  all: string[],
+  seasonalFruits: Map<string, Set<string>>,
+  currentSeason: string,
+): IngredientItem[] {
   const groups = new Map<string, { display: string; sums: Map<string, number>; bare: number }>();
 
   for (const raw of all) {
     const p = parseIng(raw);
+    // Only known fruits get season-gated — vegetables and everything else always show
+    const fruitSeasons = seasonalFruits.get(p.key);
+    if (fruitSeasons && !fruitSeasons.has(currentSeason)) continue;
     if (!groups.has(p.key)) groups.set(p.key, { display: p.display, sums: new Map(), bare: 0 });
     const g = groups.get(p.key)!;
     if (p.qty > 0) {
@@ -193,6 +209,9 @@ export async function GET(req: NextRequest) {
     : month <= 7 ? 'SUMMER'
     : 'AUTUMN';
 
+  const fruitRows = await prisma.ingredient.findMany({ where: { type: 'FRUIT' }, select: { titleKa: true, seasons: true } });
+  const seasonalFruits = new Map(fruitRows.map((f) => [f.titleKa.toLowerCase(), new Set(f.seasons)]));
+
   const allIngredients: string[] = [];
   const days: { date: string; dishes: string[] }[] = [];
 
@@ -258,6 +277,6 @@ export async function GET(req: NextRequest) {
     days.push({ date, dishes: dayDishes });
   }
 
-  const ingredients = aggregateIngredients(allIngredients);
+  const ingredients = aggregateIngredients(allIngredients, seasonalFruits, currentSeason);
   return NextResponse.json({ ingredients, days });
 }
