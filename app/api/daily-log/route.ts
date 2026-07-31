@@ -79,6 +79,11 @@ export async function GET(req: NextRequest) {
   const child = await prisma.child.findFirst({ where: { id: childId, userId: session.id } });
   if (!child) return NextResponse.json({ error: 'Not found' }, { status: 404 });
 
+  const user = await prisma.user.findUnique({ where: { id: session.id }, select: { subscriptionStatus: true } });
+  if (user?.subscriptionStatus !== 'FULL_PLAN') {
+    return NextResponse.json({ error: 'full_plan_required' }, { status: 403 });
+  }
+
   let logs = await prisma.dailyLog.findMany({
     where: { childId, date },
     include: { dish: true, ingredient: true },

@@ -114,7 +114,7 @@ function IntroductionBanner({ childId, childName }: { childId: string; childName
 }
 
 // ── Today Tab ────────────────────────────────────────────────────────────
-function TodayTab({ child, allDishes, planStart }: { child: any; allDishes: any[]; planStart: string }) {
+function TodayTab({ child, allDishes, planStart, isFullPlan }: { child: any; allDishes: any[]; planStart: string; isFullPlan: boolean }) {
   const todayStr = localToday();
   const [logs, setLogs] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
@@ -138,13 +138,13 @@ function TodayTab({ child, allDishes, planStart }: { child: any; allDishes: any[
   }, [planStart, child?.id]);
 
   const fetchLogs = useCallback(async (date: string) => {
-    if (!child) return;
+    if (!child || !isFullPlan) return;
     setLoading(true);
     const res = await fetch(`/api/daily-log?childId=${child.id}&date=${date}`);
     const data = await res.json();
     setLogs(Array.isArray(data) ? data : []);
     setLoading(false);
-  }, [child?.id]);
+  }, [child?.id, isFullPlan]);
 
   useEffect(() => {
     if (!child) return;
@@ -158,7 +158,7 @@ function TodayTab({ child, allDishes, planStart }: { child: any; allDishes: any[
 
   // Pre-generate all 7 days sequentially to avoid exhausting Neon connection pool
   useEffect(() => {
-    if (!child) return;
+    if (!child || !isFullPlan) return;
     let cancelled = false;
     const prefetch = async () => {
       for (const date of weekDays) {
@@ -168,7 +168,7 @@ function TodayTab({ child, allDishes, planStart }: { child: any; allDishes: any[
     };
     prefetch();
     return () => { cancelled = true; };
-  }, [child?.id, planStart]);
+  }, [child?.id, planStart, isFullPlan]);
 
   const markEaten = async (logId: string, wasEaten: boolean) => {
     const res = await fetch(`/api/daily-log/${logId}`, {
@@ -220,6 +220,17 @@ function TodayTab({ child, allDishes, planStart }: { child: any; allDishes: any[
   if (!child) return (
     <div className={`${card} p-10 text-center`}>
       <p className="text-[#465940]/60 text-sm">შვილის მიმატება "შვილი" tab-ში.</p>
+    </div>
+  );
+
+  if (!isFullPlan) return (
+    <div className={`${card} p-10 text-center`}>
+      <div className="w-16 h-16 rounded-full bg-[#465940] flex items-center justify-center text-3xl mx-auto mb-5">🔒</div>
+      <h2 className="text-xl font-black text-[#465940] mb-2">დღის კვების გეგმა დაბლოკილია</h2>
+      <p className="text-[#465940]/70 text-sm mb-6 max-w-sm mx-auto">ყოველდღიური კვების გეგმის ავტომატური გენერაცია ხელმისაწვდომია მხოლოდ სრული პაკეტით.</p>
+      <a href="/subscription" className="inline-flex items-center justify-center rounded-full bg-[#465940] px-8 py-3 font-semibold text-[#FDFBF0] shadow-lg hover:scale-105 transition">
+        პაკეტის განახლება
+      </a>
     </div>
   );
 
@@ -1687,7 +1698,7 @@ export default function DashboardClient({ user }: { user: any }) {
       {/* Content */}
       <main className="flex-1 p-4 sm:p-6 max-w-4xl mx-auto w-full">
         {tab === 'firstfoods' && activeChild && <FirstFoodsTab child={activeChild} />}
-        {tab === 'today' && <TodayTab child={activeChild} allDishes={allDishes} planStart={planStart} />}
+        {tab === 'today' && <TodayTab child={activeChild} allDishes={allDishes} planStart={planStart} isFullPlan={isFullPlan} />}
         {tab === 'nutrition' && <NutritionTab child={activeChild} />}
         {tab === 'shopping' && <ShoppingListTab child={activeChild} planStart={planStart} />}
         {tab === 'child' && <ChildTab children={children} userId={user.id} onUpdate={onChildUpdate} onDelete={onChildDelete} />}
