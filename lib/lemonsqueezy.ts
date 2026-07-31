@@ -72,6 +72,20 @@ export async function createCheckout(opts: {
   return json.data.attributes.url as string;
 }
 
+export async function hasBeenCustomerBefore(email: string): Promise<boolean> {
+  const storeId = process.env.LEMONSQUEEZY_STORE_ID;
+  if (!storeId || !process.env.LEMONSQUEEZY_API_KEY) return false;
+
+  const url = `${API_BASE}/customers?filter[store_id]=${storeId}&filter[email]=${encodeURIComponent(email)}`;
+  const res = await fetch(url, { headers: apiHeaders() });
+  if (!res.ok) {
+    console.error('Lemon Squeezy customer lookup failed:', res.status, await res.text());
+    return false; // fail open — a lookup error shouldn't block a legitimate new customer's trial
+  }
+  const json = await res.json();
+  return Array.isArray(json.data) && json.data.length > 0;
+}
+
 export async function getSubscriptionPortalUrl(lsSubscriptionId: string) {
   const res = await fetch(`${API_BASE}/subscriptions/${lsSubscriptionId}`, {
     headers: apiHeaders(),

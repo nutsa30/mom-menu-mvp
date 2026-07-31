@@ -1,6 +1,6 @@
 import { prisma } from '@/lib/prisma';
 import { getSession } from '@/lib/auth';
-import { createCheckout } from '@/lib/lemonsqueezy';
+import { createCheckout, hasBeenCustomerBefore } from '@/lib/lemonsqueezy';
 import { NextResponse } from 'next/server';
 
 export async function POST(req: Request) {
@@ -30,15 +30,18 @@ export async function POST(req: Request) {
   }
 
   try {
+    // Skip the trial if: this account has subscribed before, OR this email has ever
+    // been a Lemon Squeezy customer of ours (catches someone registering a second
+    // account with the same billing email to reset their trial).
+    const skipTrial = !!user.subscriptionStartedAt || (await hasBeenCustomerBefore(user.email));
+
     const url = await createCheckout({
       plan,
       userId: user.id,
       email: user.email,
       name: user.name,
       discountCode: discountCode || undefined,
-      // Once someone has ever had a subscription, later checkouts (upgrades,
-      // resubscribing after expiry) skip the trial — it's a one-time new-customer perk.
-      skipTrial: !!user.subscriptionStartedAt,
+      skipTrial,
     });
     return NextResponse.json({ url });
   } catch (err: any) {
