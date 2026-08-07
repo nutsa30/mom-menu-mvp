@@ -2,8 +2,7 @@ import crypto from 'crypto';
 
 const API_BASE = process.env.QUICKPAY_API_BASE || 'https://api.quickpay.ge/v1';
 
-// TODO(confirm): exact slug for the tokenizing checkout — check GET /gateways
-// for the `_subscriptions` variant of your preferred gateway (e.g. "bog_card_subscriptions").
+// Confirmed via GET /gateways: the only active gateway on this brand is "fastoo_subscriptions".
 const SUBSCRIPTION_GATEWAY_SLUG = process.env.QUICKPAY_SUBSCRIPTION_GATEWAY_SLUG;
 
 export const PLAN_AMOUNTS: Record<'RECIPE_PLAN' | 'FULL_PLAN', string | undefined> = {
