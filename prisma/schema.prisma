@@ -58,6 +58,8 @@ model User {
   lsCustomerId           String?
   lsSubscriptionId       String?            @unique
 
+  qpSubscriptionToken    String?            @unique
+
   isBlocked              Boolean            @default(false)
   isGifted               Boolean            @default(false)
 
