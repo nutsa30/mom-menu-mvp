@@ -46,6 +46,8 @@ export async function POST(req: Request) {
     return NextResponse.json({ url });
   } catch (err: any) {
     console.error('Lemon Squeezy checkout error:', err.message);
-    return NextResponse.json({ error: 'checkout_failed' }, { status: 502 });
+    // Status 400, not 502 — Cloudflare replaces 502/503/504 origin responses with its
+    // own HTML error page, which broke JSON parsing on the client for this exact path.
+    return NextResponse.json({ error: 'checkout_failed' }, { status: 400 });
   }
 }

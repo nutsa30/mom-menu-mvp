@@ -37,6 +37,8 @@ export async function POST(req: Request) {
     console.error('Quickpay checkout error:', err.message);
     // TEMP: surfacing the raw error message to the client while we're debugging the
     // integration — remove `detail` once this is confirmed working end-to-end.
-    return NextResponse.json({ error: 'checkout_failed', detail: err.message }, { status: 502 });
+    // Status 400 (not 502) — Cloudflare intercepts 502/503/504 from the origin and
+    // replaces the body with its own HTML error page, which broke error reporting here.
+    return NextResponse.json({ error: 'checkout_failed', detail: err.message }, { status: 400 });
   }
 }
