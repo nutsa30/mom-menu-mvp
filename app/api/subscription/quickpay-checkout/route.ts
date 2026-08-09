@@ -35,6 +35,8 @@ export async function POST(req: Request) {
     return NextResponse.json({ url });
   } catch (err: any) {
     console.error('Quickpay checkout error:', err.message);
-    return NextResponse.json({ error: 'checkout_failed' }, { status: 502 });
+    // TEMP: surfacing the raw error message to the client while we're debugging the
+    // integration — remove `detail` once this is confirmed working end-to-end.
+    return NextResponse.json({ error: 'checkout_failed', detail: err.message }, { status: 502 });
   }
 }

@@ -88,10 +88,10 @@ export default function SubscriptionPage() {
       } else if (data.error === 'downgrade_not_allowed') {
         alert('სრული პაკეტიდან რეცეპტების პაკეტზე პირდაპირ გადასვლა ვერ ხერხდება.');
       } else {
-        alert('ვერ მოხერხდა გახსნა, სცადეთ მოგვიანებით');
+        alert('ვერ მოხერხდა გახსნა: ' + (data.detail || 'უცნობი შეცდომა'));
       }
-    } catch {
-      alert('შეცდომა');
+    } catch (e: any) {
+      alert('შეცდომა: ' + (e?.message || 'unknown'));
     } finally {
       setLoadingPlan(null);
     }

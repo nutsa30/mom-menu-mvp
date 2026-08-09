@@ -160,9 +160,9 @@ export default function HomeClient({ s, dishes, dishCount, recentBlogs }: {
       if (data.error === 'already_subscribed') {
         alert(ka ? 'ეს პაკეტი უკვე აქტიური გაქვთ' : 'You already have this plan active');
       } else {
-        alert(ka ? 'ვერ მოხერხდა გახსნა, სცადეთ მოგვიანებით' : 'Could not start checkout, please try again');
+        alert((ka ? 'ვერ მოხერხდა გახსნა: ' : 'Could not start checkout: ') + (data.detail || 'unknown'));
       }
-    } catch { alert(ka ? 'შეცდომა' : 'Error'); }
+    } catch (e: any) { alert((ka ? 'შეცდომა: ' : 'Error: ') + (e?.message || 'unknown')); }
     finally { setLoadingPlan(null); }
   };
 
