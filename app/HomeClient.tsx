@@ -147,6 +147,25 @@ export default function HomeClient({ s, dishes, dishCount, recentBlogs }: {
     finally { setLoadingPlan(null); }
   };
 
+  const handleSubscribeQuickpay = async (plan: 'RECIPE_PLAN' | 'FULL_PLAN') => {
+    setLoadingPlan(plan);
+    try {
+      const res = await fetch('/api/subscription/quickpay-checkout', {
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ plan }),
+      });
+      if (res.status === 401) { router.push(`/login?lang=${locale}`); return; }
+      const data = await res.json();
+      if (res.ok && data.url) { window.location.href = data.url; return; }
+      if (data.error === 'already_subscribed') {
+        alert(ka ? 'ეს პაკეტი უკვე აქტიური გაქვთ' : 'You already have this plan active');
+      } else {
+        alert(ka ? 'ვერ მოხერხდა გახსნა, სცადეთ მოგვიანებით' : 'Could not start checkout, please try again');
+      }
+    } catch { alert(ka ? 'შეცდომა' : 'Error'); }
+    finally { setLoadingPlan(null); }
+  };
+
   const discountedPrice = (plan: string, base: number) => {
     const pct = promoStatus[plan]?.valid ? promoStatus[plan].discount : 0;
     return pct > 0 ? Math.round(base * (1 - pct / 100)) : null;
@@ -407,6 +426,10 @@ export default function HomeClient({ s, dishes, dishCount, recentBlogs }: {
                 className="w-full py-3.5 mt-4 border border-[#465940] text-[#465940] rounded-full font-semibold hover:bg-[#465940]/10 transition disabled:opacity-60">
                 {currentPlan === 'RECIPE_PLAN' ? (ka ? '✓ აქტიურია' : '✓ Active') : loadingPlan === 'RECIPE_PLAN' ? (ka ? 'მუშავდება...' : 'Processing...') : (ka ? 'დაწყება' : 'Get Started')}
               </button>
+              <button onClick={() => handleSubscribeQuickpay('RECIPE_PLAN')} disabled={loadingPlan !== null || currentPlan === 'RECIPE_PLAN'}
+                className="w-full py-2 mt-2 text-[#465940]/60 text-xs font-semibold underline disabled:opacity-40">
+                (ტესტი) QuickPay-ით გადახდა
+              </button>
             </div>
 
             {/* Plan 2 */}
@@ -461,6 +484,10 @@ export default function HomeClient({ s, dishes, dishCount, recentBlogs }: {
                 className="w-full py-3.5 mt-4 text-[#FDFBF0] rounded-full font-bold shadow-lg transition disabled:opacity-60"
                 style={{ background: '#465940' }}>
                 {currentPlan === 'FULL_PLAN' ? (ka ? '✓ აქტიურია' : '✓ Active') : loadingPlan === 'FULL_PLAN' ? (ka ? 'მუშავდება...' : 'Processing...') : (ka ? 'დაწყება' : 'Get Started')}
+              </button>
+              <button onClick={() => handleSubscribeQuickpay('FULL_PLAN')} disabled={loadingPlan !== null || currentPlan === 'FULL_PLAN'}
+                className="w-full py-2 mt-2 text-[#465940]/60 text-xs font-semibold underline disabled:opacity-40">
+                (ტესტი) QuickPay-ით გადახდა
               </button>
             </div>
 
