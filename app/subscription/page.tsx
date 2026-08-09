@@ -70,6 +70,33 @@ export default function SubscriptionPage() {
     }
   };
 
+  const handleSubscribeQuickpay = async (plan: 'RECIPE_PLAN' | 'FULL_PLAN') => {
+    setLoadingPlan(plan);
+    try {
+      const res = await fetch('/api/subscription/quickpay-checkout', {
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ plan }),
+      });
+      if (res.status === 401) { router.push('/login'); return; }
+      const data = await res.json();
+      if (res.ok && data.url) {
+        window.location.href = data.url;
+        return;
+      }
+      if (data.error === 'already_subscribed') {
+        alert('ეს პაკეტი უკვე აქტიური გაქვთ');
+      } else if (data.error === 'downgrade_not_allowed') {
+        alert('სრული პაკეტიდან რეცეპტების პაკეტზე პირდაპირ გადასვლა ვერ ხერხდება.');
+      } else {
+        alert('ვერ მოხერხდა გახსნა, სცადეთ მოგვიანებით');
+      }
+    } catch {
+      alert('შეცდომა');
+    } finally {
+      setLoadingPlan(null);
+    }
+  };
+
   const discountedPrice = (plan: string, base: number) => {
     const pct = promoStatus[plan]?.valid ? promoStatus[plan].discount : 0;
     return pct > 0 ? Math.round(base * (1 - pct / 100)) : null;
@@ -130,6 +157,13 @@ export default function SubscriptionPage() {
               className="w-full py-3.5 mt-3 border border-[#465940] text-[#465940] rounded-full font-semibold hover:bg-[#465940]/10 transition disabled:opacity-60"
             >
               {currentPlan === 'RECIPE_PLAN' ? '✓ აქტიურია' : loadingPlan === 'RECIPE_PLAN' ? 'მუშავდება...' : 'დაწყება'}
+            </button>
+            <button
+              onClick={() => handleSubscribeQuickpay('RECIPE_PLAN')}
+              disabled={loadingPlan !== null || currentPlan === 'RECIPE_PLAN'}
+              className="w-full py-2 mt-2 text-[#465940]/60 text-xs font-semibold underline disabled:opacity-40"
+            >
+              (ტესტი) QuickPay-ით გადახდა
             </button>
           </div>
 
@@ -193,6 +227,13 @@ export default function SubscriptionPage() {
               style={{ background: '#465940' }}
             >
               {currentPlan === 'FULL_PLAN' ? '✓ აქტიურია' : loadingPlan === 'FULL_PLAN' ? 'მუშავდება...' : 'დაწყება'}
+            </button>
+            <button
+              onClick={() => handleSubscribeQuickpay('FULL_PLAN')}
+              disabled={loadingPlan !== null || currentPlan === 'FULL_PLAN'}
+              className="w-full py-2 mt-2 text-[#465940]/60 text-xs font-semibold underline disabled:opacity-40"
+            >
+              (ტესტი) QuickPay-ით გადახდა
             </button>
           </div>
 
