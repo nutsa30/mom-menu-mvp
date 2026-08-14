@@ -14,10 +14,10 @@ export async function GET() {
 
 export async function PUT(req: NextRequest) {
   await requireAdmin();
-  const { breakfastHour, lunchHour, snackHour, dinnerHour, weeklyHour } = await req.json();
+  const { breakfastHour, lunchHour, snackHour, dinnerHour, weeklyHour, paused } = await req.json();
   const schedule = await prisma.pushSchedule.upsert({
     where: { id: 'singleton' },
-    update: { breakfastHour, lunchHour, snackHour, dinnerHour, weeklyHour },
+    update: { breakfastHour, lunchHour, snackHour, dinnerHour, weeklyHour, ...(paused !== undefined && { paused }) },
     create: { id: 'singleton', breakfastHour, lunchHour, snackHour, dinnerHour, weeklyHour },
   });
   return NextResponse.json(schedule);

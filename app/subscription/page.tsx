@@ -39,13 +39,13 @@ export default function SubscriptionPage() {
     } finally { setPromoLoading(null); }
   };
 
-  const handleSubscribeQuickpay = async (plan: 'RECIPE_PLAN' | 'FULL_PLAN') => {
+  const handleSubscribeBog = async (plan: 'RECIPE_PLAN' | 'FULL_PLAN') => {
     setLoadingPlan(plan);
     const planLabel = plan === 'RECIPE_PLAN' ? 'რეცეპტების წვდომა' : 'სრული პაკეტი';
     const planPrice = plan === 'RECIPE_PLAN' ? 15 : 30;
     ga.subscribe(planLabel, planPrice);
     try {
-      const res = await fetch('/api/subscription/quickpay-checkout', {
+      const res = await fetch('/api/subscription/bog-checkout', {
         method: 'POST', headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ plan }),
       });
@@ -60,10 +60,10 @@ export default function SubscriptionPage() {
       } else if (data.error === 'downgrade_not_allowed') {
         alert('სრული პაკეტიდან რეცეპტების პაკეტზე პირდაპირ გადასვლა ვერ ხერხდება.');
       } else {
-        alert('ვერ მოხერხდა გახსნა: ' + (data.detail || 'უცნობი შეცდომა'));
+        alert('გადახდის სერვისი დროებით ტექნიკურ სამუშაოებზეა. გთხოვთ სცადოთ მოგვიანებით.');
       }
     } catch (e: any) {
-      alert('შეცდომა: ' + (e?.message || 'unknown'));
+      alert('გადახდის სერვისი დროებით ტექნიკურ სამუშაოებზეა. გთხოვთ სცადოთ მოგვიანებით.');
     } finally {
       setLoadingPlan(null);
     }
@@ -124,12 +124,15 @@ export default function SubscriptionPage() {
               <p className="text-[#465940] text-xs mb-2 font-semibold">{promoStatus['RECIPE_PLAN'].msg}</p>
             )}
             <button
-              onClick={() => handleSubscribeQuickpay('RECIPE_PLAN')}
+              onClick={() => handleSubscribeBog('RECIPE_PLAN')}
               disabled={loadingPlan !== null || currentPlan === 'RECIPE_PLAN'}
               className="w-full py-3.5 mt-3 border border-[#465940] text-[#465940] rounded-full font-semibold hover:bg-[#465940]/10 transition disabled:opacity-60"
             >
               {currentPlan === 'RECIPE_PLAN' ? '✓ აქტიურია' : loadingPlan === 'RECIPE_PLAN' ? 'მუშავდება...' : 'დაწყება'}
             </button>
+            <p className="text-[#465940]/50 text-xs mt-2 text-center">
+              ავტომატურად განახლდება ყოველ თვე. გაუქმება ნებისმიერ დროს.
+            </p>
           </div>
 
           {/* FULL_PLAN */}
@@ -186,13 +189,16 @@ export default function SubscriptionPage() {
               <p className="text-[#465940] text-xs mb-2 font-semibold">{promoStatus['FULL_PLAN'].msg}</p>
             )}
             <button
-              onClick={() => handleSubscribeQuickpay('FULL_PLAN')}
+              onClick={() => handleSubscribeBog('FULL_PLAN')}
               disabled={loadingPlan !== null || currentPlan === 'FULL_PLAN'}
               className="w-full py-3.5 mt-3 text-[#FDFBF0] rounded-full font-bold shadow-lg transition disabled:opacity-60"
               style={{ background: '#465940' }}
             >
               {currentPlan === 'FULL_PLAN' ? '✓ აქტიურია' : loadingPlan === 'FULL_PLAN' ? 'მუშავდება...' : 'დაწყება'}
             </button>
+            <p className="text-[#465940]/50 text-xs mt-2 text-center">
+              ავტომატურად განახლდება ყოველ თვე. გაუქმება ნებისმიერ დროს.
+            </p>
           </div>
 
         </div>

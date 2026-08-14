@@ -12,18 +12,20 @@ function geoDay()  {
   return new Date(ms).getUTCDay(); // 0=კვირა
 }
 
-async function getMealType(hour: number, day: number): Promise<string | null> {
+async function getScheduleAndMealType(hour: number, day: number) {
   const schedule = await prisma.pushSchedule.upsert({
     where: { id: 'singleton' },
     update: {},
     create: { id: 'singleton' },
   });
-  if (day === 0 && hour === schedule.weeklyHour) return 'weekly';
-  if (hour === schedule.breakfastHour) return 'breakfast';
-  if (hour === schedule.lunchHour)     return 'lunch';
-  if (hour === schedule.snackHour)     return 'snack';
-  if (hour === schedule.dinnerHour)    return 'dinner';
-  return null;
+  if (schedule.paused) return { schedule, mealType: null, paused: true };
+  let mealType: string | null = null;
+  if (day === 0 && hour === schedule.weeklyHour) mealType = 'weekly';
+  else if (hour === schedule.breakfastHour) mealType = 'breakfast';
+  else if (hour === schedule.lunchHour)     mealType = 'lunch';
+  else if (hour === schedule.snackHour)     mealType = 'snack';
+  else if (hour === schedule.dinnerHour)    mealType = 'dinner';
+  return { schedule, mealType, paused: false };
 }
 
 async function sendNotification(title: string, body: string, url = 'https://mommenu.ge') {
@@ -50,13 +52,12 @@ export async function GET(req: NextRequest) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   }
 
-  const hour     = geoHour();
-  const day      = geoDay();
-  const mealType = await getMealType(hour, day);
+  const hour = geoHour();
+  const day  = geoDay();
+  const { mealType, paused } = await getScheduleAndMealType(hour, day);
 
-  if (!mealType) {
-    return NextResponse.json({ skipped: true, hour, day });
-  }
+  if (paused) return NextResponse.json({ skipped: true, reason: 'notifications paused' });
+  if (!mealType) return NextResponse.json({ skipped: true, hour, day });
 
   // Load active templates from DB
   const templates = await prisma.pushTemplate.findMany({

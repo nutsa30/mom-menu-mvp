@@ -178,8 +178,17 @@ export default async function BlogPostPage({
                   </div>
                 )}
 
+              {/* Disclaimer */}
+              <div style={{ marginTop: '3rem', padding: '1.25rem 1.5rem', borderRadius: '16px', background: 'rgba(253,251,240,0.06)', border: '1px solid rgba(253,251,240,0.12)' }}>
+                <p style={{ color: '#FDFBF0', opacity: 0.6, fontSize: '0.8rem', lineHeight: 1.7, margin: 0 }}>
+                  {ka
+                    ? 'ℹ️ ეს სტატია ზოგადი ინფორმაციული ხასიათისაა და მომზადებულია საჯაროდ ხელმისაწვდომი წყაროების საფუძველზე. ის არ წარმოადგენს სამედიცინო ან პროფესიულ რჩევას — კონკრეტული საკითხებისთვის მიმართეთ ბავშვის ექიმს ან სხვა კვალიფიციურ სპეციალისტს.'
+                    : 'ℹ️ This article is general informational content compiled from publicly available sources. It is not medical or professional advice — for specific concerns, please consult your child’s doctor or another qualified specialist.'}
+                </p>
+              </div>
+
               {/* Back link */}
-              <div style={{ marginTop: '3rem', paddingTop: '2rem', borderTop: '1px solid rgba(253,251,240,0.15)' }}>
+              <div style={{ marginTop: '1.5rem', paddingTop: '2rem', borderTop: '1px solid rgba(253,251,240,0.15)' }}>
                 <a href={`/blog?lang=${locale}`}
                   style={{ display: 'inline-flex', alignItems: 'center', gap: '0.5rem', color: '#FDFBF0', fontWeight: 700, fontSize: '0.9rem', textDecoration: 'none' }}>
                   ← {ka ? 'სხვა სტატიები' : 'More articles'}
@@ -199,7 +208,7 @@ export default async function BlogPostPage({
                     </div>
                     <div style={{ fontWeight: 900, color: '#465940', fontSize: '1rem' }}>mom menu</div>
                     <div style={{ color: '#465940', fontSize: '0.78rem', opacity: 0.6, marginTop: '4px', marginBottom: '0.9rem' }}>
-                      {ka ? 'კვების ექსპერტი' : 'Nutrition Expert'}
+                      {ka ? 'დედების პლატფორმა' : 'By moms, for moms'}
                     </div>
                     <a href={`/how-it-works?lang=${locale}`}
                       style={{ display: 'inline-block', background: '#465940', color: '#FDFBF0', borderRadius: '999px', padding: '8px 20px', fontSize: '0.8rem', fontWeight: 700, textDecoration: 'none' }}>

@@ -2,7 +2,7 @@ import type { Metadata } from 'next';
 
 export const metadata: Metadata = {
   title: 'ჩვენ შესახებ — mom menu',
-  description: 'mom menu — ქართული სტარტაპი, რომელიც მშობლებს ეხმარება ბავშვის ჯანსაღი კვების ჩვევების ჩამოყალიბებაში პერსონალური მენიუებით.',
+  description: 'mom menu — ქართული სტარტაპი, რომელიც მშობლებს სთავაზობს მოსახერხებელ, ასაკის მიხედვით მორგებულ მენიუს იდეებს ყოველდღიური დაგეგმვისთვის.',
   alternates: {
     canonical: '/about',
     languages: { 'ka': '/about?lang=ka', 'en': '/about?lang=en', 'x-default': '/about' },
@@ -97,10 +97,10 @@ export default function AboutPage({ searchParams }: { searchParams: { lang?: str
                 descEn: "A mom's time is precious. Every feature is built for speed and ease.",
               },
               {
-                titleKa: 'ჯანმრთელობა',
-                titleEn: 'Health',
-                descKa: 'ყველა კერძი შექმნილია ბავშვის ასაკობრივი საჭიროებების გათვალისწინებით.',
-                descEn: "Every dish is designed with a child's age-appropriate nutritional needs in mind.",
+                titleKa: 'ასაკის მიხედვით',
+                titleEn: 'Age-appropriate',
+                descKa: 'მენიუს იდეები დალაგებულია ბავშვის ასაკის მიხედვით, საჯაროდ ცნობილი რეკომენდაციების საფუძველზე.',
+                descEn: "Menu ideas are organized by a child's age, based on generally known, publicly available guidance.",
               },
               {
                 titleKa: 'ნდობა',
@@ -116,6 +116,15 @@ export default function AboutPage({ searchParams }: { searchParams: { lang?: str
             ))}
           </div>
         </div>
+      </section>
+
+      {/* Disclaimer */}
+      <section className="px-6 pb-4" style={{ background: '#465940' }}>
+        <p className="max-w-2xl mx-auto text-center text-xs text-[#FDFBF0]/40 leading-relaxed">
+          {ka
+            ? 'mom menu აგროვებს და აწყობს საჯაროდ ხელმისაწვდომ ინფორმაციას ბავშვის კვების შესახებ ერთ მოსახერხებელ სივრცეში. ეს არ არის სამედიცინო ან დიეტოლოგიური მომსახურება — კონკრეტული ჯანმრთელობის საკითხებისთვის მიმართეთ ბავშვის ექიმს.'
+            : 'mom menu collects and organizes publicly available information about child nutrition in one convenient place. This is not a medical or dietetic service — for specific health concerns, please consult your child’s doctor.'}
+        </p>
       </section>
 
       {/* CTA */}

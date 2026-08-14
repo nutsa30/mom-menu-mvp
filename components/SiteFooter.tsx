@@ -45,8 +45,8 @@ export default function SiteFooter() {
             </a>
             <p className="text-sm text-[#FDFBF0]/65 leading-relaxed mb-6 max-w-[200px]">
               {ka
-                ? 'ჯანსაღი კვება ბავშვებისთვის, მარტივად და სახალისოდ.'
-                : 'Healthy nutrition for children, simply and joyfully.'}
+                ? 'ბავშვის კვების დაგეგმვა, მარტივად და სახალისოდ.'
+                : 'Planning your child’s meals, simply and joyfully.'}
             </p>
             <a href="https://www.tiktok.com/@mommenu0" target="_blank" rel="noopener noreferrer"
               className="inline-flex items-center gap-2.5 px-4 py-2.5 rounded-full font-bold text-sm transition-all hover:scale-105 active:scale-95"
@@ -109,6 +109,15 @@ export default function SiteFooter() {
           </div>
 
         </div>
+      </div>
+
+      {/* Disclaimer bar */}
+      <div className="border-t border-[#FDFBF0]/10 py-4">
+        <p className="max-w-6xl mx-auto px-5 text-[11px] text-[#FDFBF0]/35 leading-relaxed text-center sm:text-left">
+          {ka
+            ? 'mom menu-ზე გამოქვეყნებული ინფორმაცია ზოგადი, საჯაროდ ხელმისაწვდომი ინფორმაციის საფუძველზეა მომზადებული და არ წარმოადგენს სამედიცინო ან დიეტოლოგიურ რჩევას.'
+            : 'Information published on mom menu is based on general, publicly available sources and does not constitute medical or dietetic advice.'}
+        </p>
       </div>
 
       {/* Bottom bar */}

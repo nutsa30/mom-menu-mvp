@@ -2,7 +2,7 @@ import { requireAdmin } from '@/lib/auth';
 import { prisma } from '@/lib/prisma';
 import NotificationsClient from './client';
 
-const DEFAULT_SCHEDULE = { breakfastHour: 8, lunchHour: 12, snackHour: 15, dinnerHour: 18, weeklyHour: 10 };
+const DEFAULT_SCHEDULE = { paused: false, breakfastHour: 8, lunchHour: 12, snackHour: 15, dinnerHour: 18, weeklyHour: 10 };
 
 export default async function AdminNotificationsPage() {
   await requireAdmin();

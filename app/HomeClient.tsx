@@ -120,13 +120,13 @@ export default function HomeClient({ s, dishes, dishCount, recentBlogs }: {
     finally { setPromoLoading(null); }
   };
 
-  const handleSubscribeQuickpay = async (plan: 'RECIPE_PLAN' | 'FULL_PLAN') => {
+  const handleSubscribeBog = async (plan: 'RECIPE_PLAN' | 'FULL_PLAN') => {
     setLoadingPlan(plan);
     const planLabel = plan === 'RECIPE_PLAN' ? 'რეცეპტების წვდომა' : 'სრული პაკეტი';
     const planPrice = plan === 'RECIPE_PLAN' ? 15 : 30;
     ga.subscribe(planLabel, planPrice);
     try {
-      const res = await fetch('/api/subscription/quickpay-checkout', {
+      const res = await fetch('/api/subscription/bog-checkout', {
         method: 'POST', headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ plan }),
       });
@@ -136,9 +136,15 @@ export default function HomeClient({ s, dishes, dishCount, recentBlogs }: {
       if (data.error === 'already_subscribed') {
         alert(ka ? 'ეს პაკეტი უკვე აქტიური გაქვთ' : 'You already have this plan active');
       } else {
-        alert((ka ? 'ვერ მოხერხდა გახსნა: ' : 'Could not start checkout: ') + (data.detail || 'unknown'));
+        alert(ka
+          ? 'გადახდის სერვისი დროებით ტექნიკურ სამუშაოებზეა. გთხოვთ სცადოთ მოგვიანებით ან დაგვიკავშირდეთ info@mommenu.ge-ზე.'
+          : 'Payments are temporarily undergoing maintenance. Please try again later or contact us at info@mommenu.ge.');
       }
-    } catch (e: any) { alert((ka ? 'შეცდომა: ' : 'Error: ') + (e?.message || 'unknown')); }
+    } catch (e: any) {
+      alert(ka
+        ? 'გადახდის სერვისი დროებით ტექნიკურ სამუშაოებზეა. გთხოვთ სცადოთ მოგვიანებით.'
+        : 'Payments are temporarily undergoing maintenance. Please try again later.');
+    }
     finally { setLoadingPlan(null); }
   };
 
@@ -398,10 +404,13 @@ export default function HomeClient({ s, dishes, dishCount, recentBlogs }: {
                 </button>
               </div>
               {promoStatus['RECIPE_PLAN']?.msg && <p className="text-[#465940] text-xs mt-1 font-semibold">{promoStatus['RECIPE_PLAN'].msg}</p>}
-              <button onClick={() => handleSubscribeQuickpay('RECIPE_PLAN')} disabled={loadingPlan !== null || currentPlan === 'RECIPE_PLAN'}
+              <button onClick={() => handleSubscribeBog('RECIPE_PLAN')} disabled={loadingPlan !== null || currentPlan === 'RECIPE_PLAN'}
                 className="w-full py-3.5 mt-4 border border-[#465940] text-[#465940] rounded-full font-semibold hover:bg-[#465940]/10 transition disabled:opacity-60">
                 {currentPlan === 'RECIPE_PLAN' ? (ka ? '✓ აქტიურია' : '✓ Active') : loadingPlan === 'RECIPE_PLAN' ? (ka ? 'მუშავდება...' : 'Processing...') : (ka ? 'დაწყება' : 'Get Started')}
               </button>
+              <p className="text-[#465940]/50 text-xs mt-2">
+                {ka ? 'ავტომატურად განახლდება ყოველ თვე. გაუქმება ნებისმიერ დროს.' : 'Renews automatically every month. Cancel anytime.'}
+              </p>
             </div>
 
             {/* Plan 2 */}
@@ -452,11 +461,14 @@ export default function HomeClient({ s, dishes, dishCount, recentBlogs }: {
                 </button>
               </div>
               {promoStatus['FULL_PLAN']?.msg && <p className="text-[#465940] text-xs mt-1 font-semibold">{promoStatus['FULL_PLAN'].msg}</p>}
-              <button onClick={() => handleSubscribeQuickpay('FULL_PLAN')} disabled={loadingPlan !== null || currentPlan === 'FULL_PLAN'}
+              <button onClick={() => handleSubscribeBog('FULL_PLAN')} disabled={loadingPlan !== null || currentPlan === 'FULL_PLAN'}
                 className="w-full py-3.5 mt-4 text-[#FDFBF0] rounded-full font-bold shadow-lg transition disabled:opacity-60"
                 style={{ background: '#465940' }}>
                 {currentPlan === 'FULL_PLAN' ? (ka ? '✓ აქტიურია' : '✓ Active') : loadingPlan === 'FULL_PLAN' ? (ka ? 'მუშავდება...' : 'Processing...') : (ka ? 'დაწყება' : 'Get Started')}
               </button>
+              <p className="text-[#465940]/50 text-xs mt-2">
+                {ka ? 'ავტომატურად განახლდება ყოველ თვე. გაუქმება ნებისმიერ დროს.' : 'Renews automatically every month. Cancel anytime.'}
+              </p>
             </div>
 
           </div>
@@ -470,7 +482,7 @@ export default function HomeClient({ s, dishes, dishCount, recentBlogs }: {
               <div>
                 <h2 className="text-2xl sm:text-3xl font-bold mb-1 text-[#FDFBF0]">{ka ? 'ბლოგი' : 'Blog'}</h2>
                 <p className="text-[#FDFBF0]/70 text-sm">
-                  {ka ? 'სტატიები ბავშვების კვებასა და ჯანსაღ განვითარებაზე' : 'Articles on child nutrition and healthy development'}
+                  {ka ? 'სტატიები და იდეები ბავშვის კვებაზე' : 'Articles and ideas on child nutrition'}
                 </p>
               </div>
               <a href={`/blog?lang=${locale}`} className="text-sm font-bold whitespace-nowrap" style={{ color: '#FDFBF0' }}>

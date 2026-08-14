@@ -3,15 +3,15 @@ import type { Metadata } from 'next';
 import { Suspense } from 'react';
 
 export const metadata: Metadata = {
-  title: 'ბლოგი — კვება და ჯანმრთელობა ბავშვებისთვის',
-  description: 'სტატიები ბავშვის კვების შესახებ: დამატებითი კვება, ალერგენები, ჯანსაღი ჩვევები, რეცეპტები და რჩევები მშობლებისთვის.',
+  title: 'ბლოგი — იდეები და გამოცდილება ბავშვის კვებაზე',
+  description: 'სტატიები ბავშვის კვების შესახებ, საჯარო წყაროებზე დაყრდნობით — დამატებითი კვება, რეცეპტები და იდეები მშობლებისთვის. ინფორმაციული ხასიათისაა და არ ცვლის ექიმის კონსულტაციას.',
   alternates: {
     canonical: '/blog',
     languages: { 'ka': '/blog?lang=ka', 'en': '/blog?lang=en', 'x-default': '/blog' },
   },
   openGraph: {
-    title: 'ბლოგი — კვება და ჯანმრთელობა ბავშვებისთვის',
-    description: 'სტატიები ბავშვის კვების შესახებ: დამატებითი კვება, ალერგენები, ჯანსაღი ჩვევები, რეცეპტები.',
+    title: 'ბლოგი — იდეები და გამოცდილება ბავშვის კვებაზე',
+    description: 'სტატიები ბავშვის კვების შესახებ, საჯარო წყაროებზე დაყრდნობით — დამატებითი კვება, რეცეპტები და იდეები მშობლებისთვის.',
     url: '/blog',
     images: [{ url: '/og-image.png', width: 1200, height: 630, alt: 'MomMenu ბლოგი — ბავშვის კვება' }],
   },
@@ -88,10 +88,16 @@ export default async function BlogListPage({ searchParams }: { searchParams: { l
             <div className="w-8 h-px bg-[#FDFBF0]/30 flex-shrink-0" />
             <p className="text-[#FDFBF0]/65 text-sm leading-relaxed">
               {ka
-                ? 'სასარგებლო რჩევები, რეცეპტები და ინფორმაცია ბავშვის ჯანსაღი და დაბალანსებული კვებისთვის.'
-                : 'Useful tips, recipes, and information for healthy and balanced child nutrition.'}
+                ? 'სასარგებლო იდეები, რეცეპტები და ინფორმაცია დედების გამოცდილებიდან და საჯარო წყაროებიდან.'
+                : 'Useful ideas, recipes, and information drawn from moms’ experience and publicly available sources.'}
             </p>
           </div>
+
+          <p className="text-[#FDFBF0]/40 text-xs leading-relaxed mt-6 max-w-lg">
+            {ka
+              ? 'ℹ️ ბლოგის სტატიები ინფორმაციული ხასიათისაა და არ წარმოადგენს სამედიცინო რჩევას. კონკრეტული საკითხებისთვის მიმართეთ ბავშვის ექიმს.'
+              : 'ℹ️ Blog articles are informational and do not constitute medical advice. For specific concerns, consult your child’s doctor.'}
+          </p>
 
         </div>
       </section>

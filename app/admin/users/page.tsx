@@ -90,7 +90,7 @@ export default async function AdminUsersPage({
   const activeTab = searchParams.tab ?? 'all';
   const activePromo = searchParams.promo ?? '';
 
-  const [users, promoCodes] = await Promise.all([
+  const [users, promoCodes, payments] = await Promise.all([
     prisma.user.findMany({
       orderBy: { createdAt: 'desc' },
       select: {
@@ -102,6 +102,11 @@ export default async function AdminUsersPage({
       },
     }),
     prisma.promoCode.findMany({ orderBy: { createdAt: 'desc' }, select: { id: true, code: true, planType: true } }),
+    prisma.payment.findMany({
+      orderBy: { createdAt: 'desc' },
+      take: 100,
+      include: { user: { select: { name: true, email: true } } },
+    }),
   ]);
 
   const total = users.length;
@@ -135,6 +140,19 @@ export default async function AdminUsersPage({
       (u.subscriptionStatus === 'RECIPE_PLAN' || u.subscriptionStatus === 'FULL_PLAN')
     )
     .reduce((sum, u) => sum + (u.subscriptionStatus === 'RECIPE_PLAN' ? 15 : 30), 0);
+
+  // BOG payment revenue (gross / commission / net) — separate from the MRR cards
+  // above, which are derived from subscriptionStatus, not actual charged amounts.
+  const successfulPayments = payments.filter((p) => p.status === 'SUCCESS');
+  const paymentsThisMonth = successfulPayments.filter((p) => new Date(p.createdAt) > thirtyDaysAgo);
+  const sum = (arr: typeof payments, field: 'grossAmount' | 'commissionAmount' | 'netAmount') =>
+    arr.reduce((s, p) => s + (p[field] ?? 0), 0);
+  const revenueTotals = {
+    gross: sum(paymentsThisMonth, 'grossAmount'),
+    commission: sum(paymentsThisMonth, 'commissionAmount'),
+    net: sum(paymentsThisMonth, 'netAmount'),
+  };
+  const planLabelShort: Record<string, string> = { RECIPE_PLAN: '15₾', FULL_PLAN: '30₾' };
 
   const subLabel: Record<string, string> = {
     FREE: locale === 'ka' ? 'უფასო' : 'Free',
@@ -197,6 +215,78 @@ export default async function AdminUsersPage({
           <p className="text-xs font-semibold text-amber-700 mb-3">🎁 გაჩუქებული</p>
           <p className="text-3xl font-black text-amber-600">{giftedCount}</p>
           <p className="text-[10px] text-amber-500 mt-1">{giftedValue}₾/თვე · MRR-ში არ ითვლება</p>
+        </div>
+      </div>
+
+      {/* BOG payment revenue breakdown */}
+      <div className="mb-6 lg:mb-8">
+        <h2 className="text-xl font-black text-[#465940] mb-1">გადახდების ანალიტიკა (BOG)</h2>
+        <p className="text-[#465940]/60 text-sm mb-4">ბოლო 30 დღე · მხოლოდ წარმატებული გადახდები, ტრიალის დაბრუნებადი თანხის გარეშე</p>
+
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 sm:gap-4 mb-4">
+          <div className="bg-[#465940] rounded-2xl p-5 shadow-sm">
+            <p className="text-xs font-semibold text-[#FDFBF0]/70 mb-3">ბრუტო შემოსავალი</p>
+            <p className="text-3xl font-black text-[#FDFBF0]">{revenueTotals.gross.toFixed(2)}₾</p>
+            <p className="text-[10px] text-[#FDFBF0]/50 mt-1">{paymentsThisMonth.length} ტრანზაქცია</p>
+          </div>
+          <div className="bg-[#FDFBF0] rounded-2xl p-5 border border-[#465940]/10 shadow-sm">
+            <p className="text-xs font-semibold text-[#465940] mb-3">BOG საკომისიო</p>
+            <p className="text-3xl font-black text-[#465940]">{revenueTotals.commission.toFixed(2)}₾</p>
+            <p className="text-[10px] text-[#465940]/50 mt-1">2% ლოკ. / 3.5% Amex</p>
+          </div>
+          <div className="bg-[#FDFBF0] rounded-2xl p-5 border border-[#465940]/10 shadow-sm">
+            <p className="text-xs font-semibold text-[#465940] mb-3">წმინდა შემოსავალი</p>
+            <p className="text-3xl font-black text-[#465940]">{revenueTotals.net.toFixed(2)}₾</p>
+            <p className="text-[10px] text-[#465940]/50 mt-1">ბრუტო − საკომისიო</p>
+          </div>
+        </div>
+
+        <div className="bg-[#FDFBF0] rounded-2xl border border-[#465940]/10 shadow-sm overflow-hidden">
+          {payments.length === 0 ? (
+            <p className="text-center py-12 text-[#465940]/60 text-sm">ჯერ არცერთი BOG გადახდა არ დაფიქსირებულა</p>
+          ) : (
+            <div className="overflow-x-auto">
+              <table className="w-full min-w-[760px]">
+                <thead className="bg-[#465940]">
+                  <tr>
+                    <th className="text-left px-6 py-3 text-xs font-semibold text-[#FDFBF0]/80 uppercase tracking-wide">თარიღი</th>
+                    <th className="text-left px-4 py-3 text-xs font-semibold text-[#FDFBF0]/80 uppercase tracking-wide">მომხმარებელი</th>
+                    <th className="text-left px-4 py-3 text-xs font-semibold text-[#FDFBF0]/80 uppercase tracking-wide">გეგმა</th>
+                    <th className="text-left px-4 py-3 text-xs font-semibold text-[#FDFBF0]/80 uppercase tracking-wide">სტატუსი</th>
+                    <th className="text-left px-4 py-3 text-xs font-semibold text-[#FDFBF0]/80 uppercase tracking-wide">ბარათი</th>
+                    <th className="text-right px-4 py-3 text-xs font-semibold text-[#FDFBF0]/80 uppercase tracking-wide">ბრუტო</th>
+                    <th className="text-right px-4 py-3 text-xs font-semibold text-[#FDFBF0]/80 uppercase tracking-wide">საკომისიო</th>
+                    <th className="text-right px-6 py-3 text-xs font-semibold text-[#FDFBF0]/80 uppercase tracking-wide">წმინდა</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-[#465940]/5">
+                  {payments.map((p) => (
+                    <tr key={p.id} className="hover:bg-[#465940]/5 transition">
+                      <td className="px-6 py-4 text-sm text-[#465940]/70">{new Date(p.createdAt).toLocaleDateString()}</td>
+                      <td className="px-4 py-4">
+                        <p className="text-sm font-semibold text-[#465940]">{p.user.name}</p>
+                        <p className="text-xs text-[#465940]/50">{p.user.email}</p>
+                      </td>
+                      <td className="px-4 py-4 text-sm text-[#465940]/70">{planLabelShort[p.plan] ?? p.plan}</td>
+                      <td className="px-4 py-4">
+                        <span className={`inline-block px-2.5 py-1 rounded-full text-xs font-bold ${
+                          p.status === 'SUCCESS' ? 'bg-[#465940]/10 text-[#465940]' :
+                          p.status === 'REFUNDED' ? 'bg-amber-50 text-amber-700' :
+                          'bg-red-50 text-red-600'
+                        }`}>
+                          {p.status}
+                        </span>
+                      </td>
+                      <td className="px-4 py-4 text-sm text-[#465940]/70">{p.cardType ?? '—'}</td>
+                      <td className="px-4 py-4 text-sm text-[#465940]/70 text-right">{p.grossAmount.toFixed(2)}₾</td>
+                      <td className="px-4 py-4 text-sm text-[#465940]/70 text-right">{p.commissionAmount != null ? `${p.commissionAmount.toFixed(2)}₾` : '—'}</td>
+                      <td className="px-6 py-4 text-sm text-[#465940] font-semibold text-right">{p.netAmount != null ? `${p.netAmount.toFixed(2)}₾` : '—'}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          )}
         </div>
       </div>
 

@@ -3,7 +3,7 @@
 import { useState } from 'react';
 
 type Template = { id: number; mealType: string; title: string; body: string; active: boolean };
-type Schedule = { breakfastHour: number; lunchHour: number; snackHour: number; dinnerHour: number; weeklyHour: number };
+type Schedule = { paused: boolean; breakfastHour: number; lunchHour: number; snackHour: number; dinnerHour: number; weeklyHour: number };
 
 const MEAL_TYPES = [
   { key: 'breakfast', label: '☀️ საუზმე',       scheduleKey: 'breakfastHour' as keyof Schedule },
@@ -34,6 +34,19 @@ export default function NotificationsClient({
   const [scheduleEditing, setScheduleEditing] = useState<string | null>(null);
   const [scheduleTime, setScheduleTime] = useState('');
   const [scheduleSaving, setScheduleSaving] = useState(false);
+  const [pauseToggling, setPauseToggling] = useState(false);
+
+  const togglePaused = async () => {
+    setPauseToggling(true);
+    const next = !schedule.paused;
+    const r = await fetch('/api/admin/push-schedule', {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ ...schedule, paused: next }),
+    });
+    if (r.ok) setSchedule(s => ({ ...s, paused: next }));
+    setPauseToggling(false);
+  };
 
   const byType = (type: string) => templates.filter(t => t.mealType === type);
 
@@ -122,9 +135,24 @@ export default function NotificationsClient({
 
   return (
     <div style={{ maxWidth: 760, margin: '0 auto', padding: '2rem 1rem' }}>
-      <h1 style={{ fontSize: '1.5rem', fontWeight: 900, color: '#FDFBF0', marginBottom: '0.25rem' }}>
-        🔔 Push შეტყობინებების შაბლონები
-      </h1>
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '0.75rem', marginBottom: '0.5rem' }}>
+        <h1 style={{ fontSize: '1.5rem', fontWeight: 900, color: '#FDFBF0', margin: 0 }}>
+          🔔 Push შეტყობინებების შაბლონები
+        </h1>
+        <button
+          onClick={togglePaused}
+          disabled={pauseToggling}
+          style={{
+            display: 'flex', alignItems: 'center', gap: '0.5rem',
+            padding: '8px 18px', borderRadius: 999, fontWeight: 800, fontSize: '0.85rem',
+            cursor: pauseToggling ? 'not-allowed' : 'pointer', border: 'none', transition: 'all 0.15s',
+            background: schedule.paused ? '#ef4444' : '#22c55e',
+            color: '#fff',
+            opacity: pauseToggling ? 0.6 : 1,
+          }}>
+          {pauseToggling ? '...' : schedule.paused ? '⏸ შეტყობინებები გამორთულია' : '▶ შეტყობინებები ჩართულია'}
+        </button>
+      </div>
       <p style={{ color: '#FDFBF0', opacity: 0.6, fontSize: '0.85rem', marginBottom: '2rem' }}>
         ყოველდღე ერთ-ერთი შეტყობინება შემთხვევით გაიგზავნება. გამორთული შეტყობინებები არ გაიგზავნება.
       </p>
