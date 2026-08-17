@@ -139,6 +139,10 @@ export async function createTrialOrder(opts: {
     body: JSON.stringify({
       callback_url: `${appUrl}/api/webhooks/bog`,
       external_order_id: encodeOrderId(opts.userId, opts.plan),
+      buyer: {
+        full_name: opts.name,
+        masked_email: opts.email,
+      },
       purchase_units: {
         currency: 'GEL',
         total_amount: planAmount,
