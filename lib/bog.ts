@@ -128,7 +128,7 @@ export async function createTrialOrder(opts: {
   const appUrl = process.env.NEXT_PUBLIC_APP_URL;
   const planAmount = Number(amount);
 
-  const headers = await apiHeaders(`checkout_${opts.userId}_${Date.now()}`);
+  const headers = await apiHeaders(crypto.randomUUID());
   const res = await fetch(`${API_BASE}/ecommerce/orders`, {
     method: 'POST',
     headers,
@@ -198,7 +198,7 @@ export async function chargeSavedCard(opts: {
 }): Promise<{ orderId: string; raw: any }> {
   const appUrl = process.env.NEXT_PUBLIC_APP_URL;
 
-  const headers = await apiHeaders(`renew_${opts.parentOrderId}_${Date.now()}`);
+  const headers = await apiHeaders(crypto.randomUUID());
   const res = await fetch(`${API_BASE}/ecommerce/orders/${opts.parentOrderId}/subscribe`, {
     method: 'POST',
     headers,
@@ -241,7 +241,7 @@ export async function getPaymentDetails(orderId: string) {
 // not a typo). Body `{ amount }` is optional; omitting it refunds the full amount,
 // which is what we want for the trial charge, so no amount is passed.
 export async function refundOrder(orderId: string, amount?: string) {
-  const headers = await apiHeaders(`refund_${orderId}_${Date.now()}`);
+  const headers = await apiHeaders(crypto.randomUUID());
   const res = await fetch(`https://api.bog.ge/payments/v1/payment/refund/${orderId}`, {
     method: 'POST',
     headers,
