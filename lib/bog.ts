@@ -68,6 +68,10 @@ async function apiHeaders(idempotencyKey?: string): Promise<Record<string, strin
   const headers: Record<string, string> = {
     Authorization: `Bearer ${token}`,
     'Content-Type': 'application/json',
+    // Explicit, not left to fetch()'s own default — BOG strictly validates this
+    // against [ka, en] and rejects anything else (including "*", which is what
+    // an unset header can end up resolving to server-side).
+    'Accept-Language': 'ka',
   };
   if (idempotencyKey) headers['Idempotency-Key'] = idempotencyKey;
   return headers;
