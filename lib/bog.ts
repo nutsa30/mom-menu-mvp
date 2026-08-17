@@ -17,10 +17,6 @@ export const PLAN_AMOUNTS: Record<'RECIPE_PLAN' | 'FULL_PLAN', string | undefine
   FULL_PLAN: process.env.BOG_FULL_PLAN_AMOUNT_GEL,
 };
 
-// Nominal amount charged to verify+tokenize the card during the 7-day trial.
-// Refunded immediately once the order is confirmed paid (see webhook handler).
-export const TRIAL_AMOUNT_GEL = process.env.BOG_TRIAL_AMOUNT_GEL || '0.10';
-
 const PLAN_DESCRIPTIONS: Record<'RECIPE_PLAN' | 'FULL_PLAN', string> = {
   RECIPE_PLAN: 'MomMenu — რეცეპტების წვდომა',
   FULL_PLAN: 'MomMenu — სრული პაკეტი',
@@ -107,21 +103,30 @@ export function decodeRenewalOrderId(externalOrderId: string | null | undefined)
 }
 
 // ─── Create the trial (first-payment / card-tokenizing) order ─────────────
-// Creates a nominal-amount order and immediately enables card-saving on it
-// (must happen BEFORE the customer is redirected to pay), then returns the
-// URL to redirect the customer to. The nominal amount gets refunded once the
-// webhook confirms payment (see app/api/webhooks/bog/route.ts).
+// CONFIRMED (via BOG's own docs, not a guess): POST .../orders/:parent_order_id/subscribe
+// always inherits amount/currency/buyer from the ORIGINAL order it's attached to — there
+// is no way to override the amount on a renewal charge. So the parent order created here
+// MUST already be at the real plan price, not a nominal trial amount — otherwise every
+// renewal would silently charge the wrong (trial) amount forever.
+//
+// To still offer a genuine 7-day free trial without charging the customer up front, this
+// order is created for the REAL plan price with automatic capture, and the webhook
+// handler refunds it in full the moment payment is confirmed (see
+// app/api/webhooks/bog/route.ts) — leaving the card saved on this order (as
+// bogParentOrderId) so the real charge can happen automatically 7 days later via
+// chargeSavedCard(), which will now correctly reuse this same real amount.
 export async function createTrialOrder(opts: {
   plan: 'RECIPE_PLAN' | 'FULL_PLAN';
   userId: string;
   email: string;
   name: string;
 }): Promise<{ url: string; orderId: string }> {
-  if (!PLAN_AMOUNTS[opts.plan]) {
+  const amount = PLAN_AMOUNTS[opts.plan];
+  if (!amount) {
     throw new Error(`No BOG GEL amount configured for ${opts.plan}`);
   }
   const appUrl = process.env.NEXT_PUBLIC_APP_URL;
-  const trialAmount = Number(TRIAL_AMOUNT_GEL);
+  const planAmount = Number(amount);
 
   const headers = await apiHeaders(`checkout_${opts.userId}_${Date.now()}`);
   const res = await fetch(`${API_BASE}/ecommerce/orders`, {
@@ -132,12 +137,13 @@ export async function createTrialOrder(opts: {
       external_order_id: encodeOrderId(opts.userId, opts.plan),
       purchase_units: {
         currency: 'GEL',
-        total_amount: trialAmount,
+        total_amount: planAmount,
         basket: [
           {
-            product_id: 'trial',
+            product_id: opts.plan.toLowerCase(),
+            description: PLAN_DESCRIPTIONS[opts.plan],
             quantity: 1,
-            unit_price: trialAmount,
+            unit_price: planAmount,
           },
         ],
       },
@@ -179,26 +185,18 @@ export async function createTrialOrder(opts: {
 // Server-to-server recurring charge against a previously tokenized card.
 // Result is async — BOG confirms success/failure via webhook, not this response.
 //
-// AMBIGUITY FLAG: BOG's docs for POST /ecommerce/orders/:parent_order_id/subscribe
-// only document `callback_url` + `external_order_id` in the body, and state that
-// amount/currency/buyer are inherited from the parent order. That means the
-// trial order's nominal (e.g. 0.10 GEL) amount would be reused verbatim for
-// renewals, which is wrong — renewals need the real plan price. The docs don't
-// say whether the endpoint accepts an amount/purchase_units override. We send
-// `purchase_units` in the same shape used at order-creation defensively, on the
-// chance the endpoint honors it; if BOG's API ignores unknown fields and always
-// inherits the parent amount, this call will silently charge the wrong amount
-// (the trial amount) and MUST be re-verified against a real sandbox account
-// before this goes live — see the flag in the final report for this task.
+// CONFIRMED via BOG's docs (POST .../ecommerce/orders/:parent_order_id/subscribe):
+// only `callback_url` and `external_order_id` are accepted in the body — amount,
+// currency, and buyer info are ALWAYS inherited from the parent order, with no
+// override. This is safe and correct as long as the parent order (see
+// createTrialOrder above) was created at the real plan price, which it now is —
+// do not attempt to pass purchase_units/amount here, BOG will ignore it.
 export async function chargeSavedCard(opts: {
   parentOrderId: string;
   plan: 'RECIPE_PLAN' | 'FULL_PLAN';
   userId: string;
 }): Promise<{ orderId: string; raw: any }> {
-  const amount = PLAN_AMOUNTS[opts.plan];
-  if (!amount) throw new Error(`No BOG GEL amount configured for ${opts.plan}`);
   const appUrl = process.env.NEXT_PUBLIC_APP_URL;
-  const amountNum = Number(amount);
 
   const headers = await apiHeaders(`renew_${opts.parentOrderId}_${Date.now()}`);
   const res = await fetch(`${API_BASE}/ecommerce/orders/${opts.parentOrderId}/subscribe`, {
@@ -207,18 +205,6 @@ export async function chargeSavedCard(opts: {
     body: JSON.stringify({
       callback_url: `${appUrl}/api/webhooks/bog`,
       external_order_id: encodeRenewalOrderId(opts.userId),
-      // Defensive override attempt — see AMBIGUITY FLAG above.
-      purchase_units: {
-        currency: 'GEL',
-        total_amount: amountNum,
-        basket: [
-          {
-            product_id: opts.plan.toLowerCase(),
-            quantity: 1,
-            unit_price: amountNum,
-          },
-        ],
-      },
     }),
   });
 

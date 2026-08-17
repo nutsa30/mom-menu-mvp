@@ -3,11 +3,9 @@ import {
   verifyWebhookSignature,
   decodeOrderId,
   decodeRenewalOrderId,
-  getPaymentDetails,
   refundOrder,
   computeCommission,
   PLAN_AMOUNTS,
-  TRIAL_AMOUNT_GEL,
 } from '@/lib/bog';
 import { sendSubscriptionConfirmationEmail } from '@/lib/email';
 import { NextResponse } from 'next/server';
@@ -32,45 +30,28 @@ export async function POST(req: Request) {
   }
 
   const payload = JSON.parse(rawBody);
-  // TODO(confirm): the task brief's callback shape is { event, zoned_request_time,
-  // body: { order_id, ... } } — logging it below until we see a real delivery and can
-  // confirm what else `body` carries (status? external_order_id? card info?).
   console.log('BOG webhook received:', JSON.stringify(payload).slice(0, 1000));
 
-  const orderId: string | undefined = payload?.body?.order_id ?? payload?.order_id;
+  // Confirmed shape (api.bog.ge/docs/en/payments/standard-process/callback):
+  // { event: "order_payment", zoned_request_time, body: { order_id, external_order_id,
+  //   order_status: { key, value }, payment_detail: { card_type, ... }, ... } }
+  const body = payload?.body;
+  const orderId: string | undefined = body?.order_id;
   if (!orderId) {
     console.error('BOG webhook: no order_id in payload', payload);
     return NextResponse.json({ received: true });
   }
 
-  // AMBIGUITY FLAG: the task brief doesn't document which fields besides
-  // order_id live in the callback body, so we don't trust it for status/
-  // external_order_id/card_type — we re-fetch authoritative details from the
-  // receipt endpoint instead, per the brief's own suggestion to do so "if the
-  // callback body doesn't carry enough detail".
-  let details: any;
-  try {
-    details = await getPaymentDetails(orderId);
-  } catch (err: any) {
-    console.error('BOG webhook: payment details lookup failed', { orderId, error: err.message });
+  const statusKey: string = body?.order_status?.key ?? '';
+  const isPaid = statusKey === 'completed';
+  const isFailed = statusKey === 'rejected';
+  if (!isPaid && !isFailed) {
+    // created/processing/blocked/etc. — not a final state we act on (yet).
     return NextResponse.json({ received: true });
   }
 
-  // Status field name is unconfirmed against a real payload — check the
-  // plausible spots defensively rather than guessing a single field name.
-  const statusRaw: string = (
-    details?.status ??
-    details?.order_status ??
-    details?.payment_detail?.transaction_status ??
-    payload?.body?.status ??
-    ''
-  ).toString().toLowerCase();
-  const isPaid = ['completed', 'success', 'succeeded', 'paid', 'approved'].some((s) => statusRaw.includes(s));
-  const isFailed = ['failed', 'declined', 'rejected', 'error'].some((s) => statusRaw.includes(s));
-  if (!isPaid && !isFailed) return NextResponse.json({ received: true });
-
-  const externalOrderId: string | undefined = details?.external_order_id ?? payload?.body?.external_order_id;
-  const cardType: string | undefined = details?.payment_detail?.card_type ?? details?.card_type;
+  const externalOrderId: string | undefined = body?.external_order_id;
+  const cardType: string | undefined = body?.payment_detail?.card_type;
 
   const decoded = decodeOrderId(externalOrderId);
   const renewal = decoded ? null : decodeRenewalOrderId(externalOrderId);
@@ -85,11 +66,15 @@ export async function POST(req: Request) {
 
     if (isFailed) {
       // Card verification failed — no access was granted yet, nothing to roll back.
-      console.error('BOG trial charge failed', { userId: user.id, orderId, details });
+      console.error('BOG trial charge failed', { userId: user.id, orderId, body });
       return NextResponse.json({ received: true });
     }
 
-    // Refund the nominal trial-verification charge now that the card is confirmed saved.
+    // The trial order was created at the REAL plan price (see createTrialOrder's
+    // comment — /subscribe always inherits the parent order's amount, so the parent
+    // must already be the real price). Refund it in full now that the card is
+    // confirmed saved, so the customer isn't actually charged during the free trial.
+    const trialGrossAmount = Number(PLAN_AMOUNTS[decoded.plan] ?? 0);
     try {
       await refundOrder(orderId);
     } catch (err: any) {
@@ -105,7 +90,7 @@ export async function POST(req: Request) {
         status: 'REFUNDED',
         bogOrderId: orderId,
         cardType: cardType ?? null,
-        grossAmount: Number(TRIAL_AMOUNT_GEL),
+        grossAmount: trialGrossAmount,
         // Trial charge is refunded in full — no commission/net to track.
         commissionAmount: null,
         netAmount: null,
@@ -148,19 +133,16 @@ export async function POST(req: Request) {
     if (isFailed) {
       // Single failed renewal — don't cut access on one transient failure. Revisit with
       // proper dunning/retry once we've seen how BOG reports repeated failures.
-      console.error('BOG renewal charge failed', { userId: user.id, orderId, details });
+      console.error('BOG renewal charge failed', { userId: user.id, orderId, body });
       return NextResponse.json({ received: true });
     }
 
     // Renewal orders don't carry the plan in external_order_id (unlike the trial
     // order), since the user is already subscribed by this point — use their
-    // current plan on file.
+    // current plan on file. grossAmount reliably reflects the real charge now:
+    // /subscribe inherits the parent order's amount (confirmed via docs), and the
+    // parent order was created at the real plan price, not a nominal trial amount.
     const plan = user.subscriptionStatus as 'RECIPE_PLAN' | 'FULL_PLAN';
-    // grossAmount reflects the plan price we intended to charge (from our own config),
-    // since the actual charged amount is not reliably confirmed by the docs — see the
-    // AMBIGUITY FLAG in lib/bog.ts's chargeSavedCard about whether the /subscribe
-    // amount override is even honored by BOG. If it silently charged the trial amount
-    // instead, this record will be WRONG until that's verified against a real account.
     const grossAmount = Number(PLAN_AMOUNTS[plan] ?? 0);
     const { commissionAmount, netAmount } = computeCommission(grossAmount, cardType);
 

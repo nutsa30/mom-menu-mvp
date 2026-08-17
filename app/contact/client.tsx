@@ -65,7 +65,7 @@ export default function ContactClient({ locale, settings }: { locale: 'ka' | 'en
 
           <InfoRow icon="location" label={ka ? 'მისამართი' : 'Address'}>
             <p className="text-[#FDFBF0] font-semibold text-sm">
-              {ka ? 'თბილისი, საქართველო' : 'Tbilisi, Georgia'}
+              {ka ? 'ჩიქოვანის ქ. 45, თბილისი, საქართველო' : '45 Chikovani St, Tbilisi, Georgia'}
             </p>
           </InfoRow>
 
