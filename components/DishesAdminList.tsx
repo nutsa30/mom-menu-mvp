@@ -52,7 +52,7 @@ export default function DishesAdminList({ dishes, locale, labels, ageLabel }: Pr
             value={search}
             onChange={(e) => setSearch(e.target.value)}
             placeholder={locale === 'ka' ? 'კერძის ძებნა...' : 'Search dish...'}
-            className="w-full pl-9 pr-4 py-2.5 rounded-xl border border-[#465940]/20 focus:outline-none focus:border-[#465940] text-sm bg-[#FDFBF0]"
+            className="w-full pl-9 pr-4 py-2.5 rounded-xl border border-[#465940]/20 focus:outline-none focus:border-[#465940] text-sm bg-[#FDFBF0] text-[#465940]"
           />
         </div>
         <div className="flex gap-2 flex-wrap">
