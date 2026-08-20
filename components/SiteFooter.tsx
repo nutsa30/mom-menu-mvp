@@ -129,8 +129,10 @@ export default function SiteFooter() {
       {/* Bottom bar */}
       <div className="border-t border-[#FDFBF0]/10 py-5">
         <div className="max-w-6xl mx-auto px-5 flex flex-col sm:flex-row items-center justify-between gap-3">
-          <p className="text-xs text-[#FDFBF0]/40">
-            © 2026 mom menu. {ka ? 'ყველა უფლება დაცულია.' : 'All rights reserved.'}
+          <p className="text-xs text-[#FDFBF0]/40 max-w-lg leading-relaxed">
+            © 2026 mom menu. {ka
+              ? 'ყველა რეცეპტი და კონტენტი შექმნილია mom menu-ის მიერ და დაცულია საავტორო უფლებით — მისი კოპირება, გავრცელება ან სხვა პლატფორმაზე გამოქვეყნება/გაყიდვა ნებართვის გარეშე აკრძალულია.'
+              : 'All recipes and content are created by mom menu and protected by copyright — copying, distributing, or republishing/reselling on another platform without permission is prohibited.'}
           </p>
           <div className="flex items-center gap-5">
             {legalLinks.map((l) => (
