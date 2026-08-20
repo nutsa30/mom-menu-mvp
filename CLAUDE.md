@@ -19,24 +19,17 @@ Seed credentials: `admin@mommenu.test` / `Admin123!` and `nino@mommenu.test` / `
 
 ## Environment
 
-Copy `.env.example` to `.env`. Required vars: `DATABASE_URL` (Neon/PostgreSQL connection string), `JWT_SECRET`.
+Copy `.env.example` to `.env`. Core vars: `DATABASE_URL` (Neon/PostgreSQL), `JWT_SECRET`. Feature-area env vars (BOG payments, Resend email, OneSignal push, Cloudinary, Google OAuth, GA) are listed in their respective sections below rather than repeated here.
+
+No test suite exists in this repo (no test runner in `package.json`) — don't assume one when asked to "run the tests."
 
 ## Architecture
 
-**Stack:** Next.js 14 (App Router), Prisma + Neon PostgreSQL, Tailwind CSS, bcryptjs + jsonwebtoken.
+**Stack:** Next.js 14 (App Router), Prisma + Neon PostgreSQL, Tailwind CSS, bcryptjs + jsonwebtoken. Rich text via BlockNote/Tiptap (blog/recipe admin editors), images via Cloudinary, transactional email via Resend, push notifications via OneSignal.
 
-### Two auth/data-fetching systems — be aware
+### Auth
 
-This codebase has two parallel patterns that were built at different times and are not yet unified:
-
-| Pattern | Files | Session storage |
-|---|---|---|
-| **Server actions** | `app/actions.ts`, `app/register/page.tsx`, `app/login/page.tsx` | httpOnly JWT cookie (`mom_menu_token`) |
-| **REST API + client components** | `app/api/**`, `app/dashboard/page.tsx`, `app/signup/page.tsx` | `localStorage.user` |
-
-The server action pattern (`lib/auth.ts`) is the secure, canonical approach. The REST API auth (`app/api/auth/login/route.ts`) **does not use bcrypt** — it compares plaintext passwords against the hash, which is a bug. New features should follow the server action pattern.
-
-### Auth (server action pattern)
+Single system, `lib/auth.ts`, httpOnly JWT cookie (`mom_menu_token`) — both the server-action pages (`app/actions.ts`, `app/login`, `app/register`) and the REST API routes (`app/api/auth/**`, used by `app/dashboard`, `app/signup`) go through it. (An earlier version of this codebase had a second, separate `localStorage`-based REST auth path with a plaintext-password bug — that has since been removed/unified; there's no trace of it left, don't reintroduce it.)
 
 `lib/auth.ts` exports:
 - `getSession()` — reads and verifies the JWT cookie; returns `SessionUser | null`
@@ -46,23 +39,32 @@ The server action pattern (`lib/auth.ts`) is the secure, canonical approach. The
 
 ### Data model (Prisma)
 
-Core relations: `User → Child[]`, `User → MealPlan[]`, `Child → MealPlan[]`, `MealPlan → MealPlanItem[] → Dish`.
+Core relations: `User → Child[]`, `User → MealPlan[]`, `Child → MealPlan[]`, `MealPlan → MealPlanItem[] → Dish`, `User → Payment[]`.
 
-Key enums: `Role` (USER, ADMIN), `SubscriptionStatus` (FREE, RECIPE_PLAN, FULL_PLAN, CANCELED), `AgeGroup` (BABY, TODDLER, PRESCHOOL, SCHOOL), `MealType` (BREAKFAST, LUNCH, DINNER, SNACK).
+Key enums: `Role` (USER, ADMIN), `SubscriptionStatus` (FREE, RECIPE_PLAN, FULL_PLAN, CANCELED), `AgeGroup` (**FROM_6, FROM_9, FROM_12, FROM_24** — months, not life-stage names), `MealType` (BREAKFAST, LUNCH, DINNER, SNACK), `PaymentStatus` (SUCCESS, FAILED, REFUNDED).
 
-`lib/meal.ts` — `getAgeGroup(birthDate)` maps a birthdate to an `AgeGroup`.
+`lib/meal.ts` — `getAgeGroup(birthDate)` maps a birthdate to an `AgeGroup`; `getSuitableAgeGroups()` returns that group plus all younger ones (a `FROM_12` child can eat `FROM_6`/`FROM_9`/`FROM_12` recipes); `getMealTypesForAge()` varies meal-slot count by age (2 meals under 9mo, 3 under 12mo, 4 after).
+
+Beyond the core meal-planning models, three other model clusters exist:
+- **First-foods / baby tracking** (6–12mo): `BabyIngredient`, `BabyIngredientStatus`, `BabyMealSuggestion`, `BabyMealLog`, `FoodIntroduction` — a separate, simpler flow from the main `MealPlan` system, surfaced as the "firstfoods" dashboard tab for young age groups.
+- **Admin-editable site copy**, singleton rows (`id: "singleton"`, upserted not created): `HomePageSettings`, `HowItWorksSettings` (+ `HowItWorksStep`/`HowItWorksFaq`), `ContactSettings`, `SeoSettings`, `PushSchedule`. Editing these from `app/admin/*` changes live homepage/how-it-works/contact copy without a deploy.
+- **Marketing**: `Blog`, `EmailCampaign`/`EmailRecipient` (admin-composed bulk email blasts, distinct from the transactional emails in `lib/email.ts`), `PromoCode` (gift/discount codes, see Subscription tiers below).
 
 ### Localization
 
-`lib/i18n.ts` exports a `dict` object with `ka` (Georgian) and `en` keys. Pages accept `?lang=ka|en` via `searchParams`. Default locale is `ka`. Pass `locale` down to `dict[locale]` for all UI strings.
+`lib/i18n.ts` exports a `dict` object with `ka` (Georgian) and `en` keys. Pages accept `?lang=ka|en` via `searchParams`. Default locale is `ka`. Pass `locale` down to `dict[locale]` for all UI strings. Coverage is inconsistent — some newer pages/sections (e.g. `app/subscription/page.tsx`) are Georgian-only with no `?lang=` handling at all; follow the existing convention of whichever file you're editing rather than assuming full bilingual coverage everywhere.
 
 ### Styling
 
-Global CSS classes defined in `app/globals.css`: `.input`, `.label`, `.btn`, `.btn-primary`, `.btn-ghost`, `.card`, `.badge`. Use these before writing inline Tailwind for form elements and cards. Brand color: `#ff7f50` (coral/orange).
+Global CSS classes defined in `app/globals.css`: `.input`, `.label`, `.btn`, `.btn-primary`, `.btn-ghost`, `.card`, `.badge`. Use these before writing inline Tailwind for form elements and cards. Brand colors: `#465940` (dark green, primary — background/buttons/text) and `#FDFBF0` (cream, secondary — card backgrounds, text-on-dark).
 
 ### Admin
 
-`app/admin/page.tsx` — protected by `requireAdmin()`. Manages dishes, meal plans, plan items, users, children.
+`app/admin/*`, all protected by `requireAdmin()`. Beyond dishes/meal-plans/users/children, it's grown into a small CMS + ops console: `blogs`, `homepage`/`how-it-works`/`contact`/`seo` (the singleton settings models above), `emails` (campaign composer), `notifications` (push schedule/templates), `promo` (codes), `analytics`, `ingredients`.
+
+### Scheduled jobs
+
+`app/api/cron/*` routes are `?secret=` gated (`CRON_SECRET`, defaults to `'mm2026'` if unset) but **do nothing on their own** — a route existing under `app/api/cron/` does not mean it runs automatically. Only jobs listed in `vercel.json`'s `crons` array actually fire, on Vercel's schedule. This has silently broken features before (`bog-renew` was missing entirely — renewals never fired — until caught via a live test showing zero webhook hits ever). When adding a new cron route, register it in `vercel.json` in the same change, and check `vercel.json` first if a "scheduled" feature seems to never run. `api/cron/notify` (OneSignal push, checks `PushSchedule`'s per-meal hour against the current hour so it needs to run roughly hourly, not daily) is the same shape of route and is worth double-checking against `vercel.json` for the same reason.
 
 ### Subscription tiers
 
