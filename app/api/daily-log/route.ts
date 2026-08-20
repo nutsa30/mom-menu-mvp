@@ -40,7 +40,16 @@ function pickDish(
 
   // Prefer dishes not used today; fall back to full pool only if nothing else
   const notToday = candidates.filter((d) => !todayIds.has(d.id));
-  const pool = notToday.length > 0 ? notToday : candidates;
+  const pool1 = notToday.length > 0 ? notToday : candidates;
+
+  // Hard-exclude dishes used in the last 7 days (not just a score penalty) —
+  // a dish with a genuinely higher nutrition score than its neighbors (e.g.
+  // an iron-rich breakfast) could outscore a -10 penalty every day, so it
+  // kept winning day after day regardless of recency. Only fall back to the
+  // recently-used pool if excluding them would leave nothing (thin catalog
+  // for this age group / allergy combination).
+  const notRecent = pool1.filter((d) => !recentIds.has(d.id));
+  const pool = notRecent.length > 0 ? notRecent : pool1;
 
   const scored = pool.map((d) => {
     let score = nutritionScore(d);
@@ -50,9 +59,6 @@ function pickDish(
 
     // Dislike penalty (soft — dish still appears but rarely)
     if (dislikes.length && dishMatchesText(d, dislikes)) score -= 6;
-
-    // Heavy penalty for dishes seen in last 7 days (variety)
-    if (recentIds.has(d.id)) score -= 10;
 
     // Small random nudge so identical-score dishes vary
     score += Math.random() * 0.5;
