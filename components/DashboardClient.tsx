@@ -1482,6 +1482,31 @@ function ManageSubscriptionButton() {
   );
 }
 
+const MONTHS_KA = [
+  'იანვარი', 'თებერვალი', 'მარტი', 'აპრილი', 'მაისი', 'ივნისი',
+  'ივლისი', 'აგვისტო', 'სექტემბერი', 'ოქტომბერი', 'ნოემბერი', 'დეკემბერი',
+];
+
+function TrialBanner({ trialEndsAt }: { trialEndsAt: string | Date | null | undefined }) {
+  if (!trialEndsAt) return null;
+  const end = new Date(trialEndsAt);
+  const daysLeft = Math.ceil((end.getTime() - Date.now()) / (24 * 60 * 60 * 1000));
+  if (daysLeft <= 0) return null;
+
+  // Intl.toLocaleDateString('ka-GE', ...) silently falls back to English month
+  // names in this Node/ICU build — format manually instead (mirrors lib/email.ts).
+  const dateLabel = `${end.getDate()} ${MONTHS_KA[end.getMonth()]}`;
+
+  return (
+    <div className="mb-4 rounded-2xl bg-[#FDFBF0] border border-[#FDFBF0]/40 px-4 py-3 flex items-center gap-2 text-sm text-[#465940] shadow-sm">
+      <span className="text-lg">🎁</span>
+      <span>
+        <span className="font-bold">უფასო ტესტ-პერიოდში ხართ</span> — დარჩენილია {daysLeft} დღე. პირველი ჩამოჭრა მოხდება {dateLabel}-ს, თუ ამ დრომდე არ გააუქმებთ გამოწერას.
+      </span>
+    </div>
+  );
+}
+
 // ── Main Dashboard ────────────────────────────────────────────────────────────
 export default function DashboardClient({ user }: { user: any }) {
   const router = useRouter();
@@ -1628,6 +1653,7 @@ export default function DashboardClient({ user }: { user: any }) {
 
       {/* Content */}
       <main className="flex-1 p-4 sm:p-6 max-w-4xl mx-auto w-full">
+        <TrialBanner trialEndsAt={user.trialEndsAt} />
         {tab === 'firstfoods' && activeChild && <FirstFoodsTab child={activeChild} />}
         {tab === 'today' && <TodayTab child={activeChild} allDishes={allDishes} planStart={planStart} isFullPlan={isFullPlan} />}
         {tab === 'nutrition' && <NutritionTab child={activeChild} />}

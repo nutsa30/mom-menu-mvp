@@ -42,6 +42,10 @@ export async function PATCH(req: Request, { params }: { params: { id: string } }
         subscriptionStartedAt: body.subscriptionStatus !== 'FREE' ? new Date() : null,
         subscriptionCanceledAt: body.subscriptionStatus === 'FREE' ? new Date() : null,
       }),
+      // Standalone toggle — corrects a stale "gifted" flag (e.g. left over from an
+      // earlier promo grant) without touching the user's actual subscription dates,
+      // unlike the bundled subscriptionStatus branch above.
+      ...(body.subscriptionStatus === undefined && body.isGifted !== undefined && { isGifted: body.isGifted }),
     },
     select: { id: true, name: true, email: true, role: true, isBlocked: true, subscriptionStatus: true },
   });

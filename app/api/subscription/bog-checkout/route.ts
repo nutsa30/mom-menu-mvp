@@ -1,6 +1,6 @@
 import { prisma } from '@/lib/prisma';
 import { getSession } from '@/lib/auth';
-import { createTrialOrder } from '@/lib/bog';
+import { createTrialOrder, createDirectOrder } from '@/lib/bog';
 import { NextResponse } from 'next/server';
 
 export async function POST(req: Request) {
@@ -26,7 +26,11 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: 'downgrade_not_allowed' }, { status: 400 });
     }
 
-    const { url } = await createTrialOrder({
+    // First-ever purchase on this account gets a 7-day free trial (preauthorized hold,
+    // released once the card-save is confirmed — never actually charged). Any purchase
+    // after that (re-subscribing post-cancellation, etc.) charges immediately, no trial.
+    const createOrder = user.bogTrialUsed ? createDirectOrder : createTrialOrder;
+    const { url } = await createOrder({
       plan,
       userId: user.id,
       email: user.email,

@@ -62,6 +62,7 @@ model User {
 
   bogParentOrderId       String?            @unique
   trialEndsAt            DateTime?
+  bogTrialUsed           Boolean            @default(false)
 
   isBlocked              Boolean            @default(false)
   isGifted               Boolean            @default(false)

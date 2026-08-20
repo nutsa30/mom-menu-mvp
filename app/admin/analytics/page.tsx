@@ -1,6 +1,10 @@
 import { prisma } from '@/lib/prisma';
+import { PLAN_AMOUNTS } from '@/lib/bog';
 
-const PRICES: Record<string, number> = { RECIPE_PLAN: 15, FULL_PLAN: 30 };
+const PRICES: Record<string, number> = {
+  RECIPE_PLAN: Number(PLAN_AMOUNTS.RECIPE_PLAN ?? 15),
+  FULL_PLAN: Number(PLAN_AMOUNTS.FULL_PLAN ?? 30),
+};
 
 export default async function AdminAnalyticsPage() {
   const [users, planItems, recentUsers] = await Promise.all([
@@ -94,8 +98,8 @@ export default async function AdminAnalyticsPage() {
   const stats = [
     { label: 'Total users', value: total, sub: `${newThisMonth} new this month`, color: 'text-[#465940]' },
     { label: 'Free', value: free, sub: `${((free / Math.max(total, 1)) * 100).toFixed(0)}% of users`, color: 'text-[#465940]/70' },
-    { label: 'Recipe plan (15₾)', value: recipe, sub: 'active', color: 'text-[#465940]' },
-    { label: 'Full plan (30₾)', value: full, sub: 'active', color: 'text-[#465940]' },
+    { label: `Recipe plan (${PRICES.RECIPE_PLAN}₾)`, value: recipe, sub: 'active', color: 'text-[#465940]' },
+    { label: `Full plan (${PRICES.FULL_PLAN}₾)`, value: full, sub: 'active', color: 'text-[#465940]' },
     { label: 'Canceled', value: canceled, sub: 'churned', color: 'text-[#FDFBF0]' },
     { label: 'Blocked', value: blocked, sub: 'accounts', color: 'text-[#465940]' },
     { label: 'Conversion rate', value: `${conversionRate}%`, sub: 'free → paid', color: 'text-[#465940]' },
@@ -157,8 +161,8 @@ export default async function AdminAnalyticsPage() {
           <h2 className="mb-4 font-bold text-[#465940]">Revenue breakdown by plan</h2>
           <div className="space-y-4">
             {[
-              { label: 'Recipe Plan (15₾)', count: recipe, price: 15, color: 'bg-[#465940]/60' },
-              { label: 'Full Plan (30₾)', count: full, price: 30, color: 'bg-[#465940]' },
+              { label: `Recipe Plan (${PRICES.RECIPE_PLAN}₾)`, count: recipe, price: PRICES.RECIPE_PLAN, color: 'bg-[#465940]/60' },
+              { label: `Full Plan (${PRICES.FULL_PLAN}₾)`, count: full, price: PRICES.FULL_PLAN, color: 'bg-[#465940]' },
             ].map((row) => {
               const rev = row.count * row.price;
               const pct = mrr > 0 ? Math.round((rev / mrr) * 100) : 0;
@@ -274,8 +278,8 @@ export default async function AdminAnalyticsPage() {
           <div className="flex items-center gap-4 flex-wrap mb-4">
             {[
               { label: 'Free', count: free, color: 'bg-[#465940]/15' },
-              { label: 'Recipe 15₾', count: recipe, color: 'bg-[#465940]/50' },
-              { label: 'Full 30₾', count: full, color: 'bg-[#465940]' },
+              { label: `Recipe ${PRICES.RECIPE_PLAN}₾`, count: recipe, color: 'bg-[#465940]/50' },
+              { label: `Full ${PRICES.FULL_PLAN}₾`, count: full, color: 'bg-[#465940]' },
               { label: 'Canceled', count: canceled, color: 'bg-red-300' },
             ].map((seg) => (
               <div key={seg.label} className="flex items-center gap-2 text-sm">

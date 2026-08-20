@@ -3,7 +3,8 @@ import {
   verifyWebhookSignature,
   decodeOrderId,
   decodeRenewalOrderId,
-  refundOrder,
+  cancelPreauthorization,
+  approvePreauthorization,
   computeCommission,
   PLAN_AMOUNTS,
 } from '@/lib/bog';
@@ -43,10 +44,11 @@ export async function POST(req: Request) {
   }
 
   const statusKey: string = body?.order_status?.key ?? '';
-  const isPaid = statusKey === 'completed';
+  const isBlocked = statusKey === 'blocked'; // preauthorization hold placed — not charged yet
+  const isPaid = statusKey === 'completed'; // real capture confirmed
   const isFailed = statusKey === 'rejected';
-  if (!isPaid && !isFailed) {
-    // created/processing/blocked/etc. — not a final state we act on (yet).
+  if (!isBlocked && !isPaid && !isFailed) {
+    // created/processing/refunded/etc. — not a state we act on.
     return NextResponse.json({ received: true });
   }
 
@@ -57,67 +59,104 @@ export async function POST(req: Request) {
   const renewal = decoded ? null : decodeRenewalOrderId(externalOrderId);
 
   if (decoded) {
-    // ── First (trial) payment ────────────────────────────────────────────
+    // ── First purchase: either a preauthorized trial ("blocked") or, for accounts
+    // that already used their free trial, a direct real charge ("completed"). ──
     const user = await prisma.user.findUnique({ where: { id: decoded.userId } });
     if (!user) {
-      console.error('BOG webhook: could not resolve user for trial order', { orderId, externalOrderId });
+      console.error('BOG webhook: could not resolve user for first-purchase order', { orderId, externalOrderId });
       return NextResponse.json({ received: true });
     }
 
     if (isFailed) {
-      // Card verification failed — no access was granted yet, nothing to roll back.
-      console.error('BOG trial charge failed', { userId: user.id, orderId, body });
+      console.error('BOG first-purchase charge failed', { userId: user.id, orderId, body });
       return NextResponse.json({ received: true });
     }
 
-    // The trial order was created at the REAL plan price (see createTrialOrder's
-    // comment — /subscribe always inherits the parent order's amount, so the parent
-    // must already be the real price). Refund it in full now that the card is
-    // confirmed saved, so the customer isn't actually charged during the free trial.
-    const trialGrossAmount = Number(PLAN_AMOUNTS[decoded.plan] ?? 0);
-    try {
-      await refundOrder(orderId);
-    } catch (err: any) {
-      // Don't block activation on a refund failure — flag loudly for manual follow-up.
-      console.error('BOG webhook: trial refund failed, needs manual refund', { orderId, userId: user.id, error: err.message });
+    const existing = await prisma.payment.findUnique({ where: { bogOrderId: orderId } });
+    if (existing) return NextResponse.json({ received: true }); // already processed (retried callback)
+
+    const grossAmount = Number(PLAN_AMOUNTS[decoded.plan] ?? 0);
+    const wasAlreadyOnPlan = user.subscriptionStatus === decoded.plan;
+    const now = new Date();
+
+    if (isBlocked) {
+      // Trial verification hold confirmed — release it (never actually charge the
+      // customer for the trial) and start the 7-day free trial.
+      try {
+        await cancelPreauthorization(orderId);
+      } catch (err: any) {
+        console.error('BOG webhook: preauth release failed, needs manual follow-up', { orderId, userId: user.id, error: err.message });
+      }
+
+      await prisma.payment.create({
+        data: {
+          userId: user.id,
+          plan: decoded.plan,
+          status: 'REFUNDED',
+          bogOrderId: orderId,
+          cardType: cardType ?? null,
+          grossAmount,
+          commissionAmount: null,
+          netAmount: null,
+        },
+      });
+
+      const trialEndsAt = new Date(now.getTime() + SEVEN_DAYS_MS);
+      await prisma.user.update({
+        where: { id: user.id },
+        data: {
+          subscriptionStatus: decoded.plan,
+          subscriptionCanceledAt: null,
+          bogParentOrderId: orderId,
+          trialEndsAt,
+          bogTrialUsed: true,
+          isGifted: false,
+          // Real charge fires 7 days from now via the cron.
+          subscriptionRenewsAt: trialEndsAt,
+          subscriptionStartedAt: user.subscriptionStartedAt ?? now,
+        },
+      });
+
+      if (!wasAlreadyOnPlan) {
+        const price = grossAmount;
+        sendSubscriptionConfirmationEmail(user.email, user.name, PLAN_LABELS[decoded.plan], price, now, trialEndsAt).catch(() => {});
+      }
+      return NextResponse.json({ received: true });
     }
 
-    await prisma.payment.upsert({
-      where: { bogOrderId: orderId },
-      create: {
+    // isPaid — direct order (account already used its free trial): real, immediate charge.
+    const { commissionAmount, netAmount } = computeCommission(grossAmount, cardType);
+    await prisma.payment.create({
+      data: {
         userId: user.id,
         plan: decoded.plan,
-        status: 'REFUNDED',
+        status: 'SUCCESS',
         bogOrderId: orderId,
         cardType: cardType ?? null,
-        grossAmount: trialGrossAmount,
-        // Trial charge is refunded in full — no commission/net to track.
-        commissionAmount: null,
-        netAmount: null,
+        grossAmount,
+        commissionAmount,
+        netAmount,
       },
-      update: {},
     });
 
-    const now = new Date();
-    const trialEndsAt = new Date(now.getTime() + SEVEN_DAYS_MS);
-    const wasAlreadyOnPlan = user.subscriptionStatus === decoded.plan;
-
+    const renewsAt = new Date(now.getTime() + THIRTY_DAYS_MS);
     await prisma.user.update({
       where: { id: user.id },
       data: {
         subscriptionStatus: decoded.plan,
         subscriptionCanceledAt: null,
         bogParentOrderId: orderId,
-        trialEndsAt,
-        // Access starts immediately; the real charge fires 7 days from now via the cron.
-        subscriptionRenewsAt: trialEndsAt,
+        trialEndsAt: null,
+        bogTrialUsed: true,
+        isGifted: false,
+        subscriptionRenewsAt: renewsAt,
         subscriptionStartedAt: user.subscriptionStartedAt ?? now,
       },
     });
 
     if (!wasAlreadyOnPlan) {
-      const price = Number(PLAN_AMOUNTS[decoded.plan] ?? 0);
-      sendSubscriptionConfirmationEmail(user.email, user.name, PLAN_LABELS[decoded.plan], price, now, trialEndsAt).catch(() => {});
+      // No trial here (direct charge) — endDate is the first renewal date, not a trial end.
+      sendSubscriptionConfirmationEmail(user.email, user.name, PLAN_LABELS[decoded.plan], grossAmount, now, renewsAt).catch(() => {});
     }
     return NextResponse.json({ received: true });
   }
@@ -137,18 +176,31 @@ export async function POST(req: Request) {
       return NextResponse.json({ received: true });
     }
 
-    // Renewal orders don't carry the plan in external_order_id (unlike the trial
-    // order), since the user is already subscribed by this point — use their
-    // current plan on file. grossAmount reliably reflects the real charge now:
-    // /subscribe inherits the parent order's amount (confirmed via docs), and the
-    // parent order was created at the real plan price, not a nominal trial amount.
+    if (isBlocked) {
+      // Renewal orders inherit "manual" capture from the trial parent order, so the
+      // charge lands as a hold first — approve it now to actually collect the money.
+      // Access/Payment recording happens on the follow-up "completed" callback that
+      // this triggers, not here.
+      try {
+        await approvePreauthorization(orderId);
+      } catch (err: any) {
+        console.error('BOG webhook: renewal capture failed to initiate, needs manual follow-up', { orderId, userId: user.id, error: err.message });
+      }
+      return NextResponse.json({ received: true });
+    }
+
+    // isPaid — renewal actually captured.
+    const existing = await prisma.payment.findUnique({ where: { bogOrderId: orderId } });
+    if (existing) return NextResponse.json({ received: true }); // already processed (retried callback)
+
+    // Renewal orders don't carry the plan in external_order_id (unlike the first-purchase
+    // order), since the user is already subscribed by this point — use their current plan.
     const plan = user.subscriptionStatus as 'RECIPE_PLAN' | 'FULL_PLAN';
     const grossAmount = Number(PLAN_AMOUNTS[plan] ?? 0);
     const { commissionAmount, netAmount } = computeCommission(grossAmount, cardType);
 
-    await prisma.payment.upsert({
-      where: { bogOrderId: orderId },
-      create: {
+    await prisma.payment.create({
+      data: {
         userId: user.id,
         plan,
         status: 'SUCCESS',
@@ -158,7 +210,6 @@ export async function POST(req: Request) {
         commissionAmount,
         netAmount,
       },
-      update: {},
     });
 
     await prisma.user.update({
@@ -168,6 +219,6 @@ export async function POST(req: Request) {
     return NextResponse.json({ received: true });
   }
 
-  console.error('BOG webhook: paid/failed event but external_order_id did not decode as trial or renewal', { orderId, externalOrderId });
+  console.error('BOG webhook: relevant event but external_order_id did not decode as first-purchase or renewal', { orderId, externalOrderId });
   return NextResponse.json({ received: true });
 }

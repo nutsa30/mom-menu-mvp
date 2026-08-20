@@ -5,9 +5,9 @@ import crypto from 'crypto';
 // do not use it). Mirrors the structure of lib/quickpay.ts so the two
 // integrations stay easy to compare while Quickpay is unreachable from the UI.
 //
-// NOTE: real recurring payments must be manually activated per-merchant by
-// BOG support on the older docs — confirm this is switched on for our
-// merchant account once real BOG_CLIENT_ID/BOG_CLIENT_SECRET arrive.
+// NOTE: Recurring Payments and Preauthorization both had to be manually activated by
+// BOG support on our merchant account (manager.bog.ge → application → additional
+// services) — both are confirmed active now.
 
 const OAUTH_URL = 'https://oauth2.bog.ge/auth/realms/bog/protocol/openid-connect/token';
 const API_BASE = 'https://api.bog.ge/payments/v1';
@@ -106,24 +106,32 @@ export function decodeRenewalOrderId(externalOrderId: string | null | undefined)
   return { userId: m[1] };
 }
 
-// ─── Create the trial (first-payment / card-tokenizing) order ─────────────
+// ─── Create the order that tokenizes the card (trial or direct) ───────────
 // CONFIRMED (via BOG's own docs, not a guess): POST .../orders/:parent_order_id/subscribe
-// always inherits amount/currency/buyer from the ORIGINAL order it's attached to — there
-// is no way to override the amount on a renewal charge. So the parent order created here
-// MUST already be at the real plan price, not a nominal trial amount — otherwise every
-// renewal would silently charge the wrong (trial) amount forever.
+// always inherits amount/currency/buyer/capture-mode from the ORIGINAL order it's attached
+// to — there is no way to override these on a renewal charge. So the parent order created
+// here MUST already be at the real plan price, not a nominal trial amount.
 //
-// To still offer a genuine 7-day free trial without charging the customer up front, this
-// order is created for the REAL plan price with automatic capture, and the webhook
-// handler refunds it in full the moment payment is confirmed (see
-// app/api/webhooks/bog/route.ts) — leaving the card saved on this order (as
-// bogParentOrderId) so the real charge can happen automatically 7 days later via
-// chargeSavedCard(), which will now correctly reuse this same real amount.
-export async function createTrialOrder(opts: {
+// CONFIRMED live against BOG's production API (not a guess): capture mode is ALSO
+// inherited by /subscribe. That means a "manual" (preauthorization) parent produces
+// "blocked" (held, not charged) renewal orders too — every renewal needs an explicit
+// approvePreauthorization() call to actually collect the money (see the webhook handler).
+//
+// Two entry points, one shared helper:
+// - createTrialOrder: capture "manual" (preauthorization). The webhook releases the hold
+//   (cancelPreauthorization) the moment the card-save is confirmed, so the customer is
+//   never actually charged during the 7-day free trial — BOG only places a temporary hold
+//   that disappears, it never shows as a real transaction+refund pair. Renewal 7 days
+//   later goes through the same parent order and gets approved (captured) for real.
+// - createDirectOrder: capture "automatic", real immediate charge, no trial. Used for
+//   accounts that already used their free trial once (see User.bogTrialUsed) — a repeat
+//   purchase should charge immediately, not grant a second trial.
+async function createOrder(opts: {
   plan: 'RECIPE_PLAN' | 'FULL_PLAN';
   userId: string;
   email: string;
   name: string;
+  capture: 'manual' | 'automatic';
 }): Promise<{ url: string; orderId: string }> {
   const amount = PLAN_AMOUNTS[opts.plan];
   if (!amount) {
@@ -159,7 +167,7 @@ export async function createTrialOrder(opts: {
         success: `${appUrl}/dashboard?sub=success`,
         fail: `${appUrl}/dashboard?sub=failed`,
       },
-      capture: 'automatic',
+      capture: opts.capture,
     }),
   });
 
@@ -187,6 +195,14 @@ export async function createTrialOrder(opts: {
   }
 
   return { url: redirectUrl, orderId };
+}
+
+export function createTrialOrder(opts: { plan: 'RECIPE_PLAN' | 'FULL_PLAN'; userId: string; email: string; name: string }) {
+  return createOrder({ ...opts, capture: 'manual' });
+}
+
+export function createDirectOrder(opts: { plan: 'RECIPE_PLAN' | 'FULL_PLAN'; userId: string; email: string; name: string }) {
+  return createOrder({ ...opts, capture: 'automatic' });
 }
 
 // ─── Charge the saved card (renewal) ───────────────────────────────────────
@@ -240,14 +256,16 @@ export async function getPaymentDetails(orderId: string) {
 }
 
 // ─── Refund ─────────────────────────────────────────────────────────────────
-// Used to refund the nominal trial-verification charge once the card is
-// confirmed saved, so the customer isn't actually out that money during the
-// free trial. Endpoint confirmed via WebFetch of api.bog.ge/docs/en/payments/refund
-// (not in the task brief's summarized endpoint list): POST to
-// /payments/v1/payment/refund/:order_id (note: different base path segment,
-// "payment" not "payments", from the rest of this client — confirmed from docs,
-// not a typo). Body `{ amount }` is optional; omitting it refunds the full amount,
-// which is what we want for the trial charge, so no amount is passed.
+// Refunds an already-CAPTURED (real, completed) charge. No longer used by the trial
+// flow (see cancelPreauthorization below) — kept for admin/manual use on real charges
+// (e.g. a completed direct-order or renewal that needs to be refunded after the fact).
+// CONFIRMED: refunds draw from the merchant's own settled balance, not a direct reversal
+// of the original transaction — a refund can be rejected with code 163 ("Not enough
+// funds available in the account") if the merchant account hasn't settled enough yet,
+// even though the original charge succeeded. Retry later if this happens.
+// Endpoint: POST /payments/v1/payment/refund/:order_id (note: different base path
+// segment, "payment" not "payments", from the rest of this client — confirmed from
+// docs, not a typo). Body `{ amount }` is optional; omitting it refunds in full.
 export async function refundOrder(orderId: string, amount?: string) {
   const headers = await apiHeaders(crypto.randomUUID());
   const res = await fetch(`https://api.bog.ge/payments/v1/payment/refund/${orderId}`, {
@@ -258,6 +276,47 @@ export async function refundOrder(orderId: string, amount?: string) {
   if (!res.ok) {
     const text = await res.text();
     throw new Error(`BOG refund failed (${res.status}): ${text}`);
+  }
+  return res.json();
+}
+
+// ─── Preauthorization release / capture ────────────────────────────────────
+// CONFIRMED live against BOG's production API: a "manual" capture order only places a
+// temporary hold on the card (order_status "blocked") — no money moves. These two
+// endpoints resolve that hold one way or the other:
+//
+// cancelPreauthorization — releases the hold with zero charge to the customer. Used for
+// the trial-verification order the instant the card-save is confirmed, so the free trial
+// never shows as a real charge+refund pair, just a hold that disappears.
+//
+// approvePreauthorization — actually captures (collects) the held amount, turning the
+// hold into a real, completed transaction. Used for the renewal charge 7 days later:
+// since /subscribe inherits the parent's "manual" capture mode, every renewal also comes
+// back "blocked" first and needs this call to actually collect the money.
+export async function cancelPreauthorization(orderId: string) {
+  const headers = await apiHeaders(crypto.randomUUID());
+  const res = await fetch(`https://api.bog.ge/payments/v1/payment/authorization/cancel/${orderId}`, {
+    method: 'POST',
+    headers,
+    body: JSON.stringify({}),
+  });
+  if (!res.ok) {
+    const text = await res.text();
+    throw new Error(`BOG cancel-preauthorization failed (${res.status}): ${text}`);
+  }
+  return res.json();
+}
+
+export async function approvePreauthorization(orderId: string) {
+  const headers = await apiHeaders(crypto.randomUUID());
+  const res = await fetch(`https://api.bog.ge/payments/v1/payment/authorization/approve/${orderId}`, {
+    method: 'POST',
+    headers,
+    body: JSON.stringify({}),
+  });
+  if (!res.ok) {
+    const text = await res.text();
+    throw new Error(`BOG approve-preauthorization failed (${res.status}): ${text}`);
   }
   return res.json();
 }

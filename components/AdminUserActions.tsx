@@ -36,13 +36,14 @@ export function BlockUserButton({ userId, isBlocked, locale = 'ka' }: { userId: 
   );
 }
 
-const GIFT_OPTIONS = [
-  { value: 'RECIPE_PLAN', label: '15₾ — რეცეპტები', color: 'text-[#465940]' },
-  { value: 'FULL_PLAN', label: '30₾ — სრული', color: 'text-[#465940]' },
-  { value: 'FREE', label: 'გაუქმება', color: 'text-[#FDFBF0]' },
-];
-
-export function GiftSubscriptionButton({ userId, currentStatus, isGifted }: { userId: string; currentStatus: string; isGifted: boolean }) {
+export function GiftSubscriptionButton({
+  userId, currentStatus, isGifted, recipePrice = 15, fullPrice = 30,
+}: { userId: string; currentStatus: string; isGifted: boolean; recipePrice?: number; fullPrice?: number }) {
+  const GIFT_OPTIONS = [
+    { value: 'RECIPE_PLAN', label: `${recipePrice}₾ — რეცეპტები`, color: 'text-[#465940]' },
+    { value: 'FULL_PLAN', label: `${fullPrice}₾ — სრული`, color: 'text-[#465940]' },
+    { value: 'FREE', label: 'გაუქმება', color: 'text-[#FDFBF0]' },
+  ];
   const router = useRouter();
   const [open, setOpen] = useState(false);
   const [loading, setLoading] = useState(false);
@@ -72,6 +73,19 @@ export function GiftSubscriptionButton({ userId, currentStatus, isGifted }: { us
 
   const hasGift = isGifted && currentStatus !== 'FREE' && currentStatus !== 'CANCELED';
 
+  const removeGiftFlag = async () => {
+    if (!confirm('მოეხსნას "გაჩუქებული" ნიშანი? პაკეტი და თარიღები უცვლელი დარჩება — გამოსადეგია, თუ ეს რეალურად გადახდილი გამოწერაა.')) return;
+    setLoading(true);
+    setOpen(false);
+    await fetch(`/api/users/${userId}`, {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ isGifted: false }),
+    });
+    router.refresh();
+    setLoading(false);
+  };
+
   return (
     <div className="relative" ref={ref}>
       <button
@@ -86,7 +100,7 @@ export function GiftSubscriptionButton({ userId, currentStatus, isGifted }: { us
         {loading ? '...' : hasGift ? '🎁 გაჩუქებული' : '🎁 გაჩუქება'}
       </button>
       {open && (
-        <div className="absolute right-0 top-full mt-1 bg-[#FDFBF0] border border-[#465940]/10 rounded-xl shadow-lg z-50 min-w-[160px] py-1 overflow-hidden">
+        <div className="absolute right-0 top-full mt-1 bg-[#FDFBF0] border border-[#465940]/10 rounded-xl shadow-lg z-50 min-w-[200px] py-1 overflow-hidden">
           {GIFT_OPTIONS.filter(o => o.value !== currentStatus).map(opt => (
             <button
               key={opt.value}
@@ -96,6 +110,14 @@ export function GiftSubscriptionButton({ userId, currentStatus, isGifted }: { us
               {opt.label}
             </button>
           ))}
+          {hasGift && (
+            <button
+              onClick={removeGiftFlag}
+              className="w-full text-left px-4 py-2 text-xs font-semibold text-[#465940] hover:bg-[#465940]/5 transition border-t border-[#465940]/10"
+            >
+              ✕ მოხსნა (რეალურად გადახდილია)
+            </button>
+          )}
         </div>
       )}
     </div>

@@ -2,6 +2,13 @@
 import { BlockUserButton, ToggleAdminButton, GiftSubscriptionButton } from '@/components/AdminUserActions';
 import { adminDict, getAdminLocale, type AdminLocale } from '@/lib/adminI18n';
 import UsersFilterBar from '@/components/UsersFilterBar';
+import { PLAN_AMOUNTS } from '@/lib/bog';
+
+// Real, currently-charged prices (env-configured, not hardcoded) — used for every
+// MRR/ARR/revenue calc below so this page never drifts from what customers actually pay.
+const RECIPE_PRICE = Number(PLAN_AMOUNTS.RECIPE_PLAN ?? 15);
+const FULL_PRICE = Number(PLAN_AMOUNTS.FULL_PLAN ?? 30);
+const priceFor = (plan: string) => (plan === 'RECIPE_PLAN' ? RECIPE_PRICE : FULL_PRICE);
 
 const subBadge: Record<string, string> = {
   FREE: 'bg-[#465940]/10 text-[#465940]/70',
@@ -56,7 +63,7 @@ function UserTable({ users, subLabel, locale }: { users: any[]; subLabel: Record
                       {user.promoCode.code}
                     </span>
                     <span className="text-[10px] text-[#465940]/60">
-                      {user.promoCode.planType === 'RECIPE_PLAN' ? '15₾' : '30₾'}
+                      {priceFor(user.promoCode.planType)}₾
                     </span>
                   </div>
                 ) : (
@@ -67,7 +74,7 @@ function UserTable({ users, subLabel, locale }: { users: any[]; subLabel: Record
               <td className="px-4 py-4 text-sm text-[#465940]/60">{new Date(user.createdAt).toLocaleDateString()}</td>
               <td className="px-6 py-4">
                 <div className="flex items-center justify-end gap-2 flex-wrap">
-                  <GiftSubscriptionButton userId={user.id} currentStatus={user.subscriptionStatus} isGifted={user.isGifted} />
+                  <GiftSubscriptionButton userId={user.id} currentStatus={user.subscriptionStatus} isGifted={user.isGifted} recipePrice={RECIPE_PRICE} fullPrice={FULL_PRICE} />
                   <ToggleAdminButton userId={user.id} role={user.role} locale={locale} />
                   <BlockUserButton userId={user.id} isBlocked={user.isBlocked} locale={locale} />
                 </div>
@@ -121,15 +128,13 @@ export default async function AdminUsersPage({
     (u) => u.isGifted && (u.subscriptionStatus === 'RECIPE_PLAN' || u.subscriptionStatus === 'FULL_PLAN')
   );
   const giftedCount = giftedPaying.length;
-  const giftedValue = giftedPaying.reduce(
-    (sum, u) => sum + (u.subscriptionStatus === 'RECIPE_PLAN' ? 15 : 30), 0
-  );
+  const giftedValue = giftedPaying.reduce((sum, u) => sum + priceFor(u.subscriptionStatus), 0);
 
   // Revenue — gifted users excluded (they bring no cash)
   const thirtyDaysAgo = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000);
   const realRecipe = users.filter((u) => !u.isGifted && u.subscriptionStatus === 'RECIPE_PLAN').length;
   const realFull   = users.filter((u) => !u.isGifted && u.subscriptionStatus === 'FULL_PLAN').length;
-  const mrr = realRecipe * 15 + realFull * 30;
+  const mrr = realRecipe * RECIPE_PRICE + realFull * FULL_PRICE;
   const payingUsers = realRecipe + realFull;
   const arpu = payingUsers > 0 ? Math.round(mrr / payingUsers) : 0;
   const newMrr = users
@@ -139,7 +144,7 @@ export default async function AdminUsersPage({
       new Date(u.subscriptionStartedAt) > thirtyDaysAgo &&
       (u.subscriptionStatus === 'RECIPE_PLAN' || u.subscriptionStatus === 'FULL_PLAN')
     )
-    .reduce((sum, u) => sum + (u.subscriptionStatus === 'RECIPE_PLAN' ? 15 : 30), 0);
+    .reduce((sum, u) => sum + priceFor(u.subscriptionStatus), 0);
 
   // BOG payment revenue (gross / commission / net) — separate from the MRR cards
   // above, which are derived from subscriptionStatus, not actual charged amounts.
@@ -152,12 +157,16 @@ export default async function AdminUsersPage({
     commission: sum(paymentsThisMonth, 'commissionAmount'),
     net: sum(paymentsThisMonth, 'netAmount'),
   };
-  const planLabelShort: Record<string, string> = { RECIPE_PLAN: '15₾', FULL_PLAN: '30₾' };
+  const planLabelShort: Record<string, string> = { RECIPE_PLAN: `${RECIPE_PRICE}₾`, FULL_PLAN: `${FULL_PRICE}₾` };
+  // Built from the real, currently-configured prices rather than lib/adminI18n's static
+  // strings, which hardcode stale numbers (e.g. "30₾") that drift as soon as pricing changes.
+  const recipePlanLabel = `${RECIPE_PRICE}₾ ${locale === 'ka' ? 'რეცეპტები' : 'Recipe'}`;
+  const fullPlanLabel = `${FULL_PRICE}₾ ${locale === 'ka' ? 'სრული' : 'Full'}`;
 
   const subLabel: Record<string, string> = {
     FREE: locale === 'ka' ? 'უფასო' : 'Free',
-    RECIPE_PLAN: d.recipePlan,
-    FULL_PLAN: d.fullPlan,
+    RECIPE_PLAN: recipePlanLabel,
+    FULL_PLAN: fullPlanLabel,
     CANCELED: locale === 'ka' ? 'გაუქმებული' : 'Canceled',
   };
 
@@ -181,8 +190,8 @@ export default async function AdminUsersPage({
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4 mb-6 lg:mb-8">
         {[
           { label: d.totalUsers, value: total, color: 'text-[#465940]', bg: 'bg-[#465940]/5' },
-          { label: d.recipePlan, value: recipePlan, color: 'text-[#465940]', bg: 'bg-[#FDFBF0]/10' },
-          { label: d.fullPlan, value: fullPlan, color: 'text-[#465940]', bg: 'bg-[#465940]/10' },
+          { label: recipePlanLabel, value: recipePlan, color: 'text-[#465940]', bg: 'bg-[#FDFBF0]/10' },
+          { label: fullPlanLabel, value: fullPlan, color: 'text-[#465940]', bg: 'bg-[#465940]/10' },
           { label: d.blocked, value: blocked, color: 'text-[#FDFBF0]', bg: 'bg-[#465940]' },
         ].map((s) => (
           <div key={s.label} className="bg-[#FDFBF0] rounded-2xl p-5 border border-[#465940]/10 shadow-sm">

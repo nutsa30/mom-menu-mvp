@@ -78,12 +78,15 @@ export default function SubscriptionPage() {
     <main className="min-h-screen bg-[#465940] px-6 py-16">
       <div className="mx-auto max-w-4xl text-center">
         <h1 className="text-4xl font-black text-[#FDFBF0] mb-3">პაკეტის არჩევა</h1>
-        <p className="text-[#FDFBF0]/60 mb-12">გაუქმება ნებისმიერ დროს შეგიძლია</p>
+        <p className="text-[#FDFBF0]/60 mb-3">გაუქმება ნებისმიერ დროს შეგიძლია</p>
+        <p className="text-[#FDFBF0]/50 text-sm max-w-xl mx-auto mb-12">
+          პირველი შესყიდვისას გაქვთ 7 დღიანი უფასო ტესტ-პერიოდი — ბარათი მხოლოდ დროებით მოწმდება, თანხა არ ჩამოიჭრება. პირველი გადახდა მოხდება ზუსტად 7 დღეში, თუ ამ დრომდე არ გააუქმებთ. თუ ტესტ-პერიოდის განმავლობაში სხვა პაკეტზე გადახვალთ, ახალი პაკეტის თანხა მაშინვე ჩამოიჭრება და შემდეგი განახლება 30 დღეში მოხდება.
+        </p>
 
         <div className="grid gap-6 md:grid-cols-2">
 
           {/* RECIPE_PLAN */}
-          <div className="rounded-[28px] bg-[#FDFBF0] p-8 flex flex-col">
+          <div className="rounded-[28px] bg-[#FDFBF0] p-8 flex flex-col min-w-0">
             <h2 className="text-xl font-semibold text-[#465940] mb-4">რეცეპტებზე წვდომა</h2>
             <div className="mb-6">
               {discountedPrice('RECIPE_PLAN', 15) ? (
@@ -136,7 +139,7 @@ export default function SubscriptionPage() {
           </div>
 
           {/* FULL_PLAN */}
-          <div className="rounded-[28px] bg-[#FDFBF0] p-8 flex flex-col relative">
+          <div className="rounded-[28px] bg-[#FDFBF0] p-8 flex flex-col min-w-0 relative">
             <div className="absolute -top-4 left-1/2 -translate-x-1/2">
               <span className="inline-flex items-center gap-2 text-[#FDFBF0] text-sm font-black px-6 py-2 rounded-full shadow-md" style={{ background: '#465940' }}>
                 ⭐ საუკეთესო არჩევანი

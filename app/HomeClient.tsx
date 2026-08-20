@@ -358,7 +358,12 @@ export default function HomeClient({ s, dishes, dishCount, recentBlogs }: {
         <div className="max-w-7xl mx-auto px-5">
           <div ref={refPricing} className="fade-up text-center mb-10 sm:mb-12">
             <h2 className="text-2xl sm:text-3xl font-bold mb-3 text-[#FDFBF0]">{t('pricingTitleKa', 'pricingTitleEn')}</h2>
-            <p className="text-[#FDFBF0]/70 text-sm max-w-xl mx-auto">{t('pricingSubtitleKa', 'pricingSubtitleEn')}</p>
+            <p className="text-[#FDFBF0]/70 text-sm max-w-xl mx-auto mb-3">{t('pricingSubtitleKa', 'pricingSubtitleEn')}</p>
+            <p className="text-[#FDFBF0]/50 text-xs max-w-xl mx-auto">
+              {ka
+                ? 'პირველი შესყიდვისას გაქვთ 7 დღიანი უფასო ტესტ-პერიოდი — ბარათი მხოლოდ დროებით მოწმდება, თანხა არ ჩამოიჭრება. პირველი გადახდა მოხდება ზუსტად 7 დღეში, თუ ამ დრომდე არ გააუქმებთ. თუ ტესტ-პერიოდის განმავლობაში სხვა პაკეტზე გადახვალთ, ახალი პაკეტის თანხა მაშინვე ჩამოიჭრება და შემდეგი განახლება 30 დღეში მოხდება.'
+                : 'Your first purchase includes a 7-day free trial — your card is only verified, not charged. The first real payment happens exactly 7 days later, unless you cancel before then. Upgrading during the trial charges the new plan immediately and starts a new 30-day cycle from that moment.'}
+            </p>
           </div>
           <div ref={refPricingCards} className="grid md:grid-cols-2 gap-5 max-w-4xl mx-auto items-stretch">
 
