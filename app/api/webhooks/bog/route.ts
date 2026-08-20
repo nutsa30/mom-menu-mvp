@@ -183,6 +183,15 @@ export async function POST(req: Request) {
       // this triggers, not here.
       try {
         await approvePreauthorization(orderId);
+        // Push renewsAt forward so bog-renew's daily cron doesn't see this account as
+        // still "due" and fire a SECOND /subscribe (a second hold on the same card)
+        // while this one is still waiting for BOG's "completed" confirmation to land.
+        // If approve failed (catch below), leave renewsAt untouched — that's what makes
+        // tomorrow's cron retry this same renewal instead of silently giving up on it.
+        await prisma.user.update({
+          where: { id: user.id },
+          data: { subscriptionRenewsAt: new Date(Date.now() + 24 * 60 * 60 * 1000) },
+        });
       } catch (err: any) {
         console.error('BOG webhook: renewal capture failed to initiate, needs manual follow-up', { orderId, userId: user.id, error: err.message });
       }
