@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getSession } from '@/lib/auth';
 import { prisma } from '@/lib/prisma';
-import { getMealTypesForAge } from '@/lib/meal';
+import { getMealTypesForAge, AGE_GROUP_ORDER } from '@/lib/meal';
 
 function todayStr() {
   return new Date().toISOString().split('T')[0];
@@ -121,14 +121,19 @@ export async function GET(req: NextRequest) {
       if (child.allergies.length) where.NOT = { allergens: { hasSome: child.allergies } };
       let candidates = await prisma.dish.findMany({ where });
 
-      // Dishes still tagged FROM_6 (purees/simple first foods) should only rarely
-      // appear once a child has moved past that stage — exclude them from the pool
-      // most of the time rather than relying on a score penalty, since a soft
-      // penalty already proved insufficient to suppress a dish elsewhere in this
-      // function (see the hard recency-exclusion above).
-      if (child.ageGroup !== 'FROM_6') {
-        const pastFirstFoods = candidates.filter((d) => !d.ageGroups.includes('FROM_6'));
-        if (pastFirstFoods.length > 0 && Math.random() > 0.15) candidates = pastFirstFoods;
+      // A dish also tagged for a group younger than this child's is a "simpler"
+      // dish suited to an earlier stage — it should appear rarely once the child
+      // has moved past that stage, not as routinely as dishes matched to their
+      // current stage. Exclude such dishes from the pool most of the time rather
+      // than relying on a score penalty, since a soft penalty already proved
+      // insufficient to suppress a dish elsewhere in this function (see the hard
+      // recency-exclusion above).
+      const childAgeIdx = AGE_GROUP_ORDER.indexOf(child.ageGroup);
+      if (childAgeIdx > 0) {
+        const stageMatched = candidates.filter(
+          (d) => !d.ageGroups.some((ag: string) => AGE_GROUP_ORDER.indexOf(ag as any) < childAgeIdx)
+        );
+        if (stageMatched.length > 0 && Math.random() > 0.15) candidates = stageMatched;
       }
 
       const picked = pickDish(candidates, child.likes, child.dislikes, recentIds, todayIds);
