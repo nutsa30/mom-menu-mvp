@@ -119,7 +119,17 @@ export async function GET(req: NextRequest) {
       // Strict allergy filter
       const where: any = { mealType, ageGroups: { has: child.ageGroup } };
       if (child.allergies.length) where.NOT = { allergens: { hasSome: child.allergies } };
-      const candidates = await prisma.dish.findMany({ where });
+      let candidates = await prisma.dish.findMany({ where });
+
+      // Dishes still tagged FROM_6 (purees/simple first foods) should only rarely
+      // appear once a child has moved past that stage — exclude them from the pool
+      // most of the time rather than relying on a score penalty, since a soft
+      // penalty already proved insufficient to suppress a dish elsewhere in this
+      // function (see the hard recency-exclusion above).
+      if (child.ageGroup !== 'FROM_6') {
+        const pastFirstFoods = candidates.filter((d) => !d.ageGroups.includes('FROM_6'));
+        if (pastFirstFoods.length > 0 && Math.random() > 0.15) candidates = pastFirstFoods;
+      }
 
       const picked = pickDish(candidates, child.likes, child.dislikes, recentIds, todayIds);
       if (picked) todayIds.add(picked.id);
