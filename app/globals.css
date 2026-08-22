@@ -20,6 +20,18 @@ html { scroll-behavior: smooth; }
 .fade-up { opacity: 0; }
 .fade-up.in-view { animation: fadeUp 0.65s cubic-bezier(.22,1,.36,1) forwards; }
 
+@keyframes softFloat {
+  0%, 100% { transform: translateY(0); }
+  50%      { transform: translateY(-10px); }
+}
+.float-slow { animation: softFloat 5s ease-in-out infinite; }
+
+@keyframes blobPulse {
+  0%, 100% { transform: scale(1); }
+  50%      { transform: scale(1.12); }
+}
+.blob-pulse { animation: blobPulse 7s ease-in-out infinite; }
+
 body { background: #6F7A5C; color: #F5F1E4; antialiased: true; }
 .input { @apply w-full rounded-2xl border border-[#F5F1E4]/20 bg-[#F5F1E4]/10 px-4 py-3 text-[#F5F1E4] outline-none transition focus:border-[#F5F1E4]/60; }
 .settings-input { color: #6F7A5C !important; background-color: #ffffff !important; }

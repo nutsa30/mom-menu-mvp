@@ -111,8 +111,10 @@ function ChatbotPanel() {
 
 const HIDE_ON = ['/admin'];
 
+const DISABLED = true; // Temporarily disabled site-wide at the user's request — flip to false to re-enable.
+
 export default function ChatbotWidget() {
   const pathname = usePathname();
-  if (HIDE_ON.some((p) => pathname.startsWith(p))) return null;
+  if (DISABLED || HIDE_ON.some((p) => pathname.startsWith(p))) return null;
   return <ChatbotPanel />;
 }
