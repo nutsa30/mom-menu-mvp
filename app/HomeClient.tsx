@@ -178,8 +178,8 @@ export default function HomeClient({ s, dishes, dishCount, recentBlogs, planAmou
 
       {/* ── Hero ─────────────────────────────────────────────── */}
       <section className="relative overflow-hidden" style={{ background: 'linear-gradient(to right, #f9ead4, #f8e2cd, #f5e3c9, #e9ceb0, #e3cbab)' }}>
-        <div className="max-w-7xl mx-auto px-5 sm:px-8 pt-10 sm:pt-14">
-          <div className="text-center max-w-2xl mx-auto mb-7 sm:mb-10">
+        <div className="max-w-7xl mx-auto px-5 sm:px-8 pt-14 pb-16 sm:pt-20 sm:pb-24">
+          <div className="text-center max-w-2xl mx-auto">
             <span className="inline-flex items-center gap-2 mb-3 sm:mb-5 uppercase tracking-[0.12em] sm:tracking-[0.15em] font-bold text-[10px] sm:text-xs" style={{ color: '#D9803B' }}>
               <span style={{ width: 16, height: 1, background: '#D9803B', display: 'inline-block' }} />
               {t('heroBadgeKa', 'heroBadgeEn')}
@@ -209,16 +209,11 @@ export default function HomeClient({ s, dishes, dishCount, recentBlogs, planAmou
               </a>
             </div>
           </div>
-          {s.heroImageUrl && (
-            <div className="flex justify-center">
-              <img src={s.heroImageUrl as string} alt="meal" className="w-full max-w-[751px] h-auto" />
-            </div>
-          )}
         </div>
       </section>
 
       {/* ── Stats strip ─────────────────────────────────────── */}
-      <section className="relative z-10 pb-14 sm:pb-20">
+      <section className="relative z-10 pt-14 pb-14 sm:pt-20 sm:pb-20">
         <div ref={refStats} className="max-w-7xl mx-auto px-5 grid grid-cols-2 md:grid-cols-4 gap-6">
           {[
             { num: `${Math.max(dishCount, 6)}+`, label: ka ? 'კერძი' : 'Recipes',
@@ -332,7 +327,7 @@ export default function HomeClient({ s, dishes, dishCount, recentBlogs, planAmou
         <div className="max-w-7xl mx-auto px-5">
           <div ref={refPricing} className="fade-up text-center mb-10 sm:mb-12">
             <span className="inline-flex items-center gap-2 mb-4 px-4 py-1.5 rounded-full text-xs sm:text-sm font-bold" style={{ background: 'rgba(217,128,59,0.18)', color: '#D9803B' }}>
-              🎁 {ka ? 'აქცია: 7 დღე სრულიად უფასოდ' : 'Offer: 7 days completely free'}
+              {ka ? 'აქცია: 7 დღე სრულიად უფასოდ' : 'Offer: 7 days completely free'}
             </span>
             <h2 className="text-2xl sm:text-3xl font-bold mb-3 text-[#F5F1E4]" style={{ fontFamily: SERIF_KA }}>{t('pricingTitleKa', 'pricingTitleEn')}</h2>
             <p className="text-[#F5F1E4]/70 text-sm max-w-xl mx-auto mb-3">{t('pricingSubtitleKa', 'pricingSubtitleEn')}</p>
