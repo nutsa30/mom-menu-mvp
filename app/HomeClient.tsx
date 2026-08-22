@@ -173,10 +173,10 @@ export default function HomeClient({ s, dishes, dishCount, recentBlogs }: {
     <main style={{ color: '#6F7A5C', background: '#F5F1E4', fontFamily: "'Rubik', sans-serif" }}>
 
       {/* ── Hero ─────────────────────────────────────────────── */}
-      <section className="relative overflow-hidden" style={{ background: '#F5F1E4' }}>
+      <section className="relative overflow-hidden" style={{ background: '#F1D7BD' }}>
         <div className="relative w-full h-[360px] sm:h-[460px] lg:h-[600px]">
           {s.heroImageUrl ? (
-            <img src={s.heroImageUrl as string} alt="meal" className="absolute inset-0 w-full h-full object-cover" />
+            <img src={s.heroImageUrl as string} alt="meal" className="absolute left-0 top-0 h-full w-auto" />
           ) : (
             <div className="absolute inset-0 bg-[#6F7A5C]/10" />
           )}
@@ -203,7 +203,7 @@ export default function HomeClient({ s, dishes, dishCount, recentBlogs }: {
                 </a>
                 <a
                   href={`/?lang=${locale}#pricing`}
-                  className="border-2 px-5 sm:px-7 py-2.5 sm:py-3.5 rounded-full font-bold hover:bg-[#6F7A5C]/5 transition text-xs sm:text-base bg-[#F5F1E4]/70"
+                  className="border-2 px-5 sm:px-7 py-2.5 sm:py-3.5 rounded-full font-bold hover:bg-[#6F7A5C]/10 transition text-xs sm:text-base"
                   style={{ borderColor: '#6F7A5C', color: '#6F7A5C' }}
                 >
                   {t('heroCta2Ka', 'heroCta2En')}
