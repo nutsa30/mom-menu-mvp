@@ -56,11 +56,13 @@ function useStaggeredFadeUp(delay = 120) {
 }
 
 const MEAL_COLORS: Record<string, string> = {
-  breakfast: 'bg-[#FAFAF8]/90 text-[#16171A]',
-  lunch:     'bg-[#FAFAF8]/90 text-[#16171A]',
-  snack:     'bg-[#FAFAF8]/90 text-[#16171A]',
-  dinner:    'bg-[#FAFAF8]/90 text-[#16171A]',
+  breakfast: 'bg-[#FDFBF0]/95 text-[#465940]',
+  lunch:     'bg-[#FDFBF0]/95 text-[#465940]',
+  snack:     'bg-[#FDFBF0]/95 text-[#465940]',
+  dinner:    'bg-[#FDFBF0]/95 text-[#465940]',
 };
+
+const SERIF_KA = "'Noto Serif Georgian', serif";
 
 export default function HomeClient({ s, dishes, dishCount, recentBlogs }: {
   s: S; dishes: Dishes; dishCount: number; recentBlogs: RecentBlog[];
@@ -77,6 +79,7 @@ export default function HomeClient({ s, dishes, dishCount, recentBlogs }: {
   const refFeatureCards = useStaggeredFadeUp(130);
   const refSamples      = useFadeUp();
   const refSampleCards  = useStaggeredFadeUp(100);
+  const refSampleCards2 = useStaggeredFadeUp(100);
   const refPricing      = useFadeUp();
   const refPricingCards = useStaggeredFadeUp(180);
   const refBlog             = useFadeUp();
@@ -167,24 +170,24 @@ export default function HomeClient({ s, dishes, dishCount, recentBlogs }: {
   ];
 
   return (
-    <main style={{ color: '#16171A', background: '#FAFAF8', fontFamily: "'Rubik', sans-serif" }}>
+    <main style={{ color: '#465940', background: '#FDFBF0', fontFamily: "'Rubik', sans-serif" }}>
 
       {/* ── Hero ─────────────────────────────────────────────── */}
-      <section className="relative overflow-hidden pt-10 pb-10 md:pt-16 md:pb-14" style={{ background: '#FAFAF8' }}>
+      <section className="relative overflow-hidden pt-10 pb-10 md:pt-16 md:pb-14" style={{ background: '#FDFBF0' }}>
         <div className="max-w-7xl mx-auto px-4 sm:px-6">
 
           {/* Mobile: food image */}
-          <div className="md:hidden relative h-60 sm:h-72 overflow-hidden mb-6 border border-[#E4E4DC]">
+          <div className="md:hidden relative h-60 sm:h-72 rounded-[32px] overflow-hidden mb-6 shadow-lg">
             {s.heroImageUrl ? (
               <>
                 <img src={s.heroImageUrl as string} alt="meal" className="w-full h-full object-cover" />
                 <div className="absolute inset-0 bg-gradient-to-t from-black/40 via-transparent to-transparent" />
               </>
             ) : (
-              <div className="w-full h-full bg-[#F0F0E8] flex items-center justify-center text-6xl"></div>
+              <div className="w-full h-full bg-[#465940]/10 flex items-center justify-center text-6xl"></div>
             )}
-            <span className="absolute bottom-4 left-4 inline-flex items-center gap-2 px-3 py-1.5 bg-[#FAFAF8] text-[#16171A] font-medium text-xs border border-[#E4E4DC]">
-              <span className="w-1.5 h-1.5 inline-block" style={{ background: '#8B9A2B' }} />
+            <span className="absolute bottom-4 left-4 inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-[#FDFBF0] text-[#465940] font-bold text-xs shadow">
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="#E67E33"><path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z"/></svg>
               {t('heroBadgeKa', 'heroBadgeEn')}
             </span>
           </div>
@@ -192,28 +195,30 @@ export default function HomeClient({ s, dishes, dishCount, recentBlogs }: {
           {/* Text content */}
           <div className="lg:grid lg:grid-cols-2 lg:gap-12 lg:items-center">
             <div>
-              <span className="hidden md:inline-flex items-center gap-2 px-3.5 py-1.5 mb-7 border border-[#E4E4DC] text-[#57594E] font-medium text-sm">
-                <span className="w-1.5 h-1.5 inline-block" style={{ background: '#8B9A2B' }} />
+              <span className="hidden md:inline-flex items-center gap-2 mb-5 uppercase tracking-[0.15em] font-bold text-xs" style={{ color: '#E67E33' }}>
+                <span style={{ width: 22, height: 1, background: '#E67E33', display: 'inline-block' }} />
                 {t('heroBadgeKa', 'heroBadgeEn')}
+                <span style={{ width: 22, height: 1, background: '#E67E33', display: 'inline-block' }} />
               </span>
-              <h1 className="text-4xl sm:text-5xl lg:text-[64px] leading-[1.05] font-black mb-5 sm:mb-6 tracking-tight sm:tracking-[-0.02em]"
-                style={{ color: '#16171A' }}>
+              <h1 className="text-4xl sm:text-5xl lg:text-[58px] leading-[1.12] font-bold mb-5 sm:mb-6"
+                style={{ color: '#465940', fontFamily: SERIF_KA }}>
                 {t('heroTitleKa', 'heroTitleEn')}
               </h1>
-              <p className="text-base text-[#57594E] mb-6 sm:mb-8 max-w-xl">
+              <p className="text-base text-[#465940]/70 mb-6 sm:mb-8 max-w-xl">
                 {t('heroTextKa', 'heroTextEn')}
               </p>
               <div className="flex flex-wrap gap-3">
                 <a
                   href={`/register?lang=${locale}`}
-                  className="px-7 py-3.5 font-bold transition text-sm sm:text-base hover:opacity-85"
-                  style={{ background: '#16171A', color: '#FAFAF8' }}
+                  className="px-7 py-3.5 rounded-full font-bold shadow-md transition text-sm sm:text-base hover:opacity-90"
+                  style={{ background: '#E67E33', color: '#FFFFFF' }}
                 >
-                  {t('heroCta1Ka', 'heroCta1En')}
+                  {t('heroCta1Ka', 'heroCta1En')} →
                 </a>
                 <a
                   href={`/?lang=${locale}#pricing`}
-                  className="border border-[#E4E4DC] text-[#16171A] px-7 py-3.5 font-bold hover:bg-[#F0F0E8] transition text-sm sm:text-base"
+                  className="border-2 px-7 py-3.5 rounded-full font-bold hover:bg-[#465940]/5 transition text-sm sm:text-base"
+                  style={{ borderColor: '#465940', color: '#465940' }}
                 >
                   {t('heroCta2Ka', 'heroCta2En')}
                 </a>
@@ -222,8 +227,10 @@ export default function HomeClient({ s, dishes, dishCount, recentBlogs }: {
 
             {/* Desktop image */}
             <div className="relative hidden lg:block">
-              <div className="relative bg-[#FAFAF8] p-3 border border-[#E4E4DC]">
-                <img src={s.heroImageUrl as string} alt="meal" className="w-full h-[480px] object-cover" />
+              <div className="absolute -top-8 -right-8 w-72 h-72 rounded-full blur-3xl opacity-40" style={{ background: '#E67E33' }} />
+              <div className="absolute -bottom-10 -left-10 w-72 h-72 rounded-full blur-3xl opacity-30" style={{ background: '#465940' }} />
+              <div className="relative bg-[#FDFBF0] p-4 rounded-full shadow-2xl aspect-square overflow-hidden" style={{ width: 460, height: 460, margin: '0 auto' }}>
+                <img src={s.heroImageUrl as string} alt="meal" className="rounded-full w-full h-full object-cover" />
               </div>
             </div>
           </div>
@@ -231,49 +238,60 @@ export default function HomeClient({ s, dishes, dishCount, recentBlogs }: {
       </section>
 
       {/* ── Stats strip ─────────────────────────────────────── */}
-      <section className="relative z-10">
-        <div ref={refStats} className="max-w-7xl mx-auto px-5 grid grid-cols-2 md:grid-cols-4 gap-[1px]" style={{ background: '#E4E4DC' }}>
+      <section className="relative z-10 pb-14 sm:pb-20">
+        <div ref={refStats} className="max-w-7xl mx-auto px-5 grid grid-cols-2 md:grid-cols-4 gap-6">
           {[
-            { num: `${Math.max(dishCount, 6)}+`, label: ka ? 'კერძი' : 'Recipes' },
-            { num: '4', label: ka ? 'ასაკობრივი ჯგუფი' : 'Age groups' },
-            { num: '3', label: ka ? 'წუთი შექმნაზე' : 'Min to set up' },
-            { num: '100%', label: ka ? 'პერსონალიზებული' : 'Personalized' },
-          ].map(({ num, label }) => (
-            <div key={label} className="fade-up p-6 sm:p-8" style={{ background: '#FAFAF8' }}>
-              <p className="text-3xl sm:text-4xl font-black" style={{ color: '#8B9A2B' }}>{num}</p>
-              <p className="text-xs sm:text-sm text-[#7A7D6E] mt-1.5 font-medium">{label}</p>
+            { num: `${Math.max(dishCount, 6)}+`, label: ka ? 'კერძი' : 'Recipes',
+              icon: <path d="M4 19.5V5a2 2 0 0 1 2-2h11a1 1 0 0 1 1 1v14.5M6.5 22H18a2 2 0 0 0 2-2v-.5a1 1 0 0 0-1-1H6.5a1.5 1.5 0 0 0 0 3Z" /> },
+            { num: '4', label: ka ? 'ასაკობრივი ჯგუფი' : 'Age groups',
+              icon: <><circle cx="12" cy="8" r="4" /><path d="M4 20c0-4 3.6-7 8-7s8 3 8 7" /></> },
+            { num: '3', label: ka ? 'წუთი შექმნაზე' : 'Min to set up',
+              icon: <><circle cx="12" cy="12" r="9" /><path d="M12 7v5l3 3" /></> },
+            { num: '100%', label: ka ? 'პერსონალიზებული' : 'Personalized',
+              icon: <path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z" /> },
+          ].map(({ num, label, icon }) => (
+            <div key={label} className="fade-up flex items-center gap-3">
+              <div className="w-11 h-11 rounded-full flex items-center justify-center flex-shrink-0" style={{ background: '#465940' }}>
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#E67E33" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">{icon}</svg>
+              </div>
+              <div>
+                <p className="text-xl sm:text-2xl font-black" style={{ color: '#465940' }}>{num}</p>
+                <p className="text-xs text-[#465940]/60 font-medium">{label}</p>
+              </div>
             </div>
           ))}
         </div>
       </section>
       {/* ── Features ─────────────────────────────────────────── */}
-      <section className="relative z-10 py-14 sm:py-24" style={{ background: '#FAFAF8' }}>
+      <section className="relative z-10 py-14 sm:py-24" style={{ background: '#465940' }}>
         <div className="max-w-7xl mx-auto px-5">
           <div ref={refFeatures} className="fade-up text-center mb-10 sm:mb-16">
-            <h2 className="text-2xl sm:text-3xl font-black text-[#16171A] tracking-tight">{t('featuresTitleKa', 'featuresTitleEn')}</h2>
+            <h2 className="text-2xl sm:text-3xl font-bold text-[#FDFBF0]" style={{ fontFamily: SERIF_KA }}>{t('featuresTitleKa', 'featuresTitleEn')}</h2>
           </div>
-          <div ref={refFeatureCards} className="grid sm:grid-cols-3 gap-[1px]" style={{ background: '#E4E4DC' }}>
+          <div ref={refFeatureCards} className="grid sm:grid-cols-3 gap-8 sm:gap-6">
             {[1, 2, 3].map(i => (
-              <div key={i} className="fade-up p-6 sm:p-8" style={{ background: '#FAFAF8' }}>
-                <div className="w-9 h-9 flex items-center justify-center mb-5 text-lg border border-[#E4E4DC]">
+              <div key={i} className="fade-up text-center flex flex-col items-center">
+                <div className="w-16 h-16 rounded-full flex items-center justify-center mb-5 text-2xl border-2" style={{ borderColor: '#E67E33', background: 'rgba(253,251,240,0.06)' }}>
                   {s[`feature${i}Icon`]}
                 </div>
-                <h3 className="text-base font-bold mb-2 text-[#16171A]">{t(`feature${i}TitleKa`, `feature${i}TitleEn`)}</h3>
-                <p className="text-[#57594E] text-sm leading-relaxed">{t(`feature${i}DescKa`, `feature${i}DescEn`)}</p>
+                <h3 className="text-base font-bold mb-2 text-[#FDFBF0]">{t(`feature${i}TitleKa`, `feature${i}TitleEn`)}</h3>
+                <p className="text-[#FDFBF0]/65 text-sm leading-relaxed max-w-[240px]">{t(`feature${i}DescKa`, `feature${i}DescEn`)}</p>
               </div>
             ))}
           </div>
         </div>
       </section>
       {/* ── Meal samples ─────────────────────────────────────── */}
-      <section className="relative z-10 py-14 sm:py-24 border-t border-[#E4E4DC]" style={{ background: '#F0F0E8' }}>
+      <section className="relative z-10 py-14 sm:py-24" style={{ background: '#FDFBF0' }}>
         <div className="max-w-7xl mx-auto px-5">
-          <div ref={refSamples} className="fade-up flex justify-between items-end mb-8 sm:mb-12 gap-4">
-            <div>
-              <h2 className="text-2xl sm:text-3xl font-black mb-1 text-[#16171A] tracking-tight">{t('sampleTitleKa', 'sampleTitleEn')}</h2>
-              <p className="text-[#7A7D6E] text-sm">{t('sampleSubtitleKa', 'sampleSubtitleEn')}</p>
+          <div ref={refSamples} className="fade-up text-center mb-10 sm:mb-14">
+            <div className="flex items-center justify-center gap-2 mb-2 uppercase tracking-[0.15em] font-bold text-xs" style={{ color: '#E67E33' }}>
+              <span style={{ width: 22, height: 1, background: '#E67E33', display: 'inline-block' }} />
+              {t('sampleSubtitleKa', 'sampleSubtitleEn')}
+              <span style={{ width: 22, height: 1, background: '#E67E33', display: 'inline-block' }} />
             </div>
-            <a href={`/recipes?lang=${locale}`} className="text-sm font-bold whitespace-nowrap" style={{ color: '#16171A' }}>
+            <h2 className="text-2xl sm:text-3xl font-bold text-[#465940] mb-2" style={{ fontFamily: SERIF_KA }}>{t('sampleTitleKa', 'sampleTitleEn')}</h2>
+            <a href={`/recipes?lang=${locale}`} className="text-sm font-bold" style={{ color: '#E67E33' }}>
               {ka ? 'ყველა →' : 'All →'}
             </a>
           </div>
@@ -283,19 +301,18 @@ export default function HomeClient({ s, dishes, dishCount, recentBlogs }: {
             {mealEntries.map(({ key, label, labelEn }) => {
               const dish = dishes[key];
               return (
-                <div key={key} className="fade-up flex-shrink-0 w-52 bg-[#FAFAF8] overflow-hidden snap-start border border-[#E4E4DC]">
-                  <div className="h-36 relative bg-[#E4E4DC]">
+                <div key={key} className="fade-up flex-shrink-0 w-52 bg-white rounded-2xl overflow-hidden snap-start shadow-sm">
+                  <div className="h-36 relative bg-[#465940]/10">
                     {dish?.imageUrl
                       ? <img src={dish.imageUrl} className="w-full h-full object-cover" alt={key} />
                       : <div className="w-full h-full flex items-center justify-center text-4xl"></div>
                     }
-                    <div className="absolute inset-0 bg-gradient-to-t from-black/30 to-transparent" />
-                    <span className={`absolute top-3 left-3 text-[10px] font-bold px-2.5 py-1 border border-[#E4E4DC] ${MEAL_COLORS[key]}`}>
+                    <span className={`absolute top-3 left-3 text-[10px] font-bold px-2.5 py-1 rounded-full shadow ${MEAL_COLORS[key]}`}>
                       {ka ? label : labelEn}
                     </span>
                   </div>
                   <div className="p-3.5">
-                    <p className="font-bold text-sm text-[#16171A] leading-snug">
+                    <p className="font-bold text-sm text-[#465940] leading-snug">
                       {dish ? (ka ? dish.titleKa : dish.titleEn) : (ka ? 'კერძი არ არის' : 'No dish')}
                     </p>
                   </div>
@@ -304,93 +321,70 @@ export default function HomeClient({ s, dishes, dishCount, recentBlogs }: {
             })}
           </div>
 
-          {/* Desktop: mosaic grid */}
-          <div className="hidden sm:grid grid-cols-4 grid-rows-2 gap-[1px] h-[560px]" style={{ background: '#E4E4DC' }}>
-            <div className="col-span-2 row-span-2 relative overflow-hidden group bg-[#E4E4DC]">
-              {dishes.breakfast?.imageUrl
-                ? <img src={dishes.breakfast.imageUrl} className="absolute w-full h-full object-cover group-hover:scale-105 transition duration-500" alt="breakfast" />
-                : <div className="absolute inset-0 flex flex-col items-center justify-center gap-2 text-[#7A7D6E]"><span className="text-5xl"></span></div>
-              }
-              <div className="absolute inset-0 bg-gradient-to-t from-black/55 to-transparent" />
-              <div className="absolute bottom-0 left-0 p-8 text-white">
-                <span className={`text-xs font-bold px-3 py-1 border border-white/30 ${MEAL_COLORS.breakfast}`}>{ka ? 'საუზმე' : 'Breakfast'}</span>
-                {dishes.breakfast && <h3 className="text-2xl font-black mt-3">{ka ? dishes.breakfast.titleKa : dishes.breakfast.titleEn}</h3>}
-              </div>
-            </div>
-            <div className="col-span-2 relative overflow-hidden group bg-[#E4E4DC]">
-              {dishes.lunch?.imageUrl
-                ? <img src={dishes.lunch.imageUrl} className="absolute w-full h-full object-cover group-hover:scale-105 transition duration-500" alt="lunch" />
-                : <div className="absolute inset-0 flex items-center justify-center text-4xl text-[#7A7D6E]"></div>
-              }
-              <div className="absolute inset-0 bg-gradient-to-t from-black/55 to-transparent" />
-              <div className="absolute bottom-0 left-0 p-6 text-white">
-                <span className={`text-xs font-bold px-3 py-1 border border-white/30 ${MEAL_COLORS.lunch}`}>{ka ? 'სადილი' : 'Lunch'}</span>
-                {dishes.lunch && <h3 className="text-xl font-black mt-2">{ka ? dishes.lunch.titleKa : dishes.lunch.titleEn}</h3>}
-              </div>
-            </div>
-            <div className="relative overflow-hidden group bg-[#E4E4DC]">
-              {dishes.snack?.imageUrl
-                ? <img src={dishes.snack.imageUrl} className="absolute w-full h-full object-cover group-hover:scale-105 transition duration-500" alt="snack" />
-                : <div className="absolute inset-0 flex items-center justify-center text-3xl text-[#7A7D6E]"></div>
-              }
-              <div className="absolute inset-0 bg-gradient-to-t from-black/55 to-transparent" />
-              <div className="absolute bottom-0 left-0 p-5 text-white">
-                <span className={`text-xs font-bold px-3 py-1 border border-white/30 ${MEAL_COLORS.snack}`}>{ka ? 'სნექი' : 'Snack'}</span>
-                {dishes.snack && <h3 className="text-base font-black mt-2">{ka ? dishes.snack.titleKa : dishes.snack.titleEn}</h3>}
-              </div>
-            </div>
-            <div className="relative overflow-hidden group bg-[#E4E4DC]">
-              {dishes.dinner?.imageUrl
-                ? <img src={dishes.dinner.imageUrl} className="absolute w-full h-full object-cover group-hover:scale-105 transition duration-500" alt="dinner" />
-                : <div className="absolute inset-0 flex items-center justify-center text-3xl text-[#7A7D6E]"></div>
-              }
-              <div className="absolute inset-0 bg-gradient-to-t from-black/55 to-transparent" />
-              <div className="absolute bottom-0 left-0 p-5 text-white">
-                <span className={`text-xs font-bold px-3 py-1 border border-white/30 ${MEAL_COLORS.dinner}`}>{ka ? 'ვახშამი' : 'Dinner'}</span>
-                {dishes.dinner && <h3 className="text-base font-black mt-2">{ka ? dishes.dinner.titleKa : dishes.dinner.titleEn}</h3>}
-              </div>
-            </div>
+          {/* Desktop: uniform 4-card row */}
+          <div ref={refSampleCards2} className="hidden sm:grid grid-cols-4 gap-6">
+            {mealEntries.map(({ key, label, labelEn }) => {
+              const dish = dishes[key];
+              return (
+                <div key={key} className="fade-up bg-white rounded-2xl overflow-hidden shadow-sm hover:-translate-y-1 hover:shadow-lg transition group">
+                  <div className="h-40 relative overflow-hidden bg-[#465940]/10">
+                    {dish?.imageUrl
+                      ? <img src={dish.imageUrl} className="w-full h-full object-cover group-hover:scale-105 transition duration-500" alt={key} />
+                      : <div className="w-full h-full flex items-center justify-center text-4xl"></div>
+                    }
+                    <span className={`absolute top-3 left-3 text-xs font-bold px-3 py-1 rounded-full shadow ${MEAL_COLORS[key]}`}>
+                      {ka ? label : labelEn}
+                    </span>
+                  </div>
+                  <div className="p-4">
+                    <p className="font-bold text-[#465940] leading-snug">
+                      {dish ? (ka ? dish.titleKa : dish.titleEn) : (ka ? 'კერძი არ არის' : 'No dish')}
+                    </p>
+                  </div>
+                </div>
+              );
+            })}
           </div>
         </div>
       </section>
       {/* ── Pricing ──────────────────────────────────────────── */}
-      <section id="pricing" className="relative z-10 py-14 sm:py-24 border-t border-[#E4E4DC]" style={{ background: '#FAFAF8' }}>
+      <section id="pricing" className="relative z-10 py-14 sm:py-24" style={{ background: '#465940' }}>
         <div className="max-w-7xl mx-auto px-5">
           <div ref={refPricing} className="fade-up text-center mb-10 sm:mb-12">
-            <h2 className="text-2xl sm:text-3xl font-black mb-3 text-[#16171A] tracking-tight">{t('pricingTitleKa', 'pricingTitleEn')}</h2>
-            <p className="text-[#57594E] text-sm max-w-xl mx-auto mb-3">{t('pricingSubtitleKa', 'pricingSubtitleEn')}</p>
-            <p className="text-[#7A7D6E] text-xs max-w-xl mx-auto">
+            <h2 className="text-2xl sm:text-3xl font-bold mb-3 text-[#FDFBF0]" style={{ fontFamily: SERIF_KA }}>{t('pricingTitleKa', 'pricingTitleEn')}</h2>
+            <p className="text-[#FDFBF0]/70 text-sm max-w-xl mx-auto mb-3">{t('pricingSubtitleKa', 'pricingSubtitleEn')}</p>
+            <p className="text-[#FDFBF0]/50 text-xs max-w-xl mx-auto">
               {ka
                 ? 'პირველი შესყიდვისას გაქვთ 7 დღიანი უფასო ტესტ-პერიოდი — ბარათი მხოლოდ დროებით მოწმდება, თანხა არ ჩამოიჭრება. პირველი გადახდა მოხდება ზუსტად 7 დღეში, თუ ამ დრომდე არ გააუქმებთ. თუ ტესტ-პერიოდის განმავლობაში სხვა პაკეტზე გადახვალთ, ახალი პაკეტის თანხა მაშინვე ჩამოიჭრება და შემდეგი განახლება 30 დღეში მოხდება.'
                 : 'Your first purchase includes a 7-day free trial — your card is only verified, not charged. The first real payment happens exactly 7 days later, unless you cancel before then. Upgrading during the trial charges the new plan immediately and starts a new 30-day cycle from that moment.'}
             </p>
           </div>
-          <div ref={refPricingCards} className="grid md:grid-cols-2 gap-[1px] max-w-4xl mx-auto items-stretch" style={{ background: '#E4E4DC' }}>
+          <div ref={refPricingCards} className="grid md:grid-cols-2 gap-5 max-w-4xl mx-auto items-stretch">
 
             {/* Plan 1 */}
-            <div className="fade-up p-7 sm:p-10 text-center flex flex-col" style={{ background: '#FAFAF8' }}>
+            <div className="fade-up bg-[#FDFBF0] p-7 sm:p-10 rounded-3xl text-center flex flex-col shadow-lg">
               <div className="h-10 mb-5" />
-              <h3 className="text-xl font-bold mb-2 text-[#16171A]">{t('plan1NameKa', 'plan1NameEn')}</h3>
+              <h3 className="text-xl font-bold mb-2 text-[#465940]">{t('plan1NameKa', 'plan1NameEn')}</h3>
               <div className="flex justify-center items-baseline gap-1 mb-1">
                 {(plan1Sale ?? discountedPrice('RECIPE_PLAN', plan1Price)) ? (
                   <>
                     <span className="text-2xl font-bold text-red-400 line-through">{plan1Price}₾</span>
-                    <span className="text-4xl font-black text-[#16171A] ml-2">{plan1Sale ?? discountedPrice('RECIPE_PLAN', plan1Price)}₾</span>
+                    <span className="text-4xl font-black text-[#465940] ml-2">{plan1Sale ?? discountedPrice('RECIPE_PLAN', plan1Price)}₾</span>
                   </>
-                ) : <span className="text-4xl font-black text-[#16171A]">{plan1Price}₾</span>}
-                <span className="text-[#7A7D6E]">/mo</span>
+                ) : <span className="text-4xl font-black text-[#465940]">{plan1Price}₾</span>}
+                <span className="text-[#465940]/50">/mo</span>
               </div>
               {plan1Sale && (
                 <div className="flex items-center justify-center gap-2 mt-2">
-                  <span className="bg-red-500 text-white text-sm font-black px-3 py-1">
+                  <span className="bg-red-500 text-white text-sm font-black px-3 py-1 rounded-lg">
                     -{Math.round((1 - plan1Sale / plan1Price) * 100)}%
                   </span>
                   <span className="text-red-500 text-sm font-semibold">{ka ? 'ფასდაკლება' : 'OFF'}</span>
                 </div>
               )}
-              {!plan1Sale && promoStatus['RECIPE_PLAN']?.valid && <p className="text-[#8B9A2B] text-xs font-bold mt-1">{promoStatus['RECIPE_PLAN'].discount}% ფასდაკლება</p>}
+              {!plan1Sale && promoStatus['RECIPE_PLAN']?.valid && <p className="text-[#E67E33] text-xs font-bold mt-1">{promoStatus['RECIPE_PLAN'].discount}% ფასდაკლება</p>}
               <div className="mb-6 h-6" />
-              <ul className="space-y-3 text-left flex-1 text-sm text-[#3F3F36]">
+              <ul className="space-y-3 text-left flex-1 text-sm text-[#465940]">
                 <li>{t('plan1Feature1Ka', 'plan1Feature1En')}</li>
                 <li>{t('plan1Feature2Ka', 'plan1Feature2En')}</li>
                 <li>{t('plan1Feature3Ka', 'plan1Feature3En')}</li>
@@ -401,53 +395,53 @@ export default function HomeClient({ s, dishes, dishCount, recentBlogs }: {
                   onChange={e => { setPromoInput(p => ({ ...p, RECIPE_PLAN: e.target.value })); setPromoStatus(p => ({ ...p, RECIPE_PLAN: { discount: 0, valid: false, msg: '' } })); }}
                   onKeyDown={e => e.key === 'Enter' && validatePromo('RECIPE_PLAN')}
                   placeholder={ka ? 'პრომოკოდი' : 'Promo code'}
-                  className="flex-1 min-w-0 px-3 py-2 border border-[#E4E4DC] text-sm font-mono uppercase focus:outline-none focus:border-[#16171A] bg-[#FAFAF8] text-[#16171A]"
+                  className="flex-1 min-w-0 px-3 py-2 border border-[#465940]/20 rounded-xl text-sm font-mono uppercase focus:outline-none focus:border-[#465940] bg-[#FDFBF0] text-[#465940]"
                 />
                 <button onClick={() => validatePromo('RECIPE_PLAN')} disabled={promoLoading === 'RECIPE_PLAN' || !promoInput['RECIPE_PLAN']}
-                  className="w-full sm:w-auto px-4 py-2 border border-[#E4E4DC] text-[#16171A] text-xs font-bold hover:bg-[#F0F0E8] transition disabled:opacity-40">
+                  className="w-full sm:w-auto px-4 py-2 border border-[#465940] text-[#465940] rounded-xl text-xs font-bold hover:bg-[#465940]/10 transition disabled:opacity-40">
                   {promoLoading === 'RECIPE_PLAN' ? '...' : (ka ? 'გამოყენება' : 'Apply')}
                 </button>
               </div>
               {promoStatus['RECIPE_PLAN']?.msg && <p className="text-[#DC2626] text-xs mt-1 font-semibold">{promoStatus['RECIPE_PLAN'].msg}</p>}
               <button onClick={() => handleSubscribeBog('RECIPE_PLAN')} disabled={loadingPlan !== null || currentPlan === 'RECIPE_PLAN'}
-                className="w-full py-3.5 mt-4 border border-[#E4E4DC] text-[#16171A] font-bold hover:bg-[#F0F0E8] transition disabled:opacity-60">
+                className="w-full py-3.5 mt-4 border-2 border-[#465940] text-[#465940] rounded-full font-bold hover:bg-[#465940]/10 transition disabled:opacity-60">
                 {currentPlan === 'RECIPE_PLAN' ? (ka ? '✓ აქტიურია' : '✓ Active') : loadingPlan === 'RECIPE_PLAN' ? (ka ? 'მუშავდება...' : 'Processing...') : (ka ? 'დაწყება' : 'Get Started')}
               </button>
-              <p className="text-[#7A7D6E] text-xs mt-2">
+              <p className="text-[#465940]/45 text-xs mt-2">
                 {ka ? 'ავტომატურად განახლდება ყოველ თვე. გაუქმება ნებისმიერ დროს.' : 'Renews automatically every month. Cancel anytime.'}
               </p>
             </div>
 
             {/* Plan 2 */}
-            <div className="fade-up p-7 sm:p-10 text-center flex flex-col relative border-2" style={{ background: '#FAFAF8', borderColor: '#16171A' }}>
-              <div className="absolute -top-3 left-1/2 -translate-x-1/2">
-                <div className="inline-flex items-center gap-1.5 text-sm font-bold px-4 py-1.5 whitespace-nowrap"
-                  style={{ background: '#8B9A2B', color: '#FAFAF8' }}>
+            <div className="fade-up bg-[#FDFBF0] p-7 sm:p-10 rounded-3xl text-center flex flex-col relative shadow-2xl sm:scale-105 z-10">
+              <div className="absolute -top-4 left-1/2 -translate-x-1/2">
+                <div className="inline-flex items-center gap-1.5 text-sm font-bold px-5 py-2 rounded-full whitespace-nowrap shadow-md"
+                  style={{ background: '#E67E33', color: '#FFFFFF' }}>
                   {ka ? 'საუკეთესო არჩევანი' : 'Best Choice'}
                 </div>
               </div>
-              <div className="h-3 mb-5" />
-              <h3 className="text-xl font-bold mb-2 text-[#16171A]">{t('plan2NameKa', 'plan2NameEn')}</h3>
+              <div className="h-4 mb-5" />
+              <h3 className="text-xl font-bold mb-2 text-[#465940]">{t('plan2NameKa', 'plan2NameEn')}</h3>
               <div className="flex justify-center items-baseline gap-1 mb-1">
                 {(plan2Sale ?? discountedPrice('FULL_PLAN', plan2Price)) ? (
                   <>
                     <span className="text-2xl font-bold text-red-400 line-through">{plan2Price}₾</span>
-                    <span className="text-4xl font-black text-[#16171A] ml-2">{plan2Sale ?? discountedPrice('FULL_PLAN', plan2Price)}₾</span>
+                    <span className="text-4xl font-black text-[#465940] ml-2">{plan2Sale ?? discountedPrice('FULL_PLAN', plan2Price)}₾</span>
                   </>
-                ) : <span className="text-4xl font-black text-[#16171A]">{plan2Price}₾</span>}
-                <span className="text-[#7A7D6E]">/mo</span>
+                ) : <span className="text-4xl font-black text-[#465940]">{plan2Price}₾</span>}
+                <span className="text-[#465940]/50">/mo</span>
               </div>
               {plan2Sale && (
                 <div className="flex items-center justify-center gap-2 mt-2">
-                  <span className="bg-red-500 text-white text-sm font-black px-3 py-1">
+                  <span className="bg-red-500 text-white text-sm font-black px-3 py-1 rounded-lg">
                     -{Math.round((1 - plan2Sale / plan2Price) * 100)}%
                   </span>
                   <span className="text-red-500 text-sm font-semibold">{ka ? 'ფასდაკლება' : 'OFF'}</span>
                 </div>
               )}
-              {!plan2Sale && promoStatus['FULL_PLAN']?.valid && <p className="text-[#8B9A2B] text-xs font-bold mt-1">{promoStatus['FULL_PLAN'].discount}% ფასდაკლება</p>}
-              <p className="font-medium mb-6 text-sm text-[#7A7D6E]">{ka ? 'ყველაზე პოპულარული' : 'Most Popular'}</p>
-              <ul className="space-y-3 text-left text-[#3F3F36] flex-1 text-sm">
+              {!plan2Sale && promoStatus['FULL_PLAN']?.valid && <p className="text-[#E67E33] text-xs font-bold mt-1">{promoStatus['FULL_PLAN'].discount}% ფასდაკლება</p>}
+              <p className="font-medium mb-6 text-sm text-[#465940]/60">{ka ? 'ყველაზე პოპულარული' : 'Most Popular'}</p>
+              <ul className="space-y-3 text-left text-[#465940] flex-1 text-sm">
                 <li>{t('plan2Feature1Ka', 'plan2Feature1En')}</li>
                 <li>{t('plan2Feature2Ka', 'plan2Feature2En')}</li>
                 <li>{t('plan2Feature3Ka', 'plan2Feature3En')}</li>
@@ -458,21 +452,21 @@ export default function HomeClient({ s, dishes, dishCount, recentBlogs }: {
                   onChange={e => { setPromoInput(p => ({ ...p, FULL_PLAN: e.target.value })); setPromoStatus(p => ({ ...p, FULL_PLAN: { discount: 0, valid: false, msg: '' } })); }}
                   onKeyDown={e => e.key === 'Enter' && validatePromo('FULL_PLAN')}
                   placeholder={ka ? 'პრომოკოდი' : 'Promo code'}
-                  className="flex-1 min-w-0 px-3 py-2 border border-[#E4E4DC] text-sm font-mono uppercase focus:outline-none focus:border-[#16171A] bg-[#FAFAF8] text-[#16171A]"
+                  className="flex-1 min-w-0 px-3 py-2 border border-[#465940]/20 rounded-xl text-sm font-mono uppercase focus:outline-none focus:border-[#465940] bg-[#FDFBF0] text-[#465940]"
                 />
                 <button onClick={() => validatePromo('FULL_PLAN')} disabled={promoLoading === 'FULL_PLAN' || !promoInput['FULL_PLAN']}
-                  className="w-full sm:w-auto px-4 py-2 text-xs font-bold transition disabled:opacity-40 hover:opacity-85"
-                  style={{ background: '#16171A', color: '#FAFAF8' }}>
+                  className="w-full sm:w-auto px-4 py-2 rounded-xl text-xs font-bold transition disabled:opacity-40 hover:opacity-90"
+                  style={{ background: '#E67E33', color: '#FFFFFF' }}>
                   {promoLoading === 'FULL_PLAN' ? '...' : (ka ? 'გამოყენება' : 'Apply')}
                 </button>
               </div>
               {promoStatus['FULL_PLAN']?.msg && <p className="text-[#DC2626] text-xs mt-1 font-semibold">{promoStatus['FULL_PLAN'].msg}</p>}
               <button onClick={() => handleSubscribeBog('FULL_PLAN')} disabled={loadingPlan !== null || currentPlan === 'FULL_PLAN'}
-                className="w-full py-3.5 mt-4 font-bold transition disabled:opacity-60 hover:opacity-85"
-                style={{ background: '#16171A', color: '#FAFAF8' }}>
+                className="w-full py-3.5 mt-4 rounded-full font-bold shadow-lg transition disabled:opacity-60 hover:opacity-90"
+                style={{ background: '#E67E33', color: '#FFFFFF' }}>
                 {currentPlan === 'FULL_PLAN' ? (ka ? '✓ აქტიურია' : '✓ Active') : loadingPlan === 'FULL_PLAN' ? (ka ? 'მუშავდება...' : 'Processing...') : (ka ? 'დაწყება' : 'Get Started')}
               </button>
-              <p className="text-[#7A7D6E] text-xs mt-2">
+              <p className="text-[#465940]/45 text-xs mt-2">
                 {ka ? 'ავტომატურად განახლდება ყოველ თვე. გაუქმება ნებისმიერ დროს.' : 'Renews automatically every month. Cancel anytime.'}
               </p>
             </div>
@@ -482,16 +476,16 @@ export default function HomeClient({ s, dishes, dishCount, recentBlogs }: {
       </section>
       {/* ── Blog ─────────────────────────────────────────────── */}
       {recentBlogs.length > 0 && (
-        <section className="relative z-10 py-14 sm:py-24 border-t border-[#E4E4DC]" style={{ background: '#FAFAF8' }}>
+        <section className="relative z-10 py-14 sm:py-24" style={{ background: '#FDFBF0' }}>
           <div className="max-w-7xl mx-auto px-5">
             <div ref={refBlog} className="fade-up flex justify-between items-end mb-8 sm:mb-12 gap-4">
               <div>
-                <h2 className="text-2xl sm:text-3xl font-black mb-1 text-[#16171A] tracking-tight">{ka ? 'ბლოგი' : 'Blog'}</h2>
-                <p className="text-[#7A7D6E] text-sm">
+                <h2 className="text-2xl sm:text-3xl font-bold mb-1 text-[#465940]" style={{ fontFamily: SERIF_KA }}>{ka ? 'ბლოგი' : 'Blog'}</h2>
+                <p className="text-[#465940]/60 text-sm">
                   {ka ? 'სტატიები და იდეები ბავშვის კვებაზე' : 'Articles and ideas on child nutrition'}
                 </p>
               </div>
-              <a href={`/blog?lang=${locale}`} className="text-sm font-bold whitespace-nowrap" style={{ color: '#16171A' }}>
+              <a href={`/blog?lang=${locale}`} className="text-sm font-bold whitespace-nowrap" style={{ color: '#E67E33' }}>
                 {ka ? 'ყველა →' : 'All →'}
               </a>
             </div>
@@ -506,15 +500,14 @@ export default function HomeClient({ s, dishes, dishCount, recentBlogs }: {
                 const href = `/blog/${(blog as any).slug ?? blog.id}?lang=${locale}`;
                 return (
                   <a key={blog.id} href={href}
-                    className="fade-up flex-shrink-0 w-64 overflow-hidden snap-start border border-[#E4E4DC] block"
-                    style={{ background: '#FAFAF8' }}>
+                    className="fade-up flex-shrink-0 w-64 rounded-2xl overflow-hidden snap-start shadow-sm block bg-white">
                     {blog.imageUrl
                       ? <div className="h-36 overflow-hidden"><img src={blog.imageUrl} alt={title} className="w-full h-full object-cover" /></div>
-                      : <div className="h-36 flex items-center justify-center text-4xl" style={{ background: '#F0F0E8' }}></div>
+                      : <div className="h-36 flex items-center justify-center text-4xl" style={{ background: 'rgba(70,89,64,0.1)' }}></div>
                     }
                     <div className="p-4">
-                      <h3 className="font-bold text-[#16171A] text-sm mb-1 leading-snug">{title}</h3>
-                      <p className="text-xs text-[#7A7D6E] leading-relaxed">{excerpt}</p>
+                      <h3 className="font-bold text-[#465940] text-sm mb-1 leading-snug">{title}</h3>
+                      <p className="text-xs text-[#465940]/60 leading-relaxed">{excerpt}</p>
                     </div>
                   </a>
                 );
@@ -522,7 +515,7 @@ export default function HomeClient({ s, dishes, dishCount, recentBlogs }: {
             </div>
 
             {/* Desktop: 3-col grid */}
-            <div ref={refBlogCardsDesktop} className="hidden sm:grid grid-cols-3 gap-[1px]" style={{ background: '#E4E4DC' }}>
+            <div ref={refBlogCardsDesktop} className="hidden sm:grid grid-cols-3 gap-6">
               {recentBlogs.map((blog) => {
                 const title = ka ? blog.titleKa : blog.titleEn;
                 const raw = ka ? blog.contentKa : blog.contentEn;
@@ -535,17 +528,16 @@ export default function HomeClient({ s, dishes, dishCount, recentBlogs }: {
                 const href = `/blog/${(blog as any).slug ?? blog.id}?lang=${locale}`;
                 return (
                   <a key={blog.id} href={href}
-                    className="fade-up overflow-hidden group block"
-                    style={{ background: '#FAFAF8' }}>
+                    className="fade-up rounded-2xl overflow-hidden group block bg-white shadow-sm hover:-translate-y-1 hover:shadow-lg transition">
                     {blog.imageUrl
                       ? <div className="h-44 overflow-hidden"><img src={blog.imageUrl} alt={title} className="w-full h-full object-cover group-hover:scale-105 transition duration-500" /></div>
-                      : <div className="h-44 flex items-center justify-center text-4xl" style={{ background: '#F0F0E8' }}></div>
+                      : <div className="h-44 flex items-center justify-center text-4xl" style={{ background: 'rgba(70,89,64,0.1)' }}></div>
                     }
                     <div className="p-5">
-                      <p className="text-xs font-bold mb-2 uppercase tracking-wide text-[#7A7D6E]">{date}</p>
-                      <h3 className="font-bold text-[#16171A] text-base mb-2 leading-snug">{title}</h3>
-                      <p className="text-sm text-[#57594E] leading-relaxed mb-3">{excerpt}</p>
-                      <span className="text-xs font-bold group-hover:underline text-[#16171A]">{ka ? 'წაიკითხე →' : 'Read →'}</span>
+                      <p className="text-xs font-bold mb-2 uppercase tracking-wide" style={{ color: '#E67E33' }}>{date}</p>
+                      <h3 className="font-bold text-[#465940] text-base mb-2 leading-snug">{title}</h3>
+                      <p className="text-sm text-[#465940]/65 leading-relaxed mb-3">{excerpt}</p>
+                      <span className="text-xs font-bold group-hover:underline text-[#465940]">{ka ? 'წაიკითხე →' : 'Read →'}</span>
                     </div>
                   </a>
                 );
