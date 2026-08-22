@@ -11,7 +11,7 @@ export default function Nav({ locale = 'ka', isLoggedIn = false }: { locale?: st
   ];
 
   return (
-    <header style={{ background: '#F5F1E4', borderBottom: '1px solid rgba(111,122,92,0.12)', fontFamily: "'Rubik', sans-serif" }} className="sticky top-0 z-50">
+    <header style={{ background: '#F5F1E4', borderBottom: '1px solid rgba(111,122,92,0.12)', fontFamily: "'Rubik', sans-serif", paddingTop: 'env(safe-area-inset-top)' }} className="sticky top-0 z-50">
       <nav className="flex justify-between items-center w-full px-5 py-4 max-w-7xl mx-auto">
 
         {/* Logo */}

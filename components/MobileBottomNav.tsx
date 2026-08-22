@@ -68,7 +68,7 @@ export default function MobileBottomNav({ isLoggedIn }: { isLoggedIn: boolean })
 
   return (
     <nav className="md:hidden fixed bottom-0 left-0 right-0 z-50 bg-[#F5F1E4]/95 backdrop-blur border-t border-[#6F7A5C]/10"
-      style={{ paddingBottom: 'env(safe-area-inset-bottom)' }}>
+      style={{ paddingBottom: 'max(14px, env(safe-area-inset-bottom))' }}>
       <div className="flex">
         {links.map((link) => {
           const isActive = link.exact
@@ -78,7 +78,7 @@ export default function MobileBottomNav({ isLoggedIn }: { isLoggedIn: boolean })
             <a
               key={link.href}
               href={link.href}
-              className={`flex-1 flex flex-col items-center gap-0.5 py-2.5 transition-colors ${
+              className={`flex-1 flex flex-col items-center gap-0.5 py-3 transition-colors ${
                 isActive ? 'text-[#6F7A5C]' : 'text-[#6F7A5C]/60 hover:text-[#6F7A5C]/80'
               }`}
             >
