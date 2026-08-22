@@ -173,10 +173,10 @@ export default function HomeClient({ s, dishes, dishCount, recentBlogs }: {
     <main style={{ color: '#6F7A5C', background: '#F5F1E4', fontFamily: "'Rubik', sans-serif" }}>
 
       {/* ── Hero ─────────────────────────────────────────────── */}
-      <section className="relative overflow-hidden" style={{ background: '#F1D7BD' }}>
+      <section className="relative overflow-hidden" style={{ background: 'linear-gradient(to bottom, #f4e9da 0%, #fbeddd 20%, #f6e3cb 50%, #f0d8bc 80%, #e4d6c1 100%)' }}>
         <div className="relative w-full h-[360px] sm:h-[460px] lg:h-[600px]">
           {s.heroImageUrl ? (
-            <img src={s.heroImageUrl as string} alt="meal" className="absolute left-0 top-0 h-full w-auto" />
+            <img src={s.heroImageUrl as string} alt="meal" className="absolute left-0 top-0 h-full w-auto" style={{ transform: 'scaleX(-1)' }} />
           ) : (
             <div className="absolute inset-0 bg-[#6F7A5C]/10" />
           )}
