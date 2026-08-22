@@ -33,6 +33,7 @@ body { background: #465940; color: #FDFBF0; antialiased: true; }
 .card { @apply rounded-[2rem] border border-[#FDFBF0]/20 bg-[#FDFBF0] p-6 shadow-sm; }
 .badge { @apply rounded-full bg-[#FDFBF0]/15 px-3 py-1 text-xs font-bold text-[#FDFBF0]; }
 @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Rubik:wght@400;500;600;700&display=swap');
 
 html,
 body {

@@ -56,10 +56,10 @@ function useStaggeredFadeUp(delay = 120) {
 }
 
 const MEAL_COLORS: Record<string, string> = {
-  breakfast: 'bg-[#FDFBF0]/20 text-[#FDFBF0]',
-  lunch:     'bg-[#FDFBF0]/20 text-[#FDFBF0]',
-  snack:     'bg-[#FDFBF0]/20 text-[#FDFBF0]',
-  dinner:    'bg-[#FDFBF0]/20 text-[#FDFBF0]',
+  breakfast: 'bg-white/90 text-[#09090B]',
+  lunch:     'bg-white/90 text-[#09090B]',
+  snack:     'bg-white/90 text-[#09090B]',
+  dinner:    'bg-white/90 text-[#09090B]',
 };
 
 export default function HomeClient({ s, dishes, dishCount, recentBlogs }: {
@@ -167,23 +167,24 @@ export default function HomeClient({ s, dishes, dishCount, recentBlogs }: {
   ];
 
   return (
-    <main style={{ color: '#FDFBF0' }}>
+    <main style={{ color: '#09090B', background: '#FFFFFF', fontFamily: "'Rubik', sans-serif" }}>
 
       {/* ── Hero ─────────────────────────────────────────────── */}
-      <section className="relative overflow-hidden pt-6 pb-10 md:pt-10 md:pb-14" style={{ background: '#465940' }}>
+      <section className="relative overflow-hidden pt-10 pb-10 md:pt-16 md:pb-14" style={{ background: '#FFFFFF' }}>
         <div className="max-w-7xl mx-auto px-4 sm:px-6">
 
           {/* Mobile: food image */}
-          <div className="md:hidden relative h-60 sm:h-72 rounded-3xl overflow-hidden mb-6 shadow-xl">
+          <div className="md:hidden relative h-60 sm:h-72 rounded-2xl overflow-hidden mb-6 border border-[#E4E4E7]">
             {s.heroImageUrl ? (
               <>
                 <img src={s.heroImageUrl as string} alt="meal" className="w-full h-full object-cover" />
                 <div className="absolute inset-0 bg-gradient-to-t from-black/40 via-transparent to-transparent" />
               </>
             ) : (
-              <div className="w-full h-full bg-[#FDFBF0]/20 flex items-center justify-center text-6xl"></div>
+              <div className="w-full h-full bg-[#FAFAFA] flex items-center justify-center text-6xl"></div>
             )}
-            <span className="absolute bottom-4 left-4 inline-block px-3 py-1.5 rounded-full bg-[#FDFBF0]/20 text-[#FDFBF0] font-semibold text-xs">
+            <span className="absolute bottom-4 left-4 inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-white text-[#09090B] font-medium text-xs border border-[#E4E4E7]">
+              <span className="w-1.5 h-1.5 rounded-full inline-block" style={{ background: '#465940' }} />
               {t('heroBadgeKa', 'heroBadgeEn')}
             </span>
           </div>
@@ -191,27 +192,28 @@ export default function HomeClient({ s, dishes, dishCount, recentBlogs }: {
           {/* Text content */}
           <div className="lg:grid lg:grid-cols-2 lg:gap-12 lg:items-center">
             <div>
-              <span className="hidden md:inline-block px-4 py-1.5 mb-6 rounded-full bg-[#FDFBF0]/20 text-[#FDFBF0] font-semibold text-sm">
+              <span className="hidden md:inline-flex items-center gap-2 px-3.5 py-1.5 mb-7 rounded-full border border-[#E4E4E7] bg-[#FAFAFA] text-[#52525B] font-medium text-sm">
+                <span className="w-1.5 h-1.5 rounded-full inline-block" style={{ background: '#465940' }} />
                 {t('heroBadgeKa', 'heroBadgeEn')}
               </span>
-              <h1 className="text-3xl sm:text-4xl lg:text-[52px] leading-[1.25] sm:leading-[1.15] lg:leading-[1.1] font-extrabold mb-4 sm:mb-6 tracking-normal sm:tracking-tight"
-                style={{ color: '#FDFBF0' }}>
+              <h1 className="text-3xl sm:text-4xl lg:text-[52px] leading-[1.25] sm:leading-[1.15] lg:leading-[1.1] font-bold mb-4 sm:mb-6 tracking-normal sm:tracking-tight"
+                style={{ color: '#09090B' }}>
                 {t('heroTitleKa', 'heroTitleEn')}
               </h1>
-              <p className="text-base text-[#FDFBF0]/70 mb-6 sm:mb-8 max-w-xl">
+              <p className="text-base text-[#52525B] mb-6 sm:mb-8 max-w-xl">
                 {t('heroTextKa', 'heroTextEn')}
               </p>
               <div className="flex flex-wrap gap-3">
                 <a
                   href={`/register?lang=${locale}`}
-                  className="px-6 py-3 rounded-full font-semibold shadow-md transition text-sm sm:text-base"
-                  style={{ background: '#FDFBF0', color: '#465940' }}
+                  className="px-6 py-3 rounded-lg font-medium transition text-sm sm:text-base hover:opacity-90"
+                  style={{ background: '#18181B', color: '#FAFAFA' }}
                 >
                   {t('heroCta1Ka', 'heroCta1En')}
                 </a>
                 <a
                   href={`/?lang=${locale}#pricing`}
-                  className="border border-[#FDFBF0]/30 text-[#FDFBF0] px-6 py-3 rounded-full font-semibold hover:bg-[#FDFBF0]/10 transition text-sm sm:text-base"
+                  className="border border-[#E4E4E7] text-[#09090B] px-6 py-3 rounded-lg font-medium hover:bg-[#FAFAFA] transition text-sm sm:text-base"
                 >
                   {t('heroCta2Ka', 'heroCta2En')}
                 </a>
@@ -220,10 +222,8 @@ export default function HomeClient({ s, dishes, dishCount, recentBlogs }: {
 
             {/* Desktop image */}
             <div className="relative hidden lg:block">
-              <div className="absolute -top-10 -right-10 w-64 h-64 bg-[#FDFBF0]/10 rounded-full blur-3xl opacity-50" />
-              <div className="absolute -bottom-10 -left-10 w-64 h-64 bg-[#465940] rounded-full blur-3xl opacity-60" />
-              <div className="relative bg-[#FDFBF0] p-4 rounded-[40px] shadow-2xl rotate-2">
-                <img src={s.heroImageUrl as string} alt="meal" className="rounded-[32px] w-full h-[480px] object-cover" />
+              <div className="relative bg-white p-3 rounded-2xl border border-[#E4E4E7]">
+                <img src={s.heroImageUrl as string} alt="meal" className="rounded-xl w-full h-[480px] object-cover" />
               </div>
             </div>
           </div>
@@ -231,7 +231,7 @@ export default function HomeClient({ s, dishes, dishCount, recentBlogs }: {
       </section>
 
       {/* ── Stats strip ─────────────────────────────────────── */}
-      <section className="relative z-10 bg-[#FDFBF0]/10 border-b border-[#FDFBF0]/10">
+      <section className="relative z-10 border-t border-b border-[#E4E4E7]" style={{ background: '#FAFAFA' }}>
         <div ref={refStats} className="max-w-7xl mx-auto px-5 py-8 grid grid-cols-2 md:grid-cols-4 gap-y-8 gap-x-4 md:gap-4 text-center">
           {[
             { num: `${Math.max(dishCount, 6)}+`, label: ka ? 'კერძი' : 'Recipes' },
@@ -240,40 +240,40 @@ export default function HomeClient({ s, dishes, dishCount, recentBlogs }: {
             { num: '100%', label: ka ? 'პერსონალიზებული' : 'Personalized' },
           ].map(({ num, label }) => (
             <div key={label} className="fade-up">
-              <p className="text-3xl sm:text-4xl font-black" style={{ color: '#FDFBF0' }}>{num}</p>
-              <p className="text-xs sm:text-sm text-[#FDFBF0]/70 mt-1 font-medium">{label}</p>
+              <p className="text-3xl sm:text-4xl font-bold" style={{ color: '#09090B' }}>{num}</p>
+              <p className="text-xs sm:text-sm text-[#71717A] mt-1 font-medium">{label}</p>
             </div>
           ))}
         </div>
       </section>
       {/* ── Features ─────────────────────────────────────────── */}
-      <section className="relative z-10 py-14 sm:py-24 rounded-t-[32px]" style={{ background: '#465940' }}>
+      <section className="relative z-10 py-14 sm:py-24" style={{ background: '#FFFFFF' }}>
         <div className="max-w-7xl mx-auto px-5">
           <div ref={refFeatures} className="fade-up text-center mb-10 sm:mb-16">
-            <h2 className="text-2xl sm:text-3xl font-bold text-[#FDFBF0]">{t('featuresTitleKa', 'featuresTitleEn')}</h2>
+            <h2 className="text-2xl sm:text-3xl font-bold text-[#09090B]">{t('featuresTitleKa', 'featuresTitleEn')}</h2>
           </div>
-          <div ref={refFeatureCards} className="grid sm:grid-cols-3 gap-4 sm:gap-8">
+          <div ref={refFeatureCards} className="grid sm:grid-cols-3 gap-4 sm:gap-6">
             {[1, 2, 3].map(i => (
-              <div key={i} className="fade-up bg-[#FDFBF0] p-6 sm:p-8 rounded-3xl shadow-sm hover:-translate-y-1 transition">
-                <div className="w-12 h-12 bg-[#465940]/10 rounded-2xl flex items-center justify-center mb-5 text-2xl">
+              <div key={i} className="fade-up bg-white p-6 sm:p-7 rounded-xl border border-[#E4E4E7] hover:border-[#D4D4D8] transition">
+                <div className="w-9 h-9 bg-[#F4F4F5] rounded-lg flex items-center justify-center mb-5 text-lg">
                   {s[`feature${i}Icon`]}
                 </div>
-                <h3 className="text-lg font-bold mb-3 text-[#465940]">{t(`feature${i}TitleKa`, `feature${i}TitleEn`)}</h3>
-                <p className="text-[#465940]/70 text-sm leading-relaxed">{t(`feature${i}DescKa`, `feature${i}DescEn`)}</p>
+                <h3 className="text-base font-semibold mb-2 text-[#09090B]">{t(`feature${i}TitleKa`, `feature${i}TitleEn`)}</h3>
+                <p className="text-[#71717A] text-sm leading-relaxed">{t(`feature${i}DescKa`, `feature${i}DescEn`)}</p>
               </div>
             ))}
           </div>
         </div>
       </section>
       {/* ── Meal samples ─────────────────────────────────────── */}
-      <section className="relative z-10 py-14 sm:py-24" style={{ background: '#465940' }}>
+      <section className="relative z-10 py-14 sm:py-24 border-t border-[#E4E4E7]" style={{ background: '#FAFAFA' }}>
         <div className="max-w-7xl mx-auto px-5">
           <div ref={refSamples} className="fade-up flex justify-between items-end mb-8 sm:mb-12 gap-4">
             <div>
-              <h2 className="text-2xl sm:text-3xl font-bold mb-1 text-[#FDFBF0]">{t('sampleTitleKa', 'sampleTitleEn')}</h2>
-              <p className="text-[#FDFBF0]/70 text-sm">{t('sampleSubtitleKa', 'sampleSubtitleEn')}</p>
+              <h2 className="text-2xl sm:text-3xl font-bold mb-1 text-[#09090B]">{t('sampleTitleKa', 'sampleTitleEn')}</h2>
+              <p className="text-[#71717A] text-sm">{t('sampleSubtitleKa', 'sampleSubtitleEn')}</p>
             </div>
-            <a href={`/recipes?lang=${locale}`} className="text-sm font-bold whitespace-nowrap" style={{ color: '#FDFBF0' }}>
+            <a href={`/recipes?lang=${locale}`} className="text-sm font-medium whitespace-nowrap" style={{ color: '#09090B' }}>
               {ka ? 'ყველა →' : 'All →'}
             </a>
           </div>
@@ -283,19 +283,19 @@ export default function HomeClient({ s, dishes, dishCount, recentBlogs }: {
             {mealEntries.map(({ key, label, labelEn }) => {
               const dish = dishes[key];
               return (
-                <div key={key} className="fade-up flex-shrink-0 w-52 bg-[#FDFBF0] rounded-3xl overflow-hidden shadow-sm snap-start border border-[#FDFBF0]/20">
-                  <div className="h-36 relative bg-[#465940]/20">
+                <div key={key} className="fade-up flex-shrink-0 w-52 bg-white rounded-xl overflow-hidden snap-start border border-[#E4E4E7]">
+                  <div className="h-36 relative bg-[#F4F4F5]">
                     {dish?.imageUrl
                       ? <img src={dish.imageUrl} className="w-full h-full object-cover" alt={key} />
                       : <div className="w-full h-full flex items-center justify-center text-4xl"></div>
                     }
                     <div className="absolute inset-0 bg-gradient-to-t from-black/30 to-transparent" />
-                    <span className={`absolute top-3 left-3 text-[10px] font-bold px-2.5 py-1 rounded-full ${MEAL_COLORS[key]}`}>
+                    <span className={`absolute top-3 left-3 text-[10px] font-semibold px-2.5 py-1 rounded-full border border-[#E4E4E7] ${MEAL_COLORS[key]}`}>
                       {ka ? label : labelEn}
                     </span>
                   </div>
                   <div className="p-3.5">
-                    <p className="font-bold text-sm text-[#465940] leading-snug">
+                    <p className="font-semibold text-sm text-[#09090B] leading-snug">
                       {dish ? (ka ? dish.titleKa : dish.titleEn) : (ka ? 'კერძი არ არის' : 'No dish')}
                     </p>
                   </div>
@@ -305,48 +305,48 @@ export default function HomeClient({ s, dishes, dishCount, recentBlogs }: {
           </div>
 
           {/* Desktop: mosaic grid */}
-          <div className="hidden sm:grid grid-cols-4 grid-rows-2 gap-6 h-[560px]">
-            <div className="col-span-2 row-span-2 relative overflow-hidden rounded-[40px] group shadow-lg bg-[#FDFBF0]/20">
+          <div className="hidden sm:grid grid-cols-4 grid-rows-2 gap-4 h-[560px]">
+            <div className="col-span-2 row-span-2 relative overflow-hidden rounded-2xl group border border-[#E4E4E7] bg-[#F4F4F5]">
               {dishes.breakfast?.imageUrl
                 ? <img src={dishes.breakfast.imageUrl} className="absolute w-full h-full object-cover group-hover:scale-105 transition duration-500" alt="breakfast" />
-                : <div className="absolute inset-0 flex flex-col items-center justify-center gap-2 text-[#FDFBF0]/50"><span className="text-5xl"></span></div>
+                : <div className="absolute inset-0 flex flex-col items-center justify-center gap-2 text-[#A1A1AA]"><span className="text-5xl"></span></div>
               }
               <div className="absolute inset-0 bg-gradient-to-t from-black/55 to-transparent" />
-              <div className="absolute bottom-0 left-0 p-8 text-[#FDFBF0]">
-                <span className={`text-xs font-bold px-3 py-1 rounded-full ${MEAL_COLORS.breakfast}`}>{ka ? 'საუზმე' : 'Breakfast'}</span>
+              <div className="absolute bottom-0 left-0 p-8 text-white">
+                <span className={`text-xs font-semibold px-3 py-1 rounded-full border border-[#E4E4E7] ${MEAL_COLORS.breakfast}`}>{ka ? 'საუზმე' : 'Breakfast'}</span>
                 {dishes.breakfast && <h3 className="text-2xl font-bold mt-3">{ka ? dishes.breakfast.titleKa : dishes.breakfast.titleEn}</h3>}
               </div>
             </div>
-            <div className="col-span-2 relative overflow-hidden rounded-[40px] group shadow-lg bg-[#FDFBF0]/20">
+            <div className="col-span-2 relative overflow-hidden rounded-2xl group border border-[#E4E4E7] bg-[#F4F4F5]">
               {dishes.lunch?.imageUrl
                 ? <img src={dishes.lunch.imageUrl} className="absolute w-full h-full object-cover group-hover:scale-105 transition duration-500" alt="lunch" />
-                : <div className="absolute inset-0 flex items-center justify-center text-4xl text-[#FDFBF0]/50"></div>
+                : <div className="absolute inset-0 flex items-center justify-center text-4xl text-[#A1A1AA]"></div>
               }
               <div className="absolute inset-0 bg-gradient-to-t from-black/55 to-transparent" />
-              <div className="absolute bottom-0 left-0 p-6 text-[#FDFBF0]">
-                <span className={`text-xs font-bold px-3 py-1 rounded-full ${MEAL_COLORS.lunch}`}>{ka ? 'სადილი' : 'Lunch'}</span>
+              <div className="absolute bottom-0 left-0 p-6 text-white">
+                <span className={`text-xs font-semibold px-3 py-1 rounded-full border border-[#E4E4E7] ${MEAL_COLORS.lunch}`}>{ka ? 'სადილი' : 'Lunch'}</span>
                 {dishes.lunch && <h3 className="text-xl font-bold mt-2">{ka ? dishes.lunch.titleKa : dishes.lunch.titleEn}</h3>}
               </div>
             </div>
-            <div className="relative overflow-hidden rounded-[40px] group shadow-lg bg-[#FDFBF0]/20">
+            <div className="relative overflow-hidden rounded-2xl group border border-[#E4E4E7] bg-[#F4F4F5]">
               {dishes.snack?.imageUrl
                 ? <img src={dishes.snack.imageUrl} className="absolute w-full h-full object-cover group-hover:scale-105 transition duration-500" alt="snack" />
-                : <div className="absolute inset-0 flex items-center justify-center text-3xl text-[#FDFBF0]/50"></div>
+                : <div className="absolute inset-0 flex items-center justify-center text-3xl text-[#A1A1AA]"></div>
               }
               <div className="absolute inset-0 bg-gradient-to-t from-black/55 to-transparent" />
-              <div className="absolute bottom-0 left-0 p-5 text-[#FDFBF0]">
-                <span className={`text-xs font-bold px-3 py-1 rounded-full ${MEAL_COLORS.snack}`}>{ka ? 'სნექი' : 'Snack'}</span>
+              <div className="absolute bottom-0 left-0 p-5 text-white">
+                <span className={`text-xs font-semibold px-3 py-1 rounded-full border border-[#E4E4E7] ${MEAL_COLORS.snack}`}>{ka ? 'სნექი' : 'Snack'}</span>
                 {dishes.snack && <h3 className="text-base font-bold mt-2">{ka ? dishes.snack.titleKa : dishes.snack.titleEn}</h3>}
               </div>
             </div>
-            <div className="relative overflow-hidden rounded-[40px] group shadow-lg bg-[#FDFBF0]/20">
+            <div className="relative overflow-hidden rounded-2xl group border border-[#E4E4E7] bg-[#F4F4F5]">
               {dishes.dinner?.imageUrl
                 ? <img src={dishes.dinner.imageUrl} className="absolute w-full h-full object-cover group-hover:scale-105 transition duration-500" alt="dinner" />
-                : <div className="absolute inset-0 flex items-center justify-center text-3xl text-[#FDFBF0]/50"></div>
+                : <div className="absolute inset-0 flex items-center justify-center text-3xl text-[#A1A1AA]"></div>
               }
               <div className="absolute inset-0 bg-gradient-to-t from-black/55 to-transparent" />
-              <div className="absolute bottom-0 left-0 p-5 text-[#FDFBF0]">
-                <span className={`text-xs font-bold px-3 py-1 rounded-full ${MEAL_COLORS.dinner}`}>{ka ? 'ვახშამი' : 'Dinner'}</span>
+              <div className="absolute bottom-0 left-0 p-5 text-white">
+                <span className={`text-xs font-semibold px-3 py-1 rounded-full border border-[#E4E4E7] ${MEAL_COLORS.dinner}`}>{ka ? 'ვახშამი' : 'Dinner'}</span>
                 {dishes.dinner && <h3 className="text-base font-bold mt-2">{ka ? dishes.dinner.titleKa : dishes.dinner.titleEn}</h3>}
               </div>
             </div>
@@ -354,12 +354,12 @@ export default function HomeClient({ s, dishes, dishCount, recentBlogs }: {
         </div>
       </section>
       {/* ── Pricing ──────────────────────────────────────────── */}
-      <section id="pricing" className="relative z-10 py-14 sm:py-24" style={{ background: '#465940' }}>
+      <section id="pricing" className="relative z-10 py-14 sm:py-24 border-t border-[#E4E4E7]" style={{ background: '#FFFFFF' }}>
         <div className="max-w-7xl mx-auto px-5">
           <div ref={refPricing} className="fade-up text-center mb-10 sm:mb-12">
-            <h2 className="text-2xl sm:text-3xl font-bold mb-3 text-[#FDFBF0]">{t('pricingTitleKa', 'pricingTitleEn')}</h2>
-            <p className="text-[#FDFBF0]/70 text-sm max-w-xl mx-auto mb-3">{t('pricingSubtitleKa', 'pricingSubtitleEn')}</p>
-            <p className="text-[#FDFBF0]/50 text-xs max-w-xl mx-auto">
+            <h2 className="text-2xl sm:text-3xl font-bold mb-3 text-[#09090B]">{t('pricingTitleKa', 'pricingTitleEn')}</h2>
+            <p className="text-[#52525B] text-sm max-w-xl mx-auto mb-3">{t('pricingSubtitleKa', 'pricingSubtitleEn')}</p>
+            <p className="text-[#A1A1AA] text-xs max-w-xl mx-auto">
               {ka
                 ? 'პირველი შესყიდვისას გაქვთ 7 დღიანი უფასო ტესტ-პერიოდი — ბარათი მხოლოდ დროებით მოწმდება, თანხა არ ჩამოიჭრება. პირველი გადახდა მოხდება ზუსტად 7 დღეში, თუ ამ დრომდე არ გააუქმებთ. თუ ტესტ-პერიოდის განმავლობაში სხვა პაკეტზე გადახვალთ, ახალი პაკეტის თანხა მაშინვე ჩამოიჭრება და შემდეგი განახლება 30 დღეში მოხდება.'
                 : 'Your first purchase includes a 7-day free trial — your card is only verified, not charged. The first real payment happens exactly 7 days later, unless you cancel before then. Upgrading during the trial charges the new plan immediately and starts a new 30-day cycle from that moment.'}
@@ -368,17 +368,17 @@ export default function HomeClient({ s, dishes, dishCount, recentBlogs }: {
           <div ref={refPricingCards} className="grid md:grid-cols-2 gap-5 max-w-4xl mx-auto items-stretch">
 
             {/* Plan 1 */}
-            <div className="fade-up bg-[#FDFBF0] p-7 sm:p-10 rounded-3xl border border-[#465940]/20 text-center shadow-sm flex flex-col">
+            <div className="fade-up bg-white p-7 sm:p-10 rounded-2xl border border-[#E4E4E7] text-center flex flex-col">
               <div className="h-10 mb-5" />
-              <h3 className="text-xl font-semibold mb-2 text-[#465940]">{t('plan1NameKa', 'plan1NameEn')}</h3>
+              <h3 className="text-xl font-semibold mb-2 text-[#09090B]">{t('plan1NameKa', 'plan1NameEn')}</h3>
               <div className="flex justify-center items-baseline gap-1 mb-1">
                 {(plan1Sale ?? discountedPrice('RECIPE_PLAN', plan1Price)) ? (
                   <>
                     <span className="text-2xl font-bold text-red-400 line-through">{plan1Price}₾</span>
-                    <span className="text-4xl font-bold text-[#465940] ml-2">{plan1Sale ?? discountedPrice('RECIPE_PLAN', plan1Price)}₾</span>
+                    <span className="text-4xl font-bold text-[#09090B] ml-2">{plan1Sale ?? discountedPrice('RECIPE_PLAN', plan1Price)}₾</span>
                   </>
-                ) : <span className="text-4xl font-bold text-[#465940]">{plan1Price}₾</span>}
-                <span className="text-[#465940]/60">/mo</span>
+                ) : <span className="text-4xl font-bold text-[#09090B]">{plan1Price}₾</span>}
+                <span className="text-[#A1A1AA]">/mo</span>
               </div>
               {plan1Sale && (
                 <div className="flex items-center justify-center gap-2 mt-2">
@@ -390,7 +390,7 @@ export default function HomeClient({ s, dishes, dishCount, recentBlogs }: {
               )}
               {!plan1Sale && promoStatus['RECIPE_PLAN']?.valid && <p className="text-[#465940] text-xs font-bold mt-1">{promoStatus['RECIPE_PLAN'].discount}% ფასდაკლება</p>}
               <div className="mb-6 h-6" />
-              <ul className="space-y-3 text-left flex-1 text-sm text-[#465940]">
+              <ul className="space-y-3 text-left flex-1 text-sm text-[#3F3F46]">
                 <li>{t('plan1Feature1Ka', 'plan1Feature1En')}</li>
                 <li>{t('plan1Feature2Ka', 'plan1Feature2En')}</li>
                 <li>{t('plan1Feature3Ka', 'plan1Feature3En')}</li>
@@ -401,40 +401,41 @@ export default function HomeClient({ s, dishes, dishCount, recentBlogs }: {
                   onChange={e => { setPromoInput(p => ({ ...p, RECIPE_PLAN: e.target.value })); setPromoStatus(p => ({ ...p, RECIPE_PLAN: { discount: 0, valid: false, msg: '' } })); }}
                   onKeyDown={e => e.key === 'Enter' && validatePromo('RECIPE_PLAN')}
                   placeholder={ka ? 'პრომოკოდი' : 'Promo code'}
-                  className="flex-1 min-w-0 px-3 py-2 border border-[#465940]/20 rounded-xl text-sm font-mono uppercase focus:outline-none focus:border-[#465940] bg-[#FDFBF0] text-[#465940]"
+                  className="flex-1 min-w-0 px-3 py-2 border border-[#E4E4E7] rounded-lg text-sm font-mono uppercase focus:outline-none focus:border-[#09090B] bg-white text-[#09090B]"
                 />
                 <button onClick={() => validatePromo('RECIPE_PLAN')} disabled={promoLoading === 'RECIPE_PLAN' || !promoInput['RECIPE_PLAN']}
-                  className="w-full sm:w-auto px-4 py-2 border border-[#465940] text-[#465940] rounded-xl text-xs font-bold hover:bg-[#465940]/10 transition disabled:opacity-40">
+                  className="w-full sm:w-auto px-4 py-2 border border-[#E4E4E7] text-[#09090B] rounded-lg text-xs font-semibold hover:bg-[#FAFAFA] transition disabled:opacity-40">
                   {promoLoading === 'RECIPE_PLAN' ? '...' : (ka ? 'გამოყენება' : 'Apply')}
                 </button>
               </div>
-              {promoStatus['RECIPE_PLAN']?.msg && <p className="text-[#465940] text-xs mt-1 font-semibold">{promoStatus['RECIPE_PLAN'].msg}</p>}
+              {promoStatus['RECIPE_PLAN']?.msg && <p className="text-[#DC2626] text-xs mt-1 font-semibold">{promoStatus['RECIPE_PLAN'].msg}</p>}
               <button onClick={() => handleSubscribeBog('RECIPE_PLAN')} disabled={loadingPlan !== null || currentPlan === 'RECIPE_PLAN'}
-                className="w-full py-3.5 mt-4 border border-[#465940] text-[#465940] rounded-full font-semibold hover:bg-[#465940]/10 transition disabled:opacity-60">
+                className="w-full py-3.5 mt-4 border border-[#E4E4E7] text-[#09090B] rounded-lg font-medium hover:bg-[#FAFAFA] transition disabled:opacity-60">
                 {currentPlan === 'RECIPE_PLAN' ? (ka ? '✓ აქტიურია' : '✓ Active') : loadingPlan === 'RECIPE_PLAN' ? (ka ? 'მუშავდება...' : 'Processing...') : (ka ? 'დაწყება' : 'Get Started')}
               </button>
-              <p className="text-[#465940]/50 text-xs mt-2">
+              <p className="text-[#A1A1AA] text-xs mt-2">
                 {ka ? 'ავტომატურად განახლდება ყოველ თვე. გაუქმება ნებისმიერ დროს.' : 'Renews automatically every month. Cancel anytime.'}
               </p>
             </div>
 
             {/* Plan 2 */}
-            <div className="fade-up bg-[#FDFBF0] p-7 sm:p-10 rounded-3xl border-2 border-[#465940]/30 text-center shadow-2xl sm:scale-105 relative z-10 flex flex-col">
-              <div className="mb-5">
-                <div className="inline-flex items-center gap-2 text-[#FDFBF0] text-sm font-black px-6 py-2 rounded-full shadow-md"
-                  style={{ background: '#465940' }}>
-                  ⭐ {ka ? 'საუკეთესო არჩევანი' : 'Best Choice'}
+            <div className="fade-up bg-white p-7 sm:p-10 rounded-2xl border-2 text-center sm:scale-105 relative z-10 flex flex-col" style={{ borderColor: '#18181B' }}>
+              <div className="absolute -top-3 left-1/2 -translate-x-1/2">
+                <div className="inline-flex items-center gap-1.5 text-sm font-semibold px-4 py-1.5 rounded-full whitespace-nowrap"
+                  style={{ background: '#18181B', color: '#FAFAFA' }}>
+                  {ka ? 'საუკეთესო არჩევანი' : 'Best Choice'}
                 </div>
               </div>
-              <h3 className="text-xl font-semibold mb-2 text-[#465940]">{t('plan2NameKa', 'plan2NameEn')}</h3>
+              <div className="h-3 mb-5" />
+              <h3 className="text-xl font-semibold mb-2 text-[#09090B]">{t('plan2NameKa', 'plan2NameEn')}</h3>
               <div className="flex justify-center items-baseline gap-1 mb-1">
                 {(plan2Sale ?? discountedPrice('FULL_PLAN', plan2Price)) ? (
                   <>
                     <span className="text-2xl font-bold text-red-400 line-through">{plan2Price}₾</span>
-                    <span className="text-4xl font-bold text-[#465940] ml-2">{plan2Sale ?? discountedPrice('FULL_PLAN', plan2Price)}₾</span>
+                    <span className="text-4xl font-bold text-[#09090B] ml-2">{plan2Sale ?? discountedPrice('FULL_PLAN', plan2Price)}₾</span>
                   </>
-                ) : <span className="text-4xl font-bold text-[#465940]">{plan2Price}₾</span>}
-                <span className="text-[#465940]/60">/mo</span>
+                ) : <span className="text-4xl font-bold text-[#09090B]">{plan2Price}₾</span>}
+                <span className="text-[#A1A1AA]">/mo</span>
               </div>
               {plan2Sale && (
                 <div className="flex items-center justify-center gap-2 mt-2">
@@ -445,8 +446,8 @@ export default function HomeClient({ s, dishes, dishCount, recentBlogs }: {
                 </div>
               )}
               {!plan2Sale && promoStatus['FULL_PLAN']?.valid && <p className="text-[#465940] text-xs font-bold mt-1">{promoStatus['FULL_PLAN'].discount}% ფასდაკლება</p>}
-              <p className="font-semibold mb-6 text-sm text-[#465940]/70">{ka ? 'ყველაზე პოპულარული' : 'Most Popular'}</p>
-              <ul className="space-y-3 text-left text-[#465940] flex-1 text-sm">
+              <p className="font-medium mb-6 text-sm text-[#A1A1AA]">{ka ? 'ყველაზე პოპულარული' : 'Most Popular'}</p>
+              <ul className="space-y-3 text-left text-[#3F3F46] flex-1 text-sm">
                 <li>{t('plan2Feature1Ka', 'plan2Feature1En')}</li>
                 <li>{t('plan2Feature2Ka', 'plan2Feature2En')}</li>
                 <li>{t('plan2Feature3Ka', 'plan2Feature3En')}</li>
@@ -457,21 +458,21 @@ export default function HomeClient({ s, dishes, dishCount, recentBlogs }: {
                   onChange={e => { setPromoInput(p => ({ ...p, FULL_PLAN: e.target.value })); setPromoStatus(p => ({ ...p, FULL_PLAN: { discount: 0, valid: false, msg: '' } })); }}
                   onKeyDown={e => e.key === 'Enter' && validatePromo('FULL_PLAN')}
                   placeholder={ka ? 'პრომოკოდი' : 'Promo code'}
-                  className="flex-1 min-w-0 px-3 py-2 border border-[#465940]/20 rounded-xl text-sm font-mono uppercase focus:outline-none focus:border-[#465940] bg-[#FDFBF0] text-[#465940]"
+                  className="flex-1 min-w-0 px-3 py-2 border border-[#E4E4E7] rounded-lg text-sm font-mono uppercase focus:outline-none focus:border-[#09090B] bg-white text-[#09090B]"
                 />
                 <button onClick={() => validatePromo('FULL_PLAN')} disabled={promoLoading === 'FULL_PLAN' || !promoInput['FULL_PLAN']}
-                  className="w-full sm:w-auto px-4 py-2 text-[#FDFBF0] rounded-xl text-xs font-bold transition disabled:opacity-40"
-                  style={{ background: '#465940' }}>
+                  className="w-full sm:w-auto px-4 py-2 rounded-lg text-xs font-semibold transition disabled:opacity-40 hover:opacity-90"
+                  style={{ background: '#18181B', color: '#FAFAFA' }}>
                   {promoLoading === 'FULL_PLAN' ? '...' : (ka ? 'გამოყენება' : 'Apply')}
                 </button>
               </div>
-              {promoStatus['FULL_PLAN']?.msg && <p className="text-[#465940] text-xs mt-1 font-semibold">{promoStatus['FULL_PLAN'].msg}</p>}
+              {promoStatus['FULL_PLAN']?.msg && <p className="text-[#DC2626] text-xs mt-1 font-semibold">{promoStatus['FULL_PLAN'].msg}</p>}
               <button onClick={() => handleSubscribeBog('FULL_PLAN')} disabled={loadingPlan !== null || currentPlan === 'FULL_PLAN'}
-                className="w-full py-3.5 mt-4 text-[#FDFBF0] rounded-full font-bold shadow-lg transition disabled:opacity-60"
-                style={{ background: '#465940' }}>
+                className="w-full py-3.5 mt-4 rounded-lg font-medium transition disabled:opacity-60 hover:opacity-90"
+                style={{ background: '#18181B', color: '#FAFAFA' }}>
                 {currentPlan === 'FULL_PLAN' ? (ka ? '✓ აქტიურია' : '✓ Active') : loadingPlan === 'FULL_PLAN' ? (ka ? 'მუშავდება...' : 'Processing...') : (ka ? 'დაწყება' : 'Get Started')}
               </button>
-              <p className="text-[#465940]/50 text-xs mt-2">
+              <p className="text-[#A1A1AA] text-xs mt-2">
                 {ka ? 'ავტომატურად განახლდება ყოველ თვე. გაუქმება ნებისმიერ დროს.' : 'Renews automatically every month. Cancel anytime.'}
               </p>
             </div>
@@ -481,16 +482,16 @@ export default function HomeClient({ s, dishes, dishCount, recentBlogs }: {
       </section>
       {/* ── Blog ─────────────────────────────────────────────── */}
       {recentBlogs.length > 0 && (
-        <section className="relative z-10 py-14 sm:py-24" style={{ background: '#465940' }}>
+        <section className="relative z-10 py-14 sm:py-24 border-t border-[#E4E4E7]" style={{ background: '#FFFFFF' }}>
           <div className="max-w-7xl mx-auto px-5">
             <div ref={refBlog} className="fade-up flex justify-between items-end mb-8 sm:mb-12 gap-4">
               <div>
-                <h2 className="text-2xl sm:text-3xl font-bold mb-1 text-[#FDFBF0]">{ka ? 'ბლოგი' : 'Blog'}</h2>
-                <p className="text-[#FDFBF0]/70 text-sm">
+                <h2 className="text-2xl sm:text-3xl font-bold mb-1 text-[#09090B]">{ka ? 'ბლოგი' : 'Blog'}</h2>
+                <p className="text-[#71717A] text-sm">
                   {ka ? 'სტატიები და იდეები ბავშვის კვებაზე' : 'Articles and ideas on child nutrition'}
                 </p>
               </div>
-              <a href={`/blog?lang=${locale}`} className="text-sm font-bold whitespace-nowrap" style={{ color: '#FDFBF0' }}>
+              <a href={`/blog?lang=${locale}`} className="text-sm font-medium whitespace-nowrap" style={{ color: '#09090B' }}>
                 {ka ? 'ყველა →' : 'All →'}
               </a>
             </div>
@@ -505,15 +506,15 @@ export default function HomeClient({ s, dishes, dishCount, recentBlogs }: {
                 const href = `/blog/${(blog as any).slug ?? blog.id}?lang=${locale}`;
                 return (
                   <a key={blog.id} href={href}
-                    className="fade-up flex-shrink-0 w-64 rounded-3xl overflow-hidden snap-start border border-[#FDFBF0]/20 block"
-                    style={{ background: '#465940' }}>
+                    className="fade-up flex-shrink-0 w-64 rounded-xl overflow-hidden snap-start border border-[#E4E4E7] block"
+                    style={{ background: '#FFFFFF' }}>
                     {blog.imageUrl
                       ? <div className="h-36 overflow-hidden"><img src={blog.imageUrl} alt={title} className="w-full h-full object-cover" /></div>
-                      : <div className="h-36 flex items-center justify-center text-4xl" style={{ background: '#3a4d35' }}></div>
+                      : <div className="h-36 flex items-center justify-center text-4xl" style={{ background: '#F4F4F5' }}></div>
                     }
                     <div className="p-4">
-                      <h3 className="font-black text-[#FDFBF0] text-sm mb-1 leading-snug">{title}</h3>
-                      <p className="text-xs text-[#FDFBF0]/60 leading-relaxed">{excerpt}</p>
+                      <h3 className="font-semibold text-[#09090B] text-sm mb-1 leading-snug">{title}</h3>
+                      <p className="text-xs text-[#71717A] leading-relaxed">{excerpt}</p>
                     </div>
                   </a>
                 );
@@ -534,17 +535,17 @@ export default function HomeClient({ s, dishes, dishCount, recentBlogs }: {
                 const href = `/blog/${(blog as any).slug ?? blog.id}?lang=${locale}`;
                 return (
                   <a key={blog.id} href={href}
-                    className="fade-up rounded-[28px] border border-[#FDFBF0]/20 overflow-hidden hover:border-[#FDFBF0]/40 hover:-translate-y-1 transition group block"
-                    style={{ background: '#465940' }}>
+                    className="fade-up rounded-2xl border border-[#E4E4E7] overflow-hidden hover:border-[#D4D4D8] transition group block"
+                    style={{ background: '#FFFFFF' }}>
                     {blog.imageUrl
                       ? <div className="h-44 overflow-hidden"><img src={blog.imageUrl} alt={title} className="w-full h-full object-cover group-hover:scale-105 transition duration-500" /></div>
-                      : <div className="h-44 flex items-center justify-center text-4xl" style={{ background: '#3a4d35' }}></div>
+                      : <div className="h-44 flex items-center justify-center text-4xl" style={{ background: '#F4F4F5' }}></div>
                     }
                     <div className="p-5">
-                      <p className="text-xs font-bold mb-2 uppercase tracking-wide text-[#FDFBF0]/50">{date}</p>
-                      <h3 className="font-black text-[#FDFBF0] text-base mb-2 leading-snug">{title}</h3>
-                      <p className="text-sm text-[#FDFBF0]/65 leading-relaxed mb-3">{excerpt}</p>
-                      <span className="text-xs font-bold group-hover:underline text-[#FDFBF0]/80">{ka ? 'წაიკითხე →' : 'Read →'}</span>
+                      <p className="text-xs font-semibold mb-2 uppercase tracking-wide text-[#A1A1AA]">{date}</p>
+                      <h3 className="font-semibold text-[#09090B] text-base mb-2 leading-snug">{title}</h3>
+                      <p className="text-sm text-[#71717A] leading-relaxed mb-3">{excerpt}</p>
+                      <span className="text-xs font-medium group-hover:underline text-[#09090B]">{ka ? 'წაიკითხე →' : 'Read →'}</span>
                     </div>
                   </a>
                 );
