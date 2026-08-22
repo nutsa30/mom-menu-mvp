@@ -244,15 +244,22 @@ export default function HomeClient({ s, dishes, dishCount, recentBlogs, planAmou
             <h2 className="text-2xl sm:text-3xl font-bold text-[#F5F1E4]" style={{ fontFamily: SERIF_KA }}>{t('featuresTitleKa', 'featuresTitleEn')}</h2>
           </div>
           <div ref={refFeatureCards} className="grid sm:grid-cols-3 gap-8 sm:gap-6">
-            {[1, 2, 3].map(i => (
+            {[1, 2, 3].map(i => {
+              const FEATURE_ICONS: Record<number, JSX.Element> = {
+                1: <path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z" />,
+                2: <path d="M13 2 3 14h7l-1 8 10-12h-7l1-8z" />,
+                3: <><circle cx="12" cy="12" r="8" /><circle cx="12" cy="12" r="4" /><circle cx="12" cy="12" r="0.8" fill="currentColor" /></>,
+              };
+              return (
               <div key={i} className="fade-up text-center flex flex-col items-center group">
-                <div className="w-16 h-16 rounded-full flex items-center justify-center mb-5 text-2xl border-2 transition-all duration-300 group-hover:scale-110 group-hover:bg-[#D9803B]/15" style={{ borderColor: '#D9803B', background: 'rgba(245,241,228,0.06)' }}>
-                  {s[`feature${i}Icon`]}
+                <div className="w-16 h-16 rounded-full flex items-center justify-center mb-5 border-2 transition-all duration-300 group-hover:scale-110 group-hover:bg-[#D9803B]/15" style={{ borderColor: '#D9803B', background: 'rgba(245,241,228,0.06)' }}>
+                  <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="#D9803B" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">{FEATURE_ICONS[i]}</svg>
                 </div>
                 <h3 className="text-base font-bold mb-2 text-[#F5F1E4]">{t(`feature${i}TitleKa`, `feature${i}TitleEn`)}</h3>
                 <p className="text-[#F5F1E4]/65 text-sm leading-relaxed max-w-[240px]">{t(`feature${i}DescKa`, `feature${i}DescEn`)}</p>
               </div>
-            ))}
+              );
+            })}
           </div>
         </div>
       </section>
