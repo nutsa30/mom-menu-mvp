@@ -173,44 +173,43 @@ export default function HomeClient({ s, dishes, dishCount, recentBlogs }: {
     <main style={{ color: '#6F7A5C', background: '#F5F1E4', fontFamily: "'Rubik', sans-serif" }}>
 
       {/* ── Hero ─────────────────────────────────────────────── */}
-      <section className="relative overflow-hidden" style={{ background: 'linear-gradient(to bottom, #f4e9da 0%, #fbeddd 20%, #f6e3cb 50%, #f0d8bc 80%, #e4d6c1 100%)' }}>
-        <div className="relative w-full h-[360px] sm:h-[460px] lg:h-[600px]">
-          {s.heroImageUrl ? (
-            <img src={s.heroImageUrl as string} alt="meal" className="absolute left-0 top-0 h-full w-auto" style={{ transform: 'scaleX(-1)' }} />
-          ) : (
-            <div className="absolute inset-0 bg-[#6F7A5C]/10" />
-          )}
-          <div className="relative h-full max-w-7xl mx-auto px-5 sm:px-8 flex items-center justify-end">
-            <div className="max-w-[175px] sm:max-w-md text-left">
-              <span className="inline-flex items-center gap-2 mb-2.5 sm:mb-5 uppercase tracking-[0.1em] sm:tracking-[0.15em] font-bold text-[9px] sm:text-xs" style={{ color: '#D9803B' }}>
-                <span style={{ width: 14, height: 1, background: '#D9803B', display: 'inline-block' }} />
-                {t('heroBadgeKa', 'heroBadgeEn')}
-              </span>
-              <h1 className="text-lg sm:text-4xl lg:text-[46px] leading-[1.2] sm:leading-[1.15] font-bold mb-2 sm:mb-5"
-                style={{ color: '#6F7A5C', fontFamily: SERIF_KA }}>
-                {t('heroTitleKa', 'heroTitleEn')}
-              </h1>
-              <p className="text-[11px] sm:text-base text-[#6F7A5C]/75 mb-3.5 sm:mb-7 line-clamp-3 sm:line-clamp-none">
-                {t('heroTextKa', 'heroTextEn')}
-              </p>
-              <div className="flex flex-col sm:flex-row flex-wrap gap-2 sm:gap-3">
-                <a
-                  href={`/register?lang=${locale}`}
-                  className="px-5 sm:px-7 py-2.5 sm:py-3.5 rounded-full font-bold shadow-md transition text-xs sm:text-base hover:opacity-90"
-                  style={{ background: '#D9803B', color: '#FFFFFF' }}
-                >
-                  {t('heroCta1Ka', 'heroCta1En')} →
-                </a>
-                <a
-                  href={`/?lang=${locale}#pricing`}
-                  className="border-2 px-5 sm:px-7 py-2.5 sm:py-3.5 rounded-full font-bold hover:bg-[#6F7A5C]/10 transition text-xs sm:text-base"
-                  style={{ borderColor: '#6F7A5C', color: '#6F7A5C' }}
-                >
-                  {t('heroCta2Ka', 'heroCta2En')}
-                </a>
-              </div>
+      <section className="relative overflow-hidden" style={{ background: 'linear-gradient(to right, #f9ead4, #f8e2cd, #f5e3c9, #e9ceb0, #e3cbab)' }}>
+        <div className="max-w-7xl mx-auto px-5 sm:px-8 pt-10 sm:pt-14">
+          <div className="text-center max-w-2xl mx-auto mb-7 sm:mb-10">
+            <span className="inline-flex items-center gap-2 mb-3 sm:mb-5 uppercase tracking-[0.12em] sm:tracking-[0.15em] font-bold text-[10px] sm:text-xs" style={{ color: '#D9803B' }}>
+              <span style={{ width: 16, height: 1, background: '#D9803B', display: 'inline-block' }} />
+              {t('heroBadgeKa', 'heroBadgeEn')}
+              <span style={{ width: 16, height: 1, background: '#D9803B', display: 'inline-block' }} />
+            </span>
+            <h1 className="text-3xl sm:text-4xl lg:text-[46px] leading-[1.2] sm:leading-[1.15] font-bold mb-3 sm:mb-5"
+              style={{ color: '#6F7A5C', fontFamily: SERIF_KA }}>
+              {t('heroTitleKa', 'heroTitleEn')}
+            </h1>
+            <p className="text-sm sm:text-base text-[#6F7A5C]/75 mb-5 sm:mb-7">
+              {t('heroTextKa', 'heroTextEn')}
+            </p>
+            <div className="flex flex-wrap justify-center gap-2.5 sm:gap-3">
+              <a
+                href={`/register?lang=${locale}`}
+                className="px-6 sm:px-7 py-2.5 sm:py-3.5 rounded-full font-bold shadow-md transition text-sm sm:text-base hover:opacity-90"
+                style={{ background: '#D9803B', color: '#FFFFFF' }}
+              >
+                {t('heroCta1Ka', 'heroCta1En')} →
+              </a>
+              <a
+                href={`/?lang=${locale}#pricing`}
+                className="border-2 px-6 sm:px-7 py-2.5 sm:py-3.5 rounded-full font-bold hover:bg-[#6F7A5C]/10 transition text-sm sm:text-base"
+                style={{ borderColor: '#6F7A5C', color: '#6F7A5C' }}
+              >
+                {t('heroCta2Ka', 'heroCta2En')}
+              </a>
             </div>
           </div>
+          {s.heroImageUrl && (
+            <div className="flex justify-center">
+              <img src={s.heroImageUrl as string} alt="meal" className="w-full max-w-[751px] h-auto" />
+            </div>
+          )}
         </div>
       </section>
 
