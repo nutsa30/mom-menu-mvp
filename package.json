@@ -13,6 +13,7 @@
     "seed": "tsx prisma/seed.ts"
   },
   "dependencies": {
+    "@anthropic-ai/sdk": "^0.120.0",
     "@blocknote/ariakit": "^0.51.4",
     "@blocknote/core": "^0.51.4",
     "@blocknote/react": "^0.51.4",

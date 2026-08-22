@@ -6,6 +6,7 @@ import Analytics from '@/components/Analytics';
 import CookieBanner from '@/components/CookieBanner';
 import PWAInstallBanner from '@/components/PWAInstallBanner';
 import NotificationPrompt from '@/components/NotificationPrompt';
+import ChatbotWidget from '@/components/ChatbotWidget';
 import OneSignalProvider from '@/components/OneSignalProvider';
 import { Suspense } from 'react';
 import { getSession } from '@/lib/auth';
@@ -187,6 +188,10 @@ export default async function RootLayout({ children }: { children: React.ReactNo
 
         {/* Notification permission prompt — shown after 8s, triggered by user tap (iOS requirement) */}
         <NotificationPrompt />
+
+        <Suspense fallback={null}>
+          <ChatbotWidget />
+        </Suspense>
 
         </div>{/* end overflow-x-hidden wrapper */}
 
