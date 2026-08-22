@@ -391,7 +391,7 @@ function TodayTab({ child, allDishes, planStart, isFullPlan }: { child: any; all
           <div className="flex items-center gap-2 mb-4">
             <span className="text-xl">{seasonalData.seasonIcon}</span>
             <div>
-              <h3 className="font-black text-[#465940] text-sm">{seasonalData.seasonKa}ის სეზონური ხილი</h3>
+              <h3 className="font-black text-[#465940] text-sm">{SEASON_GENITIVE_KA[seasonalData.seasonKa] ?? seasonalData.seasonKa} სეზონური ხილი</h3>
               <p className="text-[10px] text-[#465940]/60">შეათავაზე ბავშვს დამატებით — ვიტამინებით მდიდარი</p>
             </div>
           </div>
@@ -1481,6 +1481,16 @@ function ManageSubscriptionButton() {
     </div>
   );
 }
+
+// Georgian genitive isn't just "+ის" — ზამთარი (winter) is irregular
+// (ზამთრის, not ზამთარის), and ზაფხული/გაზაფხული already end in "ი" so
+// appending "ის" doubled it ("ზაფხულიის"). Spelled out explicitly instead.
+const SEASON_GENITIVE_KA: Record<string, string> = {
+  'ზაფხული': 'ზაფხულის',
+  'გაზაფხული': 'გაზაფხულის',
+  'შემოდგომა': 'შემოდგომის',
+  'ზამთარი': 'ზამთრის',
+};
 
 const MONTHS_KA = [
   'იანვარი', 'თებერვალი', 'მარტი', 'აპრილი', 'მაისი', 'ივნისი',
