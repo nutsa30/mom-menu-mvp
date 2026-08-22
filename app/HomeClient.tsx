@@ -173,73 +173,41 @@ export default function HomeClient({ s, dishes, dishCount, recentBlogs }: {
     <main style={{ color: '#6F7A5C', background: '#F5F1E4', fontFamily: "'Rubik', sans-serif" }}>
 
       {/* ── Hero ─────────────────────────────────────────────── */}
-      <section className="relative overflow-hidden pt-10 pb-10 md:pt-16 md:pb-14" style={{ background: '#F5F1E4' }}>
-        <div className="max-w-7xl mx-auto px-4 sm:px-6">
-
-          {/* Mobile: food image */}
-          <div className="md:hidden relative h-60 sm:h-72 rounded-[32px] overflow-hidden mb-6 shadow-lg">
-            {s.heroImageUrl ? (
-              <>
-                <img src={s.heroImageUrl as string} alt="meal" className="w-full h-full object-cover" />
-                <div className="absolute inset-0 bg-gradient-to-t from-black/40 via-transparent to-transparent" />
-              </>
-            ) : (
-              <div className="w-full h-full bg-[#6F7A5C]/10 flex items-center justify-center text-6xl"></div>
-            )}
-            <span className="absolute bottom-4 left-4 inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-[#F5F1E4] text-[#6F7A5C] font-bold text-xs shadow">
-              <svg width="12" height="12" viewBox="0 0 24 24" fill="#D9803B"><path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z"/></svg>
-              {t('heroBadgeKa', 'heroBadgeEn')}
-            </span>
-          </div>
-
-          {/* Text content */}
-          <div className="lg:grid lg:grid-cols-2 lg:gap-12 lg:items-center">
-            <div>
-              <span className="hidden md:inline-flex items-center gap-2 mb-5 uppercase tracking-[0.15em] font-bold text-xs" style={{ color: '#D9803B' }}>
-                <span style={{ width: 22, height: 1, background: '#D9803B', display: 'inline-block' }} />
+      <section className="relative overflow-hidden" style={{ background: '#F5F1E4' }}>
+        <div className="relative w-full h-[360px] sm:h-[460px] lg:h-[600px]">
+          {s.heroImageUrl ? (
+            <img src={s.heroImageUrl as string} alt="meal" className="absolute inset-0 w-full h-full object-cover" />
+          ) : (
+            <div className="absolute inset-0 bg-[#6F7A5C]/10" />
+          )}
+          <div className="relative h-full max-w-7xl mx-auto px-5 sm:px-8 flex items-center justify-end">
+            <div className="max-w-[175px] sm:max-w-md text-left">
+              <span className="inline-flex items-center gap-2 mb-2.5 sm:mb-5 uppercase tracking-[0.1em] sm:tracking-[0.15em] font-bold text-[9px] sm:text-xs" style={{ color: '#D9803B' }}>
+                <span style={{ width: 14, height: 1, background: '#D9803B', display: 'inline-block' }} />
                 {t('heroBadgeKa', 'heroBadgeEn')}
-                <span style={{ width: 22, height: 1, background: '#D9803B', display: 'inline-block' }} />
               </span>
-              <h1 className="text-4xl sm:text-5xl lg:text-[58px] leading-[1.12] font-bold mb-5 sm:mb-6"
+              <h1 className="text-lg sm:text-4xl lg:text-[46px] leading-[1.2] sm:leading-[1.15] font-bold mb-2 sm:mb-5"
                 style={{ color: '#6F7A5C', fontFamily: SERIF_KA }}>
                 {t('heroTitleKa', 'heroTitleEn')}
               </h1>
-              <p className="text-base text-[#6F7A5C]/70 mb-6 sm:mb-8 max-w-xl">
+              <p className="text-[11px] sm:text-base text-[#6F7A5C]/75 mb-3.5 sm:mb-7 line-clamp-3 sm:line-clamp-none">
                 {t('heroTextKa', 'heroTextEn')}
               </p>
-              <div className="flex flex-wrap gap-3">
+              <div className="flex flex-col sm:flex-row flex-wrap gap-2 sm:gap-3">
                 <a
                   href={`/register?lang=${locale}`}
-                  className="px-7 py-3.5 rounded-full font-bold shadow-md transition text-sm sm:text-base hover:opacity-90"
+                  className="px-5 sm:px-7 py-2.5 sm:py-3.5 rounded-full font-bold shadow-md transition text-xs sm:text-base hover:opacity-90"
                   style={{ background: '#D9803B', color: '#FFFFFF' }}
                 >
                   {t('heroCta1Ka', 'heroCta1En')} →
                 </a>
                 <a
                   href={`/?lang=${locale}#pricing`}
-                  className="border-2 px-7 py-3.5 rounded-full font-bold hover:bg-[#6F7A5C]/5 transition text-sm sm:text-base"
+                  className="border-2 px-5 sm:px-7 py-2.5 sm:py-3.5 rounded-full font-bold hover:bg-[#6F7A5C]/5 transition text-xs sm:text-base bg-[#F5F1E4]/70"
                   style={{ borderColor: '#6F7A5C', color: '#6F7A5C' }}
                 >
                   {t('heroCta2Ka', 'heroCta2En')}
                 </a>
-              </div>
-            </div>
-
-            {/* Desktop image */}
-            <div className="relative hidden lg:block">
-              <div className="blob-pulse absolute -top-8 -right-8 w-80 h-80 rounded-full blur-3xl" style={{ background: '#D9803B', opacity: 0.4 }} />
-              <div className="blob-pulse absolute -bottom-10 -left-10 w-80 h-80 rounded-full blur-3xl" style={{ background: '#6F7A5C', opacity: 0.3, animationDelay: '2s' }} />
-              <div className="float-slow relative bg-[#F5F1E4] p-4 rounded-full shadow-2xl aspect-square overflow-hidden hover:scale-[1.03] transition-transform duration-500" style={{ width: 500, height: 500, margin: '0 auto' }}>
-                <img src={s.heroImageUrl as string} alt="meal" className="rounded-full w-full h-full object-cover" />
-              </div>
-              <div className="absolute bottom-6 -right-4 inline-flex items-center gap-2.5 px-4 py-3 rounded-2xl bg-[#F5F1E4] shadow-2xl float-slow" style={{ animationDelay: '1.2s' }}>
-                <div className="w-9 h-9 rounded-full flex items-center justify-center flex-shrink-0" style={{ background: '#D9803B' }}>
-                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#FFFFFF" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M4 19.5V5a2 2 0 0 1 2-2h11a1 1 0 0 1 1 1v14.5M6.5 22H18a2 2 0 0 0 2-2v-.5a1 1 0 0 0-1-1H6.5a1.5 1.5 0 0 0 0 3Z" /></svg>
-                </div>
-                <div>
-                  <p className="text-base font-black leading-none" style={{ color: '#6F7A5C' }}>{Math.max(dishCount, 6)}+</p>
-                  <p className="text-[10px] font-medium text-[#6F7A5C]/60 leading-tight">{ka ? 'რეცეპტი' : 'Recipes'}</p>
-                </div>
               </div>
             </div>
           </div>
