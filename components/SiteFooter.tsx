@@ -31,7 +31,7 @@ export default function SiteFooter() {
   ];
 
   return (
-    <footer className="border-t border-[#E4E4E7]" style={{ background: '#FAFAFA', fontFamily: "'Rubik', sans-serif" }}>
+    <footer className="border-t border-[#E4E4DC]" style={{ background: '#FAFAF8', fontFamily: "'Rubik', sans-serif" }}>
       <div className="max-w-6xl mx-auto px-5 pt-14 pb-10">
         <div className="grid grid-cols-1 md:grid-cols-3 gap-12">
 
@@ -39,19 +39,19 @@ export default function SiteFooter() {
           <div>
             <a href={`/?lang=${locale}`} className="inline-block mb-4">
               <div className="leading-tight">
-                <div className="text-2xl font-black text-[#09090B]">mom<svg width="20" height="20" viewBox="0 0 24 24" fill="#A1A1AA" style={{ display: 'inline', verticalAlign: '-3px', marginLeft: '1px' }}><path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z"/></svg></div>
-                <div className="text-2xl font-black text-[#09090B]">menu</div>
+                <div className="text-2xl font-black text-[#16171A]">mom<svg width="20" height="20" viewBox="0 0 24 24" fill="#8B9A2B" style={{ display: 'inline', verticalAlign: '-3px', marginLeft: '1px' }}><path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z"/></svg></div>
+                <div className="text-2xl font-black text-[#16171A]">menu</div>
               </div>
             </a>
-            <p className="text-sm text-[#71717A] leading-relaxed mb-6 max-w-[200px]">
+            <p className="text-sm text-[#57594E] leading-relaxed mb-6 max-w-[200px]">
               {ka
                 ? 'ბავშვის კვების დაგეგმვა, მარტივად და სახალისოდ.'
                 : 'Planning your child’s meals, simply and joyfully.'}
             </p>
             <a href="https://www.tiktok.com/@mommenu0" target="_blank" rel="noopener noreferrer"
-              className="inline-flex items-center gap-2.5 px-4 py-2.5 rounded-lg border border-[#E4E4E7] font-medium text-sm transition-all hover:border-[#18181B]"
-              style={{ background: '#FFFFFF', color: '#18181B' }}>
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="#18181B">
+              className="inline-flex items-center gap-2.5 px-4 py-2.5 border border-[#E4E4DC] font-medium text-sm transition-all hover:border-[#16171A]"
+              style={{ background: '#FAFAF8', color: '#16171A' }}>
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="#16171A">
                 <path d="M19.59 6.69a4.83 4.83 0 0 1-3.77-4.25V2h-3.45v13.67a2.89 2.89 0 0 1-2.88 2.5 2.89 2.89 0 0 1-2.89-2.89 2.89 2.89 0 0 1 2.89-2.89c.28 0 .54.04.79.1V9.01a6.33 6.33 0 0 0-.79-.05 6.34 6.34 0 0 0-6.34 6.34 6.34 6.34 0 0 0 6.34 6.34 6.34 6.34 0 0 0 6.33-6.34V8.69a8.18 8.18 0 0 0 4.78 1.52V6.75a4.85 4.85 0 0 1-1.01-.06z"/>
               </svg>
               @mommenu0
@@ -60,13 +60,13 @@ export default function SiteFooter() {
 
           {/* Nav links */}
           <div>
-            <h4 className="text-xs font-black text-[#A1A1AA] uppercase tracking-widest mb-5">
+            <h4 className="text-xs font-black text-[#7A7D6E] uppercase tracking-widest mb-5">
               {ka ? 'ნავიგაცია' : 'Navigation'}
             </h4>
             <ul className="space-y-3">
               {navLinks.map((l) => (
                 <li key={l.href}>
-                  <a href={l.href} className="text-sm text-[#52525B] hover:text-[#09090B] transition">
+                  <a href={l.href} className="text-sm text-[#57594E] hover:text-[#16171A] transition">
                     {l.label}
                   </a>
                 </li>
@@ -76,29 +76,29 @@ export default function SiteFooter() {
 
           {/* Contact + CTA */}
           <div>
-            <h4 className="text-xs font-black text-[#A1A1AA] uppercase tracking-widest mb-5">
+            <h4 className="text-xs font-black text-[#7A7D6E] uppercase tracking-widest mb-5">
               {ka ? 'კონტაქტი' : 'Contact'}
             </h4>
             <ul className="space-y-3 mb-8">
-              <li className="flex items-center gap-2 text-sm text-[#52525B]">
+              <li className="flex items-center gap-2 text-sm text-[#57594E]">
                 <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="flex-shrink-0 opacity-60">
                   <path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22,6 12,13 2,6"/>
                 </svg>
-                <a href="mailto:info@mommenu.ge" className="hover:text-[#09090B] transition">
+                <a href="mailto:info@mommenu.ge" className="hover:text-[#16171A] transition">
                   {EMAIL}
                 </a>
                 <button onClick={copyEmail} title={ka ? 'კოპირება' : 'Copy'}
-                  className="ml-1 text-[#A1A1AA] hover:text-[#09090B] transition text-xs">
+                  className="ml-1 text-[#7A7D6E] hover:text-[#16171A] transition text-xs">
                   {copied ? '✓' : (ka ? 'კოპირება' : 'Copy')}
                 </button>
               </li>
-              <li className="flex items-center gap-2 text-sm text-[#52525B]">
+              <li className="flex items-center gap-2 text-sm text-[#57594E]">
                 <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="flex-shrink-0 opacity-60">
                   <path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07A19.5 19.5 0 0 1 4.69 12a19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 3.6 1.18h3a2 2 0 0 1 2 1.72c.127.96.361 1.903.7 2.81a2 2 0 0 1-.45 2.11L7.91 8.77a16 16 0 0 0 6.29 6.29l.95-.86a2 2 0 0 1 2.11-.45c.907.339 1.85.573 2.81.7A2 2 0 0 1 22 16.92z"/>
                 </svg>
-                <a href="tel:+995557466668" className="hover:text-[#09090B] transition">+995 557 46 66 68</a>
+                <a href="tel:+995557466668" className="hover:text-[#16171A] transition">+995 557 46 66 68</a>
               </li>
-              <li className="flex items-start gap-2 text-sm text-[#52525B]">
+              <li className="flex items-start gap-2 text-sm text-[#57594E]">
                 <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="flex-shrink-0 opacity-60 mt-0.5">
                   <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/>
                 </svg>
@@ -107,8 +107,8 @@ export default function SiteFooter() {
             </ul>
             <a
               href={`/register?lang=${locale}`}
-              className="inline-block text-sm font-medium px-5 py-2.5 rounded-lg transition hover:opacity-90"
-              style={{ background: '#18181B', color: '#FAFAFA' }}
+              className="inline-block text-sm font-bold px-5 py-2.5 transition hover:opacity-85"
+              style={{ background: '#16171A', color: '#FAFAF8' }}
             >
               {ka ? 'დაიწყე უფასოდ →' : 'Start for free →'}
             </a>
@@ -118,8 +118,8 @@ export default function SiteFooter() {
       </div>
 
       {/* Disclaimer bar */}
-      <div className="border-t border-[#E4E4E7] py-4">
-        <p className="max-w-6xl mx-auto px-5 text-[11px] text-[#A1A1AA] leading-relaxed text-center sm:text-left">
+      <div className="border-t border-[#E4E4DC] py-4">
+        <p className="max-w-6xl mx-auto px-5 text-[11px] text-[#7A7D6E] leading-relaxed text-center sm:text-left">
           {ka
             ? 'mom menu-ზე გამოქვეყნებული ინფორმაცია ზოგადი, საჯაროდ ხელმისაწვდომი ინფორმაციის საფუძველზეა მომზადებული და არ წარმოადგენს სამედიცინო ან დიეტოლოგიურ რჩევას.'
             : 'Information published on mom menu is based on general, publicly available sources and does not constitute medical or dietetic advice.'}
@@ -127,16 +127,16 @@ export default function SiteFooter() {
       </div>
 
       {/* Bottom bar */}
-      <div className="border-t border-[#E4E4E7] py-5">
+      <div className="border-t border-[#E4E4DC] py-5">
         <div className="max-w-6xl mx-auto px-5 flex flex-col sm:flex-row items-center justify-between gap-3">
-          <p className="text-xs text-[#A1A1AA] max-w-lg leading-relaxed">
+          <p className="text-xs text-[#7A7D6E] max-w-lg leading-relaxed">
             © 2026 mom menu. {ka
               ? 'ყველა რეცეპტი და კონტენტი შექმნილია mom menu-ის მიერ და დაცულია საავტორო უფლებით — მისი კოპირება, გავრცელება ან სხვა პლატფორმაზე გამოქვეყნება/გაყიდვა ნებართვის გარეშე აკრძალულია.'
               : 'All recipes and content are created by mom menu and protected by copyright — copying, distributing, or republishing/reselling on another platform without permission is prohibited.'}
           </p>
           <div className="flex items-center gap-5">
             {legalLinks.map((l) => (
-              <a key={l.href} href={l.href} className="text-xs text-[#A1A1AA] hover:text-[#52525B] transition">
+              <a key={l.href} href={l.href} className="text-xs text-[#7A7D6E] hover:text-[#57594E] transition">
                 {l.label}
               </a>
             ))}
