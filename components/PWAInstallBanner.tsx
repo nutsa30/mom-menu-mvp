@@ -92,8 +92,8 @@ export default function PWAInstallBanner() {
       {/* ── Top install bar ──────────────────────────────────────────────── */}
       <div
         style={{
-          background: 'linear-gradient(90deg, #3a4d35 0%, #465940 100%)',
-          borderBottom: '1px solid rgba(253,251,240,0.10)',
+          background: 'linear-gradient(90deg, #3a4d35 0%, #6F7A5C 100%)',
+          borderBottom: '1px solid rgba(245,241,228,0.10)',
           padding: '0.6rem 1rem',
           display: 'flex',
           alignItems: 'center',
@@ -128,7 +128,7 @@ export default function PWAInstallBanner() {
           <div
             style={{
               fontWeight: 800,
-              color: '#FDFBF0',
+              color: '#F5F1E4',
               fontSize: '0.83rem',
               lineHeight: 1.2,
               whiteSpace: 'nowrap',
@@ -140,7 +140,7 @@ export default function PWAInstallBanner() {
           </div>
           <div
             style={{
-              color: 'rgba(253,251,240,0.65)',
+              color: 'rgba(245,241,228,0.65)',
               fontSize: '0.7rem',
               marginTop: '0.1rem',
               whiteSpace: 'nowrap',
@@ -156,8 +156,8 @@ export default function PWAInstallBanner() {
         <button
           onClick={handleInstall}
           style={{
-            background: '#FDFBF0',
-            color: '#465940',
+            background: '#F5F1E4',
+            color: '#6F7A5C',
             border: 'none',
             borderRadius: '999px',
             padding: '6px 15px',
@@ -179,7 +179,7 @@ export default function PWAInstallBanner() {
           style={{
             background: 'none',
             border: 'none',
-            color: '#FDFBF0',
+            color: '#F5F1E4',
             opacity: 0.45,
             fontSize: '1.25rem',
             lineHeight: 1,
@@ -208,7 +208,7 @@ export default function PWAInstallBanner() {
         >
           <div
             style={{
-              background: '#FDFBF0',
+              background: '#F5F1E4',
               borderRadius: '24px 24px 0 0',
               padding: '1.75rem 1.5rem 2.5rem',
               width: '100%',
@@ -235,15 +235,15 @@ export default function PWAInstallBanner() {
                   style={{ borderRadius: '10px', flexShrink: 0 }}
                 />
                 <div>
-                  <div style={{ fontWeight: 900, color: '#465940', fontSize: '1rem' }}>MomMenu</div>
-                  <div style={{ fontSize: '0.75rem', color: '#465940', opacity: 0.55 }}>mommenu.ge</div>
+                  <div style={{ fontWeight: 900, color: '#6F7A5C', fontSize: '1rem' }}>MomMenu</div>
+                  <div style={{ fontSize: '0.75rem', color: '#6F7A5C', opacity: 0.55 }}>mommenu.ge</div>
                 </div>
               </div>
               <button
                 onClick={dismiss}
                 aria-label="დახურვა"
                 style={{
-                  background: 'rgba(70,89,64,0.08)',
+                  background: 'rgba(111,122,92,0.08)',
                   border: 'none',
                   borderRadius: '50%',
                   width: 30,
@@ -252,7 +252,7 @@ export default function PWAInstallBanner() {
                   alignItems: 'center',
                   justifyContent: 'center',
                   fontSize: '1.1rem',
-                  color: '#465940',
+                  color: '#6F7A5C',
                   cursor: 'pointer',
                 }}
               >
@@ -263,7 +263,7 @@ export default function PWAInstallBanner() {
             <h2
               style={{
                 fontWeight: 900,
-                color: '#465940',
+                color: '#6F7A5C',
                 margin: '0 0 1.25rem',
                 fontSize: '1.1rem',
               }}
@@ -283,8 +283,8 @@ export default function PWAInstallBanner() {
                     style={{
                       width: 28,
                       height: 28,
-                      background: '#465940',
-                      color: '#FDFBF0',
+                      background: '#6F7A5C',
+                      color: '#F5F1E4',
                       borderRadius: '50%',
                       display: 'flex',
                       alignItems: 'center',
@@ -296,7 +296,7 @@ export default function PWAInstallBanner() {
                   >
                     {num}
                   </span>
-                  <p style={{ margin: 0, color: '#465940', fontSize: '0.9rem', lineHeight: 1.55 }}>
+                  <p style={{ margin: 0, color: '#6F7A5C', fontSize: '0.9rem', lineHeight: 1.55 }}>
                     {text}
                   </p>
                 </div>
@@ -308,8 +308,8 @@ export default function PWAInstallBanner() {
               style={{
                 width: '100%',
                 padding: '14px',
-                background: '#465940',
-                color: '#FDFBF0',
+                background: '#6F7A5C',
+                color: '#F5F1E4',
                 border: 'none',
                 borderRadius: '999px',
                 fontWeight: 800,

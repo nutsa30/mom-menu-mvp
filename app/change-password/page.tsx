@@ -49,33 +49,33 @@ export default function ChangePassword({ searchParams }: { searchParams: { lang?
   };
 
   return (
-    <main className="min-h-screen bg-[#465940] flex items-center justify-center px-6 py-12">
-      <div className="w-full max-w-md bg-[#FDFBF0] rounded-[32px] shadow-xl p-10">
+    <main className="min-h-screen bg-[#6F7A5C] flex items-center justify-center px-6 py-12">
+      <div className="w-full max-w-md bg-[#F5F1E4] rounded-[32px] shadow-xl p-10">
         {status === 'success' ? (
           <div className="text-center">
             <div className="text-5xl mb-4"></div>
-            <h2 className="text-2xl font-black text-[#465940] mb-2">
+            <h2 className="text-2xl font-black text-[#6F7A5C] mb-2">
               {locale === 'ka' ? 'პაროლი შეიცვალა!' : 'Password changed!'}
             </h2>
-            <p className="text-[#465940]/60 text-sm mb-6">
+            <p className="text-[#6F7A5C]/60 text-sm mb-6">
               {locale === 'ka' ? 'ახლა შეგიძლია ახალი პაროლით შეხვიდე.' : 'You can now log in with your new password.'}
             </p>
-            <a href={`/dashboard?lang=${locale}`} className="text-[#465940] font-bold hover:underline text-sm">
+            <a href={`/dashboard?lang=${locale}`} className="text-[#6F7A5C] font-bold hover:underline text-sm">
               {locale === 'ka' ? 'დეშბორდზე დაბრუნება →' : 'Back to dashboard →'}
             </a>
           </div>
         ) : (
           <>
-            <h1 className="text-2xl font-black text-[#465940] mb-1">
+            <h1 className="text-2xl font-black text-[#6F7A5C] mb-1">
               {locale === 'ka' ? 'პაროლის შეცვლა' : 'Change password'}
             </h1>
-            <p className="text-[#465940]/60 text-sm mb-8">
+            <p className="text-[#6F7A5C]/60 text-sm mb-8">
               {locale === 'ka' ? 'შეიყვანე მიმდინარე და ახალი პაროლი.' : 'Enter your current and new password.'}
             </p>
 
             <form onSubmit={handleSubmit} className="space-y-4">
               <div>
-                <label className="block text-sm font-semibold text-[#465940] mb-1.5">
+                <label className="block text-sm font-semibold text-[#6F7A5C] mb-1.5">
                   {locale === 'ka' ? 'მიმდინარე პაროლი' : 'Current password'}
                 </label>
                 <input
@@ -83,11 +83,11 @@ export default function ChangePassword({ searchParams }: { searchParams: { lang?
                   required
                   value={current}
                   onChange={(e) => setCurrent(e.target.value)}
-                  className="w-full px-4 py-3 rounded-xl border border-[#465940]/20 focus:outline-none focus:border-[#465940] transition text-sm"
+                  className="w-full px-4 py-3 rounded-xl border border-[#6F7A5C]/20 focus:outline-none focus:border-[#6F7A5C] transition text-sm"
                 />
               </div>
               <div>
-                <label className="block text-sm font-semibold text-[#465940] mb-1.5">
+                <label className="block text-sm font-semibold text-[#6F7A5C] mb-1.5">
                   {locale === 'ka' ? 'ახალი პაროლი' : 'New password'}
                 </label>
                 <input
@@ -96,11 +96,11 @@ export default function ChangePassword({ searchParams }: { searchParams: { lang?
                   minLength={6}
                   value={next}
                   onChange={(e) => setNext(e.target.value)}
-                  className="w-full px-4 py-3 rounded-xl border border-[#465940]/20 focus:outline-none focus:border-[#465940] transition text-sm"
+                  className="w-full px-4 py-3 rounded-xl border border-[#6F7A5C]/20 focus:outline-none focus:border-[#6F7A5C] transition text-sm"
                 />
               </div>
               <div>
-                <label className="block text-sm font-semibold text-[#465940] mb-1.5">
+                <label className="block text-sm font-semibold text-[#6F7A5C] mb-1.5">
                   {locale === 'ka' ? 'პაროლის დადასტურება' : 'Confirm new password'}
                 </label>
                 <input
@@ -108,18 +108,18 @@ export default function ChangePassword({ searchParams }: { searchParams: { lang?
                   required
                   value={confirm}
                   onChange={(e) => setConfirm(e.target.value)}
-                  className="w-full px-4 py-3 rounded-xl border border-[#465940]/20 focus:outline-none focus:border-[#465940] transition text-sm"
+                  className="w-full px-4 py-3 rounded-xl border border-[#6F7A5C]/20 focus:outline-none focus:border-[#6F7A5C] transition text-sm"
                 />
               </div>
 
               {status === 'error' && (
-                <p className="text-[#FDFBF0] text-sm font-medium">{errorMsg}</p>
+                <p className="text-[#F5F1E4] text-sm font-medium">{errorMsg}</p>
               )}
 
               <button
                 type="submit"
                 disabled={status === 'loading'}
-                className="w-full bg-[#465940] text-[#FDFBF0] py-3.5 rounded-full font-bold text-sm shadow-md hover:bg-[#465940] transition disabled:opacity-60 mt-2"
+                className="w-full bg-[#6F7A5C] text-[#F5F1E4] py-3.5 rounded-full font-bold text-sm shadow-md hover:bg-[#6F7A5C] transition disabled:opacity-60 mt-2"
               >
                 {status === 'loading'
                   ? (locale === 'ka' ? 'ინახება...' : 'Saving...')
@@ -127,8 +127,8 @@ export default function ChangePassword({ searchParams }: { searchParams: { lang?
               </button>
             </form>
 
-            <p className="text-sm text-[#465940]/60 mt-6 text-center">
-              <a href={`/dashboard?lang=${locale}`} className="text-[#465940] font-bold hover:underline">
+            <p className="text-sm text-[#6F7A5C]/60 mt-6 text-center">
+              <a href={`/dashboard?lang=${locale}`} className="text-[#6F7A5C] font-bold hover:underline">
                 ← {locale === 'ka' ? 'დეშბორდზე დაბრუნება' : 'Back to dashboard'}
               </a>
             </p>

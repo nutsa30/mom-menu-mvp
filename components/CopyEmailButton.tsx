@@ -13,11 +13,11 @@ export default function CopyEmailButton({ email, label }: { email: string; label
 
   return (
     <div className="flex items-center gap-3 flex-wrap">
-      <a href={`mailto:${email}`} className="text-sm text-[#FDFBF0] font-semibold hover:underline">
+      <a href={`mailto:${email}`} className="text-sm text-[#F5F1E4] font-semibold hover:underline">
         {email}
       </a>
       <button onClick={copy}
-        className="inline-flex items-center gap-1.5 text-xs px-3 py-1.5 rounded-full border border-[#FDFBF0]/30 text-[#FDFBF0]/70 hover:text-[#FDFBF0] hover:border-[#FDFBF0]/60 transition">
+        className="inline-flex items-center gap-1.5 text-xs px-3 py-1.5 rounded-full border border-[#F5F1E4]/30 text-[#F5F1E4]/70 hover:text-[#F5F1E4] hover:border-[#F5F1E4]/60 transition">
         {copied ? '✓ კოპირებულია' : 'კოპირება'}
       </button>
     </div>

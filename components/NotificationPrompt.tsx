@@ -87,11 +87,11 @@ export default function NotificationPrompt() {
         width: 'calc(100% - 2rem)',
         maxWidth: '400px',
         zIndex: 10002,
-        background: '#FDFBF0',
+        background: '#F5F1E4',
         borderRadius: '20px',
         boxShadow: '0 8px 48px rgba(0,0,0,0.35)',
         padding: '1.4rem 1.4rem 1.3rem',
-        border: '1px solid rgba(70,89,64,0.12)',
+        border: '1px solid rgba(111,122,92,0.12)',
       }}
     >
 
@@ -105,7 +105,7 @@ export default function NotificationPrompt() {
           background: 'none',
           border: 'none',
           fontSize: '1.3rem',
-          color: '#465940',
+          color: '#6F7A5C',
           opacity: 0.35,
           cursor: 'pointer',
           lineHeight: 1,
@@ -116,15 +116,15 @@ export default function NotificationPrompt() {
 
       {/* Header */}
       <div style={{ marginBottom: '1rem' }}>
-        <div style={{ fontWeight: 900, color: '#465940', fontSize: '0.95rem', lineHeight: 1.2 }}>
+        <div style={{ fontWeight: 900, color: '#6F7A5C', fontSize: '0.95rem', lineHeight: 1.2 }}>
           ყოველდღიური შეხსენება
         </div>
-        <div style={{ fontSize: '0.73rem', color: '#465940', opacity: 0.55, marginTop: '0.15rem' }}>
+        <div style={{ fontSize: '0.73rem', color: '#6F7A5C', opacity: 0.55, marginTop: '0.15rem' }}>
           MomMenu — კვების გეგმა
         </div>
       </div>
 
-      <p style={{ margin: '0 0 0.75rem', color: '#465940', fontSize: '0.85rem', lineHeight: 1.6, opacity: 0.85 }}>
+      <p style={{ margin: '0 0 0.75rem', color: '#6F7A5C', fontSize: '0.85rem', lineHeight: 1.6, opacity: 0.85 }}>
         ჩართე შეტყობინება და ყოველდღე დროულად ჩაფიქრდი, რა გააჭამო პატარას.
       </p>
 
@@ -136,7 +136,7 @@ export default function NotificationPrompt() {
           'საყიდლების სიის შეხსენება',
           'გამოწერის სიახლეები',
         ].map((item) => (
-          <li key={item} style={{ fontSize: '0.8rem', color: '#465940', opacity: 0.8 }}>
+          <li key={item} style={{ fontSize: '0.8rem', color: '#6F7A5C', opacity: 0.8 }}>
             {item}
           </li>
         ))}
@@ -149,9 +149,9 @@ export default function NotificationPrompt() {
             flex: 1,
             padding: '10px 8px',
             borderRadius: '999px',
-            border: '1.5px solid rgba(70,89,64,0.22)',
+            border: '1.5px solid rgba(111,122,92,0.22)',
             background: 'transparent',
-            color: '#465940',
+            color: '#6F7A5C',
             fontWeight: 700,
             fontSize: '0.82rem',
             cursor: 'pointer',
@@ -165,8 +165,8 @@ export default function NotificationPrompt() {
             flex: 2,
             padding: '10px 8px',
             borderRadius: '999px',
-            background: '#465940',
-            color: '#FDFBF0',
+            background: '#6F7A5C',
+            color: '#F5F1E4',
             border: 'none',
             fontWeight: 800,
             fontSize: '0.82rem',

@@ -13,7 +13,7 @@ import { getSession } from '@/lib/auth';
 import { prisma } from '@/lib/prisma';
 
 export const viewport: Viewport = {
-  themeColor: '#465940',
+  themeColor: '#6F7A5C',
   width: 'device-width',
   initialScale: 1,
   minimumScale: 1,

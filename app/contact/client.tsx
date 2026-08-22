@@ -43,40 +43,40 @@ export default function ContactClient({ locale, settings }: { locale: 'ka' | 'en
 
       {/* Left — info */}
       <div>
-        <h2 className="text-2xl font-black text-[#FDFBF0] mb-4">
+        <h2 className="text-2xl font-black text-[#F5F1E4] mb-4">
           {ka ? 'დაგვიკავშირდი' : 'Get in touch'}
         </h2>
-        <p className="text-[#FDFBF0]/70 leading-relaxed mb-8">
+        <p className="text-[#F5F1E4]/70 leading-relaxed mb-8">
           {ka ? s.introKa : s.introEn}
         </p>
 
         <div className="space-y-5">
           <InfoRow icon="phone" label={ka ? 'ტელეფონი' : 'Phone'}>
-            <a href="tel:+995557466668" className="text-[#FDFBF0] font-semibold hover:opacity-80 transition text-sm">
+            <a href="tel:+995557466668" className="text-[#F5F1E4] font-semibold hover:opacity-80 transition text-sm">
               +995 557 46 66 68
             </a>
           </InfoRow>
 
           <InfoRow icon="email" label={ka ? 'ელ-ფოსტა' : 'Email'}>
-            <a href={`mailto:${s.email}`} className="text-[#FDFBF0] font-semibold hover:opacity-80 transition text-sm">
+            <a href={`mailto:${s.email}`} className="text-[#F5F1E4] font-semibold hover:opacity-80 transition text-sm">
               {s.email}
             </a>
           </InfoRow>
 
           <InfoRow icon="location" label={ka ? 'მისამართი' : 'Address'}>
-            <p className="text-[#FDFBF0] font-semibold text-sm">
+            <p className="text-[#F5F1E4] font-semibold text-sm">
               {ka ? 'ჩიქოვანის ქ. 45, თბილისი, საქართველო' : '45 Chikovani St, Tbilisi, Georgia'}
             </p>
           </InfoRow>
 
           <InfoRow icon="clock" label={ka ? 'პასუხის დრო' : 'Response time'}>
-            <p className="text-[#FDFBF0] font-semibold text-sm">
+            <p className="text-[#F5F1E4] font-semibold text-sm">
               {ka ? s.responseTimeKa : s.responseTimeEn}
             </p>
           </InfoRow>
 
           <InfoRow icon="calendar" label={ka ? 'სამუშაო საათები' : 'Working hours'}>
-            <p className="text-[#FDFBF0] font-semibold text-sm">
+            <p className="text-[#F5F1E4] font-semibold text-sm">
               {ka ? s.workingHoursKa : s.workingHoursEn}
             </p>
           </InfoRow>
@@ -84,18 +84,18 @@ export default function ContactClient({ locale, settings }: { locale: 'ka' | 'en
       </div>
 
       {/* Right — form */}
-      <div className="bg-[#FDFBF0] rounded-2xl shadow-xl p-7">
+      <div className="bg-[#F5F1E4] rounded-2xl shadow-xl p-7">
         {status === 'sent' ? (
           <div className="text-center py-8">
             <div className="text-5xl mb-4"></div>
-            <h3 className="text-xl font-black text-[#465940] mb-2">
+            <h3 className="text-xl font-black text-[#6F7A5C] mb-2">
               {ka ? 'გაგზავნილია!' : 'Sent!'}
             </h3>
-            <p className="text-[#465940]/70 text-sm">
+            <p className="text-[#6F7A5C]/70 text-sm">
               {ka ? 'შეტყობინება მივიღეთ. 24 საათში გიპასუხებთ.' : "We received your message. We'll reply within 24 hours."}
             </p>
             <button onClick={() => setStatus('idle')}
-              className="mt-6 text-sm font-semibold text-[#465940] underline underline-offset-2">
+              className="mt-6 text-sm font-semibold text-[#6F7A5C] underline underline-offset-2">
               {ka ? 'კიდევ ერთი შეტყობინება' : 'Send another'}
             </button>
           </div>
@@ -115,8 +115,8 @@ export default function ContactClient({ locale, settings }: { locale: 'ka' | 'en
             </Field>
             {status === 'error' && <p className="text-red-600 text-sm font-medium">{errMsg}</p>}
             <button type="submit" disabled={status === 'sending'}
-              className="w-full py-3.5 rounded-full font-bold text-[#FDFBF0] text-sm transition"
-              style={{ background: status === 'sending' ? 'rgba(70,89,64,.5)' : '#465940' }}>
+              className="w-full py-3.5 rounded-full font-bold text-[#F5F1E4] text-sm transition"
+              style={{ background: status === 'sending' ? 'rgba(111,122,92,.5)' : '#6F7A5C' }}>
               {status === 'sending' ? (ka ? 'იგზავნება...' : 'Sending...') : (ka ? 'გაგზავნა' : 'Send message')}
             </button>
           </form>
@@ -126,12 +126,12 @@ export default function ContactClient({ locale, settings }: { locale: 'ka' | 'en
   );
 }
 
-const inputCls = 'w-full px-4 py-3 rounded-xl border border-[#465940]/20 text-[#465940] text-sm outline-none focus:border-[#465940] transition placeholder:text-[#465940]/40 bg-white font-semibold';
+const inputCls = 'w-full px-4 py-3 rounded-xl border border-[#6F7A5C]/20 text-[#6F7A5C] text-sm outline-none focus:border-[#6F7A5C] transition placeholder:text-[#6F7A5C]/40 bg-white font-semibold';
 
 function Field({ label, children }: { label: string; children: React.ReactNode }) {
   return (
     <div>
-      <label className="block text-sm font-bold text-[#465940] mb-1.5">{label} *</label>
+      <label className="block text-sm font-bold text-[#6F7A5C] mb-1.5">{label} *</label>
       {children}
     </div>
   );
@@ -147,13 +147,13 @@ function InfoRow({ icon, label, children }: { icon: string; label: string; child
   };
   return (
     <div className="flex items-start gap-4">
-      <div className="w-11 h-11 rounded-xl flex-shrink-0 flex items-center justify-center" style={{ background: 'rgba(253,251,240,.12)' }}>
-        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#FDFBF0" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <div className="w-11 h-11 rounded-xl flex-shrink-0 flex items-center justify-center" style={{ background: 'rgba(245,241,228,.12)' }}>
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#F5F1E4" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
           {icons[icon]}
         </svg>
       </div>
       <div>
-        <div className="text-[#FDFBF0]/50 text-xs font-semibold uppercase tracking-wider mb-0.5">{label}</div>
+        <div className="text-[#F5F1E4]/50 text-xs font-semibold uppercase tracking-wider mb-0.5">{label}</div>
         {children}
       </div>
     </div>

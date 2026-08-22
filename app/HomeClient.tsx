@@ -271,7 +271,7 @@ export default function HomeClient({ s, dishes, dishCount, recentBlogs }: {
           <div ref={refFeatureCards} className="grid sm:grid-cols-3 gap-8 sm:gap-6">
             {[1, 2, 3].map(i => (
               <div key={i} className="fade-up text-center flex flex-col items-center">
-                <div className="w-16 h-16 rounded-full flex items-center justify-center mb-5 text-2xl border-2" style={{ borderColor: '#C17D45', background: 'rgba(253,251,240,0.06)' }}>
+                <div className="w-16 h-16 rounded-full flex items-center justify-center mb-5 text-2xl border-2" style={{ borderColor: '#C17D45', background: 'rgba(245,241,228,0.06)' }}>
                   {s[`feature${i}Icon`]}
                 </div>
                 <h3 className="text-base font-bold mb-2 text-[#F5F1E4]">{t(`feature${i}TitleKa`, `feature${i}TitleEn`)}</h3>

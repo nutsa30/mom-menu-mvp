@@ -23,21 +23,21 @@ export async function GET(req: NextRequest) {
         {/* Decorative blobs */}
         <div style={{ position: 'absolute', top: -120, right: -80, width: 480, height: 480, borderRadius: '50%', background: '#bbf7d0', opacity: 0.55 }} />
         <div style={{ position: 'absolute', bottom: -80, right: 140, width: 360, height: 360, borderRadius: '50%', background: '#86efac', opacity: 0.35 }} />
-        <div style={{ position: 'absolute', top: 60, right: 120, width: 200, height: 200, borderRadius: '50%', background: '#465940', opacity: 0.08 }} />
+        <div style={{ position: 'absolute', top: 60, right: 120, width: 200, height: 200, borderRadius: '50%', background: '#6F7A5C', opacity: 0.08 }} />
 
         {/* Logo */}
         <div style={{ display: 'flex', flexDirection: 'column', marginBottom: 44 }}>
           <div style={{ display: 'flex', alignItems: 'baseline' }}>
-            <span style={{ fontSize: 48, fontWeight: 900, color: '#FDFBF0', letterSpacing: -1 }}>mom</span>
-            <span style={{ fontSize: 48, fontWeight: 900, color: '#FDFBF0', letterSpacing: -1 }}>&#x2665;</span>
+            <span style={{ fontSize: 48, fontWeight: 900, color: '#F5F1E4', letterSpacing: -1 }}>mom</span>
+            <span style={{ fontSize: 48, fontWeight: 900, color: '#F5F1E4', letterSpacing: -1 }}>&#x2665;</span>
           </div>
-          <span style={{ fontSize: 48, fontWeight: 900, color: '#FDFBF0', letterSpacing: -1, marginTop: -8 }}>menu</span>
+          <span style={{ fontSize: 48, fontWeight: 900, color: '#F5F1E4', letterSpacing: -1, marginTop: -8 }}>menu</span>
         </div>
 
         {/* Title */}
         <div style={{
           fontSize: title.length > 40 ? 44 : 56,
-          fontWeight: 900, color: '#FDFBF0',
+          fontWeight: 900, color: '#F5F1E4',
           lineHeight: 1.15, marginBottom: 28,
           maxWidth: 820, letterSpacing: -1,
         }}>
@@ -45,14 +45,14 @@ export async function GET(req: NextRequest) {
         </div>
 
         {/* Subtitle */}
-        <div style={{ fontSize: 26, color: '#FDFBF0', lineHeight: 1.45, maxWidth: 680, fontWeight: 500 }}>
+        <div style={{ fontSize: 26, color: '#F5F1E4', lineHeight: 1.45, maxWidth: 680, fontWeight: 500 }}>
           {sub}
         </div>
 
         {/* Domain badge */}
         <div style={{
           position: 'absolute', bottom: 56, left: 100,
-          background: '#465940', color: 'white',
+          background: '#6F7A5C', color: 'white',
           borderRadius: 50, padding: '14px 36px',
           fontSize: 24, fontWeight: 800, letterSpacing: 0.5,
         }}>

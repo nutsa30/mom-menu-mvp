@@ -29,13 +29,13 @@ export default async function ContactPage({ searchParams }: { searchParams: { la
   });
 
   return (
-    <main className="min-h-screen" style={{ background: '#465940' }}>
-      <div style={{ background: 'rgba(0,0,0,.15)', borderBottom: '1px solid rgba(253,251,240,.1)' }}>
+    <main className="min-h-screen" style={{ background: '#6F7A5C' }}>
+      <div style={{ background: 'rgba(0,0,0,.15)', borderBottom: '1px solid rgba(245,241,228,.1)' }}>
         <div className="max-w-5xl mx-auto px-5 py-14">
-<h1 className="text-4xl md:text-5xl font-black text-[#FDFBF0] leading-tight mb-4">
+<h1 className="text-4xl md:text-5xl font-black text-[#F5F1E4] leading-tight mb-4">
             {locale === 'ka' ? s.titleKa : s.titleEn}
           </h1>
-          <p className="text-[#FDFBF0]/65 text-lg max-w-lg">
+          <p className="text-[#F5F1E4]/65 text-lg max-w-lg">
             {locale === 'ka' ? s.subtitleKa : s.subtitleEn}
           </p>
         </div>

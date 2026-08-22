@@ -46,17 +46,17 @@ export default async function HowItWorksPage({ searchParams }: { searchParams: {
   return (
     <>
     {faqJsonLd && <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(faqJsonLd) }} />}
-    <main className="min-h-screen" style={{ background: '#465940' }}>
+    <main className="min-h-screen" style={{ background: '#6F7A5C' }}>
 
       {/* Hero */}
-      <section className="border-b border-[#FDFBF0]/10 py-16 text-center px-6" style={{ background: '#465940' }}>
-        <p className="text-[#FDFBF0]/70 font-bold text-sm uppercase tracking-widest mb-3">
+      <section className="border-b border-[#F5F1E4]/10 py-16 text-center px-6" style={{ background: '#6F7A5C' }}>
+        <p className="text-[#F5F1E4]/70 font-bold text-sm uppercase tracking-widest mb-3">
           {locale === 'ka' ? 'როგორ მუშაობს' : 'How it works'}
         </p>
-        <h1 className="text-4xl sm:text-5xl font-black text-[#FDFBF0] mb-4 leading-tight">
+        <h1 className="text-4xl sm:text-5xl font-black text-[#F5F1E4] mb-4 leading-tight">
           {locale === 'ka' ? (settings?.heroTitleKa || 'სამი წუთი — და კვირის მენიუ მზადაა') : (settings?.heroTitleEn || 'Three minutes and your weekly menu is ready')}
         </h1>
-        <p className="text-[#FDFBF0]/60 max-w-md mx-auto text-sm leading-relaxed">
+        <p className="text-[#F5F1E4]/60 max-w-md mx-auto text-sm leading-relaxed">
           {locale === 'ka' ? (settings?.heroSubtitleKa || '') : (settings?.heroSubtitleEn || '')}
         </p>
       </section>
@@ -66,19 +66,19 @@ export default async function HowItWorksPage({ searchParams }: { searchParams: {
         <section className="max-w-3xl mx-auto px-6 py-16">
           <div className="space-y-6">
             {steps.map((step, i) => (
-              <div key={step.id} className="flex gap-5 bg-[#FDFBF0] rounded-2xl border border-[#FDFBF0]/20 shadow-sm p-6">
+              <div key={step.id} className="flex gap-5 bg-[#F5F1E4] rounded-2xl border border-[#F5F1E4]/20 shadow-sm p-6">
                 <div className="flex flex-col items-center gap-2 flex-shrink-0">
-                  <div className="w-12 h-12 rounded-xl bg-[#465940] flex items-center justify-center text-2xl">
+                  <div className="w-12 h-12 rounded-xl bg-[#6F7A5C] flex items-center justify-center text-2xl">
                     {step.icon}
                   </div>
-                  {i < steps.length - 1 && <div className="w-0.5 flex-1 bg-[#465940]/10 min-h-[24px]" />}
+                  {i < steps.length - 1 && <div className="w-0.5 flex-1 bg-[#6F7A5C]/10 min-h-[24px]" />}
                 </div>
                 <div className="pt-1">
-                  <p className="text-[10px] font-black text-[#465940]/60 tracking-widest mb-1">
+                  <p className="text-[10px] font-black text-[#6F7A5C]/60 tracking-widest mb-1">
                     {String(i + 1).padStart(2, '0')}
                   </p>
-                  <h3 className="text-lg font-black text-[#465940] mb-1.5">{title(step)}</h3>
-                  <p className="text-sm text-[#465940]/70 leading-relaxed">{desc(step)}</p>
+                  <h3 className="text-lg font-black text-[#6F7A5C] mb-1.5">{title(step)}</h3>
+                  <p className="text-sm text-[#6F7A5C]/70 leading-relaxed">{desc(step)}</p>
                 </div>
               </div>
             ))}
@@ -88,16 +88,16 @@ export default async function HowItWorksPage({ searchParams }: { searchParams: {
 
       {/* FAQ */}
       {faqs.length > 0 && (
-        <section id="faq" className="border-t border-[#FDFBF0]/10 py-16 px-6" style={{ background: '#465940' }}>
+        <section id="faq" className="border-t border-[#F5F1E4]/10 py-16 px-6" style={{ background: '#6F7A5C' }}>
           <div className="max-w-2xl mx-auto">
-            <h2 className="text-2xl font-black text-[#FDFBF0] mb-8 text-center">
+            <h2 className="text-2xl font-black text-[#F5F1E4] mb-8 text-center">
               {locale === 'ka' ? 'ხშირი კითხვები' : 'Frequently asked questions'}
             </h2>
             <div className="space-y-4">
               {faqs.map((faq) => (
-                <div key={faq.id} className="bg-[#FDFBF0] rounded-2xl p-5 border border-[#FDFBF0]/20">
-                  <p className="font-bold text-[#465940] mb-1.5">— {question(faq)}</p>
-                  <p className="text-sm text-[#465940]/70 leading-relaxed">{answer(faq)}</p>
+                <div key={faq.id} className="bg-[#F5F1E4] rounded-2xl p-5 border border-[#F5F1E4]/20">
+                  <p className="font-bold text-[#6F7A5C] mb-1.5">— {question(faq)}</p>
+                  <p className="text-sm text-[#6F7A5C]/70 leading-relaxed">{answer(faq)}</p>
                 </div>
               ))}
             </div>
@@ -106,11 +106,11 @@ export default async function HowItWorksPage({ searchParams }: { searchParams: {
       )}
 
       {/* CTA */}
-      <section className="py-16 px-6 text-center" style={{ background: '#465940' }}>
-        <h2 className="text-2xl font-black text-[#FDFBF0] mb-3">
+      <section className="py-16 px-6 text-center" style={{ background: '#6F7A5C' }}>
+        <h2 className="text-2xl font-black text-[#F5F1E4] mb-3">
           {locale === 'ka' ? (settings?.ctaTitleKa || 'მზად ხარ?') : (settings?.ctaTitleEn || 'Ready to get started?')}
         </h2>
-        <p className="text-[#FDFBF0]/60 text-sm mb-7">
+        <p className="text-[#F5F1E4]/60 text-sm mb-7">
           {locale === 'ka' ? (settings?.ctaSubtitleKa || '') : (settings?.ctaSubtitleEn || '')}
         </p>
         <div className="flex flex-col sm:flex-row gap-3 justify-center">
@@ -118,7 +118,7 @@ export default async function HowItWorksPage({ searchParams }: { searchParams: {
             <a
               href="/dashboard"
               className="font-bold px-8 py-3.5 rounded-full transition text-sm"
-              style={{ background: '#FDFBF0', color: '#465940' }}
+              style={{ background: '#F5F1E4', color: '#6F7A5C' }}
             >
               {locale === 'ka' ? 'ჩემი დეშბორდი →' : 'Go to Dashboard →'}
             </a>
@@ -127,13 +127,13 @@ export default async function HowItWorksPage({ searchParams }: { searchParams: {
               <a
                 href={locale === 'ka' ? '/register' : '/register?lang=en'}
                 className="font-bold px-8 py-3.5 rounded-full transition text-sm"
-                style={{ background: '#FDFBF0', color: '#465940' }}
+                style={{ background: '#F5F1E4', color: '#6F7A5C' }}
               >
                 {locale === 'ka' ? 'დარეგისტრირდი' : 'Sign up'}
               </a>
               <a
                 href={locale === 'ka' ? '/#pricing' : '/?lang=en#pricing'}
-                className="border border-[#FDFBF0]/30 text-[#FDFBF0] hover:bg-[#FDFBF0]/10 font-bold px-8 py-3.5 rounded-full transition text-sm"
+                className="border border-[#F5F1E4]/30 text-[#F5F1E4] hover:bg-[#F5F1E4]/10 font-bold px-8 py-3.5 rounded-full transition text-sm"
               >
                 {locale === 'ka' ? 'ფასები' : 'View pricing'}
               </a>

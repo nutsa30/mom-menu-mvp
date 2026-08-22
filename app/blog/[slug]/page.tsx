@@ -106,12 +106,12 @@ export default async function BlogPostPage({
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(breadcrumbJsonLd) }} />
       <BlogViewTracker title={title} />
 
-      <main style={{ background: '#465940', minHeight: '100vh' }}>
+      <main style={{ background: '#6F7A5C', minHeight: '100vh' }}>
 
         {/* Back button */}
         <div className="max-w-4xl mx-auto px-6 pt-6">
           <a href={`/blog?lang=${locale}`}
-            className="inline-flex items-center gap-2 text-[#FDFBF0]/70 hover:text-[#FDFBF0] font-semibold text-sm transition">
+            className="inline-flex items-center gap-2 text-[#F5F1E4]/70 hover:text-[#F5F1E4] font-semibold text-sm transition">
             ← {ka ? 'ბლოგები' : 'Blog'}
           </a>
         </div>
@@ -128,9 +128,9 @@ export default async function BlogPostPage({
 
           {/* Header */}
           <div className="mb-10">
-            <p className="text-xs text-[#FDFBF0]/40 uppercase tracking-widest mb-4">{date}</p>
-            <h1 className="text-3xl sm:text-4xl font-black text-[#FDFBF0] leading-snug mb-6">{title}</h1>
-            <div className="h-px bg-[#FDFBF0]/15" />
+            <p className="text-xs text-[#F5F1E4]/40 uppercase tracking-widest mb-4">{date}</p>
+            <h1 className="text-3xl sm:text-4xl font-black text-[#F5F1E4] leading-snug mb-6">{title}</h1>
+            <div className="h-px bg-[#F5F1E4]/15" />
           </div>
 
           {/* Two-column: article + sidebar */}
@@ -147,16 +147,16 @@ export default async function BlogPostPage({
                       const isNumbered = /^\d+\./.test(para);
                       if (isNumbered) return (
                         <div key={i} className="flex gap-3 items-start">
-                          <span className="flex-shrink-0 w-7 h-7 rounded-full bg-[#FDFBF0]/10 flex items-center justify-center text-xs font-black text-[#FDFBF0] mt-0.5">
+                          <span className="flex-shrink-0 w-7 h-7 rounded-full bg-[#F5F1E4]/10 flex items-center justify-center text-xs font-black text-[#F5F1E4] mt-0.5">
                             {para.match(/^\d+/)?.[0]}
                           </span>
-                          <p className="m-0 text-[#FDFBF0]/85 leading-relaxed">
+                          <p className="m-0 text-[#F5F1E4]/85 leading-relaxed">
                             {para.replace(/^\d+\.\s*/, '')}
                           </p>
                         </div>
                       );
                       return (
-                        <p key={i} className={`m-0 leading-[1.9] ${i === 0 ? 'text-[#FDFBF0] text-lg font-medium' : 'text-[#FDFBF0]/80'}`}>
+                        <p key={i} className={`m-0 leading-[1.9] ${i === 0 ? 'text-[#F5F1E4] text-lg font-medium' : 'text-[#F5F1E4]/80'}`}>
                           {para}
                         </p>
                       );
@@ -179,8 +179,8 @@ export default async function BlogPostPage({
                 )}
 
               {/* Disclaimer */}
-              <div style={{ marginTop: '3rem', padding: '1.25rem 1.5rem', borderRadius: '16px', background: 'rgba(253,251,240,0.06)', border: '1px solid rgba(253,251,240,0.12)' }}>
-                <p style={{ color: '#FDFBF0', opacity: 0.6, fontSize: '0.8rem', lineHeight: 1.7, margin: 0 }}>
+              <div style={{ marginTop: '3rem', padding: '1.25rem 1.5rem', borderRadius: '16px', background: 'rgba(245,241,228,0.06)', border: '1px solid rgba(245,241,228,0.12)' }}>
+                <p style={{ color: '#F5F1E4', opacity: 0.6, fontSize: '0.8rem', lineHeight: 1.7, margin: 0 }}>
                   {ka
                     ? 'ℹ️ ეს სტატია ზოგადი ინფორმაციული ხასიათისაა და მომზადებულია საჯაროდ ხელმისაწვდომი წყაროების საფუძველზე. ის არ წარმოადგენს სამედიცინო ან პროფესიულ რჩევას — კონკრეტული საკითხებისთვის მიმართეთ ბავშვის ექიმს ან სხვა კვალიფიციურ სპეციალისტს.'
                     : 'ℹ️ This article is general informational content compiled from publicly available sources. It is not medical or professional advice — for specific concerns, please consult your child’s doctor or another qualified specialist.'}
@@ -188,9 +188,9 @@ export default async function BlogPostPage({
               </div>
 
               {/* Back link */}
-              <div style={{ marginTop: '1.5rem', paddingTop: '2rem', borderTop: '1px solid rgba(253,251,240,0.15)' }}>
+              <div style={{ marginTop: '1.5rem', paddingTop: '2rem', borderTop: '1px solid rgba(245,241,228,0.15)' }}>
                 <a href={`/blog?lang=${locale}`}
-                  style={{ display: 'inline-flex', alignItems: 'center', gap: '0.5rem', color: '#FDFBF0', fontWeight: 700, fontSize: '0.9rem', textDecoration: 'none' }}>
+                  style={{ display: 'inline-flex', alignItems: 'center', gap: '0.5rem', color: '#F5F1E4', fontWeight: 700, fontSize: '0.9rem', textDecoration: 'none' }}>
                   ← {ka ? 'სხვა სტატიები' : 'More articles'}
                 </a>
               </div>
@@ -202,34 +202,34 @@ export default async function BlogPostPage({
                 <div style={{ position: 'sticky', top: '120px', display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
 
                   {/* Author Card */}
-                  <div style={{ background: '#FDFBF0', borderRadius: '24px', padding: '1.75rem', textAlign: 'center' }}>
-                    <div style={{ width: 64, height: 64, borderRadius: '50%', background: '#465940', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 1rem', color: '#FDFBF0', fontWeight: 900, fontSize: '1.4rem' }}>
+                  <div style={{ background: '#F5F1E4', borderRadius: '24px', padding: '1.75rem', textAlign: 'center' }}>
+                    <div style={{ width: 64, height: 64, borderRadius: '50%', background: '#6F7A5C', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 1rem', color: '#F5F1E4', fontWeight: 900, fontSize: '1.4rem' }}>
                       m
                     </div>
-                    <div style={{ fontWeight: 900, color: '#465940', fontSize: '1rem' }}>mom menu</div>
-                    <div style={{ color: '#465940', fontSize: '0.78rem', opacity: 0.6, marginTop: '4px', marginBottom: '0.9rem' }}>
+                    <div style={{ fontWeight: 900, color: '#6F7A5C', fontSize: '1rem' }}>mom menu</div>
+                    <div style={{ color: '#6F7A5C', fontSize: '0.78rem', opacity: 0.6, marginTop: '4px', marginBottom: '0.9rem' }}>
                       {ka ? 'დედების პლატფორმა' : 'By moms, for moms'}
                     </div>
                     <a href={`/how-it-works?lang=${locale}`}
-                      style={{ display: 'inline-block', background: '#465940', color: '#FDFBF0', borderRadius: '999px', padding: '8px 20px', fontSize: '0.8rem', fontWeight: 700, textDecoration: 'none' }}>
+                      style={{ display: 'inline-block', background: '#6F7A5C', color: '#F5F1E4', borderRadius: '999px', padding: '8px 20px', fontSize: '0.8rem', fontWeight: 700, textDecoration: 'none' }}>
                       {ka ? 'შესახებ' : 'About'}
                     </a>
                   </div>
 
                   {/* Newsletter */}
-                  <div style={{ background: '#FDFBF0', borderRadius: '24px', padding: '1.75rem' }}>
-                    <h3 style={{ fontWeight: 900, color: '#465940', fontSize: '0.95rem', marginBottom: '0.4rem' }}>
+                  <div style={{ background: '#F5F1E4', borderRadius: '24px', padding: '1.75rem' }}>
+                    <h3 style={{ fontWeight: 900, color: '#6F7A5C', fontSize: '0.95rem', marginBottom: '0.4rem' }}>
                       {ka ? 'სიახლეები' : 'Newsletter'}
                     </h3>
-                    <p style={{ color: '#465940', fontSize: '0.78rem', lineHeight: 1.6, marginBottom: '1rem', opacity: 0.7 }}>
+                    <p style={{ color: '#6F7A5C', fontSize: '0.78rem', lineHeight: 1.6, marginBottom: '1rem', opacity: 0.7 }}>
                       {ka ? 'მიიღეთ სასარგებლო სტატიები პირდაპირ ელ. ფოსტაზე.' : 'Get useful articles directly to your inbox.'}
                     </p>
                     <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
                       <input type="email"
                         placeholder={ka ? 'ელ. ფოსტა' : 'Email'}
-                        style={{ width: '100%', padding: '10px 14px', borderRadius: '12px', border: '1.5px solid rgba(70,89,64,0.2)', fontSize: '0.82rem', outline: 'none', background: '#fff', color: '#465940', boxSizing: 'border-box' }}
+                        style={{ width: '100%', padding: '10px 14px', borderRadius: '12px', border: '1.5px solid rgba(111,122,92,0.2)', fontSize: '0.82rem', outline: 'none', background: '#fff', color: '#6F7A5C', boxSizing: 'border-box' }}
                       />
-                      <button style={{ background: '#465940', color: '#FDFBF0', borderRadius: '12px', padding: '10px', border: 'none', cursor: 'pointer', fontWeight: 700, fontSize: '0.85rem' }}>
+                      <button style={{ background: '#6F7A5C', color: '#F5F1E4', borderRadius: '12px', padding: '10px', border: 'none', cursor: 'pointer', fontWeight: 700, fontSize: '0.85rem' }}>
                         {ka ? 'გამოწერა' : 'Subscribe'}
                       </button>
                     </div>
@@ -243,9 +243,9 @@ export default async function BlogPostPage({
 
         {/* ── Related Articles ── */}
         {related.length > 0 && (
-          <section style={{ background: '#465940', borderTop: '1px solid rgba(253,251,240,0.1)' }}>
+          <section style={{ background: '#6F7A5C', borderTop: '1px solid rgba(245,241,228,0.1)' }}>
             <div className="max-w-4xl mx-auto px-6 py-12">
-              <h2 style={{ fontWeight: 900, color: '#FDFBF0', fontSize: '1.25rem', marginBottom: '1.5rem', opacity: 0.9 }}>
+              <h2 style={{ fontWeight: 900, color: '#F5F1E4', fontSize: '1.25rem', marginBottom: '1.5rem', opacity: 0.9 }}>
                 {ka ? 'მსგავსი სტატიები' : 'Related Articles'}
               </h2>
               <div className="no-scrollbar" style={{ display: 'flex', gap: '1rem', overflowX: 'auto' }}>
@@ -262,9 +262,9 @@ export default async function BlogPostPage({
                       href={`/blog/${rSlug}?lang=${locale}`}
                       style={{
                         minWidth: '180px', flex: '1 1 0',
-                        background: 'rgba(253,251,240,0.07)', borderRadius: '18px',
+                        background: 'rgba(245,241,228,0.07)', borderRadius: '18px',
                         overflow: 'hidden', display: 'flex', flexDirection: 'column',
-                        textDecoration: 'none', border: '1px solid rgba(253,251,240,0.12)',
+                        textDecoration: 'none', border: '1px solid rgba(245,241,228,0.12)',
                       }}
                     >
                       {r.imageUrl && (
@@ -277,8 +277,8 @@ export default async function BlogPostPage({
                         </div>
                       )}
                       <div style={{ padding: '1rem', flex: 1 }}>
-                        <p style={{ fontSize: '0.65rem', color: '#FDFBF0', opacity: 0.4, marginBottom: '0.4rem', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.05em' }}>{rDateStr}</p>
-                        <p style={{ fontWeight: 800, color: '#FDFBF0', fontSize: '0.88rem', lineHeight: 1.45, opacity: 0.92 }}>{rTitle}</p>
+                        <p style={{ fontSize: '0.65rem', color: '#F5F1E4', opacity: 0.4, marginBottom: '0.4rem', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.05em' }}>{rDateStr}</p>
+                        <p style={{ fontWeight: 800, color: '#F5F1E4', fontSize: '0.88rem', lineHeight: 1.45, opacity: 0.92 }}>{rTitle}</p>
                         <p style={{ color: '#ff7f50', fontSize: '0.75rem', marginTop: '0.6rem', fontWeight: 700 }}>
                           {ka ? 'წაიკითხე →' : 'Read →'}
                         </p>

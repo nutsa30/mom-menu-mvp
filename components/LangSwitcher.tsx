@@ -9,12 +9,12 @@ export default function LangSwitcher({ locale, variant = 'dark' }: { locale: str
   const switchTo = (lang: string) => router.push(`${pathname}?lang=${lang}`);
 
   const activeClass = variant === 'dark'
-    ? 'bg-[#FDFBF0] text-[#465940]'
-    : 'bg-[#465940] text-[#FDFBF0]';
+    ? 'bg-[#F5F1E4] text-[#6F7A5C]'
+    : 'bg-[#6F7A5C] text-[#F5F1E4]';
 
   const inactiveClass = variant === 'dark'
-    ? 'text-[#FDFBF0] border border-[#FDFBF0]/50 hover:border-[#FDFBF0]'
-    : 'text-[#465940] border border-[#465940]/30 hover:border-[#465940]';
+    ? 'text-[#F5F1E4] border border-[#F5F1E4]/50 hover:border-[#F5F1E4]'
+    : 'text-[#6F7A5C] border border-[#6F7A5C]/30 hover:border-[#6F7A5C]';
 
   return (
     <div className="flex items-center gap-1">

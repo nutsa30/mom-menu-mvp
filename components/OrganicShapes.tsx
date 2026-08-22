@@ -84,7 +84,7 @@ export function TornPaperEdge({
  * (light სექცია dark-ის ქვეშ)
  */
 export function TornPaperTop({
-  fill = '#465940',
+  fill = '#6F7A5C',
   height = 80,
 }: {
   fill?: string;
@@ -133,7 +133,7 @@ export function TornPaperTop({
  * Watercolor blob — absolutely positioned organic decoration
  */
 export function WatercolorBlob({
-  color = '#FDFBF0',
+  color = '#F5F1E4',
   opacity = 0.12,
   size = 320,
   style = {},
@@ -173,7 +173,7 @@ export function WatercolorBlob({
  * Soft peach/sage blob — section background decoration
  */
 export function SoftBlobBackground({
-  color = '#FDFBF0',
+  color = '#F5F1E4',
   opacity = 0.08,
   style = {},
 }: {
@@ -203,7 +203,7 @@ export function SoftBlobBackground({
  * OrganicCloudDivider — between two light sections
  */
 export function OrganicCloudDivider({
-  fill = '#465940',
+  fill = '#6F7A5C',
   opacity = 0.06,
   height = 50,
 }: {
@@ -236,7 +236,7 @@ export function OrganicCloudDivider({
 /**
  * Footer torn paper wave — before footer
  */
-export function FooterWave({ fill = '#465940' }: { fill?: string }) {
+export function FooterWave({ fill = '#6F7A5C' }: { fill?: string }) {
   return (
     <div style={{ position: 'relative', lineHeight: 0, overflow: 'hidden' }}>
       <svg
