@@ -64,8 +64,11 @@ const MEAL_COLORS: Record<string, string> = {
 
 const SERIF_KA = "'Noto Serif Georgian', serif";
 
-export default function HomeClient({ s, dishes, dishCount, recentBlogs }: {
+type BillingInterval = 1 | 3 | 6;
+
+export default function HomeClient({ s, dishes, dishCount, recentBlogs, planAmounts }: {
   s: S; dishes: Dishes; dishCount: number; recentBlogs: RecentBlog[];
+  planAmounts: Record<BillingInterval, number>;
 }) {
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -86,52 +89,58 @@ export default function HomeClient({ s, dishes, dishCount, recentBlogs }: {
   const refBlogCards        = useStaggeredFadeUp(120);
   const refBlogCardsDesktop = useStaggeredFadeUp(120);
 
-  const [loadingPlan, setLoadingPlan] = useState<string | null>(null);
+  const [loadingPlan, setLoadingPlan] = useState<BillingInterval | null>(null);
   const [currentPlan, setCurrentPlan] = useState<string | null>(null);
-  const [promoInput, setPromoInput] = useState<Record<string, string>>({ RECIPE_PLAN: '', FULL_PLAN: '' });
-  const [promoStatus, setPromoStatus] = useState<Record<string, { discount: number; valid: boolean; msg: string }>>({});
-  const [promoLoading, setPromoLoading] = useState<string | null>(null);
+  const [currentInterval, setCurrentInterval] = useState<BillingInterval | null>(null);
+  const [promoInput, setPromoInput] = useState<Record<BillingInterval, string>>({ 1: '', 3: '', 6: '' });
+  const [promoStatus, setPromoStatus] = useState<Record<BillingInterval, { discount: number; valid: boolean; msg: string } | undefined>>({ 1: undefined, 3: undefined, 6: undefined });
+  const [promoLoading, setPromoLoading] = useState<BillingInterval | null>(null);
 
   useEffect(() => {
     fetch('/api/auth/me')
       .then(r => (r.ok ? r.json() : null))
-      .then(d => { if (d?.subscriptionStatus) setCurrentPlan(d.subscriptionStatus); })
+      .then(d => {
+        if (d?.subscriptionStatus) setCurrentPlan(d.subscriptionStatus);
+        if (d?.billingIntervalMonths) setCurrentInterval(d.billingIntervalMonths);
+      })
       .catch(() => {});
   }, []);
 
-  const validatePromo = async (plan: string) => {
-    const code = promoInput[plan]?.trim();
+  const validatePromo = async (interval: BillingInterval) => {
+    const code = promoInput[interval]?.trim();
     if (!code) return;
-    setPromoLoading(plan);
+    setPromoLoading(interval);
     try {
+      // Every trial-pricing tier grants the same FULL_PLAN feature access — promo codes
+      // are validated against that one plan type regardless of which tier/duration the
+      // customer is applying the code to.
       const res = await fetch('/api/promo/validate', {
         method: 'POST', headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ code, plan }),
+        body: JSON.stringify({ code, plan: 'FULL_PLAN' }),
       });
       const data = await res.json();
       if (res.ok && data.valid) {
-        setPromoStatus(prev => ({ ...prev, [plan]: { discount: data.discountPercent, valid: true, msg: '' } }));
+        setPromoStatus(prev => ({ ...prev, [interval]: { discount: data.discountPercent, valid: true, msg: '' } }));
       } else {
         const msg = data.error === 'wrong_plan' ? (ka ? 'ეს კოდი სხვა გეგმისთვისაა' : 'This code is for a different plan') :
                     data.error === 'limit_reached' ? (ka ? 'კოდის ლიმიტი ამოიწურა' : 'Code limit reached') :
                     (ka ? 'კოდი არასწორია' : 'Invalid code');
-        setPromoStatus(prev => ({ ...prev, [plan]: { discount: 0, valid: false, msg } }));
+        setPromoStatus(prev => ({ ...prev, [interval]: { discount: 0, valid: false, msg } }));
       }
     } catch {
-      setPromoStatus(prev => ({ ...prev, [plan]: { discount: 0, valid: false, msg: ka ? 'შეცდომა' : 'Error' } }));
+      setPromoStatus(prev => ({ ...prev, [interval]: { discount: 0, valid: false, msg: ka ? 'შეცდომა' : 'Error' } }));
     }
     finally { setPromoLoading(null); }
   };
 
-  const handleSubscribeBog = async (plan: 'RECIPE_PLAN' | 'FULL_PLAN') => {
-    setLoadingPlan(plan);
-    const planLabel = plan === 'RECIPE_PLAN' ? 'რეცეპტების წვდომა' : 'სრული პაკეტი';
-    const planPrice = plan === 'RECIPE_PLAN' ? 15 : 30;
-    ga.subscribe(planLabel, planPrice);
+  const handleSubscribeBog = async (interval: BillingInterval) => {
+    setLoadingPlan(interval);
+    const planLabel = interval === 1 ? '1 თვის გეგმა' : interval === 3 ? '3 თვის გეგმა' : '6 თვის გეგმა';
+    ga.subscribe(planLabel, planAmounts[interval]);
     try {
       const res = await fetch('/api/subscription/bog-checkout', {
         method: 'POST', headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ plan }),
+        body: JSON.stringify({ interval }),
       });
       if (res.status === 401) { router.push(`/login?lang=${locale}`); return; }
       const data = await res.json();
@@ -151,16 +160,11 @@ export default function HomeClient({ s, dishes, dishCount, recentBlogs }: {
     finally { setLoadingPlan(null); }
   };
 
-  const discountedPrice = (plan: string, base: number) => {
-    const pct = promoStatus[plan]?.valid ? promoStatus[plan].discount : 0;
+  const discountedPrice = (interval: BillingInterval, base: number) => {
+    const status = promoStatus[interval];
+    const pct = status?.valid ? status.discount : 0;
     return pct > 0 ? Math.round(base * (1 - pct / 100)) : null;
   };
-
-  const plan1Price = Number(s.plan1Price ?? 15);
-  const plan2Price = Number(s.plan2Price ?? 30);
-  // Global sale prices set by admin (null = no discount)
-  const plan1Sale = s.plan1SalePrice ? Number(s.plan1SalePrice) : null;
-  const plan2Sale = s.plan2SalePrice ? Number(s.plan2SalePrice) : null;
 
   const mealEntries: { key: keyof Dishes; label: string; labelEn: string }[] = [
     { key: 'breakfast', label: 'საუზმე',  labelEn: 'Breakfast' },
@@ -327,126 +331,109 @@ export default function HomeClient({ s, dishes, dishCount, recentBlogs }: {
       <section id="pricing" className="relative z-10 py-14 sm:py-24" style={{ background: '#6F7A5C' }}>
         <div className="max-w-7xl mx-auto px-5">
           <div ref={refPricing} className="fade-up text-center mb-10 sm:mb-12">
+            <span className="inline-flex items-center gap-2 mb-4 px-4 py-1.5 rounded-full text-xs sm:text-sm font-bold" style={{ background: 'rgba(217,128,59,0.18)', color: '#D9803B' }}>
+              🎁 {ka ? 'აქცია: 7 დღე სრულიად უფასოდ' : 'Offer: 7 days completely free'}
+            </span>
             <h2 className="text-2xl sm:text-3xl font-bold mb-3 text-[#F5F1E4]" style={{ fontFamily: SERIF_KA }}>{t('pricingTitleKa', 'pricingTitleEn')}</h2>
             <p className="text-[#F5F1E4]/70 text-sm max-w-xl mx-auto mb-3">{t('pricingSubtitleKa', 'pricingSubtitleEn')}</p>
             <p className="text-[#F5F1E4]/50 text-xs max-w-xl mx-auto">
               {ka
-                ? 'პირველი შესყიდვისას გაქვთ 7 დღიანი უფასო ტესტ-პერიოდი — ბარათი მხოლოდ დროებით მოწმდება, თანხა არ ჩამოიჭრება. პირველი გადახდა მოხდება ზუსტად 7 დღეში, თუ ამ დრომდე არ გააუქმებთ. თუ ტესტ-პერიოდის განმავლობაში სხვა პაკეტზე გადახვალთ, ახალი პაკეტის თანხა მაშინვე ჩამოიჭრება და შემდეგი განახლება 30 დღეში მოხდება.'
-                : 'Your first purchase includes a 7-day free trial — your card is only verified, not charged. The first real payment happens exactly 7 days later, unless you cancel before then. Upgrading during the trial charges the new plan immediately and starts a new 30-day cycle from that moment.'}
+                ? 'აირჩიეთ ნებისმიერი პაკეტი — 7 დღე სრულიად უფასოა, ბარათი მხოლოდ დროებით მოწმდება, თანხა არ ჩამოგეჭრებათ. პირველი გადახდა ხდება ზუსტად მე-8 დღეს, თუ ამ დრომდე არ გააუქმებთ. გაუქმება შესაძლებელია ნებისმიერ დროს, სრულიად უფასოდ.'
+                : 'Pick any plan — the first 7 days are completely free, your card is only verified, not charged. The first real payment happens exactly on day 8, unless you cancel before then. Cancel anytime, at no cost.'}
             </p>
           </div>
-          <div ref={refPricingCards} className="grid md:grid-cols-2 gap-5 max-w-4xl mx-auto items-stretch">
+          <div ref={refPricingCards} className="grid md:grid-cols-3 gap-5 max-w-5xl mx-auto items-stretch">
+            {([1, 3, 6] as BillingInterval[]).map((interval) => {
+              const price = planAmounts[interval];
+              const disc = discountedPrice(interval, price);
+              const isRecommended = interval === 3;
+              const monthlyBaseline = planAmounts[1] * interval;
+              const savings = monthlyBaseline - price;
+              const savingsPct = Math.round((savings / monthlyBaseline) * 100);
+              const perMonth = (price / interval).toFixed(interval === 6 ? 1 : 0);
+              const cadenceKa = interval === 1 ? 'თვეში' : `ყოველ ${interval} თვეში`;
+              const cadenceEn = interval === 1 ? 'month' : `${interval} months`;
+              const isActive = currentPlan === 'FULL_PLAN' && currentInterval === interval && !loadingPlan;
 
-            {/* Plan 1 */}
-            <div className="fade-up bg-[#F5F1E4] p-7 sm:p-10 rounded-3xl text-center flex flex-col shadow-lg hover:-translate-y-1 transition-transform duration-300">
-              <div className="h-10 mb-5" />
-              <h3 className="text-xl font-bold mb-2 text-[#6F7A5C]">{t('plan1NameKa', 'plan1NameEn')}</h3>
-              <div className="flex justify-center items-baseline gap-1 mb-1">
-                {(plan1Sale ?? discountedPrice('RECIPE_PLAN', plan1Price)) ? (
-                  <>
-                    <span className="text-2xl font-bold text-red-400 line-through">{plan1Price}₾</span>
-                    <span className="text-4xl font-black text-[#6F7A5C] ml-2">{plan1Sale ?? discountedPrice('RECIPE_PLAN', plan1Price)}₾</span>
-                  </>
-                ) : <span className="text-4xl font-black text-[#6F7A5C]">{plan1Price}₾</span>}
-                <span className="text-[#6F7A5C]/50">/mo</span>
-              </div>
-              {plan1Sale && (
-                <div className="flex items-center justify-center gap-2 mt-2">
-                  <span className="bg-red-500 text-white text-sm font-black px-3 py-1 rounded-lg">
-                    -{Math.round((1 - plan1Sale / plan1Price) * 100)}%
-                  </span>
-                  <span className="text-red-500 text-sm font-semibold">{ka ? 'ფასდაკლება' : 'OFF'}</span>
-                </div>
-              )}
-              {!plan1Sale && promoStatus['RECIPE_PLAN']?.valid && <p className="text-[#D9803B] text-xs font-bold mt-1">{promoStatus['RECIPE_PLAN'].discount}% ფასდაკლება</p>}
-              <div className="mb-6 h-6" />
-              <ul className="space-y-3 text-left flex-1 text-sm text-[#6F7A5C]">
-                <li>{t('plan1Feature1Ka', 'plan1Feature1En')}</li>
-                <li>{t('plan1Feature2Ka', 'plan1Feature2En')}</li>
-                <li>{t('plan1Feature3Ka', 'plan1Feature3En')}</li>
-              </ul>
-              <div className="mt-6 flex flex-col sm:flex-row gap-2">
-                <input
-                  value={promoInput['RECIPE_PLAN']}
-                  onChange={e => { setPromoInput(p => ({ ...p, RECIPE_PLAN: e.target.value })); setPromoStatus(p => ({ ...p, RECIPE_PLAN: { discount: 0, valid: false, msg: '' } })); }}
-                  onKeyDown={e => e.key === 'Enter' && validatePromo('RECIPE_PLAN')}
-                  placeholder={ka ? 'პრომოკოდი' : 'Promo code'}
-                  className="flex-1 min-w-0 px-3 py-2 border border-[#6F7A5C]/20 rounded-xl text-sm font-mono uppercase focus:outline-none focus:border-[#6F7A5C] bg-[#F5F1E4] text-[#6F7A5C]"
-                />
-                <button onClick={() => validatePromo('RECIPE_PLAN')} disabled={promoLoading === 'RECIPE_PLAN' || !promoInput['RECIPE_PLAN']}
-                  className="w-full sm:w-auto px-4 py-2 border border-[#6F7A5C] text-[#6F7A5C] rounded-xl text-xs font-bold hover:bg-[#6F7A5C]/10 transition disabled:opacity-40">
-                  {promoLoading === 'RECIPE_PLAN' ? '...' : (ka ? 'გამოყენება' : 'Apply')}
-                </button>
-              </div>
-              {promoStatus['RECIPE_PLAN']?.msg && <p className="text-[#DC2626] text-xs mt-1 font-semibold">{promoStatus['RECIPE_PLAN'].msg}</p>}
-              <button onClick={() => handleSubscribeBog('RECIPE_PLAN')} disabled={loadingPlan !== null || currentPlan === 'RECIPE_PLAN'}
-                className="w-full py-3.5 mt-4 border-2 border-[#6F7A5C] text-[#6F7A5C] rounded-full font-bold hover:bg-[#6F7A5C]/10 transition disabled:opacity-60">
-                {currentPlan === 'RECIPE_PLAN' ? (ka ? '✓ აქტიურია' : '✓ Active') : loadingPlan === 'RECIPE_PLAN' ? (ka ? 'მუშავდება...' : 'Processing...') : (ka ? 'დაწყება' : 'Get Started')}
-              </button>
-              <p className="text-[#6F7A5C]/45 text-xs mt-2">
-                {ka ? 'ავტომატურად განახლდება ყოველ თვე. გაუქმება ნებისმიერ დროს.' : 'Renews automatically every month. Cancel anytime.'}
-              </p>
-            </div>
+              return (
+                <div key={interval}
+                  className={`fade-up bg-[#F5F1E4] p-7 sm:p-8 rounded-3xl text-center flex flex-col relative transition-transform duration-300 hover:-translate-y-1 ${isRecommended ? 'shadow-2xl sm:scale-105 z-10 border-2' : 'shadow-lg'}`}
+                  style={isRecommended ? { borderColor: '#D9803B' } : undefined}
+                >
+                  {isRecommended && (
+                    <div className="absolute -top-4 left-1/2 -translate-x-1/2">
+                      <div className="inline-flex items-center gap-1.5 text-sm font-bold px-5 py-2 rounded-full whitespace-nowrap shadow-md"
+                        style={{ background: '#D9803B', color: '#FFFFFF' }}>
+                        {ka ? 'მშობლების არჩევანი' : "Parents' Choice"}
+                      </div>
+                    </div>
+                  )}
+                  <div className={isRecommended ? 'h-4 mb-4' : 'h-0 mb-5'} />
 
-            {/* Plan 2 */}
-            <div className="fade-up bg-[#F5F1E4] p-7 sm:p-10 rounded-3xl text-center flex flex-col relative shadow-2xl sm:scale-105 z-10 hover:-translate-y-1 transition-transform duration-300">
-              <div className="absolute -top-4 left-1/2 -translate-x-1/2">
-                <div className="inline-flex items-center gap-1.5 text-sm font-bold px-5 py-2 rounded-full whitespace-nowrap shadow-md"
-                  style={{ background: '#D9803B', color: '#FFFFFF' }}>
-                  {ka ? 'საუკეთესო არჩევანი' : 'Best Choice'}
-                </div>
-              </div>
-              <div className="h-4 mb-5" />
-              <h3 className="text-xl font-bold mb-2 text-[#6F7A5C]">{t('plan2NameKa', 'plan2NameEn')}</h3>
-              <div className="flex justify-center items-baseline gap-1 mb-1">
-                {(plan2Sale ?? discountedPrice('FULL_PLAN', plan2Price)) ? (
-                  <>
-                    <span className="text-2xl font-bold text-red-400 line-through">{plan2Price}₾</span>
-                    <span className="text-4xl font-black text-[#6F7A5C] ml-2">{plan2Sale ?? discountedPrice('FULL_PLAN', plan2Price)}₾</span>
-                  </>
-                ) : <span className="text-4xl font-black text-[#6F7A5C]">{plan2Price}₾</span>}
-                <span className="text-[#6F7A5C]/50">/mo</span>
-              </div>
-              {plan2Sale && (
-                <div className="flex items-center justify-center gap-2 mt-2">
-                  <span className="bg-red-500 text-white text-sm font-black px-3 py-1 rounded-lg">
-                    -{Math.round((1 - plan2Sale / plan2Price) * 100)}%
-                  </span>
-                  <span className="text-red-500 text-sm font-semibold">{ka ? 'ფასდაკლება' : 'OFF'}</span>
-                </div>
-              )}
-              {!plan2Sale && promoStatus['FULL_PLAN']?.valid && <p className="text-[#D9803B] text-xs font-bold mt-1">{promoStatus['FULL_PLAN'].discount}% ფასდაკლება</p>}
-              <p className="font-medium mb-6 text-sm text-[#6F7A5C]/60">{ka ? 'ყველაზე პოპულარული' : 'Most Popular'}</p>
-              <ul className="space-y-3 text-left text-[#6F7A5C] flex-1 text-sm">
-                <li>{t('plan2Feature1Ka', 'plan2Feature1En')}</li>
-                <li>{t('plan2Feature2Ka', 'plan2Feature2En')}</li>
-                <li>{t('plan2Feature3Ka', 'plan2Feature3En')}</li>
-              </ul>
-              <div className="mt-6 flex flex-col sm:flex-row gap-2">
-                <input
-                  value={promoInput['FULL_PLAN']}
-                  onChange={e => { setPromoInput(p => ({ ...p, FULL_PLAN: e.target.value })); setPromoStatus(p => ({ ...p, FULL_PLAN: { discount: 0, valid: false, msg: '' } })); }}
-                  onKeyDown={e => e.key === 'Enter' && validatePromo('FULL_PLAN')}
-                  placeholder={ka ? 'პრომოკოდი' : 'Promo code'}
-                  className="flex-1 min-w-0 px-3 py-2 border border-[#6F7A5C]/20 rounded-xl text-sm font-mono uppercase focus:outline-none focus:border-[#6F7A5C] bg-[#F5F1E4] text-[#6F7A5C]"
-                />
-                <button onClick={() => validatePromo('FULL_PLAN')} disabled={promoLoading === 'FULL_PLAN' || !promoInput['FULL_PLAN']}
-                  className="w-full sm:w-auto px-4 py-2 rounded-xl text-xs font-bold transition disabled:opacity-40 hover:opacity-90"
-                  style={{ background: '#D9803B', color: '#FFFFFF' }}>
-                  {promoLoading === 'FULL_PLAN' ? '...' : (ka ? 'გამოყენება' : 'Apply')}
-                </button>
-              </div>
-              {promoStatus['FULL_PLAN']?.msg && <p className="text-[#DC2626] text-xs mt-1 font-semibold">{promoStatus['FULL_PLAN'].msg}</p>}
-              <button onClick={() => handleSubscribeBog('FULL_PLAN')} disabled={loadingPlan !== null || currentPlan === 'FULL_PLAN'}
-                className="w-full py-3.5 mt-4 rounded-full font-bold shadow-lg transition disabled:opacity-60 hover:opacity-90"
-                style={{ background: '#D9803B', color: '#FFFFFF' }}>
-                {currentPlan === 'FULL_PLAN' ? (ka ? '✓ აქტიურია' : '✓ Active') : loadingPlan === 'FULL_PLAN' ? (ka ? 'მუშავდება...' : 'Processing...') : (ka ? 'დაწყება' : 'Get Started')}
-              </button>
-              <p className="text-[#6F7A5C]/45 text-xs mt-2">
-                {ka ? 'ავტომატურად განახლდება ყოველ თვე. გაუქმება ნებისმიერ დროს.' : 'Renews automatically every month. Cancel anytime.'}
-              </p>
-            </div>
+                  <h3 className="text-xl font-bold text-[#6F7A5C]">{ka ? `${interval} თვე` : `${interval} Month${interval > 1 ? 's' : ''}`}</h3>
+                  <p className="text-sm mt-1 mb-5 h-5" style={{ color: savings > 0 ? '#D9803B' : 'transparent' }}>
+                    {savings > 0 ? (ka ? `ზოგავთ ${savings}₾-ს (${savingsPct}%)` : `Save ${savings}₾ (${savingsPct}%)`) : '—'}
+                  </p>
 
+                  <div className="text-4xl font-black text-[#6F7A5C]">0₾</div>
+                  <p className="text-[#6F7A5C]/60 text-sm font-medium mb-2">{ka ? 'პირველი 7 დღე' : 'first 7 days'}</p>
+
+                  <div className="flex justify-center items-baseline gap-1.5">
+                    {disc ? (
+                      <>
+                        <span className="text-base font-bold text-red-400 line-through">{price}₾</span>
+                        <span className="text-xl font-bold text-[#6F7A5C]">{disc}₾</span>
+                      </>
+                    ) : (
+                      <span className="text-xl font-bold text-[#6F7A5C]">{price}₾</span>
+                    )}
+                    <span className="text-[#6F7A5C]/50 text-sm">{ka ? `/ ${cadenceKa}` : `/ ${cadenceEn}`}</span>
+                  </div>
+                  {interval > 1 && (
+                    <p className="text-[#6F7A5C]/45 text-xs mt-0.5">
+                      ({ka ? `გამოდის ${perMonth}₾ თვეში` : `= ${perMonth}₾ / month`})
+                    </p>
+                  )}
+                  {promoStatus[interval]?.valid && <p className="text-[#D9803B] text-xs font-bold mt-1">{promoStatus[interval]!.discount}% {ka ? 'ფასდაკლება' : 'off'}</p>}
+
+                  <p className="text-[#6F7A5C]/40 text-[11px] italic mt-3 mb-5">
+                    {ka
+                      ? 'თანხა ჩამოგეჭრებათ მე-8 დღეს. გაუქმება შესაძლებელია სატესტო პერიოდშივე, სრულიად უფასოდ.'
+                      : "You'll be charged on day 8. Cancel anytime during the trial at no cost."}
+                  </p>
+
+                  <ul className="space-y-3 text-left flex-1 text-sm text-[#6F7A5C]">
+                    <li>{t('plan2Feature1Ka', 'plan2Feature1En')}</li>
+                    <li>{t('plan2Feature2Ka', 'plan2Feature2En')}</li>
+                    <li>{t('plan2Feature3Ka', 'plan2Feature3En')}</li>
+                  </ul>
+
+                  <div className="mt-6 flex flex-col sm:flex-row gap-2">
+                    <input
+                      value={promoInput[interval]}
+                      onChange={e => { setPromoInput(p => ({ ...p, [interval]: e.target.value })); setPromoStatus(p => ({ ...p, [interval]: { discount: 0, valid: false, msg: '' } })); }}
+                      onKeyDown={e => e.key === 'Enter' && validatePromo(interval)}
+                      placeholder={ka ? 'პრომოკოდი' : 'Promo code'}
+                      className="flex-1 min-w-0 px-3 py-2 border border-[#6F7A5C]/20 rounded-xl text-sm font-mono uppercase focus:outline-none focus:border-[#6F7A5C] bg-[#F5F1E4] text-[#6F7A5C]"
+                    />
+                    <button onClick={() => validatePromo(interval)} disabled={promoLoading === interval || !promoInput[interval]}
+                      className="w-full sm:w-auto px-4 py-2 border border-[#6F7A5C] text-[#6F7A5C] rounded-xl text-xs font-bold hover:bg-[#6F7A5C]/10 transition disabled:opacity-40">
+                      {promoLoading === interval ? '...' : (ka ? 'გამოყენება' : 'Apply')}
+                    </button>
+                  </div>
+                  {promoStatus[interval]?.msg && <p className="text-[#DC2626] text-xs mt-1 font-semibold">{promoStatus[interval]!.msg}</p>}
+
+                  <button onClick={() => handleSubscribeBog(interval)} disabled={loadingPlan !== null || isActive}
+                    className={`w-full py-3.5 mt-4 rounded-full font-bold transition disabled:opacity-60 ${isRecommended ? 'shadow-lg hover:opacity-90' : 'border-2 hover:bg-[#6F7A5C]/10'}`}
+                    style={isRecommended ? { background: '#D9803B', color: '#FFFFFF' } : { borderColor: '#6F7A5C', color: '#6F7A5C' }}>
+                    {isActive ? (ka ? '✓ აქტიურია' : '✓ Active') : loadingPlan === interval ? (ka ? 'მუშავდება...' : 'Processing...') : (ka ? 'დაიწყე უფასოდ' : 'Start Free')}
+                  </button>
+                  <p className="text-[#6F7A5C]/45 text-xs mt-2">
+                    {ka ? `ავტომატურად განახლდება ${cadenceKa}. გაუქმება ნებისმიერ დროს.` : `Renews automatically every ${cadenceEn}. Cancel anytime.`}
+                  </p>
+                </div>
+              );
+            })}
           </div>
         </div>
       </section>

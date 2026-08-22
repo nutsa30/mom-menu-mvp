@@ -1,10 +1,10 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
-import { chargeSavedCard } from '@/lib/bog';
+import { chargeSavedCard, BillingInterval } from '@/lib/bog';
 
 const SECRET = process.env.CRON_SECRET || 'mm2026';
 
-// Charges every BOG-billed subscription (trial or monthly renewal) whose
+// Charges every BOG-billed subscription (trial or interval renewal) whose
 // renewal date has arrived. The actual result (paid/failed) comes back
 // asynchronously via the webhook — this endpoint only triggers the charge.
 export async function GET(req: NextRequest) {
@@ -28,7 +28,7 @@ export async function GET(req: NextRequest) {
     try {
       await chargeSavedCard({
         parentOrderId: user.bogParentOrderId,
-        plan: user.subscriptionStatus as 'RECIPE_PLAN' | 'FULL_PLAN',
+        interval: (user.billingIntervalMonths ?? 1) as BillingInterval,
         userId: user.id,
       });
       results.charged++;

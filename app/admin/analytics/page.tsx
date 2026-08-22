@@ -1,16 +1,31 @@
 import { prisma } from '@/lib/prisma';
-import { PLAN_AMOUNTS } from '@/lib/bog';
+import { PLAN_AMOUNTS, PLAN_AMOUNTS_BY_INTERVAL, BillingInterval } from '@/lib/bog';
 
 const PRICES: Record<string, number> = {
   RECIPE_PLAN: Number(PLAN_AMOUNTS.RECIPE_PLAN ?? 15),
   FULL_PLAN: Number(PLAN_AMOUNTS.FULL_PLAN ?? 30),
 };
+const INTERVAL_PRICE: Record<BillingInterval, number> = {
+  1: Number(PLAN_AMOUNTS_BY_INTERVAL[1] ?? 17),
+  3: Number(PLAN_AMOUNTS_BY_INTERVAL[3] ?? 39),
+  6: Number(PLAN_AMOUNTS_BY_INTERVAL[6] ?? 59),
+};
+// Every current tier grants subscriptionStatus='FULL_PLAN' — check billingIntervalMonths
+// first, or every current-tier user prices at the stale flat FULL_PLAN legacy amount.
+const priceFor = (u: { subscriptionStatus: string; billingIntervalMonths?: number | null }) =>
+  u.subscriptionStatus === 'FULL_PLAN' && u.billingIntervalMonths
+    ? INTERVAL_PRICE[u.billingIntervalMonths as BillingInterval] ?? PRICES.FULL_PLAN
+    : PRICES[u.subscriptionStatus] ?? 0;
+// Normalized to a monthly figure for MRR purposes — a 39₾/3-month subscriber is 13₾ of MRR.
+const monthlyPriceFor = (u: { subscriptionStatus: string; billingIntervalMonths?: number | null }) =>
+  priceFor(u) / (u.billingIntervalMonths || 1);
 
 export default async function AdminAnalyticsPage() {
   const [users, planItems, recentUsers] = await Promise.all([
     prisma.user.findMany({
       select: {
         subscriptionStatus: true,
+        billingIntervalMonths: true,
         subscriptionStartedAt: true,
         subscriptionCanceledAt: true,
         createdAt: true,
@@ -26,7 +41,7 @@ export default async function AdminAnalyticsPage() {
     prisma.user.findMany({
       orderBy: { createdAt: 'desc' },
       take: 8,
-      select: { name: true, email: true, subscriptionStatus: true, createdAt: true },
+      select: { name: true, email: true, subscriptionStatus: true, billingIntervalMonths: true, createdAt: true },
     }),
   ]);
 
@@ -55,20 +70,23 @@ export default async function AdminAnalyticsPage() {
   const retentionRate = newThisMonth > 0 ? ((activeThisMonth / newThisMonth) * 100).toFixed(1) : '0';
 
   // ─── Revenue ───────────────────────────────────────────────────────────────
-  const mrr = recipe * 15 + full * 30;
+  // MRR is normalized per-month: a 39₾/3-month subscriber contributes 13₾, not 39₾.
+  const payingUserRows = users.filter((u) => u.subscriptionStatus === 'RECIPE_PLAN' || u.subscriptionStatus === 'FULL_PLAN');
+  const mrr = Math.round(payingUserRows.reduce((sum, u) => sum + monthlyPriceFor(u), 0));
   const payingUsers = recipe + full;
   const arpu = payingUsers > 0 ? Math.round(mrr / payingUsers) : 0;
 
-  const newMrrThisMonth = users
+  const newMrrThisMonth = Math.round(users
     .filter(
       (u) =>
         u.subscriptionStartedAt &&
         new Date(u.subscriptionStartedAt) > thirtyDaysAgo &&
         (u.subscriptionStatus === 'RECIPE_PLAN' || u.subscriptionStatus === 'FULL_PLAN')
     )
-    .reduce((sum, u) => sum + (PRICES[u.subscriptionStatus] ?? 0), 0);
+    .reduce((sum, u) => sum + monthlyPriceFor(u), 0));
 
-  // Monthly new-subscription revenue for last 6 months
+  // Monthly new-subscription revenue for last 6 months (full tier price at signup month,
+  // not normalized to MRR — this chart reads as "cash booked that month", not run-rate).
   const monthlyRevenue: { label: string; revenue: number; newSubs: number }[] = [];
   for (let i = 5; i >= 0; i--) {
     const d = new Date();
@@ -88,7 +106,7 @@ export default async function AdminAnalyticsPage() {
     });
     monthlyRevenue.push({
       label,
-      revenue: monthUsers.reduce((sum, u) => sum + (PRICES[u.subscriptionStatus] ?? 0), 0),
+      revenue: monthUsers.reduce((sum, u) => sum + priceFor(u), 0),
       newSubs: monthUsers.length,
     });
   }
@@ -99,7 +117,7 @@ export default async function AdminAnalyticsPage() {
     { label: 'Total users', value: total, sub: `${newThisMonth} new this month`, color: 'text-[#465940]' },
     { label: 'Free', value: free, sub: `${((free / Math.max(total, 1)) * 100).toFixed(0)}% of users`, color: 'text-[#465940]/70' },
     { label: `Recipe plan (${PRICES.RECIPE_PLAN}₾)`, value: recipe, sub: 'active', color: 'text-[#465940]' },
-    { label: `Full plan (${PRICES.FULL_PLAN}₾)`, value: full, sub: 'active', color: 'text-[#465940]' },
+    { label: 'Full plan (any tier)', value: full, sub: 'active', color: 'text-[#465940]' },
     { label: 'Canceled', value: canceled, sub: 'churned', color: 'text-[#FDFBF0]' },
     { label: 'Blocked', value: blocked, sub: 'accounts', color: 'text-[#465940]' },
     { label: 'Conversion rate', value: `${conversionRate}%`, sub: 'free → paid', color: 'text-[#465940]' },
@@ -161,10 +179,18 @@ export default async function AdminAnalyticsPage() {
           <h2 className="mb-4 font-bold text-[#465940]">Revenue breakdown by plan</h2>
           <div className="space-y-4">
             {[
-              { label: `Recipe Plan (${PRICES.RECIPE_PLAN}₾)`, count: recipe, price: PRICES.RECIPE_PLAN, color: 'bg-[#465940]/60' },
-              { label: `Full Plan (${PRICES.FULL_PLAN}₾)`, count: full, price: PRICES.FULL_PLAN, color: 'bg-[#465940]' },
+              { label: `Recipe Plan (${PRICES.RECIPE_PLAN}₾)`, rev: recipe * PRICES.RECIPE_PLAN, count: recipe, color: 'bg-[#465940]/40' },
+              ...([1, 3, 6] as BillingInterval[]).map((interval) => {
+                const rows = users.filter((u) => u.subscriptionStatus === 'FULL_PLAN' && u.billingIntervalMonths === interval);
+                return {
+                  label: `${interval} Month (${INTERVAL_PRICE[interval]}₾)`,
+                  rev: Math.round(rows.reduce((sum, u) => sum + monthlyPriceFor(u), 0)),
+                  count: rows.length,
+                  color: interval === 1 ? 'bg-[#465940]/60' : interval === 3 ? 'bg-[#465940]/80' : 'bg-[#465940]',
+                };
+              }),
             ].map((row) => {
-              const rev = row.count * row.price;
+              const rev = row.rev;
               const pct = mrr > 0 ? Math.round((rev / mrr) * 100) : 0;
               return (
                 <div key={row.label}>
@@ -251,7 +277,7 @@ export default async function AdminAnalyticsPage() {
           <h2 className="mb-4 font-bold text-[#465940]">Recent registrations</h2>
           <div className="space-y-3">
             {recentUsers.map((u) => {
-              const price = PRICES[u.subscriptionStatus];
+              const price = u.subscriptionStatus === 'FREE' || u.subscriptionStatus === 'CANCELED' ? undefined : priceFor(u);
               return (
                 <div key={u.email} className="flex items-center justify-between">
                   <div>
@@ -279,7 +305,7 @@ export default async function AdminAnalyticsPage() {
             {[
               { label: 'Free', count: free, color: 'bg-[#465940]/15' },
               { label: `Recipe ${PRICES.RECIPE_PLAN}₾`, count: recipe, color: 'bg-[#465940]/50' },
-              { label: `Full ${PRICES.FULL_PLAN}₾`, count: full, color: 'bg-[#465940]' },
+              { label: 'Full (any tier)', count: full, color: 'bg-[#465940]' },
               { label: 'Canceled', count: canceled, color: 'bg-red-300' },
             ].map((seg) => (
               <div key={seg.label} className="flex items-center gap-2 text-sm">

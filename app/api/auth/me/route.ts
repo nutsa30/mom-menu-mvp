@@ -19,6 +19,7 @@ export async function GET() {
     email: user.email,
     role: user.role,
     subscriptionStatus: user.subscriptionStatus,
+    billingIntervalMonths: user.billingIntervalMonths,
     subscriptionStartedAt: user.subscriptionStartedAt,
     subscriptionCanceledAt: user.subscriptionCanceledAt,
     createdAt: user.createdAt,

@@ -2,13 +2,30 @@
 import { BlockUserButton, ToggleAdminButton, GiftSubscriptionButton } from '@/components/AdminUserActions';
 import { adminDict, getAdminLocale, type AdminLocale } from '@/lib/adminI18n';
 import UsersFilterBar from '@/components/UsersFilterBar';
-import { PLAN_AMOUNTS } from '@/lib/bog';
+import { PLAN_AMOUNTS, PLAN_AMOUNTS_BY_INTERVAL, BillingInterval } from '@/lib/bog';
 
 // Real, currently-charged prices (env-configured, not hardcoded) — used for every
 // MRR/ARR/revenue calc below so this page never drifts from what customers actually pay.
 const RECIPE_PRICE = Number(PLAN_AMOUNTS.RECIPE_PLAN ?? 15);
 const FULL_PRICE = Number(PLAN_AMOUNTS.FULL_PLAN ?? 30);
-const priceFor = (plan: string) => (plan === 'RECIPE_PLAN' ? RECIPE_PRICE : FULL_PRICE);
+const INTERVAL_PRICE: Record<BillingInterval, number> = {
+  1: Number(PLAN_AMOUNTS_BY_INTERVAL[1] ?? 17),
+  3: Number(PLAN_AMOUNTS_BY_INTERVAL[3] ?? 39),
+  6: Number(PLAN_AMOUNTS_BY_INTERVAL[6] ?? 59),
+};
+// Every current tier grants subscriptionStatus='FULL_PLAN' — the real price/cadence lives
+// in billingIntervalMonths, so this must be checked first or every current-tier user would
+// incorrectly price at the legacy flat FULL_PRICE regardless of which tier they're actually on.
+const priceFor = (user: { subscriptionStatus: string; billingIntervalMonths?: number | null }) => {
+  if (user.subscriptionStatus === 'FULL_PLAN' && user.billingIntervalMonths) {
+    return INTERVAL_PRICE[user.billingIntervalMonths as BillingInterval] ?? FULL_PRICE;
+  }
+  return user.subscriptionStatus === 'RECIPE_PLAN' ? RECIPE_PRICE : FULL_PRICE;
+};
+// Same price, normalized to a monthly figure — a 39₾/3-month plan contributes 13₾ to MRR,
+// not the full 39₾, since MRR is inherently a per-month measure.
+const monthlyPriceFor = (user: { subscriptionStatus: string; billingIntervalMonths?: number | null }) =>
+  priceFor(user) / (user.billingIntervalMonths || 1);
 
 const subBadge: Record<string, string> = {
   FREE: 'bg-[#465940]/10 text-[#465940]/70',
@@ -17,7 +34,7 @@ const subBadge: Record<string, string> = {
   CANCELED: 'bg-[#465940]/10 text-[#465940]/60',
 };
 
-function UserTable({ users, subLabel, locale }: { users: any[]; subLabel: Record<string, string>; locale: AdminLocale }) {
+function UserTable({ users, subLabelFor, locale }: { users: any[]; subLabelFor: (u: any) => string; locale: AdminLocale }) {
   if (users.length === 0) {
     return <p className="text-center py-12 text-[#465940]/60 text-sm">მომხარებელი არ არის</p>;
   }
@@ -53,7 +70,7 @@ function UserTable({ users, subLabel, locale }: { users: any[]; subLabel: Record
               <td className="px-4 py-4 text-sm text-[#465940]/70">{user.email}</td>
               <td className="px-4 py-4">
                 <span className={`inline-block px-2.5 py-1 rounded-full text-xs font-bold ${subBadge[user.subscriptionStatus]}`}>
-                  {subLabel[user.subscriptionStatus] ?? user.subscriptionStatus}
+                  {subLabelFor(user)}
                 </span>
               </td>
               <td className="px-4 py-4">
@@ -63,7 +80,7 @@ function UserTable({ users, subLabel, locale }: { users: any[]; subLabel: Record
                       {user.promoCode.code}
                     </span>
                     <span className="text-[10px] text-[#465940]/60">
-                      {priceFor(user.promoCode.planType)}₾
+                      {priceFor(user)}₾
                     </span>
                   </div>
                 ) : (
@@ -102,7 +119,7 @@ export default async function AdminUsersPage({
       orderBy: { createdAt: 'desc' },
       select: {
         id: true, name: true, email: true, role: true,
-        isBlocked: true, isGifted: true, subscriptionStatus: true,
+        isBlocked: true, isGifted: true, subscriptionStatus: true, billingIntervalMonths: true,
         subscriptionStartedAt: true, createdAt: true,
         promoCode: { select: { id: true, code: true, planType: true } },
         _count: { select: { children: true } },
@@ -128,23 +145,26 @@ export default async function AdminUsersPage({
     (u) => u.isGifted && (u.subscriptionStatus === 'RECIPE_PLAN' || u.subscriptionStatus === 'FULL_PLAN')
   );
   const giftedCount = giftedPaying.length;
-  const giftedValue = giftedPaying.reduce((sum, u) => sum + priceFor(u.subscriptionStatus), 0);
+  const giftedValue = giftedPaying.reduce((sum, u) => sum + monthlyPriceFor(u), 0);
 
-  // Revenue — gifted users excluded (they bring no cash)
+  // Revenue — gifted users excluded (they bring no cash). MRR is normalized per-month:
+  // a 39₾/3-month subscriber contributes 13₾ to MRR, not the full 39₾, since a 3- or
+  // 6-month tier is not itself a monthly charge.
   const thirtyDaysAgo = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000);
   const realRecipe = users.filter((u) => !u.isGifted && u.subscriptionStatus === 'RECIPE_PLAN').length;
   const realFull   = users.filter((u) => !u.isGifted && u.subscriptionStatus === 'FULL_PLAN').length;
-  const mrr = realRecipe * RECIPE_PRICE + realFull * FULL_PRICE;
+  const realPaying = users.filter((u) => !u.isGifted && (u.subscriptionStatus === 'RECIPE_PLAN' || u.subscriptionStatus === 'FULL_PLAN'));
+  const mrr = Math.round(realPaying.reduce((sum, u) => sum + monthlyPriceFor(u), 0));
   const payingUsers = realRecipe + realFull;
   const arpu = payingUsers > 0 ? Math.round(mrr / payingUsers) : 0;
-  const newMrr = users
+  const newMrr = Math.round(users
     .filter((u) =>
       !u.isGifted &&
       u.subscriptionStartedAt &&
       new Date(u.subscriptionStartedAt) > thirtyDaysAgo &&
       (u.subscriptionStatus === 'RECIPE_PLAN' || u.subscriptionStatus === 'FULL_PLAN')
     )
-    .reduce((sum, u) => sum + priceFor(u.subscriptionStatus), 0);
+    .reduce((sum, u) => sum + monthlyPriceFor(u), 0));
 
   // BOG payment revenue (gross / commission / net) — separate from the MRR cards
   // above, which are derived from subscriptionStatus, not actual charged amounts.
@@ -157,17 +177,32 @@ export default async function AdminUsersPage({
     commission: sum(paymentsThisMonth, 'commissionAmount'),
     net: sum(paymentsThisMonth, 'netAmount'),
   };
-  const planLabelShort: Record<string, string> = { RECIPE_PLAN: `${RECIPE_PRICE}₾`, FULL_PLAN: `${FULL_PRICE}₾` };
+  // Payment-record plan label — uses the payment's OWN stored amount/interval rather than a
+  // static lookup, since every current-tier payment has plan='FULL_PLAN' regardless of which
+  // of the three real prices (17/39/59₾) was actually charged.
+  const planLabelFor = (p: { plan: string; grossAmount: number; billingIntervalMonths?: number | null }) =>
+    p.plan === 'FULL_PLAN' && p.billingIntervalMonths
+      ? `${p.grossAmount}₾ / ${p.billingIntervalMonths}${locale === 'ka' ? 'თვ' : 'mo'}`
+      : `${p.grossAmount}₾`;
   // Built from the real, currently-configured prices rather than lib/adminI18n's static
   // strings, which hardcode stale numbers (e.g. "30₾") that drift as soon as pricing changes.
   const recipePlanLabel = `${RECIPE_PRICE}₾ ${locale === 'ka' ? 'რეცეპტები' : 'Recipe'}`;
-  const fullPlanLabel = `${FULL_PRICE}₾ ${locale === 'ka' ? 'სრული' : 'Full'}`;
+  // No single price anymore — a FULL_PLAN user might be on any of the three tiers
+  // (17/39/59₾), so this stat-card header can't quote one number the way it used to.
+  const fullPlanLabel = locale === 'ka' ? 'სრული პაკეტი (ყველა ვადა)' : 'Full Package (any tier)';
 
-  const subLabel: Record<string, string> = {
-    FREE: locale === 'ka' ? 'უფასო' : 'Free',
-    RECIPE_PLAN: recipePlanLabel,
-    FULL_PLAN: fullPlanLabel,
-    CANCELED: locale === 'ka' ? 'გაუქმებული' : 'Canceled',
+  // Per-user plan label for the users table — interval-aware, since 'FULL_PLAN' alone no
+  // longer implies a single price the way it did with the old two-tier model.
+  const subLabelFor = (u: { subscriptionStatus: string; billingIntervalMonths?: number | null }) => {
+    if (u.subscriptionStatus === 'FREE') return locale === 'ka' ? 'უფასო' : 'Free';
+    if (u.subscriptionStatus === 'CANCELED') return locale === 'ka' ? 'გაუქმებული' : 'Canceled';
+    if (u.subscriptionStatus === 'RECIPE_PLAN') return recipePlanLabel;
+    if (u.subscriptionStatus === 'FULL_PLAN') {
+      const interval = u.billingIntervalMonths as BillingInterval | undefined;
+      const price = interval ? INTERVAL_PRICE[interval] : FULL_PRICE;
+      return interval ? `${price}₾ / ${interval}${locale === 'ka' ? 'თვ' : 'mo'}` : fullPlanLabel;
+    }
+    return u.subscriptionStatus;
   };
 
   // Filter logic
@@ -276,7 +311,7 @@ export default async function AdminUsersPage({
                         <p className="text-sm font-semibold text-[#465940]">{p.user.name}</p>
                         <p className="text-xs text-[#465940]/50">{p.user.email}</p>
                       </td>
-                      <td className="px-4 py-4 text-sm text-[#465940]/70">{planLabelShort[p.plan] ?? p.plan}</td>
+                      <td className="px-4 py-4 text-sm text-[#465940]/70">{planLabelFor(p)}</td>
                       <td className="px-4 py-4">
                         <span className={`inline-block px-2.5 py-1 rounded-full text-xs font-bold ${
                           p.status === 'SUCCESS' ? 'bg-[#465940]/10 text-[#465940]' :
@@ -309,7 +344,7 @@ export default async function AdminUsersPage({
 
       {/* Table */}
       <div className="bg-[#FDFBF0] rounded-2xl border border-[#465940]/10 shadow-sm overflow-hidden">
-        <UserTable users={filteredUsers} subLabel={subLabel} locale={locale} />
+        <UserTable users={filteredUsers} subLabelFor={subLabelFor} locale={locale} />
       </div>
     </div>
   );

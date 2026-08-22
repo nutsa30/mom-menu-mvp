@@ -1,5 +1,6 @@
 import { prisma } from '@/lib/prisma';
 import HomeClient from './HomeClient';
+import { PLAN_AMOUNTS_BY_INTERVAL } from '@/lib/bog';
 import type { Metadata } from 'next';
 
 const SITE_URL = process.env.NEXT_PUBLIC_APP_URL || 'https://mommenu.ge';
@@ -49,6 +50,12 @@ export default async function Home() {
 
   const { updatedAt, id, ...s } = raw;
 
+  const planAmounts = {
+    1: Number(PLAN_AMOUNTS_BY_INTERVAL[1] ?? 17),
+    3: Number(PLAN_AMOUNTS_BY_INTERVAL[3] ?? 39),
+    6: Number(PLAN_AMOUNTS_BY_INTERVAL[6] ?? 59),
+  };
+
   const websiteJsonLd = {
     '@context': 'https://schema.org',
     '@type': 'WebSite',
@@ -82,7 +89,7 @@ export default async function Home() {
     <>
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(websiteJsonLd) }} />
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(orgJsonLd) }} />
-      <HomeClient s={s as any} dishes={{ breakfast, lunch, snack, dinner }} dishCount={dishCount} recentBlogs={recentBlogs} />
+      <HomeClient s={s as any} dishes={{ breakfast, lunch, snack, dinner }} dishCount={dishCount} recentBlogs={recentBlogs} planAmounts={planAmounts} />
     </>
   );
 }

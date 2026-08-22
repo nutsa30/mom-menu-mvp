@@ -6,18 +6,27 @@ import {
   cancelPreauthorization,
   approvePreauthorization,
   computeCommission,
-  PLAN_AMOUNTS,
+  PLAN_AMOUNTS_BY_INTERVAL,
+  BillingInterval,
 } from '@/lib/bog';
 import { sendSubscriptionConfirmationEmail } from '@/lib/email';
 import { NextResponse } from 'next/server';
 
-const PLAN_LABELS: Record<string, string> = {
-  RECIPE_PLAN: 'რეცეპტების წვდომა',
-  FULL_PLAN: 'სრული პაკეტი',
+const PLAN_LABELS: Record<BillingInterval, string> = {
+  1: '1 თვის გეგმა',
+  3: '3 თვის გეგმა',
+  6: '6 თვის გეგმა',
 };
 
 const SEVEN_DAYS_MS = 7 * 24 * 60 * 60 * 1000;
-const THIRTY_DAYS_MS = 30 * 24 * 60 * 60 * 1000;
+const DAY_MS = 24 * 60 * 60 * 1000;
+// Flat day-multiples per interval (consistent with the existing 30-day-month convention —
+// not calendar-month arithmetic), used to compute the next subscriptionRenewsAt.
+const INTERVAL_MS: Record<BillingInterval, number> = {
+  1: 30 * DAY_MS,
+  3: 90 * DAY_MS,
+  6: 180 * DAY_MS,
+};
 
 export async function POST(req: Request) {
   const rawBody = await req.text();
@@ -75,8 +84,8 @@ export async function POST(req: Request) {
     const existing = await prisma.payment.findUnique({ where: { bogOrderId: orderId } });
     if (existing) return NextResponse.json({ received: true }); // already processed (retried callback)
 
-    const grossAmount = Number(PLAN_AMOUNTS[decoded.plan] ?? 0);
-    const wasAlreadyOnPlan = user.subscriptionStatus === decoded.plan;
+    const grossAmount = Number(PLAN_AMOUNTS_BY_INTERVAL[decoded.interval] ?? 0);
+    const wasAlreadyOnThisTier = user.subscriptionStatus === 'FULL_PLAN' && user.billingIntervalMonths === decoded.interval;
     const now = new Date();
 
     if (isBlocked) {
@@ -91,7 +100,8 @@ export async function POST(req: Request) {
       await prisma.payment.create({
         data: {
           userId: user.id,
-          plan: decoded.plan,
+          plan: 'FULL_PLAN',
+          billingIntervalMonths: decoded.interval,
           status: 'REFUNDED',
           bogOrderId: orderId,
           cardType: cardType ?? null,
@@ -105,7 +115,8 @@ export async function POST(req: Request) {
       await prisma.user.update({
         where: { id: user.id },
         data: {
-          subscriptionStatus: decoded.plan,
+          subscriptionStatus: 'FULL_PLAN',
+          billingIntervalMonths: decoded.interval,
           subscriptionCanceledAt: null,
           bogParentOrderId: orderId,
           trialEndsAt,
@@ -117,9 +128,9 @@ export async function POST(req: Request) {
         },
       });
 
-      if (!wasAlreadyOnPlan) {
+      if (!wasAlreadyOnThisTier) {
         const price = grossAmount;
-        sendSubscriptionConfirmationEmail(user.email, user.name, PLAN_LABELS[decoded.plan], price, now, trialEndsAt).catch(() => {});
+        sendSubscriptionConfirmationEmail(user.email, user.name, PLAN_LABELS[decoded.interval], price, now, trialEndsAt).catch(() => {});
       }
       return NextResponse.json({ received: true });
     }
@@ -129,7 +140,8 @@ export async function POST(req: Request) {
     await prisma.payment.create({
       data: {
         userId: user.id,
-        plan: decoded.plan,
+        plan: 'FULL_PLAN',
+        billingIntervalMonths: decoded.interval,
         status: 'SUCCESS',
         bogOrderId: orderId,
         cardType: cardType ?? null,
@@ -139,11 +151,12 @@ export async function POST(req: Request) {
       },
     });
 
-    const renewsAt = new Date(now.getTime() + THIRTY_DAYS_MS);
+    const renewsAt = new Date(now.getTime() + INTERVAL_MS[decoded.interval]);
     await prisma.user.update({
       where: { id: user.id },
       data: {
-        subscriptionStatus: decoded.plan,
+        subscriptionStatus: 'FULL_PLAN',
+        billingIntervalMonths: decoded.interval,
         subscriptionCanceledAt: null,
         bogParentOrderId: orderId,
         trialEndsAt: null,
@@ -154,9 +167,9 @@ export async function POST(req: Request) {
       },
     });
 
-    if (!wasAlreadyOnPlan) {
+    if (!wasAlreadyOnThisTier) {
       // No trial here (direct charge) — endDate is the first renewal date, not a trial end.
-      sendSubscriptionConfirmationEmail(user.email, user.name, PLAN_LABELS[decoded.plan], grossAmount, now, renewsAt).catch(() => {});
+      sendSubscriptionConfirmationEmail(user.email, user.name, PLAN_LABELS[decoded.interval], grossAmount, now, renewsAt).catch(() => {});
     }
     return NextResponse.json({ received: true });
   }
@@ -202,16 +215,19 @@ export async function POST(req: Request) {
     const existing = await prisma.payment.findUnique({ where: { bogOrderId: orderId } });
     if (existing) return NextResponse.json({ received: true }); // already processed (retried callback)
 
-    // Renewal orders don't carry the plan in external_order_id (unlike the first-purchase
-    // order), since the user is already subscribed by this point — use their current plan.
-    const plan = user.subscriptionStatus as 'RECIPE_PLAN' | 'FULL_PLAN';
-    const grossAmount = Number(PLAN_AMOUNTS[plan] ?? 0);
+    // Renewal orders don't carry the interval in external_order_id (unlike the
+    // first-purchase order), since the user is already subscribed by this point —
+    // use their stored billing interval. Falls back to 1 month only in the
+    // unexpected case of a pre-migration account with no interval recorded.
+    const interval = (user.billingIntervalMonths ?? 1) as BillingInterval;
+    const grossAmount = Number(PLAN_AMOUNTS_BY_INTERVAL[interval] ?? 0);
     const { commissionAmount, netAmount } = computeCommission(grossAmount, cardType);
 
     await prisma.payment.create({
       data: {
         userId: user.id,
-        plan,
+        plan: 'FULL_PLAN',
+        billingIntervalMonths: interval,
         status: 'SUCCESS',
         bogOrderId: orderId,
         cardType: cardType ?? null,
@@ -223,7 +239,7 @@ export async function POST(req: Request) {
 
     await prisma.user.update({
       where: { id: user.id },
-      data: { subscriptionRenewsAt: new Date(Date.now() + THIRTY_DAYS_MS) },
+      data: { subscriptionRenewsAt: new Date(Date.now() + INTERVAL_MS[interval]) },
     });
     return NextResponse.json({ received: true });
   }

@@ -12,15 +12,36 @@ import crypto from 'crypto';
 const OAUTH_URL = 'https://oauth2.bog.ge/auth/realms/bog/protocol/openid-connect/token';
 const API_BASE = 'https://api.bog.ge/payments/v1';
 
+// Legacy two-tier amounts — RECIPE_PLAN/FULL_PLAN are retired from the checkout UI
+// (see PLAN_AMOUNTS_BY_INTERVAL below) but kept here since historical Payment rows
+// and admin revenue reporting still reference SubscriptionStatus.
 export const PLAN_AMOUNTS: Record<'RECIPE_PLAN' | 'FULL_PLAN', string | undefined> = {
   RECIPE_PLAN: process.env.BOG_RECIPE_PLAN_AMOUNT_GEL,
   FULL_PLAN: process.env.BOG_FULL_PLAN_AMOUNT_GEL,
 };
 
-const PLAN_DESCRIPTIONS: Record<'RECIPE_PLAN' | 'FULL_PLAN', string> = {
-  RECIPE_PLAN: 'MomMenu — რეცეპტების წვდომა',
-  FULL_PLAN: 'MomMenu — სრული პაკეტი',
+// ─── Trial-pricing tiers (current) ──────────────────────────────────────────
+// Three tiers differing only by commitment length/price, not by feature access —
+// every tier grants the same full-plan feature set (see subscriptionStatus in the
+// webhook, always set to 'FULL_PLAN' regardless of which interval was purchased).
+export type BillingInterval = 1 | 3 | 6;
+export const BILLING_INTERVALS: BillingInterval[] = [1, 3, 6];
+
+export const PLAN_AMOUNTS_BY_INTERVAL: Record<BillingInterval, string | undefined> = {
+  1: process.env.BOG_PLAN_1M_AMOUNT_GEL,
+  3: process.env.BOG_PLAN_3M_AMOUNT_GEL,
+  6: process.env.BOG_PLAN_6M_AMOUNT_GEL,
 };
+
+const PLAN_DESCRIPTIONS_BY_INTERVAL: Record<BillingInterval, string> = {
+  1: 'MomMenu — 1 თვის გეგმა',
+  3: 'MomMenu — 3 თვის გეგმა',
+  6: 'MomMenu — 6 თვის გეგმა',
+};
+
+export function isBillingInterval(value: unknown): value is BillingInterval {
+  return value === 1 || value === 3 || value === 6;
+}
 
 // ─── OAuth2 token cache ─────────────────────────────────────────────────────
 // Cache and reuse the access token until near expiry instead of fetching one
@@ -77,19 +98,19 @@ async function apiHeaders(idempotencyKey?: string): Promise<Record<string, strin
   return headers;
 }
 
-// Encodes which user/plan a payment is for into external_order_id, since BOG
+// Encodes which user/interval a payment is for into external_order_id, since BOG
 // (like Quickpay) has no structured custom-data field like Lemon Squeezy's
 // `custom.user_id`. cuids are lowercase alphanumeric only, so splitting on
 // "_" is safe.
-export function encodeOrderId(userId: string, plan: 'RECIPE_PLAN' | 'FULL_PLAN'): string {
-  return `mm_${userId}_${plan}`;
+export function encodeOrderId(userId: string, interval: BillingInterval): string {
+  return `mm_${userId}_${interval}M`;
 }
 
-export function decodeOrderId(externalOrderId: string | null | undefined): { userId: string; plan: 'RECIPE_PLAN' | 'FULL_PLAN' } | null {
+export function decodeOrderId(externalOrderId: string | null | undefined): { userId: string; interval: BillingInterval } | null {
   if (!externalOrderId) return null;
-  const m = externalOrderId.match(/^mm_([a-z0-9]+)_(RECIPE_PLAN|FULL_PLAN)$/);
+  const m = externalOrderId.match(/^mm_([a-z0-9]+)_([136])M$/);
   if (!m) return null;
-  return { userId: m[1], plan: m[2] as 'RECIPE_PLAN' | 'FULL_PLAN' };
+  return { userId: m[1], interval: Number(m[2]) as BillingInterval };
 }
 
 // Renewal charges are resolved back to a user by decoding the userId embedded
@@ -127,15 +148,15 @@ export function decodeRenewalOrderId(externalOrderId: string | null | undefined)
 //   accounts that already used their free trial once (see User.bogTrialUsed) — a repeat
 //   purchase should charge immediately, not grant a second trial.
 async function createOrder(opts: {
-  plan: 'RECIPE_PLAN' | 'FULL_PLAN';
+  interval: BillingInterval;
   userId: string;
   email: string;
   name: string;
   capture: 'manual' | 'automatic';
 }): Promise<{ url: string; orderId: string }> {
-  const amount = PLAN_AMOUNTS[opts.plan];
+  const amount = PLAN_AMOUNTS_BY_INTERVAL[opts.interval];
   if (!amount) {
-    throw new Error(`No BOG GEL amount configured for ${opts.plan}`);
+    throw new Error(`No BOG GEL amount configured for ${opts.interval}-month plan`);
   }
   const appUrl = process.env.NEXT_PUBLIC_APP_URL;
   const planAmount = Number(amount);
@@ -146,7 +167,7 @@ async function createOrder(opts: {
     headers,
     body: JSON.stringify({
       callback_url: `${appUrl}/api/webhooks/bog`,
-      external_order_id: encodeOrderId(opts.userId, opts.plan),
+      external_order_id: encodeOrderId(opts.userId, opts.interval),
       buyer: {
         full_name: opts.name,
         masked_email: opts.email,
@@ -156,8 +177,8 @@ async function createOrder(opts: {
         total_amount: planAmount,
         basket: [
           {
-            product_id: opts.plan.toLowerCase(),
-            description: PLAN_DESCRIPTIONS[opts.plan],
+            product_id: `plan_${opts.interval}m`,
+            description: PLAN_DESCRIPTIONS_BY_INTERVAL[opts.interval],
             quantity: 1,
             unit_price: planAmount,
           },
@@ -197,11 +218,11 @@ async function createOrder(opts: {
   return { url: redirectUrl, orderId };
 }
 
-export function createTrialOrder(opts: { plan: 'RECIPE_PLAN' | 'FULL_PLAN'; userId: string; email: string; name: string }) {
+export function createTrialOrder(opts: { interval: BillingInterval; userId: string; email: string; name: string }) {
   return createOrder({ ...opts, capture: 'manual' });
 }
 
-export function createDirectOrder(opts: { plan: 'RECIPE_PLAN' | 'FULL_PLAN'; userId: string; email: string; name: string }) {
+export function createDirectOrder(opts: { interval: BillingInterval; userId: string; email: string; name: string }) {
   return createOrder({ ...opts, capture: 'automatic' });
 }
 
@@ -217,7 +238,7 @@ export function createDirectOrder(opts: { plan: 'RECIPE_PLAN' | 'FULL_PLAN'; use
 // do not attempt to pass purchase_units/amount here, BOG will ignore it.
 export async function chargeSavedCard(opts: {
   parentOrderId: string;
-  plan: 'RECIPE_PLAN' | 'FULL_PLAN';
+  interval: BillingInterval;
   userId: string;
 }): Promise<{ orderId: string; raw: any }> {
   const appUrl = process.env.NEXT_PUBLIC_APP_URL;

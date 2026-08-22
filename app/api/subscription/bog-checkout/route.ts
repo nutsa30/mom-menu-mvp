@@ -1,6 +1,6 @@
 import { prisma } from '@/lib/prisma';
 import { getSession } from '@/lib/auth';
-import { createTrialOrder, createDirectOrder } from '@/lib/bog';
+import { createTrialOrder, createDirectOrder, isBillingInterval } from '@/lib/bog';
 import { NextResponse } from 'next/server';
 
 export async function POST(req: Request) {
@@ -8,30 +8,32 @@ export async function POST(req: Request) {
     const session = await getSession();
     if (!session) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
 
-    const { plan } = await req.json();
-    if (plan !== 'RECIPE_PLAN' && plan !== 'FULL_PLAN') {
+    const { interval } = await req.json();
+    if (!isBillingInterval(interval)) {
       return NextResponse.json({ error: 'Invalid plan' }, { status: 400 });
     }
 
     const user = await prisma.user.findUnique({ where: { id: session.id } });
     if (!user) return NextResponse.json({ error: 'Not found' }, { status: 404 });
 
-    if (user.subscriptionStatus === plan && (user.lsSubscriptionId || user.qpSubscriptionToken || user.bogParentOrderId)) {
-      // Already has this exact plan active on some processor — buying it again would
+    if (
+      user.subscriptionStatus === 'FULL_PLAN' &&
+      user.billingIntervalMonths === interval &&
+      user.subscriptionCanceledAt === null &&
+      (user.lsSubscriptionId || user.qpSubscriptionToken || user.bogParentOrderId)
+    ) {
+      // Already has this exact tier active on some processor — buying it again would
       // just start a fresh checkout without cancelling the running one.
       return NextResponse.json({ error: 'already_subscribed' }, { status: 400 });
     }
 
-    if (user.subscriptionStatus === 'FULL_PLAN' && plan === 'RECIPE_PLAN') {
-      return NextResponse.json({ error: 'downgrade_not_allowed' }, { status: 400 });
-    }
-
     // First-ever purchase on this account gets a 7-day free trial (preauthorized hold,
     // released once the card-save is confirmed — never actually charged). Any purchase
-    // after that (re-subscribing post-cancellation, etc.) charges immediately, no trial.
+    // after that (re-subscribing post-cancellation, switching tiers, etc.) charges
+    // immediately, no trial.
     const createOrder = user.bogTrialUsed ? createDirectOrder : createTrialOrder;
     const { url } = await createOrder({
-      plan,
+      interval,
       userId: user.id,
       email: user.email,
       name: user.name,
