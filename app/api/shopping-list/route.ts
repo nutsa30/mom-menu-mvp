@@ -91,6 +91,21 @@ function normalizeName(name: string): string {
   return n;
 }
 
+// A generic label with a comma-separated list of the actual items in parens
+// (e.g. "ბოსტნეული (ყაბაყი, სტაფილო) - 60 გ" / "vegetables (zucchini, carrot)")
+// isn't itself something you can buy — expand it into the specific items instead.
+// Guarded on "," specifically so this doesn't fire on the other parenthetical
+// uses in this data: a weight clarification like "1 მწიფე (60 გ)" (no comma),
+// or "/"-separated alternatives like "თესლები (სეზამი/ჩია/სელი)" (pick one,
+// not "buy all three") — both fall through unchanged.
+function expandParenthetical(raw: string): string[] {
+  const m = raw.match(/^(.+?)\s*\(([^)]+)\)\s*(?:-.*)?$/);
+  if (!m) return [raw];
+  const items = m[2].split(',').map((s) => s.trim()).filter(Boolean);
+  if (items.length < 2) return [raw];
+  return items; // bare — no per-item quantity to split, just need it on the list
+}
+
 // Data format is consistently "სახელი - რაოდენობა", e.g. "ბანანი - 1/2 ცალი",
 // "ბროკოლი - 80-100 გ", "ბანანი - 1 მწიფე". Quantity comes AFTER the name, not before.
 function parseIng(raw: string): { key: string; display: string; qty: number; unit: string } {
@@ -286,7 +301,7 @@ export async function GET(req: NextRequest) {
     const dayDishes: string[] = [];
     for (const log of logs) {
       if (log.dish?.ingredientsKa?.length) {
-        allIngredients.push(...log.dish.ingredientsKa);
+        for (const ing of log.dish.ingredientsKa) allIngredients.push(...expandParenthetical(ing));
         dayDishes.push(log.dish.titleKa);
       }
       if (log.ingredient?.titleKa) {
