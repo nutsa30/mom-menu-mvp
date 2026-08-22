@@ -31,13 +31,26 @@ const UNIT_DISPLAY: Record<string, string> = {
 };
 
 // Descriptive words that precede an ingredient name but aren't part of its identity
-// e.g. "მწიფე ბანანი" (ripe banana) should still be grouped with plain "ბანანი"
-const LEADING_DESCRIPTORS = ['მწიფე', 'რბილი'];
+// e.g. "მწიფე ბანანი" (ripe banana) should still be grouped with plain "ბანანი".
+// Prep-state words (boiled/lean/peeled) don't change what you'd buy at the store
+// either, so they're stripped the same way for shopping-list purposes — the
+// recipe's own ingredient display keeps them, only this aggregation drops them.
+const LEADING_DESCRIPTORS = ['მწიფე', 'რბილი', 'მოხარშული', 'მჭლე', 'გაფცქვნილი'];
 
 // Ground flour is made from the whole grain you'd buy anyway — don't list it separately
 const FLOUR_MERGE: Record<string, string> = {
   'შვრიის ფქვილი': 'შვრია',
   'წიწიბურას ფქვილი': 'წიწიბურა',
+};
+
+// Same ingredient named differently across recipes (different cut/spelling/case) —
+// merge to one canonical shopping-list item
+const SYNONYM_MERGE: Record<string, string> = {
+  'ქათამი': 'ქათმის ფილე',
+  'ქათმის ხორცი': 'ქათმის ფილე',
+  'პომიდვრი': 'პომიდორი',
+  'ტომატი': 'პომიდორი',
+  'ლაზანიას ფირფიტები': 'ლაზანიის ფირფიტები',
 };
 
 function fmtNum(n: number): string {
@@ -62,12 +75,19 @@ const NUM_TOKEN = '[\\d.\\/½¼¾⅓⅔]+';
 function normalizeName(name: string): string {
   // Drop trailing clarifications like "ვაშლი, გაფცქვნილი"
   let n = name.split(',')[0].trim();
-  for (const d of LEADING_DESCRIPTORS) {
-    if (n.startsWith(d + ' ')) { n = n.slice(d.length + 1).trim(); break; }
+  // Strip ALL leading descriptors, not just one — some ingredients stack two
+  // (e.g. "გაფცქვნილი მწიფე მსხალი" / peeled ripe pear)
+  let strippedAny = true;
+  while (strippedAny) {
+    strippedAny = false;
+    for (const d of LEADING_DESCRIPTORS) {
+      if (n.startsWith(d + ' ')) { n = n.slice(d.length + 1).trim(); strippedAny = true; break; }
+    }
   }
   // "წყალი ან რძე" (water or milk) — water is free, list the actual thing to buy
   if (n.startsWith('წყალი ან ')) n = n.slice('წყალი ან '.length).trim();
   if (FLOUR_MERGE[n]) n = FLOUR_MERGE[n];
+  if (SYNONYM_MERGE[n]) n = SYNONYM_MERGE[n];
   return n;
 }
 
