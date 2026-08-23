@@ -28,6 +28,7 @@ export default async function AdminAnalyticsPage() {
         billingIntervalMonths: true,
         subscriptionStartedAt: true,
         subscriptionCanceledAt: true,
+        subscriptionRenewsAt: true,
         createdAt: true,
         isBlocked: true,
       },
@@ -112,6 +113,35 @@ export default async function AdminAnalyticsPage() {
       label,
       revenue: monthUsers.reduce((sum, u) => sum + priceFor(u), 0),
       newSubs: monthUsers.length,
+    });
+  }
+
+  // Renewal forecast — which of the next 3 calendar months each active subscriber's next
+  // charge (subscriptionRenewsAt) actually falls in. Rolls forward automatically since it's
+  // computed from "today" on every load (this month, next month, the one after). Canceled
+  // subscribers are excluded — subscriptionCanceledAt means they won't be charged again, per
+  // the cancel-keeps-access-until-period-end flow (bog-renew cron downgrades them instead of
+  // charging once subscriptionRenewsAt arrives), so they correctly drop out of every future
+  // month here the moment they cancel, not just the month they actually stop.
+  const renewalForecast: { label: string; count: number; revenue: number }[] = [];
+  for (let i = 0; i < 3; i++) {
+    const d = new Date();
+    d.setDate(1);
+    d.setMonth(d.getMonth() + i);
+    const year = d.getFullYear();
+    const month = d.getMonth();
+    const label = d.toLocaleDateString('ka-GE', { month: 'long', year: 'numeric' });
+    const dueUsers = users.filter((u) => {
+      if (u.subscriptionCanceledAt) return false;
+      if (u.subscriptionStatus !== 'FULL_PLAN' && u.subscriptionStatus !== 'RECIPE_PLAN') return false;
+      if (!u.subscriptionRenewsAt) return false;
+      const r = new Date(u.subscriptionRenewsAt);
+      return r.getFullYear() === year && r.getMonth() === month;
+    });
+    renewalForecast.push({
+      label,
+      count: dueUsers.length,
+      revenue: Math.round(dueUsers.reduce((sum, u) => sum + priceFor(u), 0)),
     });
   }
 
@@ -247,6 +277,35 @@ export default async function AdminAnalyticsPage() {
           </div>
           {monthlyRevenue.every((m) => m.revenue === 0) && (
             <p className="text-center text-sm text-[#465940]/40 mt-4">ჯერ გამოწერები არ არის</p>
+          )}
+        </section>
+
+        {/* ── Renewal forecast (next 3 months) ── */}
+        <section className="rounded-[20px] bg-[#FDFBF0] p-6 shadow-sm">
+          <h2 className="mb-1 font-bold text-[#465940]">მოსალოდნელი განახლებები</h2>
+          <p className="text-[10px] text-[#465940]/50 mb-4">ვისაც აქ თვეში ჩამოეჭრება — გაუქმებულები უკვე გამოკლებულია</p>
+          <div className="space-y-4">
+            {renewalForecast.map((m, i) => (
+              <div key={m.label}>
+                <div className="flex items-center justify-between text-sm mb-1">
+                  <span className="font-semibold text-[#465940]">
+                    {m.label} {i === 0 && <span className="text-[10px] font-normal text-[#465940]/40">(მიმდინარე)</span>}
+                  </span>
+                  <span className="font-black text-[#465940]">
+                    {m.revenue}₾ <span className="font-normal text-[#465940]/50">({m.count} გამომწერი)</span>
+                  </span>
+                </div>
+                <div className="h-3 bg-[#465940]/10 rounded-full overflow-hidden">
+                  <div
+                    className="h-3 rounded-full bg-[#465940] transition-all"
+                    style={{ width: `${Math.max(...renewalForecast.map((x) => x.revenue), 1) > 0 ? (m.revenue / Math.max(...renewalForecast.map((x) => x.revenue), 1)) * 100 : 0}%` }}
+                  />
+                </div>
+              </div>
+            ))}
+          </div>
+          {renewalForecast.every((m) => m.count === 0) && (
+            <p className="text-center text-sm text-[#465940]/40 mt-4">მოახლოებული განახლება არ არის</p>
           )}
         </section>
 
