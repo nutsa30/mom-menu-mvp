@@ -144,7 +144,7 @@ export default function SiteFooter() {
         </div>
         <div className="max-w-6xl mx-auto px-5 flex items-center justify-center sm:justify-end gap-2.5 mt-4">
           <span className="text-xs text-[#F5F1E4]/40">{ka ? 'საიტი შექმნილია:' : 'Built by:'}</span>
-          <img src="/kemsilab-logo.jpeg" alt="KemsiLab" className="h-11 rounded-md" />
+          <img src="/kemsilab-logo.png" alt="KemsiLab" className="h-16" />
         </div>
       </div>
     </footer>
