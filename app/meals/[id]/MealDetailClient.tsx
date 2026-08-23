@@ -52,7 +52,7 @@ export default function MealDetailClient({ dish }: { dish: any }) {
             <div className="p-10 text-center">
               <div className="w-24 h-24 rounded-full bg-[#6F7A5C] flex items-center justify-center text-5xl mx-auto mb-6"></div>
               <h1 className="text-4xl font-bold mb-4 text-[#6F7A5C]">რეცეპტი დაბლოკილია</h1>
-              <p className="text-[#6F7A5C]/80 text-lg mb-8 leading-8">რეცეპტის სანახავად საჭიროა 15₾ ან 30₾ პაკეტი.</p>
+              <p className="text-[#6F7A5C]/80 text-lg mb-8 leading-8">რეცეპტის სანახავად საჭიროა აქტიური პაკეტი.</p>
               <Link href="/subscription" className="inline-flex items-center justify-center rounded-full bg-[#6F7A5C] px-8 py-4 font-semibold text-[#F5F1E4] shadow-lg hover:scale-105 transition">
                 პაკეტის შეძენა
               </Link>
