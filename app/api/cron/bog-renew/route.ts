@@ -38,5 +38,28 @@ export async function GET(req: NextRequest) {
     }
   }
 
-  return NextResponse.json({ due: due.length, ...results });
+  // Users who canceled (subscriptionCanceledAt set) keep access through the period they
+  // already paid for — subscriptionStatus deliberately stays FULL_PLAN/RECIPE_PLAN until
+  // now, rather than cutting them off the moment they clicked cancel. Once that paid
+  // period's renewal date actually arrives, downgrade instead of charging.
+  const expiredCanceled = await prisma.user.findMany({
+    where: {
+      subscriptionCanceledAt: { not: null },
+      subscriptionStatus: { in: ['RECIPE_PLAN', 'FULL_PLAN'] },
+      subscriptionRenewsAt: { lte: new Date() },
+    },
+  });
+  for (const user of expiredCanceled) {
+    await prisma.user.update({
+      where: { id: user.id },
+      data: {
+        subscriptionStatus: 'CANCELED',
+        billingIntervalMonths: null,
+        subscriptionRenewsAt: null,
+        bogParentOrderId: null,
+      },
+    });
+  }
+
+  return NextResponse.json({ due: due.length, ...results, downgraded: expiredCanceled.length });
 }

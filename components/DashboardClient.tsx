@@ -1443,12 +1443,21 @@ function SettingsTab({ user }: { user: any }) {
       <div className={`${card} p-6`}>
         <h2 className="font-black text-[#465940] mb-3">ანგარიში</h2>
         <p className="text-sm text-[#465940]/70 mb-4"><span className="font-semibold text-[#465940]">სტატუსი:</span> {user.subscriptionStatus}</p>
-        {user.lsSubscriptionId && <ManageSubscriptionButton />}
+        {user.lsSubscriptionId ? (
+          <ManageSubscriptionButton />
+        ) : (user.subscriptionStatus === 'FULL_PLAN' || user.subscriptionStatus === 'RECIPE_PLAN') ? (
+          <CancelBogSubscriptionButton
+            subscriptionCanceledAt={user.subscriptionCanceledAt}
+            subscriptionRenewsAt={user.subscriptionRenewsAt}
+          />
+        ) : null}
       </div>
     </div>
   );
 }
 
+// Legacy Lemon Squeezy path — kept only for any pre-existing lsSubscriptionId accounts;
+// current subscribers all go through BOG and CancelBogSubscriptionButton below.
 function ManageSubscriptionButton() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
@@ -1476,6 +1485,57 @@ function ManageSubscriptionButton() {
       <button onClick={openPortal} disabled={loading}
         className="bg-[#465940]/10 hover:bg-[#465940]/15 text-[#465940] px-5 py-2.5 rounded-full text-sm font-bold transition disabled:opacity-60">
         {loading ? 'იხსნება...' : 'გამოწერის მართვა / გაუქმება'}
+      </button>
+      {error && <p className="text-red-500 text-xs mt-2">{error}</p>}
+    </div>
+  );
+}
+
+// Real, working cancel path for BOG subscribers. Cancelling stops future billing but
+// keeps access through subscriptionRenewsAt (the period already paid for) — the
+// bog-renew cron downgrades to CANCELED itself once that date actually arrives.
+function CancelBogSubscriptionButton({ subscriptionCanceledAt, subscriptionRenewsAt }: {
+  subscriptionCanceledAt: string | Date | null;
+  subscriptionRenewsAt: string | Date | null;
+}) {
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState('');
+  const [canceledAt, setCanceledAt] = useState(subscriptionCanceledAt);
+  const [accessUntil, setAccessUntil] = useState(subscriptionRenewsAt);
+
+  const cancel = async () => {
+    if (!confirm('დარწმუნებული ხართ, რომ გსურთ გამოწერის გაუქმება? წვდომა დარჩება ბოლომდე გადახდილი პერიოდის ვადამდე, შემდეგ აღარ განახლდება.')) return;
+    setLoading(true);
+    setError('');
+    try {
+      const res = await fetch('/subscription/cancel', { method: 'POST' });
+      const data = await res.json();
+      if (res.ok && data.success) {
+        setCanceledAt(new Date().toISOString());
+        if (data.accessUntil) setAccessUntil(data.accessUntil);
+        return;
+      }
+      setError('ვერ მოხერხდა გაუქმება, სცადეთ მოგვიანებით ან მოგვწერეთ info@mommenu.ge-ზე.');
+    } catch {
+      setError('ვერ მოხერხდა გაუქმება, სცადეთ მოგვიანებით.');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  if (canceledAt) {
+    return (
+      <div className="rounded-xl bg-[#465940]/10 px-4 py-3 text-sm text-[#465940]">
+        გამოწერა გაუქმებულია — წვდომა გექნებათ {accessUntil ? new Date(accessUntil).toLocaleDateString('ka-GE') : 'მიმდინარე პერიოდის ბოლომდე'}, შემდეგ აღარ განახლდება და აღარ ჩამოგეჭრებათ თანხა.
+      </div>
+    );
+  }
+
+  return (
+    <div>
+      <button onClick={cancel} disabled={loading}
+        className="bg-[#465940]/10 hover:bg-[#465940]/15 text-[#465940] px-5 py-2.5 rounded-full text-sm font-bold transition disabled:opacity-60">
+        {loading ? 'უქმდება...' : 'გამოწერის გაუქმება'}
       </button>
       {error && <p className="text-red-500 text-xs mt-2">{error}</p>}
     </div>
