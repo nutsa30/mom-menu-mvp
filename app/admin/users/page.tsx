@@ -137,6 +137,12 @@ export default async function AdminUsersPage({
   const recipePlan = users.filter((u) => u.subscriptionStatus === 'RECIPE_PLAN').length;
   const fullPlan = users.filter((u) => u.subscriptionStatus === 'FULL_PLAN').length;
   const blocked = users.filter((u) => u.isBlocked).length;
+  // Real current packages — replaces the old Recipe/Full split on the stat cards below,
+  // since Recipe Plan is no longer sold (0 active subscribers) and "Full Plan" alone no
+  // longer says which of the three real prices a subscriber is actually on.
+  const byInterval1 = users.filter((u) => u.subscriptionStatus === 'FULL_PLAN' && u.billingIntervalMonths === 1).length;
+  const byInterval3 = users.filter((u) => u.subscriptionStatus === 'FULL_PLAN' && u.billingIntervalMonths === 3).length;
+  const byInterval6 = users.filter((u) => u.subscriptionStatus === 'FULL_PLAN' && u.billingIntervalMonths === 6).length;
   const promoRecipe = users.filter((u) => u.promoCode?.planType === 'RECIPE_PLAN' && u.subscriptionStatus === 'RECIPE_PLAN').length;
   const promoFull = users.filter((u) => u.promoCode?.planType === 'FULL_PLAN' && u.subscriptionStatus === 'FULL_PLAN').length;
 
@@ -221,12 +227,14 @@ export default async function AdminUsersPage({
         <p className="text-[#465940]/60 text-sm mt-1">{total} {d.totalRegistered}</p>
       </div>
 
-      {/* Stat cards */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4 mb-6 lg:mb-8">
+      {/* Stat cards — current packages only (1/3/6 month); Recipe Plan is no longer
+          sold and always sits at 0, so it no longer earns a card here. */}
+      <div className="grid grid-cols-2 lg:grid-cols-5 gap-3 sm:gap-4 mb-6 lg:mb-8">
         {[
           { label: d.totalUsers, value: total, color: 'text-[#465940]', bg: 'bg-[#465940]/5' },
-          { label: recipePlanLabel, value: recipePlan, color: 'text-[#465940]', bg: 'bg-[#FDFBF0]/10' },
-          { label: fullPlanLabel, value: fullPlan, color: 'text-[#465940]', bg: 'bg-[#465940]/10' },
+          { label: `1 თვე (${INTERVAL_PRICE[1]}₾)`, value: byInterval1, color: 'text-[#465940]', bg: 'bg-[#FDFBF0]/10' },
+          { label: `3 თვე (${INTERVAL_PRICE[3]}₾)`, value: byInterval3, color: 'text-[#465940]', bg: 'bg-[#FDFBF0]/10' },
+          { label: `6 თვე (${INTERVAL_PRICE[6]}₾)`, value: byInterval6, color: 'text-[#465940]', bg: 'bg-[#FDFBF0]/10' },
           { label: d.blocked, value: blocked, color: 'text-[#FDFBF0]', bg: 'bg-[#465940]' },
         ].map((s) => (
           <div key={s.label} className="bg-[#FDFBF0] rounded-2xl p-5 border border-[#465940]/10 shadow-sm">

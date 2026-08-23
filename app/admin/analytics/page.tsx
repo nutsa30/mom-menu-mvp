@@ -57,6 +57,10 @@ export default async function AdminAnalyticsPage() {
   const free = users.filter((u) => u.subscriptionStatus === 'FREE').length;
   const recipe = users.filter((u) => u.subscriptionStatus === 'RECIPE_PLAN').length;
   const full = users.filter((u) => u.subscriptionStatus === 'FULL_PLAN').length;
+  // Real current packages — Recipe Plan is no longer sold (always 0 now).
+  const full1 = users.filter((u) => u.subscriptionStatus === 'FULL_PLAN' && u.billingIntervalMonths === 1).length;
+  const full3 = users.filter((u) => u.subscriptionStatus === 'FULL_PLAN' && u.billingIntervalMonths === 3).length;
+  const full6 = users.filter((u) => u.subscriptionStatus === 'FULL_PLAN' && u.billingIntervalMonths === 6).length;
   const canceled = users.filter((u) => u.subscriptionStatus === 'CANCELED').length;
   const blocked = users.filter((u) => u.isBlocked).length;
 
@@ -116,8 +120,9 @@ export default async function AdminAnalyticsPage() {
   const stats = [
     { label: 'Total users', value: total, sub: `${newThisMonth} new this month`, color: 'text-[#465940]' },
     { label: 'Free', value: free, sub: `${((free / Math.max(total, 1)) * 100).toFixed(0)}% of users`, color: 'text-[#465940]/70' },
-    { label: `Recipe plan (${PRICES.RECIPE_PLAN}₾)`, value: recipe, sub: 'active', color: 'text-[#465940]' },
-    { label: 'Full plan (any tier)', value: full, sub: 'active', color: 'text-[#465940]' },
+    { label: `1 month (${INTERVAL_PRICE[1]}₾)`, value: full1, sub: 'active', color: 'text-[#465940]' },
+    { label: `3 months (${INTERVAL_PRICE[3]}₾)`, value: full3, sub: 'active', color: 'text-[#465940]' },
+    { label: `6 months (${INTERVAL_PRICE[6]}₾)`, value: full6, sub: 'active', color: 'text-[#465940]' },
     { label: 'Canceled', value: canceled, sub: 'churned', color: 'text-[#FDFBF0]' },
     { label: 'Blocked', value: blocked, sub: 'accounts', color: 'text-[#465940]' },
     { label: 'Conversion rate', value: `${conversionRate}%`, sub: 'free → paid', color: 'text-[#465940]' },
@@ -179,7 +184,9 @@ export default async function AdminAnalyticsPage() {
           <h2 className="mb-4 font-bold text-[#465940]">Revenue breakdown by plan</h2>
           <div className="space-y-4">
             {[
-              { label: `Recipe Plan (${PRICES.RECIPE_PLAN}₾)`, rev: recipe * PRICES.RECIPE_PLAN, count: recipe, color: 'bg-[#465940]/40' },
+              // Recipe Plan is no longer sold — only shown if a legacy subscriber still exists,
+              // so this section reflects the actual current packages otherwise.
+              ...(recipe > 0 ? [{ label: `Recipe Plan (${PRICES.RECIPE_PLAN}₾) — legacy`, rev: recipe * PRICES.RECIPE_PLAN, count: recipe, color: 'bg-[#465940]/40' }] : []),
               ...([1, 3, 6] as BillingInterval[]).map((interval) => {
                 const rows = users.filter((u) => u.subscriptionStatus === 'FULL_PLAN' && u.billingIntervalMonths === interval);
                 return {
@@ -304,8 +311,10 @@ export default async function AdminAnalyticsPage() {
           <div className="flex items-center gap-4 flex-wrap mb-4">
             {[
               { label: 'Free', count: free, color: 'bg-[#465940]/15' },
-              { label: `Recipe ${PRICES.RECIPE_PLAN}₾`, count: recipe, color: 'bg-[#465940]/50' },
-              { label: 'Full (any tier)', count: full, color: 'bg-[#465940]' },
+              ...(recipe > 0 ? [{ label: `Recipe ${PRICES.RECIPE_PLAN}₾ — legacy`, count: recipe, color: 'bg-[#465940]/35' }] : []),
+              { label: `1 თვე (${INTERVAL_PRICE[1]}₾)`, count: full1, color: 'bg-[#465940]/55' },
+              { label: `3 თვე (${INTERVAL_PRICE[3]}₾)`, count: full3, color: 'bg-[#465940]/75' },
+              { label: `6 თვე (${INTERVAL_PRICE[6]}₾)`, count: full6, color: 'bg-[#465940]' },
               { label: 'Canceled', count: canceled, color: 'bg-red-300' },
             ].map((seg) => (
               <div key={seg.label} className="flex items-center gap-2 text-sm">
@@ -318,8 +327,10 @@ export default async function AdminAnalyticsPage() {
           <div className="mt-2 flex h-6 w-full overflow-hidden rounded-full">
             {[
               { count: free, color: 'bg-[#465940]/15' },
-              { count: recipe, color: 'bg-[#465940]/50' },
-              { count: full, color: 'bg-[#465940]' },
+              { count: recipe, color: 'bg-[#465940]/35' },
+              { count: full1, color: 'bg-[#465940]/55' },
+              { count: full3, color: 'bg-[#465940]/75' },
+              { count: full6, color: 'bg-[#465940]' },
               { count: canceled, color: 'bg-red-300' },
             ]
               .filter((s) => s.count > 0)
