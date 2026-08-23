@@ -10,7 +10,12 @@ html { scroll-behavior: smooth; }
 
 /* Mobile: space above fixed bottom nav */
 @media (max-width: 767px) {
-  body { padding-bottom: 4.5rem; }
+  /* Reserve space for the fixed MobileBottomNav so page content (e.g. the
+     footer's legal-links row) never sits underneath it. 6rem covers the
+     nav's own content height with room to spare; env(safe-area-inset-bottom)
+     adds the home-indicator area on notched phones, which the flat 4.5rem
+     this replaced didn't account for at all. */
+  body { padding-bottom: calc(6rem + env(safe-area-inset-bottom)); }
 }
 
 @keyframes fadeUp {
