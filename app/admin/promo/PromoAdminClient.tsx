@@ -14,9 +14,9 @@ type PromoCode = {
   _count: { users: number };
 };
 
-const PLAN_LABELS: Record<string, string> = {
-  RECIPE_PLAN: '15₾ — რეცეპტები',
-  FULL_PLAN: '30₾ — სრული',
+type PlanAmounts = {
+  RECIPE_PLAN: number;
+  intervals: Record<1 | 3 | 6, number>;
 };
 
 const PLAN_BADGE: Record<string, string> = {
@@ -24,12 +24,21 @@ const PLAN_BADGE: Record<string, string> = {
   FULL_PLAN: 'bg-[#465940]/20 text-[#465940]',
 };
 
-export default function PromoAdminClient({ codes }: { codes: PromoCode[] }) {
+export default function PromoAdminClient({ codes, planAmounts }: { codes: PromoCode[]; planAmounts: PlanAmounts }) {
+  // FULL_PLAN is the only plan a customer can actually buy now — every checkout (1/3/6-month
+  // tier) sends plan: 'FULL_PLAN' to /api/promo/validate regardless of which tier they picked,
+  // so a FULL_PLAN promo code applies across all three real prices, not one flat number.
+  // RECIPE_PLAN can no longer be purchased — its label/badge stay only so any pre-existing
+  // legacy codes still render correctly, but it's not offered when creating a new one.
+  const PLAN_LABELS: Record<string, string> = {
+    RECIPE_PLAN: `${planAmounts.RECIPE_PLAN}₾ — რეცეპტები (აღარ იყიდება)`,
+    FULL_PLAN: 'სრული პაკეტი — ყველა ვადა (1/3/6 თვე)',
+  };
   const [creating, setCreating] = useState(false);
   const [loading, setLoading] = useState(false);
   const [form, setForm] = useState({
     code: '',
-    planType: 'RECIPE_PLAN' as 'RECIPE_PLAN' | 'FULL_PLAN',
+    planType: 'FULL_PLAN' as 'RECIPE_PLAN' | 'FULL_PLAN',
     discountPercent: '',
     maxUses: '',
   });
@@ -44,7 +53,7 @@ export default function PromoAdminClient({ codes }: { codes: PromoCode[] }) {
       discountPercent: form.discountPercent ? parseInt(form.discountPercent) : 0,
       maxUses: form.maxUses ? parseInt(form.maxUses) : null,
     });
-    setForm({ code: '', planType: 'RECIPE_PLAN', discountPercent: '', maxUses: '' });
+    setForm({ code: '', planType: 'FULL_PLAN', discountPercent: '', maxUses: '' });
     setCreating(false);
     setLoading(false);
   };
@@ -96,8 +105,7 @@ export default function PromoAdminClient({ codes }: { codes: PromoCode[] }) {
                   onChange={e => setForm(f => ({ ...f, planType: e.target.value as any }))}
                   className="w-full border border-[#465940]/20 rounded-xl px-3 py-2 text-sm text-[#465940] bg-white focus:outline-none focus:border-[#465940]"
                 >
-                  <option value="RECIPE_PLAN">15₾ — რეცეპტები</option>
-                  <option value="FULL_PLAN">30₾ — სრული</option>
+                  <option value="FULL_PLAN">სრული პაკეტი — ყველა ვადა (1/3/6 თვე)</option>
                 </select>
               </div>
               <div>
@@ -176,7 +184,11 @@ export default function PromoAdminClient({ codes }: { codes: PromoCode[] }) {
                   <span className="font-bold text-[#465940] text-sm">{code.discountPercent}%</span>
                   {code.discountPercent > 0 && (
                     <span className="ml-1.5 text-xs text-[#465940]/60">
-                      → {Math.round((code.planType === 'RECIPE_PLAN' ? 15 : 30) * (1 - code.discountPercent / 100))}₾
+                      → {code.planType === 'RECIPE_PLAN'
+                        ? `${Math.round(planAmounts.RECIPE_PLAN * (1 - code.discountPercent / 100))}₾`
+                        : ([1, 3, 6] as const).map((interval) =>
+                            `${Math.round(planAmounts.intervals[interval] * (1 - code.discountPercent / 100))}₾/${interval}თვ`
+                          ).join(' · ')}
                     </span>
                   )}
                 </td>
