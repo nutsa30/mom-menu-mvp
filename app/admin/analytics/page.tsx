@@ -31,6 +31,7 @@ export default async function AdminAnalyticsPage() {
         subscriptionRenewsAt: true,
         createdAt: true,
         isBlocked: true,
+        isGifted: true,
       },
     }),
     prisma.mealPlanItem.groupBy({
@@ -42,7 +43,7 @@ export default async function AdminAnalyticsPage() {
     prisma.user.findMany({
       orderBy: { createdAt: 'desc' },
       take: 8,
-      select: { name: true, email: true, subscriptionStatus: true, billingIntervalMonths: true, createdAt: true },
+      select: { name: true, email: true, subscriptionStatus: true, billingIntervalMonths: true, createdAt: true, isGifted: true },
     }),
   ]);
 
@@ -76,14 +77,17 @@ export default async function AdminAnalyticsPage() {
 
   // ─── Revenue ───────────────────────────────────────────────────────────────
   // MRR is normalized per-month: a 39₾/3-month subscriber contributes 13₾, not 39₾.
-  const payingUserRows = users.filter((u) => u.subscriptionStatus === 'RECIPE_PLAN' || u.subscriptionStatus === 'FULL_PLAN');
+  // Gifted accounts (isGifted) are excluded everywhere below — they have a paid-tier
+  // subscriptionStatus but brought in no actual cash, same convention as admin/users.
+  const payingUserRows = users.filter((u) => !u.isGifted && (u.subscriptionStatus === 'RECIPE_PLAN' || u.subscriptionStatus === 'FULL_PLAN'));
   const mrr = Math.round(payingUserRows.reduce((sum, u) => sum + monthlyPriceFor(u), 0));
-  const payingUsers = recipe + full;
+  const payingUsers = payingUserRows.length;
   const arpu = payingUsers > 0 ? Math.round(mrr / payingUsers) : 0;
 
   const newMrrThisMonth = Math.round(users
     .filter(
       (u) =>
+        !u.isGifted &&
         u.subscriptionStartedAt &&
         new Date(u.subscriptionStartedAt) > thirtyDaysAgo &&
         (u.subscriptionStatus === 'RECIPE_PLAN' || u.subscriptionStatus === 'FULL_PLAN')
@@ -101,6 +105,7 @@ export default async function AdminAnalyticsPage() {
     const month = d.getMonth();
     const label = d.toLocaleDateString('ka-GE', { month: 'short' });
     const monthUsers = users.filter((u) => {
+      if (u.isGifted) return false;
       if (!u.subscriptionStartedAt) return false;
       const s = new Date(u.subscriptionStartedAt);
       return (
@@ -132,6 +137,7 @@ export default async function AdminAnalyticsPage() {
     const month = d.getMonth();
     const label = d.toLocaleDateString('ka-GE', { month: 'long', year: 'numeric' });
     const dueUsers = users.filter((u) => {
+      if (u.isGifted) return false;
       if (u.subscriptionCanceledAt) return false;
       if (u.subscriptionStatus !== 'FULL_PLAN' && u.subscriptionStatus !== 'RECIPE_PLAN') return false;
       if (!u.subscriptionRenewsAt) return false;
@@ -216,9 +222,12 @@ export default async function AdminAnalyticsPage() {
             {[
               // Recipe Plan is no longer sold — only shown if a legacy subscriber still exists,
               // so this section reflects the actual current packages otherwise.
-              ...(recipe > 0 ? [{ label: `Recipe Plan (${PRICES.RECIPE_PLAN}₾) — legacy`, rev: recipe * PRICES.RECIPE_PLAN, count: recipe, color: 'bg-[#465940]/40' }] : []),
+              ...(recipe > 0 ? (() => {
+                const realRecipeRows = users.filter((u) => !u.isGifted && u.subscriptionStatus === 'RECIPE_PLAN');
+                return [{ label: `Recipe Plan (${PRICES.RECIPE_PLAN}₾) — legacy`, rev: realRecipeRows.length * PRICES.RECIPE_PLAN, count: realRecipeRows.length, color: 'bg-[#465940]/40' }];
+              })() : []),
               ...([1, 3, 6] as BillingInterval[]).map((interval) => {
-                const rows = users.filter((u) => u.subscriptionStatus === 'FULL_PLAN' && u.billingIntervalMonths === interval);
+                const rows = users.filter((u) => !u.isGifted && u.subscriptionStatus === 'FULL_PLAN' && u.billingIntervalMonths === interval);
                 return {
                   label: `${interval} Month (${INTERVAL_PRICE[interval]}₾)`,
                   rev: Math.round(rows.reduce((sum, u) => sum + monthlyPriceFor(u), 0)),
@@ -343,7 +352,7 @@ export default async function AdminAnalyticsPage() {
           <h2 className="mb-4 font-bold text-[#465940]">Recent registrations</h2>
           <div className="space-y-3">
             {recentUsers.map((u) => {
-              const price = u.subscriptionStatus === 'FREE' || u.subscriptionStatus === 'CANCELED' ? undefined : priceFor(u);
+              const price = u.isGifted || u.subscriptionStatus === 'FREE' || u.subscriptionStatus === 'CANCELED' ? undefined : priceFor(u);
               return (
                 <div key={u.email} className="flex items-center justify-between">
                   <div>
@@ -354,7 +363,7 @@ export default async function AdminAnalyticsPage() {
                     <span className={`rounded-full px-2 py-0.5 text-xs font-bold ${
                       price ? 'bg-[#465940] text-[#FDFBF0]' : 'bg-[#465940]/10 text-[#465940]/70'
                     }`}>
-                      {price ? `${price}₾` : u.subscriptionStatus}
+                      {u.isGifted ? 'GIFTED' : price ? `${price}₾` : u.subscriptionStatus}
                     </span>
                     <p className="mt-1 text-xs text-[#bbb]">{new Date(u.createdAt).toLocaleDateString('ka-GE')}</p>
                   </div>
