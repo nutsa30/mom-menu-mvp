@@ -41,10 +41,16 @@ function snooze() {
 
 // ─────────────────────────────────────────────────────────────────────────────
 
+// Temporarily disabled — push notifications aren't actually being delivered right now
+// (the /api/cron/notify schedule isn't wired up), so asking users to opt in is misleading.
+// Flip back to false once that's fixed.
+const DISABLED = true;
+
 export default function NotificationPrompt() {
   const [show, setShow] = useState(false);
 
   useEffect(() => {
+    if (DISABLED) return;
     if (!('Notification' in window)) return;
     if (Notification.permission !== 'default') return; // already granted or denied
     if (snoozed()) return;
