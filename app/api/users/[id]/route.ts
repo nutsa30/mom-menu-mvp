@@ -8,8 +8,10 @@ export async function PATCH(req: Request, { params }: { params: { id: string } }
 
   const body = await req.json();
 
-  // Regular user can only update their own name / email
-  if (session.id === params.id) {
+  // Regular user can only update their own name / email — admins fall through to the
+  // full admin branch below even on their own account, so an admin can gift/block/etc.
+  // their own row from admin/users instead of it silently no-opping here.
+  if (session.id === params.id && session.role !== 'ADMIN') {
     // Check email uniqueness if provided
     if (body.email !== undefined) {
       const existing = await prisma.user.findUnique({ where: { email: body.email } });
