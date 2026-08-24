@@ -13,31 +13,22 @@ export async function registerAction(form: FormData) {
   const name = str(form, 'name');
   const email = str(form, 'email').toLowerCase();
   const password = str(form, 'password');
-  const childName = str(form, 'childName');
-  const birthDate = new Date(str(form, 'birthDate'));
 
   const existing = await prisma.user.findUnique({ where: { email } });
   if (existing) redirect('/register?error=exists');
 
   const passwordHash = await hashPassword(password);
-  const emailVerifyToken = crypto.randomUUID();
-  await prisma.user.create({
-    data: {
-      name, email, passwordHash,
-      emailVerified: false,
-      emailVerifyToken,
-      children: {
-        create: {
-          name: childName,
-          birthDate,
-          ageGroup: getAgeGroup(birthDate),
-          allergies: list(form, 'allergies'),
-        },
-      },
-    },
+  const user = await prisma.user.create({
+    data: { name, email, passwordHash, emailVerified: false },
   });
-  try { await sendVerificationEmail(email, name, emailVerifyToken); } catch {}
-  redirect('/verify-email?sent=1');
+
+  const code = String(Math.floor(100000 + Math.random() * 900000));
+  const tokenHash = crypto.createHash('sha256').update(user.id + ':' + code).digest('hex');
+  await prisma.emailVerificationToken.create({
+    data: { userId: user.id, tokenHash, expiresAt: new Date(Date.now() + 15 * 60 * 1000) },
+  });
+  try { await sendVerificationEmail(email, name, code); } catch {}
+  redirect('/verify-email?email=' + encodeURIComponent(email));
 }
 
 export async function loginAction(form: FormData) {

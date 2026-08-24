@@ -27,21 +27,10 @@ function SubmitButton({ label }: { label: string }) {
   );
 }
 
-function calcAgeMonths(dateStr: string): number | null {
-  if (!dateStr) return null;
-  const birth = new Date(dateStr);
-  if (isNaN(birth.getTime())) return null;
-  const now = new Date();
-  return (now.getFullYear() - birth.getFullYear()) * 12 + (now.getMonth() - birth.getMonth());
-}
-
 export default function Register({ searchParams }: { searchParams: { lang?: Locale; error?: string } }) {
   const locale = searchParams.lang === 'en' ? 'en' : 'ka';
   const d = dict[locale];
-  const [birthDate, setBirthDate] = useState('');
   const [showPwd, setShowPwd] = useState(false);
-
-  const ageMonths = calcAgeMonths(birthDate);
 
   const errorMsg =
     searchParams.error === 'exists'
@@ -202,41 +191,6 @@ export default function Register({ searchParams }: { searchParams: { lang?: Loca
                   </button>
                 </div>
               </div>
-
-              <div className="grid grid-cols-2 gap-3">
-                <div>
-                  <label className="block text-sm font-semibold text-[#6F7A5C] mb-1.5">
-                    {locale === 'ka' ? 'ბავშვის სახელი' : "Child's Name"}
-                  </label>
-                  <input
-                    name="childName"
-                    required
-                    className="w-full px-4 py-3 rounded-xl border border-[#6F7A5C]/20 focus:outline-none focus:border-[#6F7A5C] transition text-sm text-[#6F7A5C] bg-[#F5F1E4]"
-                  />
-                </div>
-                <div>
-                  <label className="block text-sm font-semibold text-[#6F7A5C] mb-1.5">
-                    {locale === 'ka' ? 'დაბადების თარიღი' : "Child's Birth Date"}
-                  </label>
-                  <input
-                    name="birthDate"
-                    type="date"
-                    required
-                    value={birthDate}
-                    onChange={(e) => setBirthDate(e.target.value)}
-                    className="w-full px-4 py-3 rounded-xl border border-[#6F7A5C]/20 focus:outline-none focus:border-[#6F7A5C] transition text-sm text-[#6F7A5C] bg-[#F5F1E4]"
-                  />
-                </div>
-              </div>
-
-              {ageMonths !== null && (
-                <div className="flex items-center gap-2 bg-[#6F7A5C]/10 border border-[#6F7A5C]/20 rounded-xl px-4 py-3 text-sm text-[#6F7A5C] font-medium">
-                  <span></span>
-                  {locale === 'ka'
-                    ? `თქვენი ბავშვი ${ageMonths} თვისაა`
-                    : `Your child is ${ageMonths} months old`}
-                </div>
-              )}
 
               <label className="flex items-start gap-3 cursor-pointer pt-1">
                 <input type="checkbox" required className="mt-0.5" style={{ accentColor: '#6F7A5C' }} />
