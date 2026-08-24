@@ -239,7 +239,7 @@ function TodayTab({ child, allDishes, planStart, isFullPlan }: { child: any; all
     <div className="space-y-4">
       {/* Week selector */}
       <div className={`${card} p-4`}>
-        <div className="flex gap-2 overflow-x-auto pb-1">
+        <div className="grid grid-cols-7 gap-1 sm:gap-2">
           {weekDays.map(date => {
             const d = new Date(date + 'T12:00:00');
             const isCurrentDay = date === todayStr;
@@ -247,7 +247,7 @@ function TodayTab({ child, allDishes, planStart, isFullPlan }: { child: any; all
             const isPast = date < todayStr;
             return (
               <button key={date} onClick={() => setSelectedDate(date)}
-                className={`flex flex-col items-center px-3 py-2 rounded-2xl transition flex-shrink-0 min-w-[52px] ${
+                className={`flex flex-col items-center px-1 py-2 rounded-2xl transition ${
                   isSelected ? 'bg-[#465940] text-[#FDFBF0]' :
                   isCurrentDay ? 'bg-[#465940] text-[#465940]' :
                   isPast ? 'bg-[#465940]/5 text-[#465940]/60' :
