@@ -127,7 +127,7 @@ export default function AdminNav() {
   return (
     <>
       {/* Mobile top bar */}
-      <div className="lg:hidden fixed top-0 left-0 right-0 z-40 border-b border-[#FDFBF0]/10 px-4 py-3 flex items-center justify-between" style={{ background: '#465940' }}>
+      <div className="lg:hidden fixed top-0 left-0 right-0 z-40 border-b border-[#FDFBF0]/10 px-4 py-3 flex items-center justify-between" style={{ background: '#465940', paddingTop: 'calc(0.75rem + env(safe-area-inset-top))' }}>
         <span className="text-base font-extrabold tracking-tight text-[#FDFBF0]">
           mom menu
           <span className="ml-1.5 text-xs font-semibold text-[#FDFBF0]/50">Admin</span>

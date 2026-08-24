@@ -37,11 +37,8 @@ export default function SiteFooter() {
 
           {/* Brand */}
           <div>
-            <a href={`/?lang=${locale}`} className="inline-block mb-4">
-              <div className="leading-tight">
-                <div className="text-2xl font-black text-[#F5F1E4]">mom<svg width="20" height="20" viewBox="0 0 24 24" fill="#D9803B" style={{ display: 'inline', verticalAlign: '-3px', marginLeft: '1px' }}><path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z"/></svg></div>
-                <div className="text-2xl font-black text-[#F5F1E4]">menu</div>
-              </div>
+            <a href={`/?lang=${locale}`} className="inline-flex mb-4 rounded-2xl p-2" style={{ background: '#F5F1E4' }}>
+              <img src="/mommenu-logo.png" alt="mom menu" className="h-14 w-auto" />
             </a>
             <p className="text-sm text-[#F5F1E4]/70 leading-relaxed mb-6 max-w-[200px]">
               {ka

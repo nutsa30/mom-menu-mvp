@@ -53,13 +53,13 @@ export default function Login({ searchParams }: { searchParams: { lang?: Locale;
 
           {/* Mobile: horizontal photo strip */}
           <div className="flex lg:hidden items-center gap-4 px-6 py-5">
-            <div className="rounded-2xl overflow-hidden flex-shrink-0 border border-[#F5F1E4]/20" style={{ width: 80, height: 80 }}>
+            <div className="rounded-2xl overflow-hidden flex-shrink-0 flex items-center justify-center p-2" style={{ width: 80, height: 80, background: '#F5F1E4' }}>
               <Image
-                src="/cooking.jpg"
-                alt="Mom and child cooking"
+                src="/mommenu-logo.png"
+                alt="mom menu"
                 width={80}
                 height={80}
-                className="w-full h-full object-cover"
+                className="w-full h-full object-contain"
               />
             </div>
             <div>
@@ -75,13 +75,13 @@ export default function Login({ searchParams }: { searchParams: { lang?: Locale;
             <span className="text-[#F5F1E4] text-lg font-extrabold tracking-tight">Mom Menu</span>
             <div className="flex-1 flex items-center justify-center">
               <div className="relative w-full max-w-[260px]">
-                <div className="rounded-3xl overflow-hidden border border-[#F5F1E4]/20" style={{ height: 300 }}>
+                <div className="rounded-3xl overflow-hidden flex items-center justify-center p-8" style={{ height: 300, background: '#F5F1E4' }}>
                   <Image
-                    src="/cooking.jpg"
-                    alt="Mom and child cooking"
+                    src="/mommenu-logo.png"
+                    alt="mom menu"
                     width={260}
                     height={300}
-                    className="w-full h-full object-cover"
+                    className="w-full h-full object-contain"
                   />
                 </div>
                 <div className="absolute -bottom-5 -right-8 bg-[#F5F1E4] rounded-2xl shadow-xl p-3.5 flex items-center gap-3 w-48">
