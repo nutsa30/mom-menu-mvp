@@ -31,6 +31,12 @@ export async function PATCH(req: Request, { params }: { params: { id: string } }
   // Admin-only: block/role changes on other users
   if (session.role !== 'ADMIN') return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
 
+  // Flat day-multiples per interval — same convention as the real BOG billing cycle
+  // (lib/webhooks/bog/route.ts's INTERVAL_MS), so a gifted tier expires on the same
+  // schedule a real subscription on that tier would.
+  const GIFT_INTERVAL_DAYS: Record<number, number> = { 1: 30, 3: 90, 6: 180 };
+  const billingIntervalMonths: number | null = body.billingIntervalMonths ?? null;
+
   const user = await prisma.user.update({
     where: { id: params.id },
     data: {
@@ -41,6 +47,14 @@ export async function PATCH(req: Request, { params }: { params: { id: string } }
         isGifted: body.isGifted ?? false,
         subscriptionStartedAt: body.subscriptionStatus !== 'FREE' ? new Date() : null,
         subscriptionCanceledAt: body.subscriptionStatus === 'FREE' ? new Date() : null,
+        billingIntervalMonths: body.subscriptionStatus !== 'FREE' ? billingIntervalMonths : null,
+        subscriptionRenewsAt:
+          body.subscriptionStatus !== 'FREE' && billingIntervalMonths
+            ? new Date(Date.now() + GIFT_INTERVAL_DAYS[billingIntervalMonths] * 24 * 60 * 60 * 1000)
+            : null,
+        // A re-gift must never let the bog-renew cron try to charge a real card on file
+        // from a previous, unrelated real subscription this account may have had.
+        ...(body.isGifted && { bogParentOrderId: null }),
       }),
       // Standalone toggle — corrects a stale "gifted" flag (e.g. left over from an
       // earlier promo grant) without touching the user's actual subscription dates,

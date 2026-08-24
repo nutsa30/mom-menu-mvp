@@ -61,5 +61,28 @@ export async function GET(req: NextRequest) {
     });
   }
 
-  return NextResponse.json({ due: due.length, ...results, downgraded: expiredCanceled.length });
+  // Time-limited gifts (admin-granted 1/3/6-month access, isGifted with a
+  // billingIntervalMonths set) never go through BOG at all, so nothing else ever
+  // downgrades them once their granted period ends — do that here too.
+  const expiredGifts = await prisma.user.findMany({
+    where: {
+      isGifted: true,
+      billingIntervalMonths: { not: null },
+      subscriptionStatus: { in: ['RECIPE_PLAN', 'FULL_PLAN'] },
+      subscriptionRenewsAt: { lte: new Date() },
+    },
+  });
+  for (const user of expiredGifts) {
+    await prisma.user.update({
+      where: { id: user.id },
+      data: {
+        subscriptionStatus: 'CANCELED',
+        isGifted: false,
+        billingIntervalMonths: null,
+        subscriptionRenewsAt: null,
+      },
+    });
+  }
+
+  return NextResponse.json({ due: due.length, ...results, downgraded: expiredCanceled.length, giftsExpired: expiredGifts.length });
 }

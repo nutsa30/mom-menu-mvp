@@ -15,26 +15,22 @@ export async function registerAction(form: FormData) {
   const password = str(form, 'password');
 
   const existing = await prisma.user.findUnique({ where: { email } });
-  if (existing) {
-    // An unverified account that's never actually been used doesn't count as a real
-    // registration — let a fresh attempt replace it instead of the email being permanently
-    // stuck "already registered" because a code never got confirmed. Never touch an account
-    // that's actually in use (paid, gifted, etc.), even if it's unverified.
-    const abandoned = !existing.emailVerified && existing.subscriptionStatus === 'FREE';
-    if (!abandoned) redirect('/register?error=exists');
-    await prisma.user.delete({ where: { id: existing.id } });
-  }
+  if (existing) redirect('/register?error=exists');
 
   const passwordHash = await hashPassword(password);
-  const user = await prisma.user.create({
-    data: { name, email, passwordHash, emailVerified: false },
+  const code = String(Math.floor(100000 + Math.random() * 900000));
+  const codeHash = crypto.createHash('sha256').update(email + ':' + code).digest('hex');
+
+  // No User row is created yet — just a pending registration keyed by email. It only
+  // becomes a real account once the emailed code is confirmed (see verify-email-code
+  // route). Re-submitting the form with the same email before confirming just replaces
+  // the pending attempt with a fresh code, rather than erroring.
+  await prisma.pendingRegistration.upsert({
+    where: { email },
+    create: { email, name, passwordHash, codeHash, expiresAt: new Date(Date.now() + 15 * 60 * 1000) },
+    update: { name, passwordHash, codeHash, expiresAt: new Date(Date.now() + 15 * 60 * 1000) },
   });
 
-  const code = String(Math.floor(100000 + Math.random() * 900000));
-  const tokenHash = crypto.createHash('sha256').update(user.id + ':' + code).digest('hex');
-  await prisma.emailVerificationToken.create({
-    data: { userId: user.id, tokenHash, expiresAt: new Date(Date.now() + 15 * 60 * 1000) },
-  });
   try { await sendVerificationEmail(email, name, code); } catch {}
   redirect('/verify-email?email=' + encodeURIComponent(email));
 }
@@ -45,15 +41,10 @@ export async function loginAction(form: FormData) {
   const user = await prisma.user.findUnique({ where: { email } });
   if (!user || !(await verifyPassword(password, user.passwordHash))) redirect('/login?error=1');
   if (user!.isBlocked) redirect('/login?error=blocked');
-  // Block only accounts that registered through the code-verification flow and never
-  // confirmed it — old pre-verification accounts (no emailVerifyToken, no
-  // EmailVerificationToken record) pass through unaffected.
-  if (!user!.emailVerified) {
-    const pendingCodeVerification = await prisma.emailVerificationToken.findFirst({ where: { userId: user!.id } });
-    if (user!.emailVerifyToken || pendingCodeVerification) {
-      redirect('/login?error=unverified&email=' + encodeURIComponent(email));
-    }
-  }
+  // Every User row that exists was either created already-verified (new code-confirmed
+  // registration flow) or predates that flow entirely — this only still matters for
+  // old-style accounts stuck on the legacy link-based emailVerifyToken.
+  if (!user!.emailVerified && user!.emailVerifyToken) redirect('/login?error=unverified&email=' + encodeURIComponent(email));
   await setAuthCookie({ id: user!.id, email: user!.email, name: user!.name, role: user!.role });
   redirect(user!.role === 'ADMIN' ? '/admin?lang=ka' : '/dashboard?lang=ka&in=1');
 }

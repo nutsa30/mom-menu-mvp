@@ -80,7 +80,6 @@ model User {
   children               Child[]
   mealPlans              MealPlan[]
   passwordResetTokens    PasswordResetToken[]
-  emailVerificationTokens EmailVerificationToken[]
   payments               Payment[]
 
   createdAt              DateTime           @default(now())
@@ -534,14 +533,16 @@ model PasswordResetToken {
   createdAt DateTime  @default(now())
 }
 
-model EmailVerificationToken {
-  id        String    @id @default(cuid())
-  userId    String
-  user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
-  tokenHash String    @unique
-  expiresAt DateTime
-  usedAt    DateTime?
-  createdAt DateTime  @default(now())
+// Holds a registration in progress — no User row is created until the emailed code is
+// confirmed, so an unconfirmed signup never occupies the email address at all.
+model PendingRegistration {
+  id           String   @id @default(cuid())
+  email        String   @unique
+  name         String
+  passwordHash String
+  codeHash     String
+  expiresAt    DateTime
+  createdAt    DateTime @default(now())
 }
 
 enum CampaignStatus {

@@ -37,12 +37,14 @@ export function BlockUserButton({ userId, isBlocked, locale = 'ka' }: { userId: 
 }
 
 export function GiftSubscriptionButton({
-  userId, currentStatus, isGifted, recipePrice = 15, fullPrice = 30,
-}: { userId: string; currentStatus: string; isGifted: boolean; recipePrice?: number; fullPrice?: number }) {
-  const GIFT_OPTIONS = [
-    { value: 'RECIPE_PLAN', label: `${recipePrice}₾ — რეცეპტები`, color: 'text-[#465940]' },
-    { value: 'FULL_PLAN', label: `${fullPrice}₾ — სრული`, color: 'text-[#465940]' },
-    { value: 'FREE', label: 'გაუქმება', color: 'text-[#FDFBF0]' },
+  userId, currentStatus, isGifted, intervalPrices = { 1: 17, 3: 39, 6: 59 },
+}: { userId: string; currentStatus: string; isGifted: boolean; intervalPrices?: Record<1 | 3 | 6, number> }) {
+  const GIFT_OPTIONS: { value: string; billingIntervalMonths: number | null; label: string; color: string }[] = [
+    { value: 'FULL_PLAN', billingIntervalMonths: 1, label: `1 თვე (${intervalPrices[1]}₾)`, color: 'text-[#465940]' },
+    { value: 'FULL_PLAN', billingIntervalMonths: 3, label: `3 თვე (${intervalPrices[3]}₾)`, color: 'text-[#465940]' },
+    { value: 'FULL_PLAN', billingIntervalMonths: 6, label: `6 თვე (${intervalPrices[6]}₾)`, color: 'text-[#465940]' },
+    { value: 'FULL_PLAN', billingIntervalMonths: null, label: 'უვადო', color: 'text-[#465940]' },
+    { value: 'FREE', billingIntervalMonths: null, label: 'გაუქმება', color: 'text-[#FDFBF0]' },
   ];
   const router = useRouter();
   const [open, setOpen] = useState(false);
@@ -57,15 +59,18 @@ export function GiftSubscriptionButton({
     return () => document.removeEventListener('mousedown', handler);
   }, []);
 
-  const gift = async (status: string) => {
-    const option = GIFT_OPTIONS.find(o => o.value === status);
-    if (!confirm(`${option?.label} — დარწმუნებული ხარ?`)) return;
+  const gift = async (opt: typeof GIFT_OPTIONS[number]) => {
+    if (!confirm(`${opt.label} — დარწმუნებული ხარ?`)) return;
     setLoading(true);
     setOpen(false);
     await fetch(`/api/users/${userId}`, {
       method: 'PATCH',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ subscriptionStatus: status, isGifted: status !== 'FREE' }),
+      body: JSON.stringify({
+        subscriptionStatus: opt.value,
+        isGifted: opt.value !== 'FREE',
+        billingIntervalMonths: opt.billingIntervalMonths,
+      }),
     });
     router.refresh();
     setLoading(false);

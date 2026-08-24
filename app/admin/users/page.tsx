@@ -91,7 +91,7 @@ function UserTable({ users, subLabelFor, locale }: { users: any[]; subLabelFor: 
               <td className="px-4 py-4 text-sm text-[#465940]/60">{new Date(user.createdAt).toLocaleDateString()}</td>
               <td className="px-6 py-4">
                 <div className="flex items-center justify-end gap-2 flex-wrap">
-                  <GiftSubscriptionButton userId={user.id} currentStatus={user.subscriptionStatus} isGifted={user.isGifted} recipePrice={RECIPE_PRICE} fullPrice={FULL_PRICE} />
+                  <GiftSubscriptionButton userId={user.id} currentStatus={user.subscriptionStatus} isGifted={user.isGifted} intervalPrices={INTERVAL_PRICE} />
                   <ToggleAdminButton userId={user.id} role={user.role} locale={locale} />
                   <BlockUserButton userId={user.id} isBlocked={user.isBlocked} locale={locale} />
                 </div>
