@@ -15,7 +15,15 @@ export async function registerAction(form: FormData) {
   const password = str(form, 'password');
 
   const existing = await prisma.user.findUnique({ where: { email } });
-  if (existing) redirect('/register?error=exists');
+  if (existing) {
+    // An unverified account that's never actually been used doesn't count as a real
+    // registration — let a fresh attempt replace it instead of the email being permanently
+    // stuck "already registered" because a code never got confirmed. Never touch an account
+    // that's actually in use (paid, gifted, etc.), even if it's unverified.
+    const abandoned = !existing.emailVerified && existing.subscriptionStatus === 'FREE';
+    if (!abandoned) redirect('/register?error=exists');
+    await prisma.user.delete({ where: { id: existing.id } });
+  }
 
   const passwordHash = await hashPassword(password);
   const user = await prisma.user.create({
@@ -37,8 +45,15 @@ export async function loginAction(form: FormData) {
   const user = await prisma.user.findUnique({ where: { email } });
   if (!user || !(await verifyPassword(password, user.passwordHash))) redirect('/login?error=1');
   if (user!.isBlocked) redirect('/login?error=blocked');
-  // Block only newly registered (unverified) users — old accounts pass through
-  if (!user!.emailVerified && user!.emailVerifyToken) redirect('/login?error=unverified&email=' + encodeURIComponent(email));
+  // Block only accounts that registered through the code-verification flow and never
+  // confirmed it — old pre-verification accounts (no emailVerifyToken, no
+  // EmailVerificationToken record) pass through unaffected.
+  if (!user!.emailVerified) {
+    const pendingCodeVerification = await prisma.emailVerificationToken.findFirst({ where: { userId: user!.id } });
+    if (user!.emailVerifyToken || pendingCodeVerification) {
+      redirect('/login?error=unverified&email=' + encodeURIComponent(email));
+    }
+  }
   await setAuthCookie({ id: user!.id, email: user!.email, name: user!.name, role: user!.role });
   redirect(user!.role === 'ADMIN' ? '/admin?lang=ka' : '/dashboard?lang=ka&in=1');
 }
