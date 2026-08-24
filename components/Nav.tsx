@@ -16,7 +16,7 @@ export default function Nav({ locale = 'ka', isLoggedIn = false }: { locale?: st
 
         {/* Logo */}
         <a href={`/?lang=${locale}`} className="flex-shrink-0 select-none">
-          <img src="/mommenu-logo.png" alt="mom menu" className="h-12 w-auto" />
+          <img src="/mommenu-logo.png" alt="mom menu" className="h-16 w-auto" />
         </a>
 
         {/* Desktop links */}

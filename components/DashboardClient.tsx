@@ -1671,7 +1671,7 @@ export default function DashboardClient({ user }: { user: any }) {
       <header className="bg-gradient-to-r from-[#465940] to-[#465940] px-5 py-4 flex items-center justify-between sticky top-0 z-30 shadow-sm" style={{ paddingTop: 'calc(1rem + env(safe-area-inset-top))' }}>
         <div className="flex items-center gap-3">
           <a href="/" className="inline-flex rounded-xl p-1" style={{ background: '#FDFBF0' }}>
-            <img src="/mommenu-logo.png" alt="mom menu" className="h-8 w-auto" />
+            <img src="/mommenu-logo.png" alt="mom menu" className="h-9 w-auto" />
           </a>
           {children.length > 1 && (
             <select

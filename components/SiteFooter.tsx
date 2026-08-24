@@ -38,7 +38,7 @@ export default function SiteFooter() {
           {/* Brand */}
           <div>
             <a href={`/?lang=${locale}`} className="inline-flex mb-4 rounded-2xl p-2" style={{ background: '#F5F1E4' }}>
-              <img src="/mommenu-logo.png" alt="mom menu" className="h-14 w-auto" />
+              <img src="/mommenu-logo.png" alt="mom menu" className="h-16 w-auto" />
             </a>
             <p className="text-sm text-[#F5F1E4]/70 leading-relaxed mb-6 max-w-[200px]">
               {ka
