@@ -809,7 +809,7 @@ function NutritionTab({ child }: { child: any }) {
               </div>
               <div className="h-2.5 bg-[#465940]/10 rounded-full overflow-hidden">
                 <div
-                  className={`h-full rounded-full transition-all duration-500 ${a.pct >= 100 ? 'bg-[#465940]' : a.pct >= 70 ? 'bg-[#465940]' : 'bg-[#FDFBF0]/40'}`}
+                  className="h-full rounded-full transition-all duration-500 bg-[#465940]"
                   style={{ width: `${Math.min(100, a.pct)}%` }}
                 />
               </div>
