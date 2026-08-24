@@ -106,10 +106,10 @@ export function GiftSubscriptionButton({
       </button>
       {open && (
         <div className="absolute right-0 top-full mt-1 bg-[#FDFBF0] border border-[#465940]/10 rounded-xl shadow-lg z-50 min-w-[200px] py-1 overflow-hidden">
-          {GIFT_OPTIONS.filter(o => o.value !== currentStatus).map(opt => (
+          {GIFT_OPTIONS.map(opt => (
             <button
-              key={opt.value}
-              onClick={() => gift(opt.value)}
+              key={`${opt.value}-${opt.billingIntervalMonths}`}
+              onClick={() => gift(opt)}
               className={`w-full text-left px-4 py-2 text-xs font-semibold hover:bg-[#465940]/5 transition ${opt.color}`}
             >
               {opt.label}
