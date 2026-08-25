@@ -37,7 +37,7 @@ export const mealOrder: MealType[] = ['BREAKFAST', 'SNACK', 'LUNCH', 'DINNER'];
  */
 export function getMealTypesForAge(birthDate: Date | null | undefined): MealType[] {
   if (!birthDate) return ['BREAKFAST', 'SNACK', 'LUNCH', 'DINNER'];
-  const months = (Date.now() - new Date(birthDate).getTime()) / (1000 * 60 * 60 * 24 * 30.44);
+  const months = ageInMonths(new Date(birthDate));
   if (months < 9)  return ['BREAKFAST', 'LUNCH'];
   if (months < 12) return ['BREAKFAST', 'LUNCH', 'DINNER'];
   return ['BREAKFAST', 'SNACK', 'LUNCH', 'DINNER'];

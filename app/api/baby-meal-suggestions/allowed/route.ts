@@ -42,11 +42,6 @@ export async function GET(req: NextRequest) {
     orderBy: [{ minAgeMonths: 'asc' }, { titleKa: 'asc' }],
   });
 
-  // Calculate months for child age check
-  const ageMonths = Math.floor(
-    (Date.now() - new Date(child.birthDate).getTime()) / (1000 * 60 * 60 * 24 * 30.44)
-  );
-
   // Filter: show suggestion only when ALL its ingredients have been individually tried and are safe.
   // Age check is intentionally omitted — if each ingredient was already safely introduced,
   // the combination is safe regardless of minAgeMonths.
