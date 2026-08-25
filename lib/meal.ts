@@ -1,7 +1,16 @@
 import { AgeGroup, MealType } from '@prisma/client';
 
+// Exact calendar-month count, not a 30.44-day average — a child born on the 26th turns
+// each new month precisely on the 26th, not a day or two early/late depending on how many
+// days that particular month happened to have.
+export function ageInMonths(birthDate: Date, now: Date = new Date()): number {
+  let months = (now.getFullYear() - birthDate.getFullYear()) * 12 + (now.getMonth() - birthDate.getMonth());
+  if (now.getDate() < birthDate.getDate()) months--;
+  return Math.max(0, months);
+}
+
 export function getAgeGroup(birthDate: Date): AgeGroup {
-  const months = Math.max(0, (Date.now() - birthDate.getTime()) / (1000 * 60 * 60 * 24 * 30.44));
+  const months = ageInMonths(birthDate);
   if (months >= 24) return 'FROM_24';
   if (months >= 12) return 'FROM_12';
   if (months >= 9)  return 'FROM_9';

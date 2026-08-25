@@ -21,6 +21,14 @@ const CATEGORY_LABELS: Record<string, string> = {
 };
 const CATEGORY_ORDER = ['vegetable', 'fruit', 'protein', 'dairy', 'grain', 'allergen'];
 
+// Exact calendar-month count (not a 30.44-day average) — a child born on the 26th turns
+// each new month precisely on the 26th, not a day or two early/late.
+function ageInMonths(birthDate: Date, now: Date = new Date()): number {
+  let months = (now.getFullYear() - birthDate.getFullYear()) * 12 + (now.getMonth() - birthDate.getMonth());
+  if (now.getDate() < birthDate.getDate()) months--;
+  return Math.max(0, months);
+}
+
 function blwCutSize(ageMonths: number): string {
   if (ageMonths < 9) return '~10 სმ ჯოხი (ბავშვის ხელის სიგრძე)';
   if (ageMonths < 12) return '1–2 სმ კუბი ან ზოლი';
@@ -222,7 +230,7 @@ export default function FirstFoodsTab({ child, isFullPlan }: { child: any; isFul
 
   useEffect(() => { fetchIngredients(); }, [fetchIngredients]);
 
-  const ageMonths = Math.floor((Date.now() - new Date(child.birthDate).getTime()) / (1000 * 60 * 60 * 24 * 30.44));
+  const ageMonths = ageInMonths(new Date(child.birthDate));
 
   if (!isFullPlan) return (
     <div className="bg-[#FDFBF0] rounded-2xl border border-[#465940]/10 shadow-sm p-10 text-center">
