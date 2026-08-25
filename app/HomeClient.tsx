@@ -102,6 +102,9 @@ export default function HomeClient({ s, dishes, dishCount, recentBlogs, planAmou
   const refTestimonialCards = useStaggeredFadeUp(100);
   const [testimonialText, setTestimonialText] = useState('');
   const [testimonialStatus, setTestimonialStatus] = useState<'idle' | 'sending' | 'sent' | 'error'>('idle');
+  const [showAllTestimonials, setShowAllTestimonials] = useState(false);
+  const TESTIMONIALS_PREVIEW_COUNT = 3;
+  const visibleTestimonials = showAllTestimonials ? testimonials : testimonials.slice(0, TESTIMONIALS_PREVIEW_COUNT);
   const submitTestimonial = async () => {
     if (!testimonialText.trim()) return;
     setTestimonialStatus('sending');
@@ -273,14 +276,25 @@ export default function HomeClient({ s, dishes, dishCount, recentBlogs, planAmou
             )}
 
             {testimonials.length > 0 && (
-              <div ref={refTestimonialCards} className="grid sm:grid-cols-2 lg:grid-cols-3 gap-5">
-                {testimonials.map((tst) => (
-                  <div key={tst.id} className="fade-up rounded-2xl p-5 bg-[#F5F1E4]/10">
-                    <p className="text-[#F5F1E4]/90 text-sm leading-relaxed mb-3">"{tst.content}"</p>
-                    <p className="text-[#F5F1E4] text-sm font-bold">{tst.authorName}</p>
+              <>
+                <div ref={refTestimonialCards} className="grid sm:grid-cols-2 lg:grid-cols-3 gap-5">
+                  {visibleTestimonials.map((tst) => (
+                    <div key={tst.id} className="fade-up rounded-2xl p-5 bg-[#F5F1E4]/10">
+                      <p className="text-[#F5F1E4]/90 text-sm leading-relaxed mb-3">"{tst.content}"</p>
+                      <p className="text-[#F5F1E4] text-sm font-bold">{tst.authorName}</p>
+                    </div>
+                  ))}
+                </div>
+                {!showAllTestimonials && testimonials.length > TESTIMONIALS_PREVIEW_COUNT && (
+                  <div className="text-center mt-6">
+                    <button onClick={() => setShowAllTestimonials(true)}
+                      className="px-6 py-2.5 rounded-full text-sm font-bold border-2 transition hover:bg-[#F5F1E4]/10"
+                      style={{ borderColor: 'rgba(245,241,228,0.3)', color: '#F5F1E4' }}>
+                      {ka ? `ყველას ნახვა (+${testimonials.length - TESTIMONIALS_PREVIEW_COUNT})` : `Show all (+${testimonials.length - TESTIMONIALS_PREVIEW_COUNT})`}
+                    </button>
                   </div>
-                ))}
-              </div>
+                )}
+              </>
             )}
           </div>
         </section>

@@ -52,7 +52,7 @@ export default async function Home() {
     prisma.testimonial.findMany({
       where: { approved: true },
       orderBy: { createdAt: 'desc' },
-      take: 12,
+      take: 200,
       select: { id: true, authorName: true, content: true },
     }),
     session ? prisma.testimonial.findFirst({ where: { userId: session.id }, select: { id: true } }) : null,
