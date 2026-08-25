@@ -1,16 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getSession } from '@/lib/auth';
 import { prisma } from '@/lib/prisma';
-
-function getAgeGroup(birthDate: Date) {
-  const months =
-    (new Date().getFullYear() - birthDate.getFullYear()) * 12 +
-    (new Date().getMonth() - birthDate.getMonth());
-  if (months < 9) return 'FROM_6';
-  if (months < 12) return 'FROM_9';
-  if (months < 24) return 'FROM_12';
-  return 'FROM_24';
-}
+import { getAgeGroup } from '@/lib/meal';
 
 export async function PATCH(req: NextRequest, { params }: { params: { id: string } }) {
   const session = await getSession();

@@ -79,13 +79,13 @@ export function GiftSubscriptionButton({
   const hasGift = isGifted && currentStatus !== 'FREE' && currentStatus !== 'CANCELED';
 
   const removeGiftFlag = async () => {
-    if (!confirm('მოეხსნას "გაჩუქებული" ნიშანი? პაკეტი და თარიღები უცვლელი დარჩება — გამოსადეგია, თუ ეს რეალურად გადახდილი გამოწერაა.')) return;
+    if (!confirm('მოეხსნას გაჩუქებული პაკეტი? წვდომაც გაუქმდება — არაფერს იხდიან.')) return;
     setLoading(true);
     setOpen(false);
     await fetch(`/api/users/${userId}`, {
       method: 'PATCH',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ isGifted: false }),
+      body: JSON.stringify({ subscriptionStatus: 'FREE', isGifted: false, billingIntervalMonths: null }),
     });
     router.refresh();
     setLoading(false);
@@ -120,7 +120,7 @@ export function GiftSubscriptionButton({
               onClick={removeGiftFlag}
               className="w-full text-left px-4 py-2 text-xs font-semibold text-[#465940] hover:bg-[#465940]/5 transition border-t border-[#465940]/10"
             >
-              ✕ მოხსნა (რეალურად გადახდილია)
+              ✕ მოხსნა
             </button>
           )}
         </div>

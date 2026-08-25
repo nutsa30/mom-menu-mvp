@@ -1,18 +1,7 @@
 import { prisma } from '@/lib/prisma';
 import { getSession } from '@/lib/auth';
+import { getAgeGroup } from '@/lib/meal';
 import { NextResponse } from 'next/server';
-
-function getAgeGroup(birthDate: Date) {
-  const now = new Date();
-  const ageInMonths =
-    (now.getFullYear() - birthDate.getFullYear()) * 12 +
-    (now.getMonth() - birthDate.getMonth());
-
-  if (ageInMonths < 9) return 'FROM_6';
-  if (ageInMonths < 12) return 'FROM_9';
-  if (ageInMonths < 24) return 'FROM_12';
-  return 'FROM_24';
-}
 
 export async function GET(req: Request) {
   const session = await getSession();
