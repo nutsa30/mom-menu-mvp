@@ -1088,7 +1088,7 @@ function ChildTab({ children: kids, userId, onUpdate, onDelete }: {
               {c.name}
             </button>
           ))}
-          {kids.length === 0 && <p className="text-[#465940]/60 text-sm">ჯერ შვილი არ გაქვს დამატებული.</p>}
+          {kids.length === 0 && <p className="text-[#465940]/60 text-sm">ჯერ შვილი არ გყავს დამატებული.</p>}
         </div>
       </div>
 
