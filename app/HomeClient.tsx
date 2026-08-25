@@ -16,6 +16,7 @@ type RecentBlog = {
   contentKa: string;
   contentEn: string;
 };
+type Testimonial = { id: string; authorName: string; content: string };
 
 function useFadeUp() {
   const ref = useRef<HTMLDivElement>(null);
@@ -66,9 +67,10 @@ const SERIF_KA = "'Noto Serif Georgian', serif";
 
 type BillingInterval = 1 | 3 | 6;
 
-export default function HomeClient({ s, dishes, dishCount, recentBlogs, planAmounts }: {
+export default function HomeClient({ s, dishes, dishCount, recentBlogs, planAmounts, testimonials, canLeaveTestimonial }: {
   s: S; dishes: Dishes; dishCount: number; recentBlogs: RecentBlog[];
   planAmounts: Record<BillingInterval, number>;
+  testimonials: Testimonial[]; canLeaveTestimonial: boolean;
 }) {
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -95,6 +97,21 @@ export default function HomeClient({ s, dishes, dishCount, recentBlogs, planAmou
   const [promoInput, setPromoInput] = useState<Record<BillingInterval, string>>({ 1: '', 3: '', 6: '' });
   const [promoStatus, setPromoStatus] = useState<Record<BillingInterval, { discount: number; valid: boolean; msg: string } | undefined>>({ 1: undefined, 3: undefined, 6: undefined });
   const [promoLoading, setPromoLoading] = useState<BillingInterval | null>(null);
+
+  const refTestimonials = useFadeUp();
+  const refTestimonialCards = useStaggeredFadeUp(100);
+  const [testimonialText, setTestimonialText] = useState('');
+  const [testimonialStatus, setTestimonialStatus] = useState<'idle' | 'sending' | 'sent' | 'error'>('idle');
+  const submitTestimonial = async () => {
+    if (!testimonialText.trim()) return;
+    setTestimonialStatus('sending');
+    const res = await fetch('/api/testimonials', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ content: testimonialText.trim() }),
+    });
+    setTestimonialStatus(res.ok ? 'sent' : 'error');
+  };
 
   useEffect(() => {
     fetch('/api/auth/me')
@@ -508,6 +525,65 @@ export default function HomeClient({ s, dishes, dishCount, recentBlogs, planAmou
                 );
               })}
             </div>
+          </div>
+        </section>
+      )}
+
+      {/* ── Testimonials ─────────────────────────────────────── */}
+      {(testimonials.length > 0 || canLeaveTestimonial) && (
+        <section className="relative z-10 py-14 sm:py-24" style={{ background: '#6F7A5C' }}>
+          <div className="max-w-7xl mx-auto px-5">
+            <div ref={refTestimonials} className="fade-up mb-8 sm:mb-12">
+              <h2 className="text-2xl sm:text-3xl font-bold mb-1 text-[#F5F1E4]" style={{ fontFamily: SERIF_KA }}>
+                {ka ? 'რას ამბობენ მშობლები' : 'What parents say'}
+              </h2>
+              <p className="text-[#F5F1E4]/60 text-sm">
+                {ka ? 'ნამდვილი შეფასებები mom menu-ს მომხმარებლებისგან' : 'Real feedback from mom menu parents'}
+              </p>
+            </div>
+
+            {canLeaveTestimonial && (
+              <div className="fade-up in-view mb-8 rounded-2xl p-6 bg-[#F5F1E4]">
+                {testimonialStatus === 'sent' ? (
+                  <p className="text-[#6F7A5C] font-semibold text-sm">
+                    {ka ? '✓ მადლობა შეფასებისთვის! მალე გამოქვეყნდება.' : '✓ Thanks for the feedback! It will appear here once reviewed.'}
+                  </p>
+                ) : (
+                  <>
+                    <h3 className="font-bold text-[#6F7A5C] mb-3">
+                      {ka ? 'გაგვიზიარე შენი აზრი საიტზე' : 'Share your thoughts about the site'}
+                    </h3>
+                    <textarea
+                      value={testimonialText}
+                      onChange={(e) => setTestimonialText(e.target.value)}
+                      maxLength={500}
+                      rows={3}
+                      placeholder={ka ? 'რას ფიქრობ mom menu-ზე?' : 'What do you think of mom menu?'}
+                      className="w-full px-4 py-3 rounded-xl border border-[#6F7A5C]/20 focus:outline-none focus:border-[#6F7A5C] transition text-sm text-[#6F7A5C] bg-white resize-none"
+                    />
+                    {testimonialStatus === 'error' && (
+                      <p className="text-red-600 text-xs mt-1">{ka ? 'შეცდომა. სცადე თავიდან.' : 'Error. Please try again.'}</p>
+                    )}
+                    <button onClick={submitTestimonial} disabled={testimonialStatus === 'sending' || !testimonialText.trim()}
+                      className="mt-3 px-6 py-2.5 rounded-full text-sm font-bold transition disabled:opacity-50"
+                      style={{ background: '#6F7A5C', color: '#F5F1E4' }}>
+                      {testimonialStatus === 'sending' ? (ka ? 'იგზავნება...' : 'Sending...') : (ka ? 'გამოქვეყნება' : 'Submit')}
+                    </button>
+                  </>
+                )}
+              </div>
+            )}
+
+            {testimonials.length > 0 && (
+              <div ref={refTestimonialCards} className="grid sm:grid-cols-2 lg:grid-cols-3 gap-5">
+                {testimonials.map((tst) => (
+                  <div key={tst.id} className="fade-up rounded-2xl p-5 bg-[#F5F1E4]/10">
+                    <p className="text-[#F5F1E4]/90 text-sm leading-relaxed mb-3">"{tst.content}"</p>
+                    <p className="text-[#F5F1E4] text-sm font-bold">{tst.authorName}</p>
+                  </div>
+                ))}
+              </div>
+            )}
           </div>
         </section>
       )}

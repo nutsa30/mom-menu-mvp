@@ -1,6 +1,7 @@
 import { prisma } from '@/lib/prisma';
 import HomeClient from './HomeClient';
 import { PLAN_AMOUNTS_BY_INTERVAL } from '@/lib/bog';
+import { getSession } from '@/lib/auth';
 import type { Metadata } from 'next';
 
 const SITE_URL = process.env.NEXT_PUBLIC_APP_URL || 'https://mommenu.ge';
@@ -29,7 +30,9 @@ export const metadata: Metadata = {
 };
 
 export default async function Home() {
-  const [raw, breakfast, lunch, snack, dinner, dishCount, recentBlogs] = await Promise.all([
+  const session = await getSession();
+
+  const [raw, breakfast, lunch, snack, dinner, dishCount, recentBlogs, testimonials, ownTestimonial] = await Promise.all([
     prisma.homePageSettings.upsert({
       where: { id: 'singleton' },
       create: { id: 'singleton' },
@@ -46,6 +49,13 @@ export default async function Home() {
       take: 3,
       select: { id: true, slug: true, titleKa: true, titleEn: true, imageUrl: true, createdAt: true, contentKa: true, contentEn: true },
     }),
+    prisma.testimonial.findMany({
+      where: { approved: true },
+      orderBy: { createdAt: 'desc' },
+      take: 12,
+      select: { id: true, authorName: true, content: true },
+    }),
+    session ? prisma.testimonial.findFirst({ where: { userId: session.id }, select: { id: true } }) : null,
   ]);
 
   const { updatedAt, id, ...s } = raw;
@@ -89,7 +99,8 @@ export default async function Home() {
     <>
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(websiteJsonLd) }} />
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(orgJsonLd) }} />
-      <HomeClient s={s as any} dishes={{ breakfast, lunch, snack, dinner }} dishCount={dishCount} recentBlogs={recentBlogs} planAmounts={planAmounts} />
+      <HomeClient s={s as any} dishes={{ breakfast, lunch, snack, dinner }} dishCount={dishCount} recentBlogs={recentBlogs} planAmounts={planAmounts}
+        testimonials={testimonials} canLeaveTestimonial={!!session && !ownTestimonial} />
     </>
   );
 }

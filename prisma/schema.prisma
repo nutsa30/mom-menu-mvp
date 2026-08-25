@@ -80,6 +80,7 @@ model User {
   children               Child[]
   mealPlans              MealPlan[]
   passwordResetTokens    PasswordResetToken[]
+  testimonials           Testimonial[]
   payments               Payment[]
 
   createdAt              DateTime           @default(now())
@@ -531,6 +532,19 @@ model PasswordResetToken {
   expiresAt DateTime
   usedAt    DateTime?
   createdAt DateTime  @default(now())
+}
+
+// Public homepage testimonials — submitted by logged-in users, only shown to visitors
+// once an admin approves them. authorName is a snapshot at submission time so a
+// testimonial survives the author later deleting their account.
+model Testimonial {
+  id         String   @id @default(cuid())
+  userId     String?
+  user       User?    @relation(fields: [userId], references: [id], onDelete: SetNull)
+  authorName String
+  content    String
+  approved   Boolean  @default(false)
+  createdAt  DateTime @default(now())
 }
 
 // Permanent record that an email address has already used its free BOG trial —
