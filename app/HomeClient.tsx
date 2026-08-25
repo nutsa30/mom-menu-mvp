@@ -229,8 +229,8 @@ export default function HomeClient({ s, dishes, dishCount, recentBlogs, planAmou
         </div>
       </section>
 
-      {/* ── Testimonials (display) ──────────────────────────────── */}
-      {testimonials.length > 0 && (
+      {/* ── Testimonials ─────────────────────────────────────── */}
+      {(testimonials.length > 0 || canLeaveTestimonial) && (
         <section className="relative z-10 py-14 sm:py-20" style={{ background: '#6F7A5C' }}>
           <div className="max-w-7xl mx-auto px-5">
             <div ref={refTestimonials} className="fade-up mb-8 sm:mb-12">
@@ -242,14 +242,46 @@ export default function HomeClient({ s, dishes, dishCount, recentBlogs, planAmou
               </p>
             </div>
 
-            <div ref={refTestimonialCards} className="grid sm:grid-cols-2 lg:grid-cols-3 gap-5">
-              {testimonials.map((tst) => (
-                <div key={tst.id} className="fade-up rounded-2xl p-5 bg-[#F5F1E4]/10">
-                  <p className="text-[#F5F1E4]/90 text-sm leading-relaxed mb-3">"{tst.content}"</p>
-                  <p className="text-[#F5F1E4] text-sm font-bold">{tst.authorName}</p>
-                </div>
-              ))}
-            </div>
+            {canLeaveTestimonial && testimonialStatus !== 'sent' && (
+              <div className="fade-up in-view mb-8 rounded-2xl p-6 bg-[#F5F1E4]">
+                <h3 className="font-bold text-[#6F7A5C] mb-3">
+                  {ka ? 'გაგვიზიარე შენი აზრი საიტზე' : 'Share your thoughts about the site'}
+                </h3>
+                <textarea
+                  value={testimonialText}
+                  onChange={(e) => setTestimonialText(e.target.value)}
+                  maxLength={500}
+                  rows={3}
+                  placeholder={ka ? 'რას ფიქრობ mom menu-ზე?' : 'What do you think of mom menu?'}
+                  className="w-full px-4 py-3 rounded-xl border border-[#6F7A5C]/20 focus:outline-none focus:border-[#6F7A5C] transition text-sm text-[#6F7A5C] bg-white resize-none"
+                />
+                {testimonialStatus === 'error' && (
+                  <p className="text-red-600 text-xs mt-1">{ka ? 'შეცდომა. სცადე თავიდან.' : 'Error. Please try again.'}</p>
+                )}
+                <button onClick={submitTestimonial} disabled={testimonialStatus === 'sending' || !testimonialText.trim()}
+                  className="mt-3 px-6 py-2.5 rounded-full text-sm font-bold transition disabled:opacity-50"
+                  style={{ background: '#6F7A5C', color: '#F5F1E4' }}>
+                  {testimonialStatus === 'sending' ? (ka ? 'იგზავნება...' : 'Sending...') : (ka ? 'გამოქვეყნება' : 'Submit')}
+                </button>
+              </div>
+            )}
+
+            {testimonialStatus === 'sent' && (
+              <p className="fade-up in-view mb-8 text-[#F5F1E4] font-semibold text-sm">
+                {ka ? '✓ მადლობა შეფასებისთვის! მალე გამოქვეყნდება.' : '✓ Thanks for the feedback! It will appear here once reviewed.'}
+              </p>
+            )}
+
+            {testimonials.length > 0 && (
+              <div ref={refTestimonialCards} className="grid sm:grid-cols-2 lg:grid-cols-3 gap-5">
+                {testimonials.map((tst) => (
+                  <div key={tst.id} className="fade-up rounded-2xl p-5 bg-[#F5F1E4]/10">
+                    <p className="text-[#F5F1E4]/90 text-sm leading-relaxed mb-3">"{tst.content}"</p>
+                    <p className="text-[#F5F1E4] text-sm font-bold">{tst.authorName}</p>
+                  </div>
+                ))}
+              </div>
+            )}
           </div>
         </section>
       )}
@@ -549,43 +581,6 @@ export default function HomeClient({ s, dishes, dishCount, recentBlogs, planAmou
                   </a>
                 );
               })}
-            </div>
-          </div>
-        </section>
-      )}
-
-      {/* ── Leave feedback ───────────────────────────────────── */}
-      {canLeaveTestimonial && (
-        <section className="relative z-10 py-14 sm:py-20" style={{ background: '#F5F1E4' }}>
-          <div className="max-w-2xl mx-auto px-5">
-            <div className="rounded-2xl p-6 sm:p-8" style={{ background: '#6F7A5C' }}>
-              {testimonialStatus === 'sent' ? (
-                <p className="text-[#F5F1E4] font-semibold text-sm">
-                  {ka ? '✓ მადლობა შეფასებისთვის! მალე გამოქვეყნდება.' : '✓ Thanks for the feedback! It will appear here once reviewed.'}
-                </p>
-              ) : (
-                <>
-                  <h3 className="font-bold text-[#F5F1E4] mb-3 text-lg" style={{ fontFamily: SERIF_KA }}>
-                    {ka ? 'გაგვიზიარე შენი აზრი საიტზე' : 'Share your thoughts about the site'}
-                  </h3>
-                  <textarea
-                    value={testimonialText}
-                    onChange={(e) => setTestimonialText(e.target.value)}
-                    maxLength={500}
-                    rows={3}
-                    placeholder={ka ? 'რას ფიქრობ mom menu-ზე?' : 'What do you think of mom menu?'}
-                    className="w-full px-4 py-3 rounded-xl border border-[#F5F1E4]/20 focus:outline-none focus:border-[#F5F1E4] transition text-sm text-[#6F7A5C] bg-[#F5F1E4] resize-none"
-                  />
-                  {testimonialStatus === 'error' && (
-                    <p className="text-red-200 text-xs mt-1">{ka ? 'შეცდომა. სცადე თავიდან.' : 'Error. Please try again.'}</p>
-                  )}
-                  <button onClick={submitTestimonial} disabled={testimonialStatus === 'sending' || !testimonialText.trim()}
-                    className="mt-3 px-6 py-2.5 rounded-full text-sm font-bold transition disabled:opacity-50"
-                    style={{ background: '#D9803B', color: '#FFFFFF' }}>
-                    {testimonialStatus === 'sending' ? (ka ? 'იგზავნება...' : 'Sending...') : (ka ? 'გამოქვეყნება' : 'Submit')}
-                  </button>
-                </>
-              )}
             </div>
           </div>
         </section>
