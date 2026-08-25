@@ -4,11 +4,22 @@ import { useState, useEffect, useCallback } from 'react';
 
 type Ingredient = {
   id: string; nameKa: string; nameEn: string; category: string; minAgeMonths: number;
+  isAllergen: boolean;
   status: {
     id: string; tried: boolean; liked: boolean | null; disliked: boolean | null;
     ateWell: boolean | null; refused: boolean | null; allergic: boolean; comment: string | null;
   } | null;
 };
+
+const CATEGORY_LABELS: Record<string, string> = {
+  vegetable: 'ბოსტნეული',
+  fruit: 'ხილი',
+  protein: 'ცილოვანი',
+  dairy: 'რძის ნაწარმი',
+  grain: 'მარცვლეული',
+  allergen: 'სხვა ალერგენები',
+};
+const CATEGORY_ORDER = ['vegetable', 'fruit', 'protein', 'dairy', 'grain', 'allergen'];
 
 function blwCutSize(ageMonths: number): string {
   if (ageMonths < 9) return '~10 სმ ჯოხი (ბავშვის ხელის სიგრძე)';
@@ -17,13 +28,27 @@ function blwCutSize(ageMonths: number): string {
 }
 
 function blwPrep(category: string): string {
-  if (category === 'vegetable') return 'მოხარშეთ სანამ ძალიან ლმობიერია';
-  return 'ლმობიერი — ნედლი ან მოხარშული';
+  switch (category) {
+    case 'vegetable': return 'მოხარშეთ სანამ ძალიან ლმობიერია';
+    case 'fruit': return 'ლმობიერი — ნედლი ან მოხარშული';
+    case 'protein': return 'კარგად მოხარშული/შემწვარი, რბილ ნაჭრებად';
+    case 'dairy': return 'სუფთა, უშაქრო, პატარა კოვზით';
+    case 'grain': return 'რბილი, კარგად მოხარშული';
+    case 'allergen': return 'წვრილად გათხელებული პასტა წყლით/რძით — არასდროს მთლიანი კაკალი (გაძვრომის რისკი)';
+    default: return 'ლმობიერი — ნედლი ან მოხარშული';
+  }
 }
 
 function pureePrep(category: string): string {
-  if (category === 'vegetable') return 'მოხარშეთ და გახეხეთ პიურედ';
-  return 'გახეხეთ / გახადეთ პიურე';
+  switch (category) {
+    case 'vegetable': return 'მოხარშეთ და გახეხეთ პიურედ';
+    case 'fruit': return 'გახეხეთ / გახადეთ პიურე';
+    case 'protein': return 'კარგად მოხარშეთ და გახეხეთ/გაბლენდეთ';
+    case 'dairy': return 'პირდაპირ, დამატებითი დამუშავების გარეშე';
+    case 'grain': return 'კარგად მოხარშეთ და გახეხეთ';
+    case 'allergen': return 'გათხელეთ წყლით ან დედის რძით პასტის სახით';
+    default: return 'გახეხეთ / გახადეთ პიურე';
+  }
 }
 
 function StatusBadge({ tried, allergic, liked, ateWell }: any) {
@@ -77,6 +102,9 @@ function IngredientCard({
           </div>
           <div className="min-w-0">
             <span className="font-semibold text-sm text-[#465940]">{ing.nameKa}</span>
+            {ing.isAllergen && (
+              <span className="ml-1.5 text-[9px] font-bold text-orange-600 align-middle">⚠ ალერგენი</span>
+            )}
             {/* Prep hint — always visible so parent knows how to prepare */}
             {!s?.allergic && (
               <p className="text-[10px] text-[#465940]/50 mt-0.5">
@@ -95,6 +123,11 @@ function IngredientCard({
 
       {open && (
         <div className="px-4 pb-4 space-y-3 border-t border-[#465940]/10 pt-3">
+          {ing.isAllergen && !s?.tried && (
+            <p className="text-[11px] text-orange-700 bg-orange-50 rounded-lg px-3 py-2">
+              ალერგენია — მიეცი ცალკე, სხვა ახალი პროდუქტების გარეშე, და დააკვირდი 2-3 დღე რეაქციაზე სანამ მომდევნო ახალ პროდუქტს გასინჯავ.
+            </p>
+          )}
           {!s?.tried ? (
             <button onClick={() => update({ tried: true })} disabled={saving}
               className="w-full py-2 rounded-xl bg-[#465940] text-[#FDFBF0] text-sm font-bold transition disabled:opacity-60">
@@ -158,7 +191,7 @@ function BlwIngCard({ ing, ageMonths }: { ing: Ingredient; ageMonths: number }) 
 export default function FirstFoodsTab({ child, isFullPlan }: { child: any; isFullPlan: boolean }) {
   const [ingredients, setIngredients] = useState<Ingredient[]>([]);
   const [loadingIng, setLoadingIng] = useState(true);
-  const [categoryFilter, setCategoryFilter] = useState<'all' | 'vegetable' | 'fruit'>('all');
+  const [categoryFilter, setCategoryFilter] = useState<string>('all');
   const [blwMode, setBlwMode] = useState(false);
 
   useEffect(() => {
@@ -205,8 +238,7 @@ export default function FirstFoodsTab({ child, isFullPlan }: { child: any; isFul
   const filteredIng = ageAppropriate.filter(i =>
     categoryFilter === 'all' || i.category === categoryFilter
   );
-  const vegetables = filteredIng.filter(i => i.category === 'vegetable');
-  const fruits = filteredIng.filter(i => i.category === 'fruit');
+  const presentCategories = CATEGORY_ORDER.filter(cat => ageAppropriate.some(i => i.category === cat));
 
   return (
     <div className="space-y-4">
@@ -254,11 +286,11 @@ export default function FirstFoodsTab({ child, isFullPlan }: { child: any; isFul
       </div>
 
       <div className="space-y-4">
-        <div className="flex gap-2">
-          {(['all', 'vegetable', 'fruit'] as const).map(cat => (
+        <div className="flex gap-2 flex-wrap">
+          {['all', ...presentCategories].map(cat => (
             <button key={cat} onClick={() => setCategoryFilter(cat)}
               className={`px-4 py-1.5 rounded-full text-xs font-bold transition ${categoryFilter === cat ? 'bg-[#465940] text-[#FDFBF0]' : 'bg-[#FDFBF0] border border-[#465940]/20 text-[#465940]/70'}`}>
-              {cat === 'all' ? 'ყველა' : cat === 'vegetable' ? 'ბოსტნეული' : 'ხილი'}
+              {cat === 'all' ? 'ყველა' : CATEGORY_LABELS[cat] ?? cat}
             </button>
           ))}
         </div>
@@ -266,24 +298,19 @@ export default function FirstFoodsTab({ child, isFullPlan }: { child: any; isFul
           <div className="space-y-2">{[1,2,3].map(i => <div key={i} className="h-14 rounded-xl bg-[#465940]/10 animate-pulse" />)}</div>
         ) : (
           <>
-            {(categoryFilter === 'all' || categoryFilter === 'vegetable') && vegetables.length > 0 && (
-              <div className="bg-[#FDFBF0] rounded-2xl border border-[#465940]/10 shadow-sm p-4 space-y-2">
-                <p className="text-xs font-black text-[#465940]/60 uppercase tracking-wide mb-3">ბოსტნეული</p>
-                {vegetables.map(ing => (
-                  <IngredientCard key={ing.id} ing={ing} childId={child.id} blwMode={blwMode} ageMonths={ageMonths}
-                    onUpdate={fetchIngredients} />
-                ))}
-              </div>
-            )}
-            {(categoryFilter === 'all' || categoryFilter === 'fruit') && fruits.length > 0 && (
-              <div className="bg-[#FDFBF0] rounded-2xl border border-[#465940]/10 shadow-sm p-4 space-y-2">
-                <p className="text-xs font-black text-[#465940]/60 uppercase tracking-wide mb-3">ხილი</p>
-                {fruits.map(ing => (
-                  <IngredientCard key={ing.id} ing={ing} childId={child.id} blwMode={blwMode} ageMonths={ageMonths}
-                    onUpdate={fetchIngredients} />
-                ))}
-              </div>
-            )}
+            {presentCategories.map(cat => {
+              const items = filteredIng.filter(i => i.category === cat);
+              if (items.length === 0) return null;
+              return (
+                <div key={cat} className="bg-[#FDFBF0] rounded-2xl border border-[#465940]/10 shadow-sm p-4 space-y-2">
+                  <p className="text-xs font-black text-[#465940]/60 uppercase tracking-wide mb-3">{CATEGORY_LABELS[cat] ?? cat}</p>
+                  {items.map(ing => (
+                    <IngredientCard key={ing.id} ing={ing} childId={child.id} blwMode={blwMode} ageMonths={ageMonths}
+                      onUpdate={fetchIngredients} />
+                  ))}
+                </div>
+              );
+            })}
           </>
         )}
       </div>

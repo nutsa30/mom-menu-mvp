@@ -456,9 +456,13 @@ model BabyIngredient {
   id           String   @id @default(cuid())
   nameKa       String
   nameEn       String
-  category     String   // "vegetable" | "fruit"
+  category     String   // "vegetable" | "fruit" | "protein" | "dairy" | "grain" | "allergen"
   minAgeMonths Int      @default(6)
   imageUrl     String?
+  // Common allergen (egg, dairy, peanut, tree nut, wheat, soy, fish, sesame) — flagged so the
+  // UI can call out that it needs to be introduced alone and watched, same as any other new
+  // food, but worth the extra emphasis given the higher reaction risk.
+  isAllergen   Boolean  @default(false)
   createdAt    DateTime @default(now())
 
   statuses     BabyIngredientStatus[]
