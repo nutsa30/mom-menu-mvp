@@ -533,6 +533,15 @@ model PasswordResetToken {
   createdAt DateTime  @default(now())
 }
 
+// Permanent record that an email address has already used its free BOG trial —
+// survives account deletion so deleting and re-registering with the same email can't
+// be used to farm repeat 7-day trials. Checked at registration time, independent of
+// any User row's own bogTrialUsed field (which is lost when the account is deleted).
+model UsedTrialEmail {
+  email  String   @id
+  usedAt DateTime @default(now())
+}
+
 // Holds a registration in progress — no User row is created until the emailed code is
 // confirmed, so an unconfirmed signup never occupies the email address at all.
 model PendingRegistration {

@@ -1398,6 +1398,20 @@ function SettingsTab({ user }: { user: any }) {
     }
   };
 
+  const [deleting, setDeleting] = useState(false);
+  const deleteAccount = async () => {
+    if (!confirm('ანგარიშის წაშლა საბოლოოა და ვერ გაუქმდება — შვილების, კვების გეგმებისა და გამოწერის ჩათვლით ყველაფერი წაიშლება. დარწმუნებული ხარ?')) return;
+    if (!confirm('ბოლო შეკითხვა — ნამდვილად გსურს ანგარიშის სამუდამო წაშლა?')) return;
+    setDeleting(true);
+    const res = await fetch('/api/account/delete', { method: 'POST' });
+    if (res.ok) {
+      window.location.href = '/?lang=ka';
+    } else {
+      setDeleting(false);
+      alert('შეცდომა. სცადე თავიდან.');
+    }
+  };
+
   const inp = 'w-full px-4 py-3 rounded-xl border border-[#465940]/20 focus:outline-none focus:border-[#465940] transition text-sm bg-white settings-input';
 
   return (
@@ -1451,6 +1465,18 @@ function SettingsTab({ user }: { user: any }) {
             subscriptionRenewsAt={user.subscriptionRenewsAt}
           />
         ) : null}
+      </div>
+
+      {/* Danger zone */}
+      <div className={`${card} p-6 border-2 border-red-200`}>
+        <h2 className="font-black text-red-600 mb-2">ანგარიშის წაშლა</h2>
+        <p className="text-sm text-[#465940]/70 mb-4">
+          ანგარიშის წაშლა საბოლოოდ შლის შვილების პროფილებს, კვების გეგმებსა და ისტორიას. თუ აქტიური გამოწერა გაქვს, ისიც გაუქმდება — შემდგომი ჩამოჭრა აღარ მოხდება.
+        </p>
+        <button onClick={deleteAccount} disabled={deleting}
+          className="bg-red-50 hover:bg-red-100 text-red-600 px-6 py-2.5 rounded-full text-sm font-bold transition disabled:opacity-60">
+          {deleting ? 'იშლება...' : 'ანგარიშის სამუდამო წაშლა'}
+        </button>
       </div>
     </div>
   );

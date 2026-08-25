@@ -1,5 +1,6 @@
 import { prisma } from '@/lib/prisma';
 import { setAuthCookie } from '@/lib/auth';
+import { sendAdminNewUserNotification } from '@/lib/email';
 import { NextResponse } from 'next/server';
 import crypto from 'crypto';
 
@@ -24,12 +25,20 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: 'invalid_code' }, { status: 400 });
     }
 
+    // If this email already used a free trial on a previous (since-deleted) account,
+    // start the new account already flagged so it can't farm another 7-day trial.
+    const usedTrial = await prisma.usedTrialEmail.findUnique({ where: { email } });
+
     const user = await prisma.user.create({
-      data: { name: pending.name, email, passwordHash: pending.passwordHash, emailVerified: true },
+      data: {
+        name: pending.name, email, passwordHash: pending.passwordHash, emailVerified: true,
+        bogTrialUsed: !!usedTrial,
+      },
     });
     await prisma.pendingRegistration.delete({ where: { email } });
 
     await setAuthCookie({ id: user.id, email: user.email, name: user.name, role: user.role });
+    sendAdminNewUserNotification(user.name, user.email).catch(() => {});
 
     return NextResponse.json({ success: true });
   } catch {

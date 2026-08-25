@@ -226,6 +226,17 @@ export async function sendWeeklyMenuEmail(to: string, name: string) {
   await resend.emails.send({ from: FROM, to, subject, html });
 }
 
+// ─── Admin: new user registered ────────────────────────────────────────────────
+// Internal ops ping, not admin-editable content — no DB template, just a fixed layout.
+
+export async function sendAdminNewUserNotification(name: string, email: string) {
+  const to = process.env.ADMIN_NOTIFICATION_EMAIL ?? "nutsarogava30@gmail.com";
+  const html = layout(`<h2 style="margin:0 0 16px;font-size:20px;font-weight:800;">🆕 ახალი მომხმარებელი დარეგისტრირდა</h2>
+<p style="margin:0 0 6px;font-size:15px;"><strong>სახელი:</strong> ${name}</p>
+<p style="margin:0;font-size:15px;"><strong>ელფოსტა:</strong> ${email}</p>`);
+  await resend.emails.send({ from: FROM, to, subject: `MomMenu — ახალი რეგისტრაცია: ${name}`, html }).catch(() => {});
+}
+
 // ─── New Blog ─────────────────────────────────────────────────────────────────
 
 export async function sendNewBlogEmail(

@@ -126,7 +126,13 @@ export default async function AdminUsersPage({
       },
     }),
     prisma.promoCode.findMany({ orderBy: { createdAt: 'desc' }, select: { id: true, code: true, planType: true } }),
+    // REFUNDED is what every trial preauthorization release is recorded as (the hold gets
+    // canceled, never a real charge) — every free-trial signup creates one, which reads as
+    // a worrying "refund" in this table even though no money ever moved. There is currently
+    // no code path that produces REFUNDED for an actual captured-then-reversed charge, so
+    // excluding the status here hides only these expected trial-start artifacts.
     prisma.payment.findMany({
+      where: { status: { not: 'REFUNDED' } },
       orderBy: { createdAt: 'desc' },
       take: 100,
       include: { user: { select: { name: true, email: true } } },
