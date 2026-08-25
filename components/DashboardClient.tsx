@@ -11,6 +11,15 @@ function localToday(): string {
   return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
 }
 
+// Exact calendar-month count, not a day-average approximation.
+function ageInMonths(birthDate: string | Date): number {
+  const birth = new Date(birthDate);
+  const now = new Date();
+  let months = (now.getFullYear() - birth.getFullYear()) * 12 + (now.getMonth() - birth.getMonth());
+  if (now.getDate() < birth.getDate()) months--;
+  return Math.max(0, months);
+}
+
 type Tab = 'today' | 'firstfoods' | 'recipes' | 'nutrition' | 'shopping' | 'child' | 'settings';
 
 const MEAL_ORDER = ['BREAKFAST', 'SNACK', 'LUNCH', 'DINNER'] as const;
@@ -1679,7 +1688,11 @@ function TrialBanner({ trialEndsAt }: { trialEndsAt: string | Date | null | unde
 export default function DashboardClient({ user }: { user: any }) {
   const router = useRouter();
   const firstChild = user.children?.[0];
-  const defaultTab: Tab = (firstChild?.ageGroup === 'FROM_6' || firstChild?.ageGroup === 'FROM_9') ? 'firstfoods' : 'today';
+  const defaultTab: Tab = !firstChild
+    ? 'today'
+    : ageInMonths(firstChild.birthDate) < 6
+    ? 'child'
+    : (firstChild.ageGroup === 'FROM_6' || firstChild.ageGroup === 'FROM_9') ? 'firstfoods' : 'today';
   const [tab, setTab] = useState<Tab>(defaultTab);
   const [children, setChildren] = useState<any[]>(user.children ?? []);
   const [activeChild, setActiveChild] = useState<any>(firstChild ?? null);
@@ -1718,6 +1731,10 @@ export default function DashboardClient({ user }: { user: any }) {
   // Auto-switch tab when active child changes age group
   useEffect(() => {
     if (!activeChild) return;
+    if (ageInMonths(activeChild.birthDate) < 6) {
+      if (tab !== 'child' && tab !== 'settings') setTab('child');
+      return;
+    }
     const young = activeChild.ageGroup === 'FROM_6' || activeChild.ageGroup === 'FROM_9';
     if (young && tab === 'today') setTab('firstfoods');
     if (!young && (tab === 'firstfoods' || tab === 'recipes')) setTab('today');
@@ -1749,18 +1766,24 @@ export default function DashboardClient({ user }: { user: any }) {
   const isFullPlan = user.subscriptionStatus === 'FULL_PLAN';
   const isYoungBaby = activeChild?.ageGroup === 'FROM_6' || activeChild?.ageGroup === 'FROM_9';
 
-  const tabs: { key: Tab; label: string }[] = [
-    ...(isYoungBaby
-      ? [{ key: 'firstfoods' as Tab, label: 'პირველი საკვები' }, { key: 'recipes' as Tab, label: 'რეცეპტები' }]
-      : [{ key: 'today' as Tab, label: 'დღის გეგმა' }]
-    ),
-    // Vitamin/nutrition tracking isn't meaningful while feeding is still first-taste
-    // ingredient-by-ingredient introduction — it becomes relevant once real meals start.
-    ...(isYoungBaby ? [] : [{ key: 'nutrition' as Tab, label: 'კვება' }]),
-    ...(isFullPlan && !isYoungBaby ? [{ key: 'shopping' as Tab, label: 'საყიდლები' }] : []),
-    { key: 'child', label: 'შვილი' },
-    { key: 'settings', label: 'პარამეტრები' },
-  ];
+  // Site content (first-foods, recipes, meal plans, everything) starts at 6 months — a
+  // child younger than that has nothing to show yet, regardless of subscription.
+  const isTooYoung = !!activeChild && ageInMonths(activeChild.birthDate) < 6;
+
+  const tabs: { key: Tab; label: string }[] = isTooYoung
+    ? [{ key: 'child', label: 'შვილი' }, { key: 'settings', label: 'პარამეტრები' }]
+    : [
+        ...(isYoungBaby
+          ? [{ key: 'firstfoods' as Tab, label: 'პირველი საკვები' }, { key: 'recipes' as Tab, label: 'რეცეპტები' }]
+          : [{ key: 'today' as Tab, label: 'დღის გეგმა' }]
+        ),
+        // Vitamin/nutrition tracking isn't meaningful while feeding is still first-taste
+        // ingredient-by-ingredient introduction — it becomes relevant once real meals start.
+        ...(isYoungBaby ? [] : [{ key: 'nutrition' as Tab, label: 'კვება' }]),
+        ...(isFullPlan && !isYoungBaby ? [{ key: 'shopping' as Tab, label: 'საყიდლები' }] : []),
+        { key: 'child', label: 'შვილი' },
+        { key: 'settings', label: 'პარამეტრები' },
+      ];
 
   return (
     <div className="min-h-screen bg-[#465940] flex flex-col pb-16">
@@ -1820,6 +1843,15 @@ export default function DashboardClient({ user }: { user: any }) {
       {/* Content */}
       <main className="flex-1 p-4 sm:p-6 max-w-4xl mx-auto w-full">
         <TrialBanner trialEndsAt={user.trialEndsAt} />
+        {isTooYoung && (
+          <div className="mb-4 rounded-2xl bg-[#FDFBF0] border border-[#465940]/10 p-5 text-center">
+            <p className="text-3xl mb-2"></p>
+            <p className="font-bold text-[#465940] mb-1">{activeChild.name} ჯერ 6 თვის არ არის</p>
+            <p className="text-sm text-[#465940]/60">
+              საიტის კონტენტი (პირველი საკვები, რეცეპტები, კვების გეგმა) გაიხსნება, როცა {activeChild.name} 6 თვის გახდება. მანამდე შვილის პროფილი და ანგარიშის პარამეტრები ხელმისაწვდომია.
+            </p>
+          </div>
+        )}
         {tab === 'firstfoods' && activeChild && <FirstFoodsTab child={activeChild} isFullPlan={isFullPlan} />}
         {tab === 'recipes' && activeChild && <BabyRecipesTab child={activeChild} isFullPlan={isFullPlan} />}
         {tab === 'today' && <TodayTab child={activeChild} allDishes={allDishes} planStart={planStart} isFullPlan={isFullPlan} />}

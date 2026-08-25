@@ -67,6 +67,8 @@ export default function SubscriptionClient({ planAmounts }: { planAmounts: Recor
       }
       if (data.error === 'already_subscribed') {
         alert('ეს პაკეტი უკვე აქტიური გაქვთ');
+      } else if (data.error === 'child_too_young') {
+        alert(data.message);
       } else {
         alert('გადახდის სერვისი დროებით ტექნიკურ სამუშაოებზეა. გთხოვთ სცადოთ მოგვიანებით.');
       }

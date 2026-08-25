@@ -167,6 +167,8 @@ export default function HomeClient({ s, dishes, dishCount, recentBlogs, planAmou
       if (res.ok && data.url) { window.location.href = data.url; return; }
       if (data.error === 'already_subscribed') {
         alert(ka ? 'ეს პაკეტი უკვე აქტიური გაქვთ' : 'You already have this plan active');
+      } else if (data.error === 'child_too_young') {
+        alert(ka ? data.message : 'The package unlocks once your child turns 6 months old.');
       } else {
         alert(ka
           ? 'გადახდის სერვისი დროებით ტექნიკურ სამუშაოებზეა. გთხოვთ სცადოთ მოგვიანებით ან დაგვიკავშირდეთ info@mommenu.ge-ზე.'
