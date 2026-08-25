@@ -920,6 +920,7 @@ function ChildTab({ children: kids, userId, onUpdate, onDelete }: {
   const [newDislikes, setNewDislikes] = useState<string[]>([]);
   const [newLikes, setNewLikes] = useState<string[]>([]);
   const [addingChild, setAddingChild] = useState(false);
+  const [newBirthError, setNewBirthError] = useState('');
 
   // Food introduction state
   const [introductions, setIntroductions] = useState<any[]>([]);
@@ -1018,6 +1019,15 @@ function ChildTab({ children: kids, userId, onUpdate, onDelete }: {
 
   const addChild = async () => {
     if (!newName || !newBirth) return;
+    setNewBirthError('');
+    const birth = new Date(newBirth);
+    const now = new Date();
+    let months = (now.getFullYear() - birth.getFullYear()) * 12 + (now.getMonth() - birth.getMonth());
+    if (now.getDate() < birth.getDate()) months--;
+    if (months < 6) {
+      setNewBirthError('საიტის კონტენტი დაწყებულია 6 თვის ასაკიდან — უფრო პატარა ბავშვის დამატება ჯერ ვერ იქნება შესაძლებელი.');
+      return;
+    }
     setAddingChild(true);
     const res = await fetch('/api/children', {
       method: 'POST',
@@ -1029,8 +1039,10 @@ function ChildTab({ children: kids, userId, onUpdate, onDelete }: {
     if (child.id) {
       onUpdate(child);
       setNewChildMode(false);
-      setNewName(''); setNewBirth('');
+      setNewName(''); setNewBirth(''); setNewBirthError('');
       setNewAllergies([]); setNewDislikes([]); setNewLikes([]);
+    } else if (child.message) {
+      setNewBirthError(child.message);
     }
   };
 
@@ -1083,10 +1095,13 @@ function ChildTab({ children: kids, userId, onUpdate, onDelete }: {
             </div>
             <div>
               <label className="block text-sm font-semibold text-[#465940] mb-1.5">დაბადების თარიღი</label>
-              <input type="date" value={newBirth} onChange={(e) => setNewBirth(e.target.value)}
+              <input type="date" value={newBirth} onChange={(e) => { setNewBirth(e.target.value); setNewBirthError(''); }}
                 className="w-full px-4 py-3 rounded-xl border border-[#465940]/20 focus:outline-none focus:border-[#465940] text-sm settings-input" />
             </div>
           </div>
+          {newBirthError && (
+            <p className="text-sm text-red-600 bg-red-50 rounded-xl px-4 py-2.5">{newBirthError}</p>
+          )}
           <div>
             <label className="block text-sm font-semibold text-[#465940] mb-2">ალერგიები</label>
             <TagInput tags={newAllergies} onChange={setNewAllergies} color="bg-red-100 text-red-700" />

@@ -1,6 +1,6 @@
 import { prisma } from '@/lib/prisma';
 import { getSession } from '@/lib/auth';
-import { getAgeGroup } from '@/lib/meal';
+import { getAgeGroup, ageInMonths } from '@/lib/meal';
 import { NextResponse } from 'next/server';
 
 export async function GET(req: Request) {
@@ -33,6 +33,10 @@ export async function POST(req: Request) {
   const body = await req.json();
 
   const birthDate = new Date(body.birthDate);
+
+  if (ageInMonths(birthDate) < 6) {
+    return NextResponse.json({ error: 'too_young', message: 'საიტის კონტენტი დაწყებულია 6 თვის ასაკიდან.' }, { status: 400 });
+  }
 
   const child = await prisma.child.create({
     data: {
