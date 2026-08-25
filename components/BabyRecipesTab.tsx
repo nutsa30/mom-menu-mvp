@@ -11,6 +11,18 @@ type Dish = {
   ingredientsKa: string[]; mealType: string;
 };
 
+// No structured texture field on Dish exists yet, so BLW-mode filtering goes by title
+// keywords: soup/stew-style dishes are always shown (a soup isn't something you "bite"
+// either way, so it's exempted), everything else that reads as puree/porridge/cream is
+// hidden — BLW mode is specifically for once a baby is ready for handheld, bite-able
+// food, not spoon-fed mush.
+const SOUP_KEYWORDS = ['სუპი', 'ოსპი', 'ბოსტნეულით'];
+const PUREE_KEYWORDS = ['პიურე', 'ფაფა', 'კრემი'];
+function isPureeStyle(titleKa: string): boolean {
+  if (SOUP_KEYWORDS.some(k => titleKa.includes(k))) return false;
+  return PUREE_KEYWORDS.some(k => titleKa.includes(k));
+}
+
 function DishCard({ dish }: { dish: Dish }) {
   return (
     <a href={`/meals/${dish.id}`} className="flex items-center gap-3 rounded-xl border-2 border-[#465940]/10 bg-white p-3 hover:border-[#465940]/25 transition">
@@ -37,6 +49,12 @@ export default function BabyRecipesTab({ child, isFullPlan }: { child: any; isFu
   const [dishes, setDishes] = useState<Dish[]>([]);
   const [safeCount, setSafeCount] = useState(0);
   const [loading, setLoading] = useState(true);
+  const [blwMode, setBlwMode] = useState(false);
+
+  useEffect(() => {
+    const stored = localStorage.getItem(`blw_${child.id}`);
+    if (stored === 'true') setBlwMode(true);
+  }, [child.id]);
 
   const fetchAllowed = useCallback(async () => {
     setLoading(true);
@@ -85,11 +103,20 @@ export default function BabyRecipesTab({ child, isFullPlan }: { child: any; isFu
           <p className="font-bold text-[#465940] mb-1">ჯერ რეცეპტი არ არის</p>
           <p className="text-sm text-[#465940]/60">გასინჯე მეტი ინგრედიენტი — რეცეპტები თანდათან გამოჩნდება</p>
         </div>
-      ) : (
-        <div className="bg-[#FDFBF0] rounded-2xl border border-[#465940]/10 shadow-sm p-4 space-y-2">
-          {dishes.map(d => <DishCard key={d.id} dish={d} />)}
-        </div>
-      )}
+      ) : (() => {
+        const visible = blwMode ? dishes.filter(d => !isPureeStyle(d.titleKa)) : dishes;
+        return visible.length === 0 ? (
+          <div className="bg-[#FDFBF0] rounded-2xl border border-[#465940]/10 shadow-sm p-10 text-center">
+            <p className="text-4xl mb-3"></p>
+            <p className="font-bold text-[#465940] mb-1">ჯერ BLW-ზე შესაფერისი რეცეპტი არ არის</p>
+            <p className="text-sm text-[#465940]/60">გასინჯული ინგრედიენტებით შედგენილი კერძები ჯერ პიურის ტიპისაა — ხელში დასაჭერი ვარიანტები თანდათან გამოჩნდება</p>
+          </div>
+        ) : (
+          <div className="bg-[#FDFBF0] rounded-2xl border border-[#465940]/10 shadow-sm p-4 space-y-2">
+            {visible.map(d => <DishCard key={d.id} dish={d} />)}
+          </div>
+        );
+      })()}
     </div>
   );
 }

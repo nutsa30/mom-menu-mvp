@@ -1338,7 +1338,61 @@ function ChildTab({ children: kids, userId, onUpdate, onDelete }: {
 }
 
 // ── Settings Tab ────────────────────────────────────────────────────────────
-function SettingsTab({ user }: { user: any }) {
+function AllergiesSection({ child }: { child: any }) {
+  const [allergic, setAllergic] = useState<{ id: string; ingredient: { nameKa: string } }[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [clearingId, setClearingId] = useState<string | null>(null);
+
+  const fetchAllergic = useCallback(async () => {
+    setLoading(true);
+    const res = await fetch(`/api/baby-ingredients?childId=${child.id}`);
+    const data = await res.json();
+    const items = Array.isArray(data)
+      ? data.filter((i: any) => i.status?.allergic).map((i: any) => ({ id: i.status.id, ingredient: { nameKa: i.nameKa } }))
+      : [];
+    setAllergic(items);
+    setLoading(false);
+  }, [child.id]);
+
+  useEffect(() => { fetchAllergic(); }, [fetchAllergic]);
+
+  const clear = async (statusId: string) => {
+    if (!confirm('დარწმუნებული ხარ, რომ ალერგია მოეხსნას? ინგრედიენტი ისევ დაუსინჯავად ჩაითვლება.')) return;
+    setClearingId(statusId);
+    await fetch(`/api/baby-ingredient-status/${statusId}`, {
+      method: 'PATCH', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ tried: false, liked: null, disliked: null, ateWell: null, refused: null, allergic: false }),
+    });
+    setClearingId(null);
+    fetchAllergic();
+  };
+
+  return (
+    <div className={`${card} p-6`}>
+      <h2 className="font-black text-[#465940] mb-1">ალერგიები</h2>
+      <p className="text-sm text-[#465940]/60 mb-4">{child.name}-ზე მონიშნული ალერგიები. მოხსნა მხოლოდ აქედან შეიძლება.</p>
+      {loading ? (
+        <p className="text-sm text-[#465940]/50">იტვირთება...</p>
+      ) : allergic.length === 0 ? (
+        <p className="text-sm text-[#465940]/50">მონიშნული ალერგია არ არის.</p>
+      ) : (
+        <div className="space-y-2">
+          {allergic.map(a => (
+            <div key={a.id} className="flex items-center justify-between rounded-xl bg-red-50 px-4 py-2.5">
+              <span className="text-sm font-semibold text-red-700">{a.ingredient.nameKa}</span>
+              <button onClick={() => clear(a.id)} disabled={clearingId === a.id}
+                className="text-xs font-bold text-red-600 hover:text-red-800 transition disabled:opacity-50">
+                {clearingId === a.id ? '...' : 'აღარ აქვს ალერგია'}
+              </button>
+            </div>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
+function SettingsTab({ user, activeChild }: { user: any; activeChild?: any }) {
   const [name, setName] = useState(user.name);
   const [nameStatus, setNameStatus] = useState<'idle' | 'saving' | 'ok'>('idle');
   const [email, setEmail] = useState(user.email);
@@ -1467,6 +1521,8 @@ function SettingsTab({ user }: { user: any }) {
           />
         ) : null}
       </div>
+
+      {activeChild && <AllergiesSection child={activeChild} />}
 
       {/* Danger zone */}
       <div className={`${card} p-6 border-2 border-red-200`}>
@@ -1755,7 +1811,7 @@ export default function DashboardClient({ user }: { user: any }) {
         {tab === 'nutrition' && <NutritionTab child={activeChild} />}
         {tab === 'shopping' && <ShoppingListTab child={activeChild} planStart={planStart} />}
         {tab === 'child' && <ChildTab children={children} userId={user.id} onUpdate={onChildUpdate} onDelete={onChildDelete} />}
-        {tab === 'settings' && <SettingsTab user={user} />}
+        {tab === 'settings' && <SettingsTab user={user} activeChild={isYoungBaby ? activeChild : null} />}
       </main>
     </div>
   );

@@ -27,24 +27,24 @@ function blwCutSize(ageMonths: number): string {
   return 'კბენის ზომის ნაჭრები';
 }
 
-function blwPrep(category: string): string {
+function blwPrep(category: string, nameKa?: string): string {
   switch (category) {
     case 'vegetable': return 'მოხარშეთ სანამ ძალიან ლმობიერია';
     case 'fruit': return 'ლმობიერი — ნედლი ან მოხარშული';
     case 'protein': return 'კარგად მოხარშული/შემწვარი, რბილ ნაჭრებად';
-    case 'dairy': return 'სუფთა, უშაქრო, პატარა კოვზით';
+    case 'dairy': return nameKa?.includes('იოგურტ') ? 'სუფთა, უშაქრო, პატარა კოვზით' : 'სუფთა, დაბალცხიმიანი ვარიანტი, პატარა ნაჭრებად';
     case 'grain': return 'რბილი, კარგად მოხარშული';
     case 'allergen': return 'წვრილად გათხელებული პასტა წყლით/რძით — არასდროს მთლიანი კაკალი (გაძვრომის რისკი)';
     default: return 'ლმობიერი — ნედლი ან მოხარშული';
   }
 }
 
-function pureePrep(category: string): string {
+function pureePrep(category: string, nameKa?: string): string {
   switch (category) {
     case 'vegetable': return 'მოხარშეთ და გახეხეთ პიურედ';
     case 'fruit': return 'გახეხეთ / გახადეთ პიურე';
     case 'protein': return 'კარგად მოხარშეთ და გახეხეთ/გაბლენდეთ';
-    case 'dairy': return 'პირდაპირ, დამატებითი დამუშავების გარეშე';
+    case 'dairy': return nameKa?.includes('იოგურტ') ? 'სუფთა, უშაქრო, პირდაპირ' : 'პირდაპირ, დამატებითი დამუშავების გარეშე';
     case 'grain': return 'კარგად მოხარშეთ და გახეხეთ';
     case 'allergen': return 'გათხელეთ წყლით ან დედის რძით პასტის სახით';
     default: return 'გახეხეთ / გახადეთ პიურე';
@@ -109,8 +109,8 @@ function IngredientCard({
             {!s?.allergic && (
               <p className="text-[10px] text-[#465940]/50 mt-0.5">
                 {blwMode
-                  ? `${blwCutSize(ageMonths)} · ${blwPrep(ing.category)}`
-                  : `${pureePrep(ing.category)}`}
+                  ? `${blwCutSize(ageMonths)} · ${blwPrep(ing.category, ing.nameKa)}`
+                  : `${pureePrep(ing.category, ing.nameKa)}`}
               </p>
             )}
           </div>
@@ -133,6 +133,13 @@ function IngredientCard({
               className="w-full py-2 rounded-xl bg-[#465940] text-[#FDFBF0] text-sm font-bold transition disabled:opacity-60">
               ✓ გავასინჯე
             </button>
+          ) : s?.allergic ? (
+            // Allergy markings are deliberately not casually clearable here — a real allergy
+            // shouldn't be one accidental tap away from being erased. Un-marking it is only
+            // possible from Settings → Allergies.
+            <p className="text-xs text-[#465940]/60 bg-[#465940]/5 rounded-xl px-3 py-2.5">
+              ალერგია დაფიქსირებულია. მისი მოხსნა შესაძლებელია მხოლოდ <strong>პარამეტრები → ალერგიები</strong>-დან.
+            </p>
           ) : (
             <div className="grid grid-cols-2 gap-2">
               {[
@@ -151,7 +158,7 @@ function IngredientCard({
                   {opt.label}
                 </button>
               ))}
-              <button onClick={() => update({ tried: false, liked: null, disliked: null, ateWell: null, refused: null, allergic: false })}
+              <button onClick={() => update({ tried: false, liked: null, disliked: null, ateWell: null, refused: null })}
                 className="py-2 px-3 rounded-xl text-xs font-bold border border-[#465940]/15 text-[#465940]/40 hover:text-[#465940]/60 transition col-span-1">
                 გასუფთავება
               </button>
@@ -179,7 +186,7 @@ function BlwIngCard({ ing, ageMonths }: { ing: Ingredient; ageMonths: number }) 
     <div className="rounded-xl border-2 border-[#465940]/20 bg-white px-4 py-3 flex items-start gap-3">
       <div className="flex-1 min-w-0">
         <p className="font-bold text-[#465940] text-sm">{ing.nameKa}</p>
-        <p className="text-[11px] text-[#465940]/70 mt-0.5">{blwPrep(ing.category)}</p>
+        <p className="text-[11px] text-[#465940]/70 mt-0.5">{blwPrep(ing.category, ing.nameKa)}</p>
         <div className="mt-1.5 inline-flex items-center gap-1 bg-[#465940]/10 rounded-lg px-2 py-0.5">
           <span className="text-[10px] font-semibold text-[#465940]">{blwCutSize(ageMonths)}</span>
         </div>
