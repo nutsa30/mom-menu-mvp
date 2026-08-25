@@ -3,6 +3,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 import FirstFoodsTab from './FirstFoodsTab';
+import BabyRecipesTab from './BabyRecipesTab';
 
 // Use local date (not UTC) to avoid timezone issues (e.g. Georgia is UTC+4)
 function localToday(): string {
@@ -10,7 +11,7 @@ function localToday(): string {
   return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
 }
 
-type Tab = 'today' | 'firstfoods' | 'nutrition' | 'shopping' | 'child' | 'settings';
+type Tab = 'today' | 'firstfoods' | 'recipes' | 'nutrition' | 'shopping' | 'child' | 'settings';
 
 const MEAL_ORDER = ['BREAKFAST', 'SNACK', 'LUNCH', 'DINNER'] as const;
 const MEAL_LABEL: Record<string, string> = { BREAKFAST: 'საუზმე', SNACK: 'სნექი', LUNCH: 'სადილი', DINNER: 'ვახშამი' };
@@ -1648,8 +1649,8 @@ export default function DashboardClient({ user }: { user: any }) {
     if (!activeChild) return;
     const young = activeChild.ageGroup === 'FROM_6' || activeChild.ageGroup === 'FROM_9';
     if (young && tab === 'today') setTab('firstfoods');
-    if (!young && tab === 'firstfoods') setTab('today');
-    if (activeChild.ageGroup === 'FROM_6' && tab === 'nutrition') setTab('firstfoods');
+    if (!young && (tab === 'firstfoods' || tab === 'recipes')) setTab('today');
+    if (young && tab === 'nutrition') setTab('firstfoods');
   }, [activeChild?.id]);
 
   const onChildUpdate = (updated: any) => {
@@ -1676,16 +1677,15 @@ export default function DashboardClient({ user }: { user: any }) {
 
   const isFullPlan = user.subscriptionStatus === 'FULL_PLAN';
   const isYoungBaby = activeChild?.ageGroup === 'FROM_6' || activeChild?.ageGroup === 'FROM_9';
-  // At 6mo, feeding is still first-taste introduction — vitamin tracking isn't
-  // meaningful yet. It becomes relevant once solids become a real part of the diet.
-  const isNewborn = activeChild?.ageGroup === 'FROM_6';
 
   const tabs: { key: Tab; label: string }[] = [
     ...(isYoungBaby
-      ? [{ key: 'firstfoods' as Tab, label: 'პირველი საკვები' }]
+      ? [{ key: 'firstfoods' as Tab, label: 'პირველი საკვები' }, { key: 'recipes' as Tab, label: 'რეცეპტები' }]
       : [{ key: 'today' as Tab, label: 'დღის გეგმა' }]
     ),
-    ...(isNewborn ? [] : [{ key: 'nutrition' as Tab, label: 'კვება' }]),
+    // Vitamin/nutrition tracking isn't meaningful while feeding is still first-taste
+    // ingredient-by-ingredient introduction — it becomes relevant once real meals start.
+    ...(isYoungBaby ? [] : [{ key: 'nutrition' as Tab, label: 'კვება' }]),
     ...(isFullPlan && !isYoungBaby ? [{ key: 'shopping' as Tab, label: 'საყიდლები' }] : []),
     { key: 'child', label: 'შვილი' },
     { key: 'settings', label: 'პარამეტრები' },
@@ -1749,7 +1749,8 @@ export default function DashboardClient({ user }: { user: any }) {
       {/* Content */}
       <main className="flex-1 p-4 sm:p-6 max-w-4xl mx-auto w-full">
         <TrialBanner trialEndsAt={user.trialEndsAt} />
-        {tab === 'firstfoods' && activeChild && <FirstFoodsTab child={activeChild} />}
+        {tab === 'firstfoods' && activeChild && <FirstFoodsTab child={activeChild} isFullPlan={isFullPlan} />}
+        {tab === 'recipes' && activeChild && <BabyRecipesTab child={activeChild} isFullPlan={isFullPlan} />}
         {tab === 'today' && <TodayTab child={activeChild} allDishes={allDishes} planStart={planStart} isFullPlan={isFullPlan} />}
         {tab === 'nutrition' && <NutritionTab child={activeChild} />}
         {tab === 'shopping' && <ShoppingListTab child={activeChild} planStart={planStart} />}
