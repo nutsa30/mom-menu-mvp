@@ -66,10 +66,12 @@ export default async function AdminAnalyticsPage() {
   const full1 = users.filter((u) => u.subscriptionStatus === 'FULL_PLAN' && u.billingIntervalMonths === 1 && !u.subscriptionCanceledAt).length;
   const full3 = users.filter((u) => u.subscriptionStatus === 'FULL_PLAN' && u.billingIntervalMonths === 3 && !u.subscriptionCanceledAt).length;
   const full6 = users.filter((u) => u.subscriptionStatus === 'FULL_PLAN' && u.billingIntervalMonths === 6 && !u.subscriptionCanceledAt).length;
-  const canceledPendingCount = users.filter(
-    (u) => u.subscriptionCanceledAt && (u.subscriptionStatus === 'FULL_PLAN' || u.subscriptionStatus === 'RECIPE_PLAN')
+  // "Canceled" counts anyone who's canceled, whether their access has already
+  // expired (subscriptionStatus === 'CANCELED') or they're just riding out a
+  // paid period they won't renew (still FULL_PLAN/RECIPE_PLAN but subscriptionCanceledAt is set).
+  const canceled = users.filter(
+    (u) => u.subscriptionStatus === 'CANCELED' || (!!u.subscriptionCanceledAt && (u.subscriptionStatus === 'FULL_PLAN' || u.subscriptionStatus === 'RECIPE_PLAN'))
   ).length;
-  const canceled = users.filter((u) => u.subscriptionStatus === 'CANCELED').length;
   const blocked = users.filter((u) => u.isBlocked).length;
 
   const thirtyDaysAgo = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000);
@@ -166,7 +168,6 @@ export default async function AdminAnalyticsPage() {
     { label: `3 months (${INTERVAL_PRICE[3]}₾)`, value: full3, sub: 'active', color: 'text-[#465940]' },
     { label: `6 months (${INTERVAL_PRICE[6]}₾)`, value: full6, sub: 'active', color: 'text-[#465940]' },
     { label: 'Canceled', value: canceled, sub: 'churned', color: 'text-[#FDFBF0]' },
-    { label: 'გაუქმებული (მალე)', value: canceledPendingCount, sub: 'access until period ends', color: 'text-amber-600' },
     { label: 'Blocked', value: blocked, sub: 'accounts', color: 'text-[#465940]' },
     { label: 'Conversion rate', value: `${conversionRate}%`, sub: 'free → paid', color: 'text-[#465940]' },
     { label: 'Retention (30d)', value: `${retentionRate}%`, sub: 'new → subscribed', color: 'text-[#465940]' },
