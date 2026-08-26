@@ -49,6 +49,14 @@ export function layout(body: string): string {
 // ─── Default template bodies (fallback if DB has no override) ─────────────────
 
 export const TEMPLATE_DEFAULTS: Record<string, { subject: string; body: string }> = {
+  birthday_wish: {
+    subject: "🎉 გილოცავთ თქვენი პატარას დაბადების დღეს!",
+    body: `<h2 style="margin:0 0 16px;font-size:22px;font-weight:800;">🎉 გილოცავთ თქვენი პატარას დაბადების დღეს! 🥳💖</h2>
+<p style="margin:0 0 14px;font-size:15px;line-height:1.7;">გისურვებთ ჯანმრთელობას, ბედნიერებას, უამრავ ღიმილს და კიდევ ბევრ ლამაზ და დაუვიწყარ დღეს ერთად! 🥰✨</p>
+<p style="margin:0 0 20px;font-size:15px;line-height:1.7;">დაე, თქვენი პატარას ყოველი ახალი წელი სავსე იყოს სიყვარულით, სიხარულითა და უამრავი ბედნიერი მომენტით! 🎂🎈💕</p>
+<p style="margin:0;font-size:15px;line-height:1.7;">სიყვარულით,<br>Mommenu 💗</p>`,
+  },
+
   welcome: {
     subject: "კეთილი იყოს თქვენი მობრძანება MomMenu-ში 💚",
     body: `<h2 style="margin:0 0 16px;font-size:22px;font-weight:800;">გამარჯობა, {{name}}! 👋</h2>
@@ -223,6 +231,14 @@ export async function sendSubscriptionExpiringEmail(to: string, name: string) {
 export async function sendWeeklyMenuEmail(to: string, name: string) {
   const { subject, body } = await getTemplate("weekly_menu");
   const html = layout(body.replace(/\{\{name\}\}/g, name));
+  await resend.emails.send({ from: FROM, to, subject, html });
+}
+
+// ─── Birthday Wish ──────────────────────────────────────────────────────────────
+
+export async function sendBirthdayEmail(to: string) {
+  const { subject, body } = await getTemplate("birthday_wish");
+  const html = layout(body);
   await resend.emails.send({ from: FROM, to, subject, html });
 }
 

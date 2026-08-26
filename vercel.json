@@ -15,6 +15,10 @@
     {
       "path": "/api/cron/update-age-groups?secret=mm2026",
       "schedule": "0 4 * * *"
+    },
+    {
+      "path": "/api/cron/birthday-wishes?secret=mm2026",
+      "schedule": "0 8 * * *"
     }
   ]
 }
