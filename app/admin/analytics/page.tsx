@@ -167,7 +167,7 @@ export default async function AdminAnalyticsPage() {
     { label: `1 month (${INTERVAL_PRICE[1]}₾)`, value: full1, sub: 'active', color: 'text-[#465940]' },
     { label: `3 months (${INTERVAL_PRICE[3]}₾)`, value: full3, sub: 'active', color: 'text-[#465940]' },
     { label: `6 months (${INTERVAL_PRICE[6]}₾)`, value: full6, sub: 'active', color: 'text-[#465940]' },
-    { label: 'Canceled', value: canceled, sub: 'churned', color: 'text-[#FDFBF0]' },
+    { label: 'Canceled', value: canceled, sub: 'churned', color: 'text-amber-600' },
     { label: 'Blocked', value: blocked, sub: 'accounts', color: 'text-[#465940]' },
     { label: 'Conversion rate', value: `${conversionRate}%`, sub: 'free → paid', color: 'text-[#465940]' },
     { label: 'Retention (30d)', value: `${retentionRate}%`, sub: 'new → subscribed', color: 'text-[#465940]' },
