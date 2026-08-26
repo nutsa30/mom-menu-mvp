@@ -1,6 +1,6 @@
 import { prisma } from '@/lib/prisma';
 import { setAuthCookie } from '@/lib/auth';
-import { sendAdminNewUserNotification } from '@/lib/email';
+import { sendAdminNewUserNotification, sendWelcomeEmail } from '@/lib/email';
 import { NextResponse } from 'next/server';
 import crypto from 'crypto';
 
@@ -39,6 +39,7 @@ export async function POST(req: Request) {
 
     await setAuthCookie({ id: user.id, email: user.email, name: user.name, role: user.role });
     sendAdminNewUserNotification(user.name, user.email).catch(() => {});
+    sendWelcomeEmail(user.email, user.name).catch(() => {});
 
     return NextResponse.json({ success: true });
   } catch {
