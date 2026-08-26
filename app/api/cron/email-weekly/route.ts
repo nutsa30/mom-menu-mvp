@@ -15,8 +15,13 @@ export async function GET(req: NextRequest) {
   const day = geoDay();
   const hour = geoHour();
 
-  // Only on Sunday at 18:00 Georgia time
-  if (day !== 0 || hour !== 18) {
+  // vercel.json schedules this route exactly once a week (Sunday 14:00 UTC = 18:00
+  // Georgia time) — the day check alone is enough to guard against a misconfigured
+  // secret being hit manually on the wrong day. The old exact hour===18 check added
+  // nothing (there's only one scheduled invocation to begin with) but meant a few
+  // minutes of Vercel cron jitter past the hour boundary would silently skip the
+  // week's email entirely.
+  if (day !== 0) {
     return NextResponse.json({ skipped: true, day, hour });
   }
 
