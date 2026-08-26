@@ -187,7 +187,35 @@ function TodayTab({ child, allDishes, planStart, isFullPlan }: { child: any; all
       body: JSON.stringify({ wasEaten }),
     });
     const updated = await res.json();
-    setLogs(prev => prev.map(l => l.id === logId ? updated : l));
+    setLogs(prev => prev.map(l => {
+      if (l.id !== logId) return l;
+      // Server upserts/retracts the implicit "liked" vote alongside wasEaten — mirror
+      // that locally since the PATCH response itself doesn't carry voteLiked.
+      const voteLiked = wasEaten ? true : (l.voteLiked === true ? null : l.voteLiked);
+      return { ...updated, voteLiked };
+    }));
+  };
+
+  const toggleDislike = async (logId: string, dishId: string) => {
+    const log = logs.find(l => l.id === logId);
+    const alreadyDisliked = log?.voteLiked === false;
+    if (alreadyDisliked) {
+      await fetch(`/api/dish-votes?childId=${child.id}&dishId=${dishId}`, { method: 'DELETE' });
+      setLogs(prev => prev.map(l => l.id === logId ? { ...l, voteLiked: null } : l));
+    } else {
+      await fetch('/api/dish-votes', {
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ childId: child.id, dishId, liked: false }),
+      });
+      // Marking a dish disliked also un-marks "ჭამა" if it was set (they contradict).
+      if (log?.wasEaten) {
+        await fetch(`/api/daily-log/${logId}`, {
+          method: 'PATCH', headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ wasEaten: false }),
+        });
+      }
+      setLogs(prev => prev.map(l => l.id === logId ? { ...l, voteLiked: false, wasEaten: false } : l));
+    }
   };
 
   const substitute = async (logId: string, dishId: string) => {
@@ -353,6 +381,18 @@ function TodayTab({ child, allDishes, planStart, isFullPlan }: { child: any; all
                       >
                         {eaten ? '✓ ჭამა' : 'ჭამა'}
                       </button>
+                      {dish && isToday && (
+                        <button
+                          onClick={() => toggleDislike(log.id, dish.id)}
+                          className={`px-3 py-1.5 rounded-full text-xs font-bold transition ${
+                            log.voteLiked === false
+                              ? 'bg-red-500 text-white hover:bg-red-600'
+                              : 'bg-[#465940]/10 text-[#465940] hover:bg-red-500 hover:text-white'
+                          }`}
+                        >
+                          {log.voteLiked === false ? '✓ არ მოეწონა' : 'არ მოეწონა'}
+                        </button>
+                      )}
                       {!isIngredient && isToday && (
                         <button
                           onClick={() => setSubstituteFor(log.id)}

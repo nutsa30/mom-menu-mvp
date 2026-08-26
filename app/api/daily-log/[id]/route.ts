@@ -22,6 +22,21 @@ export async function PATCH(req: NextRequest, { params }: { params: { id: string
     include: { dish: true, ingredient: true },
   });
 
+  // Marking a dish eaten doubles as an implicit "liked" vote; un-marking it retracts
+  // that vote (but never touches an explicit "არ მოეწონა" — that's set to false above,
+  // never re-flipped to true from here).
+  if (body.wasEaten !== undefined && log.dishId) {
+    if (body.wasEaten) {
+      await prisma.dishVote.upsert({
+        where: { dishId_childId: { dishId: log.dishId, childId: existing.childId } },
+        update: { liked: true },
+        create: { dishId: log.dishId, childId: existing.childId, liked: true },
+      });
+    } else {
+      await prisma.dishVote.deleteMany({ where: { dishId: log.dishId, childId: existing.childId, liked: true } });
+    }
+  }
+
   return NextResponse.json(log);
 }
 

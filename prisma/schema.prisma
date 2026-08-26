@@ -146,6 +146,7 @@ model Child {
   foodIntroductions      FoodIntroduction[]
   babyIngredientStatuses BabyIngredientStatus[]
   babyMealLogs           BabyMealLog[]
+  dishVotes              DishVote[]
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -215,6 +216,24 @@ model Dish {
 
   planItems     MealPlanItem[]
   dailyLogs     DailyLog[]
+  votes         DishVote[]
+}
+
+// One row per (dish, child) — records whether that child's parent marked the dish liked
+// ("ჭამა") or disliked ("არ მოეწონა"). Deliberately independent of DailyLog, whose dishId
+// can later be swapped to a replacement dish ("სხვა") — the vote must stay pinned to the
+// original dish it was cast for, not silently move to whatever dish ends up in that slot.
+model DishVote {
+  id        String   @id @default(cuid())
+  dishId    String
+  dish      Dish     @relation(fields: [dishId], references: [id], onDelete: Cascade)
+  childId   String
+  child     Child    @relation(fields: [childId], references: [id], onDelete: Cascade)
+  liked     Boolean
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([dishId, childId])
 }
 
 model MealPlan {

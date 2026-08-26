@@ -154,7 +154,19 @@ export async function GET(req: NextRequest) {
     });
   }
 
-  return NextResponse.json(logs);
+  // Attach this child's vote (if any) for whatever dish is currently in each slot, so the
+  // UI can show the "არ მოეწონა" button as already toggled without a separate request.
+  const dishIds = logs.map((l) => l.dishId).filter(Boolean) as string[];
+  const votes = dishIds.length
+    ? await prisma.dishVote.findMany({ where: { childId, dishId: { in: dishIds } } })
+    : [];
+  const voteMap = Object.fromEntries(votes.map((v) => [v.dishId, v.liked]));
+  const logsWithVotes = logs.map((l) => ({
+    ...l,
+    voteLiked: l.dishId && l.dishId in voteMap ? voteMap[l.dishId] : null,
+  }));
+
+  return NextResponse.json(logsWithVotes);
 }
 
 // POST /api/daily-log
