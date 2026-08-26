@@ -11,6 +11,7 @@ const TEMPLATE_KEYS = [
   "password_changed",
   "weekly_menu",
   "new_blog",
+  "birthday_wish",
 ];
 
 async function adminGuard() {

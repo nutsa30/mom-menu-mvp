@@ -99,6 +99,7 @@ const TEMPLATE_META: Record<string, { name: string; vars: string[] }> = {
   password_changed:       { name: 'Password Changed ✔',          vars: ['{{name}}'] },
   weekly_menu:            { name: 'Weekly Menu 🗓',              vars: ['{{name}}'] },
   new_blog:               { name: 'New Blog Post 📝',            vars: ['{{name}}','{{blogTitle}}','{{blogUrl}}'] },
+  birthday_wish:          { name: 'Birthday Wish 🎉',             vars: [] },
 };
 
 function fmt(dateStr: string | null) {
