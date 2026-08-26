@@ -60,9 +60,15 @@ export default async function AdminAnalyticsPage() {
   const recipe = users.filter((u) => u.subscriptionStatus === 'RECIPE_PLAN').length;
   const full = users.filter((u) => u.subscriptionStatus === 'FULL_PLAN').length;
   // Real current packages — Recipe Plan is no longer sold (always 0 now).
-  const full1 = users.filter((u) => u.subscriptionStatus === 'FULL_PLAN' && u.billingIntervalMonths === 1).length;
-  const full3 = users.filter((u) => u.subscriptionStatus === 'FULL_PLAN' && u.billingIntervalMonths === 3).length;
-  const full6 = users.filter((u) => u.subscriptionStatus === 'FULL_PLAN' && u.billingIntervalMonths === 6).length;
+  // Excludes anyone who's already canceled (still FULL_PLAN until their paid period
+  // ends, but won't renew) — counts here reflect who's actually still subscribed going
+  // forward, not just who happens to still have access today.
+  const full1 = users.filter((u) => u.subscriptionStatus === 'FULL_PLAN' && u.billingIntervalMonths === 1 && !u.subscriptionCanceledAt).length;
+  const full3 = users.filter((u) => u.subscriptionStatus === 'FULL_PLAN' && u.billingIntervalMonths === 3 && !u.subscriptionCanceledAt).length;
+  const full6 = users.filter((u) => u.subscriptionStatus === 'FULL_PLAN' && u.billingIntervalMonths === 6 && !u.subscriptionCanceledAt).length;
+  const canceledPendingCount = users.filter(
+    (u) => u.subscriptionCanceledAt && (u.subscriptionStatus === 'FULL_PLAN' || u.subscriptionStatus === 'RECIPE_PLAN')
+  ).length;
   const canceled = users.filter((u) => u.subscriptionStatus === 'CANCELED').length;
   const blocked = users.filter((u) => u.isBlocked).length;
 
@@ -79,7 +85,7 @@ export default async function AdminAnalyticsPage() {
   // MRR is normalized per-month: a 39₾/3-month subscriber contributes 13₾, not 39₾.
   // Gifted accounts (isGifted) are excluded everywhere below — they have a paid-tier
   // subscriptionStatus but brought in no actual cash, same convention as admin/users.
-  const payingUserRows = users.filter((u) => !u.isGifted && (u.subscriptionStatus === 'RECIPE_PLAN' || u.subscriptionStatus === 'FULL_PLAN'));
+  const payingUserRows = users.filter((u) => !u.isGifted && !u.subscriptionCanceledAt && (u.subscriptionStatus === 'RECIPE_PLAN' || u.subscriptionStatus === 'FULL_PLAN'));
   const mrr = Math.round(payingUserRows.reduce((sum, u) => sum + monthlyPriceFor(u), 0));
   const payingUsers = payingUserRows.length;
   const arpu = payingUsers > 0 ? Math.round(mrr / payingUsers) : 0;
@@ -160,6 +166,7 @@ export default async function AdminAnalyticsPage() {
     { label: `3 months (${INTERVAL_PRICE[3]}₾)`, value: full3, sub: 'active', color: 'text-[#465940]' },
     { label: `6 months (${INTERVAL_PRICE[6]}₾)`, value: full6, sub: 'active', color: 'text-[#465940]' },
     { label: 'Canceled', value: canceled, sub: 'churned', color: 'text-[#FDFBF0]' },
+    { label: 'გაუქმებული (მალე)', value: canceledPendingCount, sub: 'access until period ends', color: 'text-amber-600' },
     { label: 'Blocked', value: blocked, sub: 'accounts', color: 'text-[#465940]' },
     { label: 'Conversion rate', value: `${conversionRate}%`, sub: 'free → paid', color: 'text-[#465940]' },
     { label: 'Retention (30d)', value: `${retentionRate}%`, sub: 'new → subscribed', color: 'text-[#465940]' },

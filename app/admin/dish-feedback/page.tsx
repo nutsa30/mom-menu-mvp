@@ -2,14 +2,24 @@ import { prisma } from '@/lib/prisma';
 
 export default async function AdminDishFeedbackPage() {
   const votes = await prisma.dishVote.findMany({
-    include: { dish: { select: { id: true, titleKa: true, imageUrl: true, mealType: true } } },
+    include: {
+      dish: { select: { id: true, titleKa: true, imageUrl: true, mealType: true } },
+      child: { select: { name: true, user: { select: { email: true, name: true } } } },
+    },
+    orderBy: { updatedAt: 'desc' },
   });
 
-  const tally = new Map<string, { dish: any; likes: number; dislikes: number }>();
+  const tally = new Map<string, { dish: any; likes: number; dislikes: number; voters: { childName: string; parentEmail: string; parentName: string; liked: boolean }[] }>();
   for (const v of votes) {
     if (!v.dish) continue;
-    const entry = tally.get(v.dishId) ?? { dish: v.dish, likes: 0, dislikes: 0 };
+    const entry = tally.get(v.dishId) ?? { dish: v.dish, likes: 0, dislikes: 0, voters: [] };
     if (v.liked) entry.likes++; else entry.dislikes++;
+    entry.voters.push({
+      childName: v.child?.name ?? '?',
+      parentEmail: v.child?.user?.email ?? '?',
+      parentName: v.child?.user?.name ?? '',
+      liked: v.liked,
+    });
     tally.set(v.dishId, entry);
   }
 
@@ -21,21 +31,35 @@ export default async function AdminDishFeedbackPage() {
       {items.length === 0 ? (
         <p className="text-sm text-[#465940]/50 text-center py-8">ჯერ ხმა არ არის</p>
       ) : (
-        items.map((t) => (
-          <a key={t.dish.id} href={`/admin/meals/${t.dish.id}`}
-            className="flex items-center gap-3 rounded-xl border border-[#465940]/10 bg-white p-3 hover:border-[#465940]/30 transition">
-            <div className="w-12 h-12 rounded-lg overflow-hidden flex-shrink-0 bg-[#465940]/5">
-              {t.dish.imageUrl
-                ? <img src={t.dish.imageUrl} alt={t.dish.titleKa} className="w-full h-full object-cover" />
-                : <div className="w-full h-full flex items-center justify-center text-lg"></div>
-              }
-            </div>
-            <p className="flex-1 min-w-0 font-semibold text-sm text-[#465940] truncate">{t.dish.titleKa}</p>
-            <span className={`flex-shrink-0 rounded-full px-3 py-1 text-xs font-black ${accent}`}>
-              {t[countKey]} ხმა
-            </span>
-          </a>
-        ))
+        items.map((t) => {
+          const relevantVoters = t.voters.filter((v) => (countKey === 'likes' ? v.liked : !v.liked));
+          return (
+            <details key={t.dish.id} className="rounded-xl border border-[#465940]/10 bg-white p-3 group">
+              <summary className="flex items-center gap-3 cursor-pointer list-none">
+                <div className="w-12 h-12 rounded-lg overflow-hidden flex-shrink-0 bg-[#465940]/5">
+                  {t.dish.imageUrl
+                    ? <img src={t.dish.imageUrl} alt={t.dish.titleKa} className="w-full h-full object-cover" />
+                    : <div className="w-full h-full flex items-center justify-center text-lg"></div>
+                  }
+                </div>
+                <p className="flex-1 min-w-0 font-semibold text-sm text-[#465940] truncate">{t.dish.titleKa}</p>
+                <span className={`flex-shrink-0 rounded-full px-3 py-1 text-xs font-black ${accent}`}>
+                  {t[countKey]} ხმა
+                </span>
+              </summary>
+              <div className="mt-3 pl-[60px] space-y-1">
+                {relevantVoters.map((v, i) => (
+                  <p key={i} className="text-xs text-[#465940]/70">
+                    {v.childName} <span className="text-[#465940]/40">— {v.parentName} ({v.parentEmail})</span>
+                  </p>
+                ))}
+                <a href={`/admin/meals/${t.dish.id}`} className="inline-block mt-2 text-xs font-semibold text-[#465940] underline">
+                  კერძის რედაქტირება/წაშლა →
+                </a>
+              </div>
+            </details>
+          );
+        })
       )}
     </div>
   );
