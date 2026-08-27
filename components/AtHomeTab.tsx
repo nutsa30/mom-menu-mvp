@@ -90,7 +90,7 @@ function checkCoverage(dish: any, pantry: PantryItem[]): { checks: IngredientChe
 // recipe list is introduced here), matched against products the parent has on hand,
 // respecting the QUANTITY the parent actually has — a recipe only counts as makeable
 // when what's on hand doesn't fall short of what the recipe needs. Opening a match uses
-// the shared RecipeModal, and marking one "ვჭამე" replaces a slot in TODAY's real plan
+// the shared RecipeModal, and marking one "ჭამა" replaces a slot in TODAY's real plan
 // through the exact same PATCH /api/daily-log/[id] endpoint the existing "სხვა"
 // substitute action already uses — so the plan, the vote, and the vitamin/nutrient
 // totals (/api/nutrition, which just sums wasEaten DailyLog rows) all update through
@@ -272,11 +272,11 @@ export default function AtHomeTab({ child, allDishes }: { child: any; allDishes:
         <div className="flex gap-2 mt-3">
           <button onClick={() => setReplacing(dish)}
             className="px-3 py-1.5 rounded-full text-xs font-bold bg-[#465940] text-[#FDFBF0] hover:bg-[#465940]/80 transition">
-            ვჭამე
+            ჭამა
           </button>
           <button onClick={() => toggleDislike(dish.id)}
             className="px-3 py-1.5 rounded-full text-xs font-bold bg-[#465940]/10 text-[#465940] hover:bg-red-500 hover:text-white transition">
-            არ მომეწონა
+            არ მოეწონა
           </button>
           <button onClick={() => setRecipeModal(dish)}
             className="px-3 py-1.5 rounded-full text-xs font-bold bg-[#465940]/10 text-[#465940] hover:bg-[#465940] hover:text-[#FDFBF0] transition">
