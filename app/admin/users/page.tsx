@@ -1,7 +1,7 @@
 ﻿import { prisma } from '@/lib/prisma';
-import { BlockUserButton, ToggleAdminButton, GiftSubscriptionButton } from '@/components/AdminUserActions';
-import { adminDict, getAdminLocale, type AdminLocale } from '@/lib/adminI18n';
+import { adminDict, getAdminLocale } from '@/lib/adminI18n';
 import UsersFilterBar from '@/components/UsersFilterBar';
+import UsersSearchTable from '@/components/UsersSearchTable';
 import { PLAN_AMOUNTS, PLAN_AMOUNTS_BY_INTERVAL, BillingInterval } from '@/lib/bog';
 
 // Real, currently-charged prices (env-configured, not hardcoded) — used for every
@@ -26,88 +26,6 @@ const priceFor = (user: { subscriptionStatus: string; billingIntervalMonths?: nu
 // not the full 39₾, since MRR is inherently a per-month measure.
 const monthlyPriceFor = (user: { subscriptionStatus: string; billingIntervalMonths?: number | null }) =>
   priceFor(user) / (user.billingIntervalMonths || 1);
-
-const subBadge: Record<string, string> = {
-  FREE: 'bg-[#465940]/10 text-[#465940]/70',
-  RECIPE_PLAN: 'bg-[#FDFBF0]/10 text-[#465940]',
-  FULL_PLAN: 'bg-[#465940]/20 text-[#465940]',
-  CANCELED: 'bg-[#465940]/10 text-[#465940]/60',
-};
-
-function UserTable({ users, subLabelFor, locale }: { users: any[]; subLabelFor: (u: any) => string; locale: AdminLocale }) {
-  if (users.length === 0) {
-    return <p className="text-center py-12 text-[#465940]/60 text-sm">მომხმარებელი არ არის</p>;
-  }
-  return (
-    <div className="overflow-x-auto">
-      <table className="w-full min-w-[800px]">
-        <thead className="bg-[#465940]">
-          <tr>
-            <th className="text-left px-6 py-3 text-xs font-semibold text-[#FDFBF0]/80 uppercase tracking-wide">სახელი</th>
-            <th className="text-left px-4 py-3 text-xs font-semibold text-[#FDFBF0]/80 uppercase tracking-wide">Email</th>
-            <th className="text-left px-4 py-3 text-xs font-semibold text-[#FDFBF0]/80 uppercase tracking-wide">გეგმა</th>
-            <th className="text-left px-4 py-3 text-xs font-semibold text-[#FDFBF0]/80 uppercase tracking-wide">პრომოკოდი</th>
-            <th className="text-left px-4 py-3 text-xs font-semibold text-[#FDFBF0]/80 uppercase tracking-wide">შვილები</th>
-            <th className="text-left px-4 py-3 text-xs font-semibold text-[#FDFBF0]/80 uppercase tracking-wide">რეგ. თარიღი</th>
-            <th className="text-right px-6 py-3 text-xs font-semibold text-[#FDFBF0]/80 uppercase tracking-wide">მოქმედება</th>
-          </tr>
-        </thead>
-        <tbody className="divide-y divide-[#465940]/5">
-          {users.map((user) => (
-            <tr key={user.id} className={`hover:bg-[#465940]/5 transition ${user.isBlocked ? 'opacity-50' : ''}`}>
-              <td className="px-6 py-4">
-                <div className="flex items-center gap-2">
-                  <div className="w-8 h-8 rounded-full bg-[#465940]/20 flex items-center justify-center text-[#465940] font-bold text-xs flex-shrink-0">
-                    {user.name[0].toUpperCase()}
-                  </div>
-                  <div>
-                    <p className="text-sm font-semibold text-[#465940]">{user.name}</p>
-                    {user.role === 'ADMIN' && <span className="text-[10px] font-bold text-[#FDFBF0] bg-[#465940] px-1.5 py-0.5 rounded">ADMIN</span>}
-                    {user.isBlocked && <span className="text-[10px] font-bold text-[#FDFBF0]">{locale === 'ka' ? 'დაბლოკილი' : 'BLOCKED'}</span>}
-                  </div>
-                </div>
-              </td>
-              <td className="px-4 py-4 text-sm text-[#465940]/70">{user.email}</td>
-              <td className="px-4 py-4">
-                <span className={`inline-block px-2.5 py-1 rounded-full text-xs font-bold ${subBadge[user.subscriptionStatus]}`}>
-                  {subLabelFor(user)}
-                </span>
-                {user.subscriptionCanceledAt && (user.subscriptionStatus === 'FULL_PLAN' || user.subscriptionStatus === 'RECIPE_PLAN') && (
-                  <p className="text-[10px] text-amber-600 font-semibold mt-1">
-                    გაუქმებული — წვდომა {user.subscriptionRenewsAt ? new Date(user.subscriptionRenewsAt).toLocaleDateString('ka-GE') : '?'}-მდე
-                  </p>
-                )}
-              </td>
-              <td className="px-4 py-4">
-                {user.promoCode ? (
-                  <div className="flex flex-col gap-0.5">
-                    <span className="font-mono text-xs bg-[#465940]/10 text-[#465940] border border-[#465940]/30 px-2 py-0.5 rounded font-bold w-fit">
-                      {user.promoCode.code}
-                    </span>
-                    <span className="text-[10px] text-[#465940]/60">
-                      {priceFor(user)}₾
-                    </span>
-                  </div>
-                ) : (
-                  <span className="text-[#465940]/40 text-xs">—</span>
-                )}
-              </td>
-              <td className="px-4 py-4 text-sm text-[#465940]/70">{user._count.children}</td>
-              <td className="px-4 py-4 text-sm text-[#465940]/60">{new Date(user.createdAt).toLocaleDateString()}</td>
-              <td className="px-6 py-4">
-                <div className="flex items-center justify-end gap-2 flex-wrap">
-                  <GiftSubscriptionButton userId={user.id} currentStatus={user.subscriptionStatus} isGifted={user.isGifted} intervalPrices={INTERVAL_PRICE} />
-                  <ToggleAdminButton userId={user.id} role={user.role} locale={locale} />
-                  <BlockUserButton userId={user.id} isBlocked={user.isBlocked} locale={locale} />
-                </div>
-              </td>
-            </tr>
-          ))}
-        </tbody>
-      </table>
-    </div>
-  );
-}
 
 export default async function AdminUsersPage({
   searchParams,
@@ -370,9 +288,15 @@ export default async function AdminUsersPage({
         locale={locale}
       />
 
-      {/* Table */}
+      {/* Table — planLabel/promoPrice are pre-computed here (server-side, env-configured
+          prices) since functions like subLabelFor/priceFor can't be passed as props into
+          the client component below. */}
       <div className="bg-[#FDFBF0] rounded-2xl border border-[#465940]/10 shadow-sm overflow-hidden">
-        <UserTable users={filteredUsers} subLabelFor={subLabelFor} locale={locale} />
+        <UsersSearchTable
+          users={filteredUsers.map((u) => ({ ...u, planLabel: subLabelFor(u), promoPrice: priceFor(u) }))}
+          locale={locale}
+          intervalPrices={INTERVAL_PRICE}
+        />
       </div>
     </div>
   );
