@@ -231,11 +231,15 @@ export default async function AdminAnalyticsPage() {
               // Recipe Plan is no longer sold — only shown if a legacy subscriber still exists,
               // so this section reflects the actual current packages otherwise.
               ...(recipe > 0 ? (() => {
-                const realRecipeRows = users.filter((u) => !u.isGifted && u.subscriptionStatus === 'RECIPE_PLAN');
+                const realRecipeRows = users.filter((u) => !u.isGifted && !u.subscriptionCanceledAt && u.subscriptionStatus === 'RECIPE_PLAN');
                 return [{ label: `Recipe Plan (${PRICES.RECIPE_PLAN}₾) — legacy`, rev: realRecipeRows.length * PRICES.RECIPE_PLAN, count: realRecipeRows.length, color: 'bg-[#465940]/40' }];
               })() : []),
+              // Same canceled-exclusion as full1/full3/full6 above and payingUserRows —
+              // someone who canceled hasn't paid yet for a next period and shouldn't count
+              // toward this breakdown's revenue or account totals, even while their access
+              // is still active through the period they already paid for.
               ...([1, 3, 6] as BillingInterval[]).map((interval) => {
-                const rows = users.filter((u) => !u.isGifted && u.subscriptionStatus === 'FULL_PLAN' && u.billingIntervalMonths === interval);
+                const rows = users.filter((u) => !u.isGifted && !u.subscriptionCanceledAt && u.subscriptionStatus === 'FULL_PLAN' && u.billingIntervalMonths === interval);
                 return {
                   label: `${interval} Month (${INTERVAL_PRICE[interval]}₾)`,
                   rev: Math.round(rows.reduce((sum, u) => sum + monthlyPriceFor(u), 0)),

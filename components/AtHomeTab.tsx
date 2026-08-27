@@ -6,6 +6,13 @@ import RecipeModal from './RecipeModal';
 const MEAL_LABEL: Record<string, string> = { BREAKFAST: 'საუზმე', SNACK: 'სნექი', LUNCH: 'სადილი', DINNER: 'ვახშამი' };
 const card = 'bg-[#FDFBF0] rounded-2xl border border-[#465940]/10 shadow-sm';
 
+type Unit = 'g' | 'ml' | 'pcs';
+const UNIT_LABEL: Record<Unit, string> = { g: 'გ', ml: 'მლ', pcs: 'ცალი' };
+const UNITS: Unit[] = ['g', 'ml', 'pcs'];
+
+type PantryItem = { id: string; name: string; amount: number; unit: Unit };
+type ParsedIngredient = { name: string; amount: number | null; unit: Unit | null };
+
 function localToday(): string {
   const d = new Date();
   return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
@@ -15,22 +22,90 @@ function norm(s: string): string {
   return s.trim().toLowerCase();
 }
 
+function nameMatches(a: string, b: string): boolean {
+  const na = norm(a), nb = norm(b);
+  return na.length > 0 && nb.length > 0 && (na.includes(nb) || nb.includes(na));
+}
+
+function normalizeUnit(raw: string): Unit | null {
+  const u = raw.trim().toLowerCase();
+  if (u === 'გ' || u === 'g' || u === 'kg' || u === 'კგ') return 'g';
+  if (u === 'მლ' || u === 'ml' || u === 'ლ' || u === 'l') return 'ml';
+  if (u === 'ცალი' || u === 'ც' || u === 'pcs' || u === 'pc') return 'pcs';
+  return null;
+}
+
+// Recipe ingredient strings look like "ქათმის ფილე - 55 გ", "ბანანი - 1 მწიფე (60 გ)",
+// or "კვერცხი - 1 ცალი" — free text, not structured data. Pull out a name and, where
+// possible, a comparable amount/unit: prefer a parenthetical gram/ml equivalent (the
+// "(60 გ)" in "1 მწიფე (60 გ)") since that's the precise figure; otherwise take the
+// leading "number unit". When neither parses cleanly, amount/unit come back null and
+// matching falls back to name-only for that ingredient rather than blocking on it.
+function parseIngredient(raw: string): ParsedIngredient {
+  const dashIdx = raw.lastIndexOf(' - ');
+  if (dashIdx === -1) return { name: raw.trim(), amount: null, unit: null };
+  const name = raw.slice(0, dashIdx).trim();
+  const qtyPart = raw.slice(dashIdx + 3).trim();
+
+  const parenMatch = qtyPart.match(/\(([\d.,]+)\s*(გ|მლ|ლ|კგ|kg|g|ml|l)\)/i);
+  if (parenMatch) {
+    return { name, amount: parseFloat(parenMatch[1].replace(',', '.')), unit: normalizeUnit(parenMatch[2]) };
+  }
+  const plain = qtyPart.match(/^([\d.,]+)\s*(გ|მლ|ლ|კგ|ცალი|ც|kg|g|ml|l|pcs)/i);
+  if (plain) {
+    return { name, amount: parseFloat(plain[1].replace(',', '.')), unit: normalizeUnit(plain[2]) };
+  }
+  return { name, amount: null, unit: null };
+}
+
+// g and ml are treated as roughly interchangeable (fine for a home-cooking estimate);
+// pcs only compares against pcs.
+function unitsComparable(a: Unit | null, b: Unit | null): boolean {
+  if (!a || !b) return false;
+  if (a === b) return true;
+  return (a === 'g' && b === 'ml') || (a === 'ml' && b === 'g');
+}
+
+type IngredientCheck = ParsedIngredient & { have: number | null; haveUnit: Unit | null; status: 'ok' | 'not_enough' | 'missing' | 'unknown' };
+
+function checkCoverage(dish: any, pantry: PantryItem[]): { checks: IngredientCheck[]; fullyMakeable: boolean; matchedCount: number } {
+  const reqs = ((dish.ingredientsKa || []) as string[]).map(parseIngredient);
+  const checks: IngredientCheck[] = reqs.map((req) => {
+    const have = pantry.find((p) => nameMatches(p.name, req.name));
+    if (!have) return { ...req, have: null, haveUnit: null, status: 'missing' };
+    if (req.amount == null || !unitsComparable(req.unit, have.unit)) {
+      // Name matches but we can't compare quantities reliably — don't block the user
+      // over messy source data, just flag it as unverified rather than confirmed.
+      return { ...req, have: have.amount, haveUnit: have.unit, status: 'unknown' };
+    }
+    return { ...req, have: have.amount, haveUnit: have.unit, status: have.amount >= req.amount ? 'ok' : 'not_enough' };
+  });
+  const matchedCount = checks.filter((c) => c.status !== 'missing').length;
+  const fullyMakeable = checks.length > 0 && checks.every((c) => c.status === 'ok' || c.status === 'unknown');
+  return { checks, fullyMakeable, matchedCount };
+}
+
 // "რა მაქვს სახლში?" — finds dishes from the SAME catalog "დღის გეგმა" already loaded
 // (allDishes, fetched once in DashboardClient from /api/meals — no separate product/
-// recipe list is introduced here), matched against products the parent has on hand.
-// Opening a match uses the shared RecipeModal, and marking one "ვჭამე" replaces a slot
-// in TODAY's real plan through the exact same PATCH /api/daily-log/[id] endpoint the
-// existing "სხვა" substitute action already uses — so the plan, the vote, and the
-// vitamin/nutrient totals (/api/nutrition, which just sums wasEaten DailyLog rows) all
-// update through the one pathway that already exists, nothing parallel.
+// recipe list is introduced here), matched against products the parent has on hand,
+// respecting the QUANTITY the parent actually has — a recipe only counts as makeable
+// when what's on hand doesn't fall short of what the recipe needs. Opening a match uses
+// the shared RecipeModal, and marking one "ვჭამე" replaces a slot in TODAY's real plan
+// through the exact same PATCH /api/daily-log/[id] endpoint the existing "სხვა"
+// substitute action already uses — so the plan, the vote, and the vitamin/nutrient
+// totals (/api/nutrition, which just sums wasEaten DailyLog rows) all update through
+// the one pathway that already exists, nothing parallel.
 export default function AtHomeTab({ child, allDishes }: { child: any; allDishes: any[] }) {
   const todayStr = localToday();
 
   const [logs, setLogs] = useState<any[]>([]);
   const [loadingLogs, setLoadingLogs] = useState(true);
 
-  const [pantryItems, setPantryItems] = useState<string[]>([]);
-  const [inputValue, setInputValue] = useState('');
+  const [pantry, setPantry] = useState<PantryItem[]>([]);
+  const [nameInput, setNameInput] = useState('');
+  const [amountInput, setAmountInput] = useState('');
+  const [unitInput, setUnitInput] = useState<Unit>('g');
+
   const [recipeModal, setRecipeModal] = useState<any | null>(null);
   const [replacing, setReplacing] = useState<any | null>(null);
   const [confirmedMsg, setConfirmedMsg] = useState<string | null>(null);
@@ -46,36 +121,45 @@ export default function AtHomeTab({ child, allDishes }: { child: any; allDishes:
 
   useEffect(() => { fetchLogs(); }, [child?.id]);
 
-  // Ingredient autocomplete drawn from the same dish catalog — not a second product list.
-  const allIngredients = useMemo(() => {
+  // Autocomplete on the ingredient NAME only (never the "name - qty" string a specific
+  // recipe happens to need) — drawn from the same dish catalog, so it's not a second
+  // product list, just distinct names pulled out of it.
+  const allIngredientNames = useMemo(() => {
     const set = new Set<string>();
     for (const d of allDishes) {
-      for (const ing of d.ingredientsKa || []) set.add(ing);
+      for (const ing of d.ingredientsKa || []) {
+        const { name } = parseIngredient(ing);
+        if (name) set.add(name);
+      }
     }
     return Array.from(set).sort((a, b) => a.localeCompare(b, 'ka'));
   }, [allDishes]);
 
-  const suggestions = useMemo(() => {
-    const q = norm(inputValue);
+  const nameSuggestions = useMemo(() => {
+    const q = norm(nameInput);
     if (!q) return [];
-    const already = new Set(pantryItems.map(norm));
-    return allIngredients.filter((ing) => norm(ing).includes(q) && !already.has(norm(ing))).slice(0, 8);
-  }, [inputValue, allIngredients, pantryItems]);
+    const already = new Set(pantry.map((p) => norm(p.name)));
+    return allIngredientNames.filter((n) => norm(n).includes(q) && !already.has(norm(n))).slice(0, 8);
+  }, [nameInput, allIngredientNames, pantry]);
 
-  const addItem = (raw: string) => {
-    const v = raw.trim();
-    if (!v) return;
-    setPantryItems((prev) => (prev.some((p) => norm(p) === norm(v)) ? prev : [...prev, v]));
-    setInputValue('');
+  const addPantryItem = () => {
+    const name = nameInput.trim();
+    const amount = parseFloat(amountInput.replace(',', '.'));
+    if (!name || !amount || amount <= 0) return;
+    setPantry((prev) => [
+      ...prev.filter((p) => norm(p.name) !== norm(name)),
+      { id: `${Date.now()}_${name}`, name, amount, unit: unitInput },
+    ]);
+    setNameInput('');
+    setAmountInput('');
   };
-  const removeItem = (v: string) => setPantryItems((prev) => prev.filter((p) => p !== v));
+  const removePantryItem = (id: string) => setPantry((prev) => prev.filter((p) => p.id !== id));
 
   // Same age/allergy gate the existing "სხვა" substitute list applies (subCandidates in
   // TodayTab), plus the same likes/dislikes signal pickDish() (the server auto-fill
   // algorithm) already scores on — not a second, independent preference source.
-  const matches = useMemo(() => {
-    if (!child || pantryItems.length === 0) return [];
-    const pantryTerms = pantryItems.map(norm);
+  const results = useMemo(() => {
+    if (!child || pantry.length === 0) return [];
 
     const scored = allDishes
       .filter((d: any) =>
@@ -83,27 +167,25 @@ export default function AtHomeTab({ child, allDishes }: { child: any; allDishes:
         !d.allergens?.some((a: string) => child.allergies?.includes(a))
       )
       .map((d: any) => {
-        const ingredients: string[] = d.ingredientsKa || [];
-        if (!ingredients.length) return null;
-        const matchedIngredients = ingredients.filter((ing) => {
-          const ni = norm(ing);
-          return pantryTerms.some((p) => ni.includes(p) || p.includes(ni));
-        });
-        if (matchedIngredients.length === 0) return null;
-        const coverage = matchedIngredients.length / ingredients.length;
+        const { checks, fullyMakeable, matchedCount } = checkCoverage(d, pantry);
+        if (matchedCount === 0) return null;
 
         let bonus = 0;
-        const text = [d.titleKa, ...ingredients].join(' ').toLowerCase();
+        const text = [d.titleKa, ...(d.ingredientsKa || [])].join(' ').toLowerCase();
         if (child.likes?.length && child.likes.some((l: string) => text.includes(l.toLowerCase()))) bonus += 0.15;
         if (child.dislikes?.length && child.dislikes.some((l: string) => text.includes(l.toLowerCase()))) bonus -= 0.3;
 
-        return { dish: d, matchedIngredients, coverage, score: coverage + bonus };
+        const score = (fullyMakeable ? 10 : 0) + matchedCount / checks.length + bonus;
+        return { dish: d, checks, fullyMakeable, matchedCount, score };
       })
-      .filter(Boolean) as { dish: any; matchedIngredients: string[]; coverage: number; score: number }[];
+      .filter(Boolean) as { dish: any; checks: IngredientCheck[]; fullyMakeable: boolean; matchedCount: number; score: number }[];
 
     scored.sort((a, b) => b.score - a.score);
     return scored.slice(0, 20);
-  }, [allDishes, pantryItems, child]);
+  }, [allDishes, pantry, child]);
+
+  const makeable = results.filter((r) => r.fullyMakeable);
+  const partial = results.filter((r) => !r.fullyMakeable);
 
   // Only today's slots whose meal type matches the dish — the same same-mealType rule
   // the existing "სხვა" substitute list enforces, so a breakfast dish can't land in dinner.
@@ -141,41 +223,131 @@ export default function AtHomeTab({ child, allDishes }: { child: any; allDishes:
     );
   }
 
+  const renderDishCard = (r: { dish: any; checks: IngredientCheck[]; fullyMakeable: boolean }) => {
+    const { dish, checks, fullyMakeable } = r;
+    return (
+      <div key={dish.id} className={`${card} p-4`}>
+        <div className="flex items-center gap-3">
+          <button onClick={() => setRecipeModal(dish)}
+            className="flex-shrink-0 w-16 h-16 rounded-full overflow-hidden bg-[#f0f8ee] hover:ring-2 hover:ring-[#465940]/40 transition">
+            {dish.imageUrl ? <img src={dish.imageUrl} className="w-full h-full object-cover" alt="" /> : <div className="w-full h-full bg-[#465940]/10" />}
+          </button>
+          <div className="flex-1 min-w-0">
+            <div className="flex items-center gap-2 mb-1">
+              <span className="text-[10px] font-black uppercase tracking-widest px-2.5 py-0.5 rounded-full bg-[#465940]/10 text-[#465940]">
+                {MEAL_LABEL[dish.mealType]}
+              </span>
+              {fullyMakeable ? (
+                <span className="text-[10px] font-bold text-green-700">✓ სრულად შეგიძლია მოამზადო</span>
+              ) : (
+                <span className="text-[10px] font-bold text-[#465940]/60">ნაწილობრივ გაქვს</span>
+              )}
+            </div>
+            <p className="font-bold text-[#465940] text-sm truncate">{dish.titleKa}</p>
+          </div>
+        </div>
+
+        <ul className="mt-2.5 space-y-1">
+          {checks.map((c, i) => (
+            <li key={i} className="flex items-center gap-1.5 text-[11px]">
+              <span className={
+                c.status === 'ok' ? 'text-green-600' :
+                c.status === 'unknown' ? 'text-[#465940]/50' :
+                c.status === 'not_enough' ? 'text-amber-600' : 'text-[#465940]/35'
+              }>
+                {c.status === 'ok' ? '✓' : c.status === 'unknown' ? '•' : c.status === 'not_enough' ? '!' : '✗'}
+              </span>
+              <span className="text-[#465940]/80">
+                {c.name}
+                {c.amount != null && c.unit ? ` (საჭირო: ${c.amount}${UNIT_LABEL[c.unit]})` : ''}
+              </span>
+              {c.status === 'not_enough' && (
+                <span className="text-amber-600 font-semibold">— გაქვს მხოლოდ {c.have}{c.haveUnit ? UNIT_LABEL[c.haveUnit] : ''}</span>
+              )}
+              {c.status === 'missing' && <span className="text-[#465940]/40">— არ გაქვს</span>}
+            </li>
+          ))}
+        </ul>
+
+        <div className="flex gap-2 mt-3">
+          <button onClick={() => setReplacing(dish)}
+            className="px-3 py-1.5 rounded-full text-xs font-bold bg-[#465940] text-[#FDFBF0] hover:bg-[#465940]/80 transition">
+            ვჭამე
+          </button>
+          <button onClick={() => toggleDislike(dish.id)}
+            className="px-3 py-1.5 rounded-full text-xs font-bold bg-[#465940]/10 text-[#465940] hover:bg-red-500 hover:text-white transition">
+            არ მომეწონა
+          </button>
+          <button onClick={() => setRecipeModal(dish)}
+            className="px-3 py-1.5 rounded-full text-xs font-bold bg-[#465940]/10 text-[#465940] hover:bg-[#465940] hover:text-[#FDFBF0] transition">
+            რეცეპტი
+          </button>
+        </div>
+      </div>
+    );
+  };
+
   return (
     <div className="space-y-5">
       <div className={`${card} p-5`}>
         <h2 className="font-black text-[#465940] text-lg mb-1">რა მაქვს სახლში?</h2>
         <p className="text-sm text-[#465940]/60 mb-4">
-          ჩამოწერე რა პროდუქტები გაქვს — და {child.name}-სთვის შესაფერის კერძებს გიპოვით.
+          ჩამოწერე რა პროდუქტები გაქვს და რამდენი — და {child.name}-სთვის შესაფერის, რეალურად მოსამზადებელ კერძებს გიპოვით.
         </p>
 
-        <div className="relative">
-          <div className="flex flex-wrap gap-2 items-center border border-[#465940]/15 rounded-2xl px-3 py-2 focus-within:border-[#465940] transition">
-            {pantryItems.map((item) => (
-              <span key={item} className="flex items-center gap-1.5 bg-[#465940]/10 text-[#465940] text-sm font-semibold px-3 py-1 rounded-full">
-                {item}
-                <button onClick={() => removeItem(item)} className="text-[#465940]/50 hover:text-[#465940] leading-none">×</button>
+        {/* Name + amount + unit, added together as one pantry entry — matching then checks
+            actual quantity, not just whether the ingredient name appears somewhere. */}
+        <div className="flex flex-wrap gap-2 items-start">
+          <div className="relative flex-1 min-w-[160px]">
+            <input
+              value={nameInput}
+              onChange={(e) => setNameInput(e.target.value)}
+              onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); addPantryItem(); } }}
+              placeholder="მაგ: ბრინჯი, ქათმის ფილე..."
+              className="w-full border border-[#465940]/15 rounded-2xl px-3.5 py-2.5 text-sm text-[#465940] bg-white focus:outline-none focus:border-[#465940] transition"
+            />
+            {nameSuggestions.length > 0 && (
+              <div className="absolute z-10 mt-1 w-full bg-[#FDFBF0] border border-[#465940]/15 rounded-2xl shadow-lg overflow-hidden max-h-48 overflow-y-auto">
+                {nameSuggestions.map((s) => (
+                  <button key={s} onClick={() => setNameInput(s)}
+                    className="w-full text-left px-4 py-2 text-sm text-[#465940] hover:bg-[#465940]/10 transition">
+                    {s}
+                  </button>
+                ))}
+              </div>
+            )}
+          </div>
+          <input
+            value={amountInput}
+            onChange={(e) => setAmountInput(e.target.value.replace(/[^\d.,]/g, ''))}
+            onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); addPantryItem(); } }}
+            placeholder="რაოდენობა"
+            inputMode="decimal"
+            className="w-24 border border-[#465940]/15 rounded-2xl px-3.5 py-2.5 text-sm text-[#465940] bg-white focus:outline-none focus:border-[#465940] transition"
+          />
+          <select
+            value={unitInput}
+            onChange={(e) => setUnitInput(e.target.value as Unit)}
+            className="border border-[#465940]/15 rounded-2xl px-3 py-2.5 text-sm text-[#465940] bg-white focus:outline-none focus:border-[#465940] transition"
+          >
+            {UNITS.map((u) => <option key={u} value={u}>{UNIT_LABEL[u]}</option>)}
+          </select>
+          <button onClick={addPantryItem}
+            className="px-4 py-2.5 rounded-2xl text-sm font-bold bg-[#465940] text-[#FDFBF0] hover:bg-[#465940]/80 transition">
+            დამატება
+          </button>
+        </div>
+
+        {pantry.length > 0 && (
+          <div className="flex flex-wrap gap-2 mt-3">
+            {pantry.map((item) => (
+              <span key={item.id} className="flex items-center gap-1.5 bg-[#465940]/10 text-[#465940] text-sm font-semibold px-3 py-1.5 rounded-full">
+                {item.name} — {item.amount}{UNIT_LABEL[item.unit]}
+                <button onClick={() => removePantryItem(item.id)} className="text-[#465940]/50 hover:text-[#465940] leading-none">×</button>
               </span>
             ))}
-            <input
-              value={inputValue}
-              onChange={(e) => setInputValue(e.target.value)}
-              onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); addItem(inputValue); } }}
-              placeholder={pantryItems.length ? 'დაამატე კიდევ...' : 'მაგ: ბროწეული, ქათმის ხორცი, ბრინჯი...'}
-              className="flex-1 min-w-[140px] py-1 text-sm text-[#465940] bg-transparent focus:outline-none"
-            />
           </div>
-          {suggestions.length > 0 && (
-            <div className="absolute z-10 mt-1 w-full bg-[#FDFBF0] border border-[#465940]/15 rounded-2xl shadow-lg overflow-hidden max-h-48 overflow-y-auto">
-              {suggestions.map((s) => (
-                <button key={s} onClick={() => addItem(s)}
-                  className="w-full text-left px-4 py-2 text-sm text-[#465940] hover:bg-[#465940]/10 transition">
-                  {s}
-                </button>
-              ))}
-            </div>
-          )}
-        </div>
+        )}
       </div>
 
       {confirmedMsg && (
@@ -184,51 +356,28 @@ export default function AtHomeTab({ child, allDishes }: { child: any; allDishes:
         </div>
       )}
 
-      {pantryItems.length === 0 ? (
+      {pantry.length === 0 ? (
         <div className={`${card} p-10 text-center`}>
-          <p className="text-[#465940]/60 text-sm">დაამატე პროდუქტები, რომ დაგინახო შესაფერისი კერძები.</p>
+          <p className="text-[#465940]/60 text-sm">დაამატე პროდუქტები და რაოდენობა, რომ დაგინახო რისი მომზადება შეგიძლია.</p>
         </div>
-      ) : matches.length === 0 ? (
+      ) : results.length === 0 ? (
         <div className={`${card} p-10 text-center`}>
           <p className="text-[#465940]/60 text-sm">ამ პროდუქტებით შესაფერისი კერძი ვერ მოიძებნა.</p>
         </div>
       ) : (
-        <div className="space-y-3">
-          {matches.map(({ dish, matchedIngredients, coverage }) => (
-            <div key={dish.id} className={`${card} p-4`}>
-              <div className="flex items-center gap-3">
-                <button onClick={() => setRecipeModal(dish)}
-                  className="flex-shrink-0 w-16 h-16 rounded-full overflow-hidden bg-[#f0f8ee] hover:ring-2 hover:ring-[#465940]/40 transition">
-                  {dish.imageUrl ? <img src={dish.imageUrl} className="w-full h-full object-cover" alt="" /> : <div className="w-full h-full bg-[#465940]/10" />}
-                </button>
-                <div className="flex-1 min-w-0">
-                  <div className="flex items-center gap-2 mb-1">
-                    <span className="text-[10px] font-black uppercase tracking-widest px-2.5 py-0.5 rounded-full bg-[#465940]/10 text-[#465940]">
-                      {MEAL_LABEL[dish.mealType]}
-                    </span>
-                    <span className="text-[10px] font-bold text-[#465940]/60">{Math.round(coverage * 100)}% შენს ხელთ არსებულით</span>
-                  </div>
-                  <p className="font-bold text-[#465940] text-sm truncate">{dish.titleKa}</p>
-                  <p className="text-[11px] text-[#465940]/60 truncate">გაქვს: {matchedIngredients.join(', ')}</p>
-                </div>
-              </div>
-
-              <div className="flex gap-2 mt-3">
-                <button onClick={() => setReplacing(dish)}
-                  className="px-3 py-1.5 rounded-full text-xs font-bold bg-[#465940] text-[#FDFBF0] hover:bg-[#465940]/80 transition">
-                  ვჭამე
-                </button>
-                <button onClick={() => toggleDislike(dish.id)}
-                  className="px-3 py-1.5 rounded-full text-xs font-bold bg-[#465940]/10 text-[#465940] hover:bg-red-500 hover:text-white transition">
-                  არ მომეწონა
-                </button>
-                <button onClick={() => setRecipeModal(dish)}
-                  className="px-3 py-1.5 rounded-full text-xs font-bold bg-[#465940]/10 text-[#465940] hover:bg-[#465940] hover:text-[#FDFBF0] transition">
-                  რეცეპტი
-                </button>
-              </div>
+        <div className="space-y-5">
+          {makeable.length > 0 && (
+            <div className="space-y-3">
+              <h3 className="text-xs font-black uppercase tracking-widest text-[#465940]/50">შეგიძლია ახლავე მოამზადო</h3>
+              {makeable.map((r) => renderDishCard(r))}
             </div>
-          ))}
+          )}
+          {partial.length > 0 && (
+            <div className="space-y-3">
+              <h3 className="text-xs font-black uppercase tracking-widest text-[#465940]/50">ნაწილობრივ გაქვს — აკლია რაღაც</h3>
+              {partial.map((r) => renderDishCard(r))}
+            </div>
+          )}
         </div>
       )}
 
