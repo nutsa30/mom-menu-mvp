@@ -4,6 +4,8 @@ import { useState, useEffect, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 import FirstFoodsTab from './FirstFoodsTab';
 import BabyRecipesTab from './BabyRecipesTab';
+import AtHomeTab from './AtHomeTab';
+import RecipeModal from './RecipeModal';
 
 // Use local date (not UTC) to avoid timezone issues (e.g. Georgia is UTC+4)
 function localToday(): string {
@@ -20,7 +22,7 @@ function ageInMonths(birthDate: string | Date): number {
   return Math.max(0, months);
 }
 
-type Tab = 'today' | 'firstfoods' | 'recipes' | 'nutrition' | 'shopping' | 'child' | 'settings';
+type Tab = 'today' | 'firstfoods' | 'recipes' | 'athome' | 'nutrition' | 'shopping' | 'child' | 'settings';
 
 const MEAL_ORDER = ['BREAKFAST', 'SNACK', 'LUNCH', 'DINNER'] as const;
 const MEAL_LABEL: Record<string, string> = { BREAKFAST: 'საუზმე', SNACK: 'სნექი', LUNCH: 'სადილი', DINNER: 'ვახშამი' };
@@ -362,9 +364,14 @@ function TodayTab({ child, allDishes, planStart, isFullPlan }: { child: any; all
                     : <p className="text-sm text-[#465940]/60 italic mb-0.5">კერძი ვერ მოიძებნა</p>
                   }
                   {calories && (
-                    <p className="text-[11px] text-[#465940]/60 mb-2.5">
+                    <p className="text-[11px] text-[#465940]/60 mb-1">
                       {calories} kcal{proteinGrams ? ` · ${proteinGrams}g ცილა` : ''}
                     </p>
+                  )}
+                  {/* When this slot's dish was swapped (via "სხვა" or "რა მაქვს სახლში?"),
+                      show what was originally planned — the history the schema now keeps. */}
+                  {log?.originalDish && (
+                    <p className="text-[10px] text-[#465940]/45 mb-2.5">თავდაპირველად: {log.originalDish.titleKa}</p>
                   )}
 
                   {/* Actions — "ჭამა" only ever shows through today: editable today, locked
@@ -508,67 +515,8 @@ function TodayTab({ child, allDishes, planStart, isFullPlan }: { child: any; all
         </div>
       )}
 
-      {/* Recipe modal */}
-      {recipeModal && (
-        <div className="fixed inset-0 z-50 bg-black/50 flex items-end sm:items-center justify-center p-4" onClick={() => setRecipeModal(null)}>
-          <div className="bg-[#FDFBF0] w-full max-w-lg rounded-2xl overflow-hidden max-h-[90vh] flex flex-col" onClick={e => e.stopPropagation()}>
-            <div className="relative h-48 bg-[#fdf0ea] flex-shrink-0">
-              {recipeModal.imageUrl
-                ? <img src={recipeModal.imageUrl} alt={recipeModal.titleKa} className="w-full h-full object-cover" />
-                : <div className="w-full h-full flex items-center justify-center text-6xl"></div>}
-              <button onClick={() => setRecipeModal(null)}
-                className="absolute top-3 right-3 w-8 h-8 bg-black/40 hover:bg-black/60 rounded-full flex items-center justify-center text-[#FDFBF0] transition">✕</button>
-              <span className={`absolute top-3 left-3 px-2.5 py-1 rounded-full text-xs font-bold bg-[#FDFBF0]/90`}>
-                {MEAL_LABEL[recipeModal.mealType]}
-              </span>
-            </div>
-            <div className="overflow-y-auto p-6 space-y-5">
-              <h2 className="text-xl font-black text-[#465940]">{recipeModal.titleKa}</h2>
-              {recipeModal.ingredientsKa?.length > 0 && (
-                <div>
-                  <p className="text-sm font-bold text-[#465940] mb-2">ინგრედიენტები</p>
-                  <ul className="space-y-1.5">
-                    {recipeModal.ingredientsKa.map((ing: string, i: number) => (
-                      <li key={i} className="flex gap-2.5 text-sm text-[#465940]">
-                        <span className="flex-shrink-0 w-5 h-5 rounded-full bg-[#465940]/10 text-[#465940]/70 text-[11px] font-black flex items-center justify-center mt-0.5">{i+1}</span>
-                        {ing}
-                      </li>
-                    ))}
-                  </ul>
-                </div>
-              )}
-              {recipeModal.descriptionKa && (
-                <div>
-                  <p className="text-sm font-bold text-[#465940] mb-2">მომზადების წესი</p>
-                  <p className="text-sm text-[#465940] leading-relaxed">{recipeModal.descriptionKa}</p>
-                </div>
-              )}
-              {recipeModal.calories && (
-                <div>
-                  <p className="text-sm font-bold text-[#465940] mb-2">კვებითი ღირებულება</p>
-                  <div className="grid grid-cols-2 gap-2">
-                    {[
-                      { v: recipeModal.calories, label: 'კალორი', unit: 'kcal', color: 'bg-[#FDFBF0]/10 text-[#465940]' },
-                      { v: recipeModal.proteinGrams, label: 'ცილა', unit: 'g', color: 'bg-[#FDFBF0]/10 text-[#465940]' },
-                      { v: recipeModal.carbsGrams, label: 'ნახშ.', unit: 'g', color: 'bg-[#FDFBF0]/10 text-[#465940]' },
-                      { v: recipeModal.fatGrams, label: 'ცხიმი', unit: 'g', color: 'bg-[#FDFBF0]/10 text-[#465940]' },
-                      { v: recipeModal.ironMg, label: 'რკინა', unit: 'mg', color: 'bg-[#465940] text-[#FDFBF0]' },
-                      { v: recipeModal.calciumMg, label: 'კალციუმი', unit: 'mg', color: 'bg-[#465940]/10 text-[#465940]' },
-                      { v: recipeModal.vitaminCmg, label: 'C ვიტ.', unit: 'mg', color: 'bg-[#FDFBF0]/10 text-[#465940]' },
-                      { v: recipeModal.vitaminAmcg, label: 'A ვიტ.', unit: 'mcg', color: 'bg-[#FDFBF0]/10 text-[#FDFBF0]' },
-                    ].filter(n => n.v).map(({ v, label, unit, color }) => (
-                      <div key={label} className={`${color.split(' ')[0]} rounded-xl p-3 text-center`}>
-                        <p className={`text-base font-black ${color.split(' ')[1]}`}>{v}{unit}</p>
-                        <p className="text-xs text-[#465940]/70">{label}</p>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              )}
-            </div>
-          </div>
-        </div>
-      )}
+      {/* Recipe modal — shared component, also used by "რა მაქვს სახლში?" */}
+      <RecipeModal dish={recipeModal} onClose={() => setRecipeModal(null)} />
     </div>
   );
 }
@@ -1863,6 +1811,7 @@ export default function DashboardClient({ user }: { user: any }) {
     const young = activeChild.ageGroup === 'FROM_6' || activeChild.ageGroup === 'FROM_9';
     if (young && tab === 'today') setTab('firstfoods');
     if (!young && (tab === 'firstfoods' || tab === 'recipes')) setTab('today');
+    if (young && tab === 'athome') setTab('firstfoods');
     if (young && tab === 'nutrition') setTab('firstfoods');
   }, [activeChild?.id]);
 
@@ -1902,6 +1851,9 @@ export default function DashboardClient({ user }: { user: any }) {
           ? [{ key: 'firstfoods' as Tab, label: 'პირველი საკვები' }, { key: 'recipes' as Tab, label: 'რეცეპტები' }]
           : [{ key: 'today' as Tab, label: 'დღის გეგმა' }]
         ),
+        // Needs a real daily plan to match against (same FULL_PLAN gate /api/daily-log
+        // itself enforces), so it's hidden for the same audiences "დღის გეგმა" is.
+        ...(isFullPlan && !isYoungBaby ? [{ key: 'athome' as Tab, label: 'რა მაქვს სახლში?' }] : []),
         // Vitamin/nutrition tracking isn't meaningful while feeding is still first-taste
         // ingredient-by-ingredient introduction — it becomes relevant once real meals start.
         ...(isYoungBaby ? [] : [{ key: 'nutrition' as Tab, label: 'კვება' }]),
@@ -1980,6 +1932,7 @@ export default function DashboardClient({ user }: { user: any }) {
         {tab === 'firstfoods' && activeChild && <FirstFoodsTab child={activeChild} isFullPlan={isFullPlan} />}
         {tab === 'recipes' && activeChild && <BabyRecipesTab child={activeChild} isFullPlan={isFullPlan} />}
         {tab === 'today' && <TodayTab child={activeChild} allDishes={allDishes} planStart={planStart} isFullPlan={isFullPlan} />}
+        {tab === 'athome' && <AtHomeTab child={activeChild} allDishes={allDishes} />}
         {tab === 'nutrition' && <NutritionTab child={activeChild} />}
         {tab === 'shopping' && <ShoppingListTab child={activeChild} planStart={planStart} />}
         {tab === 'child' && <ChildTab children={children} userId={user.id} onUpdate={onChildUpdate} onDelete={onChildDelete} />}

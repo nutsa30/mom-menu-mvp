@@ -92,7 +92,7 @@ export async function GET(req: NextRequest) {
 
   let logs = await prisma.dailyLog.findMany({
     where: { childId, date },
-    include: { dish: true, ingredient: true },
+    include: { dish: true, ingredient: true, originalDish: true },
     orderBy: { mealType: 'asc' },
   });
 
@@ -149,7 +149,7 @@ export async function GET(req: NextRequest) {
 
     logs = await prisma.dailyLog.findMany({
       where: { childId, date },
-      include: { dish: true, ingredient: true },
+      include: { dish: true, ingredient: true, originalDish: true },
       orderBy: { mealType: 'asc' },
     });
   }

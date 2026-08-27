@@ -13,13 +13,20 @@ export async function PATCH(req: NextRequest, { params }: { params: { id: string
 
   const body = await req.json();
 
+  // The first time a slot's dish is actually changed (by "სხვა" or by "რა მაქვს
+  // სახლში?"), remember what was originally planned there — but only once, so a later
+  // second/third swap doesn't overwrite the true original with an intermediate one.
+  const isDishChange = body.dishId !== undefined && body.dishId !== existing.dishId;
+  const shouldCaptureOriginal = isDishChange && !existing.originalDishId && existing.dishId;
+
   const log = await prisma.dailyLog.update({
     where: { id: params.id },
     data: {
       ...(body.wasEaten !== undefined ? { wasEaten: body.wasEaten } : {}),
       ...(body.dishId !== undefined ? { dishId: body.dishId } : {}),
+      ...(shouldCaptureOriginal ? { originalDishId: existing.dishId } : {}),
     },
-    include: { dish: true, ingredient: true },
+    include: { dish: true, ingredient: true, originalDish: true },
   });
 
   // Marking a dish eaten doubles as an implicit "liked" vote; un-marking it retracts

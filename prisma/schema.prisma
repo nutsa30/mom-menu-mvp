@@ -242,6 +242,7 @@ model Dish {
   planItems     MealPlanItem[]
   dailyLogs     DailyLog[]
   votes         DishVote[]
+  originalFor   DailyLog[] @relation("DailyLogOriginalDish")
 }
 
 // One row per (dish, child) — records whether that child's parent marked the dish liked
@@ -306,6 +307,13 @@ model DailyLog {
   ingredientId String?
   ingredient   Ingredient? @relation(fields: [ingredientId], references: [id], onDelete: SetNull)
   wasEaten     Boolean     @default(false)
+
+  // The dish ORIGINALLY planned for this slot, captured the first time it's replaced
+  // (by "სხვა" or by "რა მაქვს სახლში?") and never overwritten again afterwards — so the
+  // chain "დაგეგმილი → ჩანაცვლებული → ნაჭამი" stays readable even after multiple swaps.
+  originalDishId String?
+  originalDish   Dish?      @relation("DailyLogOriginalDish", fields: [originalDishId], references: [id], onDelete: SetNull)
+
   createdAt    DateTime    @default(now())
   updatedAt    DateTime    @updatedAt
 
