@@ -57,10 +57,19 @@ export async function GET(req: NextRequest) {
   cutoff.setDate(cutoff.getDate() - days);
   const cutoffStr = cutoff.toISOString().split('T')[0];
 
-  const logs = await prisma.dailyLog.findMany({
-    where: { childId, wasEaten: true, date: { gte: cutoffStr } },
-    include: { dish: true },
-  });
+  // "+ დაამატე რაც ჭამა" entries (ExtraFoodLog) are food outside the plan but still
+  // really eaten — they feed the SAME totals below through the SAME per-key reduce, just
+  // as a second source alongside planned-and-eaten DailyLog rows. One calculation.
+  const [logs, extraLogs] = await Promise.all([
+    prisma.dailyLog.findMany({
+      where: { childId, wasEaten: true, date: { gte: cutoffStr } },
+      include: { dish: true },
+    }),
+    prisma.extraFoodLog.findMany({
+      where: { childId, date: { gte: cutoffStr } },
+      include: { dish: true, ingredient: true },
+    }),
+  ]);
 
   // Aggregate per day
   const byDate: Record<string, Record<string, number>> = {};
@@ -69,6 +78,15 @@ export async function GET(req: NextRequest) {
     if (!byDate[log.date]) byDate[log.date] = {};
     for (const k of KEYS) {
       const val = (log.dish as any)[k] ?? 0;
+      byDate[log.date][k] = (byDate[log.date][k] ?? 0) + val;
+    }
+  }
+  for (const log of extraLogs) {
+    const source = log.dish ?? log.ingredient;
+    if (!source) continue; // free-text-only entry (no catalog match) — no nutrition data to add
+    if (!byDate[log.date]) byDate[log.date] = {};
+    for (const k of KEYS) {
+      const val = (source as any)[k] ?? 0;
       byDate[log.date][k] = (byDate[log.date][k] ?? 0) + val;
     }
   }

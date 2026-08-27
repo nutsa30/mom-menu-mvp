@@ -6,6 +6,8 @@ import FirstFoodsTab from './FirstFoodsTab';
 import BabyRecipesTab from './BabyRecipesTab';
 import AtHomeTab from './AtHomeTab';
 import RecipeModal from './RecipeModal';
+import TodayDigest from './TodayDigest';
+import FavoriteDishes from './FavoriteDishes';
 
 // Use local date (not UTC) to avoid timezone issues (e.g. Georgia is UTC+4)
 function localToday(): string {
@@ -235,26 +237,24 @@ function TodayTab({ child, allDishes, planStart, isFullPlan }: { child: any; all
   const subLog = substituteFor ? logs.find(l => l.id === substituteFor) : null;
   const originalDish = subLog?.dish;
 
-  const subCandidates = subLog
-    ? allDishes.filter(d =>
-        d.id !== originalDish?.id &&
-        d.mealType === subLog.mealType &&
-        d.ageGroups?.includes(child?.ageGroup) &&
-        !d.allergens?.some((a: string) => child?.allergies?.includes(a))
-      )
-    : [];
-
-  // Always sort by nutritional similarity to preserve the child's vitamin plan
-  const displayDishes = originalDish
-    ? [...subCandidates].sort((a, b) => {
-        const keys = ['calories', 'proteinGrams', 'ironMg', 'calciumMg', 'vitaminCmg', 'vitaminAmcg', 'fiberGrams'];
-        const score = (d: any) => keys.reduce((sum, k) => {
-          const av = d[k] ?? 0, bv = originalDish[k] ?? 0;
-          return sum + Math.abs(av - bv) / Math.max(av, bv, 1);
-        }, 0);
-        return score(a) - score(b);
-      })
-    : subCandidates;
+  // Ranked suggestions come from the server (/api/daily-log/[id]/replacements), which
+  // runs the SAME pickDish() scoring the daily auto-fill uses (age, allergies, recent-7-
+  // day exclusion, same-day dedup, likes/dislikes) plus a hard exclude on this child's
+  // explicit "არ მოეწონა" votes — a real "better alternative", not just the
+  // nutrient-closest dish to the one just rejected.
+  const [displayDishes, setDisplayDishes] = useState<any[]>([]);
+  const [loadingSub, setLoadingSub] = useState(false);
+  useEffect(() => {
+    if (!substituteFor) { setDisplayDishes([]); return; }
+    let cancelled = false;
+    setLoadingSub(true);
+    fetch(`/api/daily-log/${substituteFor}/replacements`)
+      .then(r => r.json())
+      .then(d => { if (!cancelled) setDisplayDishes(Array.isArray(d) ? d : []); })
+      .catch(() => { if (!cancelled) setDisplayDishes([]); })
+      .finally(() => { if (!cancelled) setLoadingSub(false); });
+    return () => { cancelled = true; };
+  }, [substituteFor]);
   const eaten = logs.filter(l => l.wasEaten).length;
   const total = logs.length;
 
@@ -301,6 +301,11 @@ function TodayTab({ child, allDishes, planStart, isFullPlan }: { child: any; all
           })}
         </div>
       </div>
+
+      {/* "დღეს რა ჭამა?" — real eating, not just the plan. Tied to today specifically
+          (not whichever day is selected above), reusing the same `logs` state already
+          fetched for today when that's the day being viewed, so no extra request. */}
+      {isToday && !loading && <TodayDigest child={child} logs={logs} allDishes={allDishes} />}
 
       {/* Day header */}
       <div className={`${card} p-4 flex items-center justify-between`}>
@@ -422,6 +427,21 @@ function TodayTab({ child, allDishes, planStart, isFullPlan }: { child: any; all
                       )}
                     </div>
                   )}
+
+                  {/* "არ მოეწონა? — გინდა შემიცვალო?" — opens the exact same "სხვა"
+                      replacement modal, just surfaced right where the dislike happened
+                      instead of making the parent hunt for the substitute button. */}
+                  {log && !isIngredient && isToday && log.voteLiked === false && (
+                    <div className="mt-2 flex items-center gap-2 bg-amber-50 border border-amber-200 rounded-xl px-3 py-2">
+                      <span className="text-xs text-amber-800 flex-1">გინდა სხვა კერძით ჩავანაცვლოთ?</span>
+                      <button
+                        onClick={() => setSubstituteFor(log.id)}
+                        className="px-3 py-1 rounded-full text-xs font-bold bg-[#465940] text-[#FDFBF0] hover:bg-[#465940]/80 transition flex-shrink-0"
+                      >
+                        შემიცვალე
+                      </button>
+                    </div>
+                  )}
                 </div>
 
                 {/* Right – circular image (opens recipe on any day, not just today) */}
@@ -440,6 +460,10 @@ function TodayTab({ child, allDishes, planStart, isFullPlan }: { child: any; all
           })}
         </div>
       )}
+
+      {/* "ჩემი ბავშვის საყვარელი კერძები ❤️" — a small read over existing ჭამა/არ
+          მოეწონა data, not day-specific, so it doesn't need to react to selectedDate. */}
+      <FavoriteDishes child={child} />
 
       {/* Introduction mode — only for 6-9 month olds */}
       {child.ageGroup === 'FROM_6' && (
@@ -494,10 +518,14 @@ function TodayTab({ child, allDishes, planStart, isFullPlan }: { child: any; all
                 <h3 className="font-black text-[#465940]">სხვა კერძი — {MEAL_LABEL[subLog?.mealType ?? '']}</h3>
                 <button onClick={() => setSubstituteFor(null)} className="text-[#465940]/60 hover:text-[#465940]/80 text-2xl leading-none">×</button>
               </div>
-              <p className="text-[11px] text-[#465940]/60">დალაგებულია ვიტამინების მსგავსობის მიხედვით — ვიტამინების გეგმა არ ირღვევა</p>
+              <p className="text-[11px] text-[#465940]/60">
+                {originalDish ? `ნაცვლად: ${originalDish.titleKa} — ` : ''}
+                გავითვალისწინეთ ასაკი, ალერგიები, არ მოწონებული და ბოლო დღეების კვება — არა უბრალოდ შემთხვევითობა
+              </p>
             </div>
             <div className="overflow-y-auto p-4 space-y-2">
-              {displayDishes.length === 0 && <p className="text-[#465940]/60 text-sm text-center py-8">სხვა კერძი ვერ მოიძებნა</p>}
+              {loadingSub && <p className="text-[#465940]/60 text-sm text-center py-8">ვეძებთ საუკეთესო ალტერნატივას...</p>}
+              {!loadingSub && displayDishes.length === 0 && <p className="text-[#465940]/60 text-sm text-center py-8">სხვა კერძი ვერ მოიძებნა</p>}
               {displayDishes.map((d: any) => (
                 <button key={d.id} onClick={() => substitute(substituteFor, d.id)}
                   className="group w-full flex items-center gap-3 p-3 rounded-2xl hover:bg-[#465940] transition text-left border border-transparent hover:border-[#465940]">

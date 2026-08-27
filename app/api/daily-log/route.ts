@@ -1,76 +1,11 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getSession } from '@/lib/auth';
 import { prisma } from '@/lib/prisma';
-import { getMealTypesForAge, AGE_GROUP_ORDER } from '@/lib/meal';
+import { getMealTypesForAge } from '@/lib/meal';
+import { pickDish, narrowToStage } from '@/lib/pickDish';
 
 function todayStr() {
   return new Date().toISOString().split('T')[0];
-}
-
-function dishMatchesText(dish: any, terms: string[]): boolean {
-  const text = [
-    dish.titleKa, dish.titleEn,
-    ...(dish.ingredientsKa || []),
-    ...(dish.ingredientsEn || []),
-    ...(dish.allergens || []),
-  ].join(' ').toLowerCase();
-  return terms.some((t) => text.includes(t.toLowerCase()));
-}
-
-function nutritionScore(dish: any): number {
-  return (
-    (dish.ironMg || 0) * 4 +
-    (dish.calciumMg || 0) / 30 +
-    (dish.vitaminCmg || 0) / 5 +
-    (dish.vitaminAmcg || 0) / 80 +
-    (dish.proteinGrams || 0) / 3 +
-    (dish.vitaminDmcg || 0) * 2 +
-    (dish.fiberGrams || 0) / 2
-  );
-}
-
-function pickDish(
-  candidates: any[],
-  likes: string[],
-  dislikes: string[],
-  recentIds: Set<string>,
-  todayIds: Set<string>
-): any | null {
-  if (!candidates.length) return null;
-
-  // Prefer dishes not used today; fall back to full pool only if nothing else
-  const notToday = candidates.filter((d) => !todayIds.has(d.id));
-  const pool1 = notToday.length > 0 ? notToday : candidates;
-
-  // Hard-exclude dishes used in the last 7 days (not just a score penalty) —
-  // a dish with a genuinely higher nutrition score than its neighbors (e.g.
-  // an iron-rich breakfast) could outscore a -10 penalty every day, so it
-  // kept winning day after day regardless of recency. Only fall back to the
-  // recently-used pool if excluding them would leave nothing (thin catalog
-  // for this age group / allergy combination).
-  const notRecent = pool1.filter((d) => !recentIds.has(d.id));
-  const pool = notRecent.length > 0 ? notRecent : pool1;
-
-  const scored = pool.map((d) => {
-    let score = nutritionScore(d);
-
-    // Small like bonus
-    if (likes.length && dishMatchesText(d, likes)) score += 2;
-
-    // Dislike penalty (soft — dish still appears but rarely)
-    if (dislikes.length && dishMatchesText(d, dislikes)) score -= 6;
-
-    // Small random nudge so identical-score dishes vary
-    score += Math.random() * 0.5;
-
-    return { d, score };
-  });
-
-  scored.sort((a, b) => b.score - a.score);
-
-  // Pick from top 3 for variety
-  const top = scored.slice(0, Math.min(3, scored.length));
-  return top[Math.floor(Math.random() * top.length)].d;
 }
 
 // GET /api/daily-log?childId=X&date=YYYY-MM-DD
@@ -128,13 +63,7 @@ export async function GET(req: NextRequest) {
       // than relying on a score penalty, since a soft penalty already proved
       // insufficient to suppress a dish elsewhere in this function (see the hard
       // recency-exclusion above).
-      const childAgeIdx = AGE_GROUP_ORDER.indexOf(child.ageGroup);
-      if (childAgeIdx > 0) {
-        const stageMatched = candidates.filter(
-          (d) => !d.ageGroups.some((ag: string) => AGE_GROUP_ORDER.indexOf(ag as any) < childAgeIdx)
-        );
-        if (stageMatched.length > 0 && Math.random() > 0.15) candidates = stageMatched;
-      }
+      candidates = narrowToStage(candidates, child.ageGroup, { randomize: true });
 
       const picked = pickDish(candidates, child.likes, child.dislikes, recentIds, todayIds);
       if (picked) todayIds.add(picked.id);

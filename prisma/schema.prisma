@@ -172,6 +172,7 @@ model Child {
   babyIngredientStatuses BabyIngredientStatus[]
   babyMealLogs           BabyMealLog[]
   dishVotes              DishVote[]
+  extraFoodLogs          ExtraFoodLog[]
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -243,6 +244,32 @@ model Dish {
   dailyLogs     DailyLog[]
   votes         DishVote[]
   originalFor   DailyLog[] @relation("DailyLogOriginalDish")
+  extraFoodLogs ExtraFoodLog[]
+}
+
+// "+ დაამატე რაც ჭამა" — food the child ate that Mommenu never planned (a grandparent's
+// snack, anything off-menu). Kept as its OWN table rather than crammed into DailyLog,
+// because DailyLog is strictly one row per (child, date, mealType) — the real slot the
+// day's plan occupies — and this is explicitly food OUTSIDE any planned slot; reusing
+// that unique constraint here would either collide with the real slot's row or force
+// relaxing a constraint half the app depends on. It still points at the SAME Dish/
+// Ingredient catalog DailyLog does (so nutrition data isn't duplicated anywhere), and
+// /api/nutrition sums it into the exact same vitamin/nutrient totals as planned meals —
+// one calculation, two sources, not two calculations.
+model ExtraFoodLog {
+  id           String      @id @default(cuid())
+  date         String      // YYYY-MM-DD — same convention as DailyLog.date
+  childId      String
+  child        Child       @relation(fields: [childId], references: [id], onDelete: Cascade)
+  dishId       String?
+  dish         Dish?       @relation(fields: [dishId], references: [id], onDelete: SetNull)
+  ingredientId String?
+  ingredient   Ingredient? @relation(fields: [ingredientId], references: [id], onDelete: SetNull)
+  note         String?     // free text when nothing in the catalog matches (no nutrition data then)
+
+  createdAt    DateTime    @default(now())
+
+  @@index([childId, date])
 }
 
 // One row per (dish, child) — records whether that child's parent marked the dish liked
@@ -355,6 +382,7 @@ model Ingredient {
   benefitsEn    String[]       @default([])
 
   dailyLogs     DailyLog[]
+  extraFoodLogs ExtraFoodLog[]
 
   createdAt     DateTime       @default(now())
   updatedAt     DateTime       @updatedAt
