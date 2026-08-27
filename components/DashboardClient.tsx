@@ -1645,7 +1645,7 @@ function ManageSubscriptionButton() {
 // Options shown in CancelReasonModal — keep in sync with the CancellationReason enum
 // in prisma/schema.prisma and the VALID_REASONS list in app/subscription/cancel/route.ts.
 const CANCEL_REASONS: { value: string; label: string }[] = [
-  { value: 'PRICE', label: 'ფასი' },
+  { value: 'PRICE', label: 'ძვირია' },
   { value: 'NOT_NEEDED', label: 'აღარ მჭირდება' },
   { value: 'NOT_USED_ENOUGH', label: 'საკმარისად ხშირად ვერ ვიყენებ' },
   { value: 'MISSING_FEATURES', label: 'ფუნქციები არ მყოფნის' },

@@ -3,7 +3,7 @@ import { prisma } from '@/lib/prisma';
 // Georgian labels — kept in sync with CANCEL_REASONS in components/DashboardClient.tsx
 // (the modal shown at cancel-click time) and the CancellationReason enum in schema.prisma.
 const REASON_LABEL: Record<string, string> = {
-  PRICE: 'ფასი',
+  PRICE: 'ძვირია',
   NOT_NEEDED: 'აღარ სჭირდება',
   NOT_USED_ENOUGH: 'საკმარისად ხშირად ვერ იყენებდა',
   MISSING_FEATURES: 'ფუნქციები არ ჰყოფნიდა',
