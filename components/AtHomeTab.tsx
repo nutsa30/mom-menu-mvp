@@ -121,27 +121,6 @@ export default function AtHomeTab({ child, allDishes }: { child: any; allDishes:
 
   useEffect(() => { fetchLogs(); }, [child?.id]);
 
-  // Autocomplete on the ingredient NAME only (never the "name - qty" string a specific
-  // recipe happens to need) — drawn from the same dish catalog, so it's not a second
-  // product list, just distinct names pulled out of it.
-  const allIngredientNames = useMemo(() => {
-    const set = new Set<string>();
-    for (const d of allDishes) {
-      for (const ing of d.ingredientsKa || []) {
-        const { name } = parseIngredient(ing);
-        if (name) set.add(name);
-      }
-    }
-    return Array.from(set).sort((a, b) => a.localeCompare(b, 'ka'));
-  }, [allDishes]);
-
-  const nameSuggestions = useMemo(() => {
-    const q = norm(nameInput);
-    if (!q) return [];
-    const already = new Set(pantry.map((p) => norm(p.name)));
-    return allIngredientNames.filter((n) => norm(n).includes(q) && !already.has(norm(n))).slice(0, 8);
-  }, [nameInput, allIngredientNames, pantry]);
-
   const addPantryItem = () => {
     const name = nameInput.trim();
     const amount = parseFloat(amountInput.replace(',', '.'));
@@ -298,7 +277,7 @@ export default function AtHomeTab({ child, allDishes }: { child: any; allDishes:
         {/* Name + amount + unit, added together as one pantry entry — matching then checks
             actual quantity, not just whether the ingredient name appears somewhere. */}
         <div className="flex flex-wrap gap-2 items-start">
-          <div className="relative flex-1 min-w-[160px]">
+          <div className="flex-1 min-w-[160px]">
             <input
               value={nameInput}
               onChange={(e) => setNameInput(e.target.value)}
@@ -306,16 +285,6 @@ export default function AtHomeTab({ child, allDishes }: { child: any; allDishes:
               placeholder="მაგ: ბრინჯი, ქათმის ფილე..."
               className="w-full border border-[#465940]/15 rounded-2xl px-3.5 py-2.5 text-sm text-[#465940] bg-white focus:outline-none focus:border-[#465940] transition"
             />
-            {nameSuggestions.length > 0 && (
-              <div className="absolute z-10 mt-1 w-full bg-[#FDFBF0] border border-[#465940]/15 rounded-2xl shadow-lg overflow-hidden max-h-48 overflow-y-auto">
-                {nameSuggestions.map((s) => (
-                  <button key={s} onClick={() => setNameInput(s)}
-                    className="w-full text-left px-4 py-2 text-sm text-[#465940] hover:bg-[#465940]/10 transition">
-                    {s}
-                  </button>
-                ))}
-              </div>
-            )}
           </div>
           <input
             value={amountInput}
