@@ -367,20 +367,24 @@ function TodayTab({ child, allDishes, planStart, isFullPlan }: { child: any; all
                     </p>
                   )}
 
-                  {/* Actions — only today is fully interactive */}
-                  {log && !isFutureDay && (
+                  {/* Actions — "ჭამა" only ever shows through today: editable today, locked
+                      (disabled) once past, hidden entirely for future days. Recipe viewing
+                      (button + image) is not day-restricted — works for past/today/future. */}
+                  {log && (
                     <div className="flex gap-2">
-                      <button
-                        onClick={() => isToday && markEaten(log.id, !log.wasEaten)}
-                        disabled={!isToday}
-                        className={`px-3 py-1.5 rounded-full text-xs font-bold transition ${!isToday ? 'cursor-default' : ''} ${
-                          eaten
-                            ? 'bg-[#465940] text-[#FDFBF0] hover:bg-[#465940]/80'
-                            : 'bg-[#465940]/10 text-[#465940] hover:bg-[#465940] hover:text-[#FDFBF0]'
-                        }`}
-                      >
-                        {eaten ? '✓ ჭამა' : 'ჭამა'}
-                      </button>
+                      {!isFutureDay && (
+                        <button
+                          onClick={() => isToday && markEaten(log.id, !log.wasEaten)}
+                          disabled={!isToday}
+                          className={`px-3 py-1.5 rounded-full text-xs font-bold transition ${!isToday ? 'cursor-default' : ''} ${
+                            eaten
+                              ? 'bg-[#465940] text-[#FDFBF0] hover:bg-[#465940]/80'
+                              : 'bg-[#465940]/10 text-[#465940] hover:bg-[#465940] hover:text-[#FDFBF0]'
+                          }`}
+                        >
+                          {eaten ? '✓ ჭამა' : 'ჭამა'}
+                        </button>
+                      )}
                       {dish && isToday && (
                         <button
                           onClick={() => toggleDislike(log.id, dish.id)}
@@ -401,7 +405,7 @@ function TodayTab({ child, allDishes, planStart, isFullPlan }: { child: any; all
                           სხვა
                         </button>
                       )}
-                      {dish && isToday && (
+                      {dish && (
                         <button
                           onClick={() => setRecipeModal(dish)}
                           className="px-3 py-1.5 rounded-full text-xs font-bold bg-[#465940]/10 text-[#465940] hover:bg-[#465940] hover:text-[#FDFBF0] transition"
@@ -413,11 +417,11 @@ function TodayTab({ child, allDishes, planStart, isFullPlan }: { child: any; all
                   )}
                 </div>
 
-                {/* Right – circular image */}
+                {/* Right – circular image (opens recipe on any day, not just today) */}
                 <button
-                  className={`flex-shrink-0 w-[72px] h-[72px] rounded-full overflow-hidden bg-[#f0f8ee] transition ${dish && isToday ? 'hover:ring-2 hover:ring-[#465940]/40' : ''}`}
-                  onClick={() => dish && isToday && setRecipeModal(dish)}
-                  disabled={!dish || !isToday}
+                  className={`flex-shrink-0 w-[72px] h-[72px] rounded-full overflow-hidden bg-[#f0f8ee] transition ${dish ? 'hover:ring-2 hover:ring-[#465940]/40' : ''}`}
+                  onClick={() => dish && setRecipeModal(dish)}
+                  disabled={!dish}
                 >
                   {imageUrl
                     ? <img src={imageUrl} className="w-full h-full object-cover" alt="" />
@@ -1638,6 +1642,76 @@ function ManageSubscriptionButton() {
   );
 }
 
+// Options shown in CancelReasonModal — keep in sync with the CancellationReason enum
+// in prisma/schema.prisma and the VALID_REASONS list in app/subscription/cancel/route.ts.
+const CANCEL_REASONS: { value: string; label: string }[] = [
+  { value: 'PRICE', label: 'ფასი' },
+  { value: 'NOT_NEEDED', label: 'აღარ მჭირდება' },
+  { value: 'NOT_USED_ENOUGH', label: 'საკმარისად ხშირად ვერ ვიყენებ' },
+  { value: 'MISSING_FEATURES', label: 'ფუნქციები არ მყოფნის' },
+  { value: 'DISLIKED_MENU', label: 'მენიუ/რეცეპტები არ მომეწონა' },
+  { value: 'TECHNICAL_ISSUE', label: 'ტექნიკური პრობლემა' },
+  { value: 'OTHER', label: 'სხვა' },
+];
+
+// Reason-picker modal shown before a cancellation is finalized. A reason must be picked
+// (free text required instead when "სხვა" is picked) — the confirm button stays disabled
+// until that's satisfied, so the reason always reaches admin/cancellations.
+function CancelReasonModal({ onClose, onConfirm, loading }: {
+  onClose: () => void;
+  onConfirm: (reason: string, reasonText: string) => void;
+  loading: boolean;
+}) {
+  const [reason, setReason] = useState('');
+  const [otherText, setOtherText] = useState('');
+  const canConfirm = reason && (reason !== 'OTHER' || otherText.trim().length > 0);
+
+  return (
+    <div className="fixed inset-0 bg-black/40 z-50 flex items-end sm:items-center justify-center p-4" onClick={onClose}>
+      <div className="bg-[#FDFBF0] rounded-3xl w-full max-w-md max-h-[85vh] overflow-hidden flex flex-col" onClick={e => e.stopPropagation()}>
+        <div className="p-5 border-b border-[#465940]/10">
+          <div className="flex items-center justify-between mb-1">
+            <h3 className="font-black text-[#465940]">რატომ ხდებით გაუქმებას?</h3>
+            <button onClick={onClose} className="text-[#465940]/60 hover:text-[#465940]/80 text-2xl leading-none">×</button>
+          </div>
+          <p className="text-[11px] text-[#465940]/60">დაგვეხმარებით სერვისის გაუმჯობესებაში — აირჩიეთ მიზეზი გაუქმების დასასრულებლად</p>
+        </div>
+        <div className="overflow-y-auto p-4 space-y-2">
+          {CANCEL_REASONS.map(r => (
+            <label key={r.value}
+              className={`flex items-center gap-3 p-3 rounded-2xl border cursor-pointer transition ${
+                reason === r.value ? 'border-[#465940] bg-[#465940]/5' : 'border-[#465940]/10 hover:bg-[#465940]/5'
+              }`}>
+              <input type="radio" name="cancelReason" value={r.value} checked={reason === r.value}
+                onChange={() => setReason(r.value)} className="accent-[#465940]" />
+              <span className="text-sm text-[#465940] font-medium">{r.label}</span>
+            </label>
+          ))}
+          {reason === 'OTHER' && (
+            <textarea
+              value={otherText}
+              onChange={e => setOtherText(e.target.value)}
+              placeholder="დაწერეთ მიზეზი..."
+              rows={3}
+              className="w-full mt-1 px-3 py-2 rounded-xl border border-[#465940]/20 text-sm text-[#465940] bg-white focus:outline-none focus:border-[#465940]"
+            />
+          )}
+        </div>
+        <div className="p-4 border-t border-[#465940]/10">
+          <p className="text-[11px] text-[#465940]/50 mb-2">წვდომა დარჩება ბოლომდე გადახდილი პერიოდის ვადამდე, შემდეგ აღარ განახლდება.</p>
+          <button
+            onClick={() => canConfirm && onConfirm(reason, otherText.trim())}
+            disabled={!canConfirm || loading}
+            className="w-full bg-[#465940] hover:bg-[#465940]/90 text-[#FDFBF0] px-5 py-2.5 rounded-full text-sm font-bold transition disabled:opacity-40"
+          >
+            {loading ? 'უქმდება...' : 'გაუქმების დადასტურება'}
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 // Real, working cancel path for BOG subscribers. Cancelling stops future billing but
 // keeps access through subscriptionRenewsAt (the period already paid for) — the
 // bog-renew cron downgrades to CANCELED itself once that date actually arrives.
@@ -1649,17 +1723,21 @@ function CancelBogSubscriptionButton({ subscriptionCanceledAt, subscriptionRenew
   const [error, setError] = useState('');
   const [canceledAt, setCanceledAt] = useState(subscriptionCanceledAt);
   const [accessUntil, setAccessUntil] = useState(subscriptionRenewsAt);
+  const [showReasonModal, setShowReasonModal] = useState(false);
 
-  const cancel = async () => {
-    if (!confirm('დარწმუნებული ხართ, რომ გსურთ გამოწერის გაუქმება? წვდომა დარჩება ბოლომდე გადახდილი პერიოდის ვადამდე, შემდეგ აღარ განახლდება.')) return;
+  const cancel = async (reason: string, reasonText: string) => {
     setLoading(true);
     setError('');
     try {
-      const res = await fetch('/subscription/cancel', { method: 'POST' });
+      const res = await fetch('/subscription/cancel', {
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ reason, reasonText }),
+      });
       const data = await res.json();
       if (res.ok && data.success) {
         setCanceledAt(new Date().toISOString());
         if (data.accessUntil) setAccessUntil(data.accessUntil);
+        setShowReasonModal(false);
         return;
       }
       setError('ვერ მოხერხდა გაუქმება, სცადეთ მოგვიანებით ან მოგვწერეთ info@mommenu.ge-ზე.');
@@ -1680,11 +1758,18 @@ function CancelBogSubscriptionButton({ subscriptionCanceledAt, subscriptionRenew
 
   return (
     <div>
-      <button onClick={cancel} disabled={loading}
+      <button onClick={() => setShowReasonModal(true)} disabled={loading}
         className="bg-[#465940]/10 hover:bg-[#465940]/15 text-[#465940] px-5 py-2.5 rounded-full text-sm font-bold transition disabled:opacity-60">
         {loading ? 'უქმდება...' : 'გამოწერის გაუქმება'}
       </button>
       {error && <p className="text-red-500 text-xs mt-2">{error}</p>}
+      {showReasonModal && (
+        <CancelReasonModal
+          onClose={() => setShowReasonModal(false)}
+          onConfirm={cancel}
+          loading={loading}
+        />
+      )}
     </div>
   );
 }

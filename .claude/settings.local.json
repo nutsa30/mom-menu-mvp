@@ -37,7 +37,11 @@
       "Bash(node -p \"JSON.stringify\\(Object.keys\\(require\\('./package.json'\\).dependencies\\).concat\\(Object.keys\\(require\\('./package.json'\\).devDependencies || {}\\)\\)\\)\")",
       "Bash(rm \"c:\\\\Users\\\\gstore\\\\OneDrive\\\\Desktop\\\\mom-menu-mvp\\\\scripts\\\\delete-admin.js\")",
       "Bash(git commit *)",
-      "Bash(npx tsx *)"
+      "Bash(npx tsx *)",
+      "WebSearch",
+      "Bash(npx tsc *)",
+      "Bash(npm run *)",
+      "Bash(grep -v \"\\\\\\\\\\\\\\\\admin\\\\\\\\\\\\\\\\\")"
     ],
     "additionalDirectories": [
       "C:\\Users\\gstore\\Downloads",

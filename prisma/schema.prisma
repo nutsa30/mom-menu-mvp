@@ -44,6 +44,16 @@ enum Season {
   WINTER
 }
 
+enum CancellationReason {
+  PRICE
+  NOT_NEEDED
+  NOT_USED_ENOUGH
+  MISSING_FEATURES
+  DISLIKED_MENU
+  TECHNICAL_ISSUE
+  OTHER
+}
+
 model User {
   id                     String             @id @default(cuid())
   name                   String
@@ -82,9 +92,24 @@ model User {
   passwordResetTokens    PasswordResetToken[]
   testimonials           Testimonial[]
   payments               Payment[]
+  cancellations          SubscriptionCancellation[]
 
   createdAt              DateTime           @default(now())
   updatedAt              DateTime           @updatedAt
+}
+
+// One row per cancel-button click, kept even across a later re-subscribe/cancel cycle —
+// this is the history admin/cancellations reads to see who canceled, when, and why.
+model SubscriptionCancellation {
+  id         String              @id @default(cuid())
+  userId     String
+  user       User                @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  plan       SubscriptionStatus  // which plan (RECIPE_PLAN/FULL_PLAN) they were on when they canceled
+  reason     CancellationReason
+  reasonText String?             // free text — required by the API when reason is OTHER
+
+  createdAt  DateTime            @default(now())
 }
 
 enum PaymentStatus {

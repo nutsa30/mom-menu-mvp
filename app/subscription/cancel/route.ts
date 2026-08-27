@@ -1,15 +1,37 @@
 import { prisma } from '@/lib/prisma';
 import { getSession } from '@/lib/auth';
 import { NextResponse } from 'next/server';
+import type { CancellationReason } from '@prisma/client';
+
+// Kept in sync with the options offered by the cancel-reason modal in
+// components/DashboardClient.tsx (CancelReasonModal) and the CancellationReason enum
+// in prisma/schema.prisma.
+const VALID_REASONS: CancellationReason[] = [
+  'PRICE', 'NOT_NEEDED', 'NOT_USED_ENOUGH', 'MISSING_FEATURES', 'DISLIKED_MENU', 'TECHNICAL_ISSUE', 'OTHER',
+];
 
 // Cancels future billing without cutting off access early: subscriptionStatus stays
 // FULL_PLAN (or RECIPE_PLAN) so the user keeps whatever they already paid for through
 // subscriptionRenewsAt. The bog-renew cron checks subscriptionCanceledAt before charging
 // anyone — once it sees this set, it skips the charge and downgrades them to CANCELED
 // itself, right when their paid period actually ends, instead of here at cancel-click time.
-export async function POST() {
+//
+// A reason is required — the frontend forces the user through a reason-select step before
+// this ever gets called, so admin can later see who canceled and why (app/admin/cancellations).
+export async function POST(req: Request) {
   const session = await getSession();
   if (!session) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+
+  const body = await req.json().catch(() => ({}));
+  const reason = body?.reason as CancellationReason | undefined;
+  const reasonText = typeof body?.reasonText === 'string' ? body.reasonText.trim().slice(0, 1000) : '';
+
+  if (!reason || !VALID_REASONS.includes(reason)) {
+    return NextResponse.json({ error: 'reason_required' }, { status: 400 });
+  }
+  if (reason === 'OTHER' && !reasonText) {
+    return NextResponse.json({ error: 'reason_text_required' }, { status: 400 });
+  }
 
   const user = await prisma.user.findUnique({ where: { id: session.id } });
   if (!user || (user.subscriptionStatus !== 'FULL_PLAN' && user.subscriptionStatus !== 'RECIPE_PLAN')) {
@@ -19,10 +41,20 @@ export async function POST() {
     return NextResponse.json({ success: true, accessUntil: user.subscriptionRenewsAt, alreadyCanceled: true });
   }
 
-  const updated = await prisma.user.update({
-    where: { id: session.id },
-    data: { subscriptionCanceledAt: new Date() },
-  });
+  const [updated] = await prisma.$transaction([
+    prisma.user.update({
+      where: { id: session.id },
+      data: { subscriptionCanceledAt: new Date() },
+    }),
+    prisma.subscriptionCancellation.create({
+      data: {
+        userId: session.id,
+        plan: user.subscriptionStatus,
+        reason,
+        reasonText: reason === 'OTHER' ? reasonText : (reasonText || null),
+      },
+    }),
+  ]);
 
   return NextResponse.json({ success: true, accessUntil: updated.subscriptionRenewsAt });
 }

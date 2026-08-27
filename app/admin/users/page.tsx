@@ -36,7 +36,7 @@ const subBadge: Record<string, string> = {
 
 function UserTable({ users, subLabelFor, locale }: { users: any[]; subLabelFor: (u: any) => string; locale: AdminLocale }) {
   if (users.length === 0) {
-    return <p className="text-center py-12 text-[#465940]/60 text-sm">მომხარებელი არ არის</p>;
+    return <p className="text-center py-12 text-[#465940]/60 text-sm">მომხმარებელი არ არის</p>;
   }
   return (
     <div className="overflow-x-auto">
@@ -171,11 +171,14 @@ export default async function AdminUsersPage({
 
   // Revenue — gifted users excluded (they bring no cash). MRR is normalized per-month:
   // a 39₾/3-month subscriber contributes 13₾ to MRR, not the full 39₾, since a 3- or
-  // 6-month tier is not itself a monthly charge.
+  // 6-month tier is not itself a monthly charge. Also excludes anyone who's already
+  // canceled (still FULL_PLAN/RECIPE_PLAN until their paid period ends, but won't renew)
+  // — matches admin/analytics' MRR convention and the byInterval1/3/6 cards above, so MRR
+  // drops the moment someone cancels instead of only once their period actually expires.
   const thirtyDaysAgo = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000);
-  const realRecipe = users.filter((u) => !u.isGifted && u.subscriptionStatus === 'RECIPE_PLAN').length;
-  const realFull   = users.filter((u) => !u.isGifted && u.subscriptionStatus === 'FULL_PLAN').length;
-  const realPaying = users.filter((u) => !u.isGifted && (u.subscriptionStatus === 'RECIPE_PLAN' || u.subscriptionStatus === 'FULL_PLAN'));
+  const realRecipe = users.filter((u) => !u.isGifted && !u.subscriptionCanceledAt && u.subscriptionStatus === 'RECIPE_PLAN').length;
+  const realFull   = users.filter((u) => !u.isGifted && !u.subscriptionCanceledAt && u.subscriptionStatus === 'FULL_PLAN').length;
+  const realPaying = users.filter((u) => !u.isGifted && !u.subscriptionCanceledAt && (u.subscriptionStatus === 'RECIPE_PLAN' || u.subscriptionStatus === 'FULL_PLAN'));
   const mrr = Math.round(realPaying.reduce((sum, u) => sum + monthlyPriceFor(u), 0));
   const payingUsers = realRecipe + realFull;
   const arpu = payingUsers > 0 ? Math.round(mrr / payingUsers) : 0;
