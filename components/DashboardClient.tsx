@@ -302,10 +302,11 @@ function TodayTab({ child, allDishes, planStart, isFullPlan }: { child: any; all
         </div>
       </div>
 
-      {/* "დღეს რა ჭამა?" — real eating, not just the plan. Tied to today specifically
-          (not whichever day is selected above), reusing the same `logs` state already
-          fetched for today when that's the day being viewed, so no extra request. */}
-      {isToday && !loading && <TodayDigest child={child} logs={logs} allDishes={allDishes} />}
+      {/* "+ დაამატე რაც ჭამა" — the meal-plan list right below already shows what was
+          planned/eaten/replaced per slot, so this widget only covers what that list
+          can't: food eaten outside any planned slot. Today-only, like every other
+          write action here. */}
+      {isToday && <TodayDigest child={child} allDishes={allDishes} />}
 
       {/* Day header */}
       <div className={`${card} p-4 flex items-center justify-between`}>

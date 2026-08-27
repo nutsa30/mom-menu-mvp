@@ -2,9 +2,6 @@
 
 import { useEffect, useMemo, useState } from 'react';
 
-const MEAL_ORDER = ['BREAKFAST', 'SNACK', 'LUNCH', 'DINNER'] as const;
-const MEAL_LABEL: Record<string, string> = { BREAKFAST: 'საუზმე', SNACK: 'სნექი', LUNCH: 'სადილი', DINNER: 'ვახშამი' };
-const MEAL_ICON: Record<string, string> = { BREAKFAST: '🍳', SNACK: '🍎', LUNCH: '🍲', DINNER: '🥣' };
 const card = 'bg-[#FDFBF0] rounded-2xl border border-[#465940]/10 shadow-sm';
 
 function localToday(): string {
@@ -15,11 +12,12 @@ function norm(s: string): string {
   return s.trim().toLowerCase();
 }
 
-// "დღეს რა ჭამა?" — a compact read of the SAME `logs` TodayTab already fetched for today
-// via /api/daily-log (planned dish, wasEaten, originalDish for "ჩანაცვლდა" — all existing
-// fields, nothing new computed here) plus this child's ExtraFoodLog entries for "+
-// დაამატე რაც ჭამა". No parallel eaten-tracking system — this is a view over the same data.
-export default function TodayDigest({ child, logs, allDishes }: { child: any; logs: any[]; allDishes: any[] }) {
+// "+ დაამატე რაც ჭამა" — food eaten outside the plan (grandma's snack, anything off-menu).
+// The actual planned meals (საუზმე/სადილი/etc, with their ✅/❌/⏳ state and "თავდაპირველად"
+// note) already render in the meal-plan list right below this — that list IS "დღეს რა
+// ჭამა?", so this widget only adds what that list can't show: food that was never a
+// plan slot at all. It doesn't repeat any of that list's content.
+export default function TodayDigest({ child, allDishes }: { child: any; allDishes: any[] }) {
   const todayStr = localToday();
 
   const [extraLogs, setExtraLogs] = useState<any[]>([]);
@@ -67,59 +65,32 @@ export default function TodayDigest({ child, logs, allDishes }: { child: any; lo
   if (!child) return null;
 
   return (
-    <div className={`${card} p-5`}>
-      <div className="flex items-center justify-between mb-3">
-        <h3 className="font-black text-[#465940] text-sm">დღეს {child.name} 🧒</h3>
+    <div className={`${card} p-4`}>
+      <div className="flex items-center justify-between gap-3 flex-wrap">
+        <div className="flex-1 min-w-0">
+          <h3 className="font-black text-[#465940] text-sm mb-0.5">დამატებით რაც ჭამა</h3>
+          {extraLogs.length === 0 ? (
+            <p className="text-xs text-[#465940]/50">გეგმის მიღმა რამე ხომ არ ჭამა — ბებიასთან, სასეირნოდ...</p>
+          ) : (
+            <ul className="space-y-1 mt-1.5">
+              {extraLogs.map((e) => {
+                const title = e.dish?.titleKa ?? e.ingredient?.titleKa ?? e.note;
+                return (
+                  <li key={e.id} className="flex items-center gap-2 text-sm text-[#465940]">
+                    <span>➕</span>
+                    <span className="flex-1 min-w-0 truncate">{title}</span>
+                    <button onClick={() => removeExtra(e.id)} className="text-[#465940]/40 hover:text-[#465940] text-xs flex-shrink-0">✕</button>
+                  </li>
+                );
+              })}
+            </ul>
+          )}
+        </div>
         <button onClick={() => setShowAdd(true)}
-          className="text-xs font-bold text-[#465940] bg-[#465940]/10 hover:bg-[#465940] hover:text-[#FDFBF0] rounded-full px-3 py-1.5 transition">
+          className="text-xs font-bold text-[#465940] bg-[#465940]/10 hover:bg-[#465940] hover:text-[#FDFBF0] rounded-full px-3 py-1.5 transition flex-shrink-0">
           + დაამატე რაც ჭამა
         </button>
       </div>
-
-      <ul className="space-y-2">
-        {MEAL_ORDER.map((mealType) => {
-          const log = logs.find((l) => l.mealType === mealType);
-          const dish = log?.dish;
-          const ingredient = log?.ingredient;
-          const title = dish?.titleKa ?? ingredient?.titleKa;
-          const eaten = log?.wasEaten;
-          const disliked = log?.voteLiked === false;
-
-          let statusIcon = '⏳';
-          let statusLabel = 'ჯერ არ ჭამა';
-          if (!title) { statusIcon = '—'; statusLabel = 'დაგეგმილი არაა'; }
-          else if (eaten) { statusIcon = '✅'; statusLabel = 'ჭამა'; }
-          else if (disliked) { statusIcon = '❌'; statusLabel = 'არ ჭამა'; }
-
-          return (
-            <li key={mealType} className="flex items-start gap-2 text-sm">
-              <span className="flex-shrink-0">{MEAL_ICON[mealType]}</span>
-              <span className="flex-1 min-w-0">
-                <span className="font-semibold text-[#465940]">{MEAL_LABEL[mealType]}</span>
-                {title ? <span className="text-[#465940]/80"> — {title}</span> : <span className="text-[#465940]/40"> — {statusLabel}</span>}
-                {log?.originalDish && (
-                  <span className="block text-[10px] text-[#465940]/45">ჩანაცვლდა: {log.originalDish.titleKa} → {title}</span>
-                )}
-              </span>
-              <span className="flex-shrink-0">{statusIcon}</span>
-            </li>
-          );
-        })}
-
-        {extraLogs.map((e) => {
-          const title = e.dish?.titleKa ?? e.ingredient?.titleKa ?? e.note;
-          return (
-            <li key={e.id} className="flex items-start gap-2 text-sm">
-              <span className="flex-shrink-0">➕</span>
-              <span className="flex-1 min-w-0">
-                <span className="font-semibold text-[#465940]">დამატებით</span>
-                <span className="text-[#465940]/80"> — {title}</span>
-              </span>
-              <button onClick={() => removeExtra(e.id)} className="text-[#465940]/40 hover:text-[#465940] text-xs flex-shrink-0">✕</button>
-            </li>
-          );
-        })}
-      </ul>
 
       {showAdd && (
         <div className="fixed inset-0 bg-black/40 z-50 flex items-end sm:items-center justify-center p-4" onClick={() => setShowAdd(false)}>
