@@ -87,6 +87,25 @@ model User {
   promoCodeId            String?
   promoCode              PromoCode?         @relation(fields: [promoCodeId], references: [id], onDelete: SetNull)
 
+  // ── Referral / promo-code program (per-user invite code, distinct from the admin
+  // "PromoCode" model above) ────────────────────────────────────────────────────────
+  // Permanent, auto-generated at registration, never regenerated. Deleting the account
+  // deletes this row along with it via the normal account-delete flow — nothing extra
+  // needed to "deactivate" it.
+  referralCode           String?            @unique
+  // Who invited this user — set at most once, the first time a valid code is redeemed,
+  // and never changed afterwards (enforced in application code, not just here).
+  referredByUserId       String?
+  referredByUser         User?              @relation("Referrals", fields: [referredByUserId], references: [id], onDelete: SetNull)
+  referrals              User[]             @relation("Referrals")
+  // Set once, the moment this user's first-ever SUCCESS payment is processed — the exact
+  // instant that decides the referral discount/credit for good. Recurring renewals never
+  // touch this again, which is what keeps them from re-earning the owner a second reward.
+  referralFirstPaymentAt DateTime?
+
+  creditLedgerAsOwner    CreditLedgerEntry[] @relation("CreditLedgerOwner")
+  creditLedgerAsReferred CreditLedgerEntry[] @relation("CreditLedgerReferred")
+
   children               Child[]
   mealPlans              MealPlan[]
   passwordResetTokens    PasswordResetToken[]
@@ -134,7 +153,54 @@ model Payment {
   commissionAmount Float?
   netAmount        Float?
 
+  // ── Referral program adjustments on this specific payment ──────────────────────
+  // Both are implemented as a partial BOG refund issued right after this payment
+  // captures (BOG's recurring-charge API always inherits the parent order's original
+  // amount, so the discounted/reduced amount can't be charged directly — see lib/referral.ts).
+  discountAmount       Float?   // 10% first-payment referral discount refunded to THIS (referred) user
+  discountRefundFailed Boolean  @default(false)
+  creditAppliedAmount  Float?   // this user's OWN referral-credit balance refunded back to them
+  creditRefundFailed   Boolean  @default(false)
+
+  creditEarnedFrom CreditLedgerEntry[] @relation("CreditSourcePayment")
+  creditAppliedTo  CreditLedgerEntry[] @relation("CreditAppliedPayment")
+
   createdAt        DateTime           @default(now())
+}
+
+enum CreditLedgerType {
+  EARNED
+  USED
+  REVERSED
+}
+
+// Full audit trail of every referral-credit movement (see lib/referral.ts for the logic
+// that writes these). Owner's available balance at any moment = SUM(amount) over all of
+// that owner's rows here.
+//   EARNED   — a referred user's first-ever successful payment credited the owner +1.70₾.
+//   USED     — credit consumed against the owner's OWN successful payment (refunded back
+//              to the owner as part of that payment, see Payment.creditAppliedAmount).
+//   REVERSED — a referral canceled their subscription after having earned the owner
+//              credit, so that specific 1.70₾ is backed out of the owner's balance.
+model CreditLedgerEntry {
+  id               String            @id @default(cuid())
+  ownerId          String
+  owner            User              @relation("CreditLedgerOwner", fields: [ownerId], references: [id], onDelete: Cascade)
+  // Which referral this movement is about — null for USED, which draws from the pooled
+  // balance rather than one specific referral.
+  referredUserId   String?
+  referredUser     User?             @relation("CreditLedgerReferred", fields: [referredUserId], references: [id], onDelete: SetNull)
+  type             CreditLedgerType
+  amount           Float             // +1.70 (EARNED), negative (USED / REVERSED)
+  sourcePaymentId  String?           // the referred user's payment that triggered EARNED/REVERSED
+  sourcePayment    Payment?          @relation("CreditSourcePayment", fields: [sourcePaymentId], references: [id], onDelete: SetNull)
+  appliedPaymentId String?           // the owner's own payment a USED entry was refunded against
+  appliedPayment   Payment?          @relation("CreditAppliedPayment", fields: [appliedPaymentId], references: [id], onDelete: SetNull)
+  note             String?
+  createdAt        DateTime          @default(now())
+
+  @@index([ownerId])
+  @@index([referredUserId])
 }
 
 model PromoCode {
@@ -662,8 +728,11 @@ enum CampaignStatus {
 
 enum RecipientStatus {
   PENDING
-  SENT
-  FAILED
+  SENT       // Resend's API accepted the request — NOT proof of actual delivery
+  FAILED     // Resend rejected the request outright (bad address, unverified domain, rate limit, etc.)
+  DELIVERED  // confirmed by Resend's own webhook — actually reached the recipient's mail server
+  BOUNCED    // confirmed by Resend's own webhook — rejected by the recipient's mail server
+  COMPLAINED // confirmed by Resend's own webhook — recipient marked it as spam
 }
 
 model EmailCampaign {
@@ -684,13 +753,23 @@ model EmailCampaign {
 }
 
 model EmailRecipient {
-  id          String          @id @default(cuid())
-  campaignId  String
-  campaign    EmailCampaign   @relation(fields: [campaignId], references: [id], onDelete: Cascade)
-  email       String
-  status      RecipientStatus @default(PENDING)
-  sentAt      DateTime?
-  createdAt   DateTime        @default(now())
+  id              String          @id @default(cuid())
+  campaignId      String
+  campaign        EmailCampaign   @relation(fields: [campaignId], references: [id], onDelete: Cascade)
+  email           String
+  status          RecipientStatus @default(PENDING)
+  // Resend's own id for this specific send (the `data.id` in its send response) — the
+  // Resend webhook's delivered/bounced/complained events key off this, not our own id, so
+  // it's how those events get matched back to the right recipient row.
+  resendMessageId String?         @unique
+  // The actual Resend-reported reason when status is FAILED (e.g. "domain not verified",
+  // rate limited) — without this there was no way to tell WHY a send failed.
+  errorMessage    String?
+  sentAt          DateTime?
+  // Last time a webhook event updated this row (delivered/bounced/complained) — distinct
+  // from sentAt, which only ever reflects the initial send attempt.
+  lastEventAt     DateTime?
+  createdAt       DateTime        @default(now())
 }
 
 model SeoSettings {

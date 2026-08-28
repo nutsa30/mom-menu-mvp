@@ -8,6 +8,7 @@ import AtHomeTab from './AtHomeTab';
 import RecipeModal from './RecipeModal';
 import TodayDigest from './TodayDigest';
 import FavoriteDishes from './FavoriteDishes';
+import ReferralTab from './ReferralTab';
 
 // Use local date (not UTC) to avoid timezone issues (e.g. Georgia is UTC+4)
 function localToday(): string {
@@ -24,7 +25,7 @@ function ageInMonths(birthDate: string | Date): number {
   return Math.max(0, months);
 }
 
-type Tab = 'today' | 'firstfoods' | 'recipes' | 'athome' | 'nutrition' | 'shopping' | 'child' | 'settings';
+type Tab = 'today' | 'firstfoods' | 'recipes' | 'athome' | 'nutrition' | 'shopping' | 'child' | 'referral' | 'settings';
 
 const MEAL_ORDER = ['BREAKFAST', 'SNACK', 'LUNCH', 'DINNER'] as const;
 const MEAL_LABEL: Record<string, string> = { BREAKFAST: 'საუზმე', SNACK: 'სნექი', LUNCH: 'სადილი', DINNER: 'ვახშამი' };
@@ -1834,7 +1835,7 @@ export default function DashboardClient({ user }: { user: any }) {
   useEffect(() => {
     if (!activeChild) return;
     if (ageInMonths(activeChild.birthDate) < 6) {
-      if (tab !== 'child' && tab !== 'settings') setTab('child');
+      if (tab !== 'child' && tab !== 'settings' && tab !== 'referral') setTab('child');
       return;
     }
     const young = activeChild.ageGroup === 'FROM_6' || activeChild.ageGroup === 'FROM_9';
@@ -1874,7 +1875,7 @@ export default function DashboardClient({ user }: { user: any }) {
   const isTooYoung = !!activeChild && ageInMonths(activeChild.birthDate) < 6;
 
   const tabs: { key: Tab; label: string }[] = isTooYoung
-    ? [{ key: 'child', label: 'შვილი' }, { key: 'settings', label: 'პარამეტრები' }]
+    ? [{ key: 'child', label: 'შვილი' }, { key: 'referral', label: 'პრომოკოდი' }, { key: 'settings', label: 'პარამეტრები' }]
     : [
         ...(isYoungBaby
           ? [{ key: 'firstfoods' as Tab, label: 'პირველი საკვები' }, { key: 'recipes' as Tab, label: 'რეცეპტები' }]
@@ -1888,6 +1889,9 @@ export default function DashboardClient({ user }: { user: any }) {
         ...(isYoungBaby ? [] : [{ key: 'nutrition' as Tab, label: 'კვება' }]),
         ...(isFullPlan && !isYoungBaby ? [{ key: 'shopping' as Tab, label: 'საყიდლები' }] : []),
         { key: 'child', label: 'შვილი' },
+        // Account-level, not child-level — visible to every registered user regardless of
+        // subscription status or which child is active, same as "პარამეტრები".
+        { key: 'referral', label: 'პრომოკოდი' },
         { key: 'settings', label: 'პარამეტრები' },
       ];
 
@@ -1965,6 +1969,7 @@ export default function DashboardClient({ user }: { user: any }) {
         {tab === 'nutrition' && <NutritionTab child={activeChild} />}
         {tab === 'shopping' && <ShoppingListTab child={activeChild} planStart={planStart} />}
         {tab === 'child' && <ChildTab children={children} userId={user.id} onUpdate={onChildUpdate} onDelete={onChildDelete} />}
+        {tab === 'referral' && <ReferralTab />}
         {tab === 'settings' && <SettingsTab user={user} activeChild={isYoungBaby ? activeChild : null} />}
       </main>
     </div>

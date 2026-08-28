@@ -1,5 +1,6 @@
 import { prisma } from '@/lib/prisma';
 import { hashPassword, setAuthCookie } from '@/lib/auth';
+import { ensureReferralCode } from '@/lib/referral';
 import { NextResponse } from 'next/server';
 
 export async function POST(req: Request) {
@@ -18,6 +19,7 @@ export async function POST(req: Request) {
 
     const passwordHash = await hashPassword(password);
     const user = await prisma.user.create({ data: { email, passwordHash, name } });
+    await ensureReferralCode(user.id);
 
     await setAuthCookie({ id: user.id, email: user.email, name: user.name, role: user.role });
 

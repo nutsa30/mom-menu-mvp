@@ -1,5 +1,6 @@
 import { prisma } from '@/lib/prisma';
 import { getSession } from '@/lib/auth';
+import { reverseReferralCreditOnCancel } from '@/lib/referral';
 import { NextResponse } from 'next/server';
 import type { CancellationReason } from '@prisma/client';
 
@@ -55,6 +56,15 @@ export async function POST(req: Request) {
       },
     }),
   ]);
+
+  // If this user was themselves a referral, canceling now backs their referrer's 1.70₾
+  // out of that referrer's active balance (a no-op if it was never actually earned yet —
+  // e.g. canceling during the trial, before any real payment ever happened).
+  try {
+    await reverseReferralCreditOnCancel(session.id);
+  } catch (err: any) {
+    console.error('Referral credit reversal on cancel failed', { userId: session.id, error: err.message });
+  }
 
   return NextResponse.json({ success: true, accessUntil: updated.subscriptionRenewsAt });
 }

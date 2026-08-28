@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { setAuthCookie } from '@/lib/auth';
+import { ensureReferralCode } from '@/lib/referral';
 
 const BASE = process.env.NEXT_PUBLIC_APP_URL!;
 
@@ -65,6 +66,7 @@ export async function GET(req: NextRequest) {
         emailVerified: true,
       },
     });
+    await ensureReferralCode(user.id);
   } else if (!user.googleId) {
     user = await prisma.user.update({
       where: { id: user.id },

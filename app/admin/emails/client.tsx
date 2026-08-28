@@ -20,7 +20,7 @@ interface Campaign {
 
 interface CampaignDetail extends Campaign {
   htmlContent: string;
-  recipients: { id: string; email: string; status: string; sentAt: string | null }[];
+  recipients: { id: string; email: string; status: string; sentAt: string | null; errorMessage: string | null }[];
 }
 
 interface Stats { sent: number; failed: number; scheduled: number; draft: number }
@@ -33,10 +33,15 @@ type SendAction = 'send' | 'draft' | 'schedule';
 
 const STATUS_LABEL: Record<string, string> = {
   DRAFT: 'დრაფტი', SCHEDULED: 'დაგეგმილი', SENDING: 'იგზავნება', SENT: 'გაგზავნილი', FAILED: 'შეცდომა',
+  // Per-recipient only (RecipientStatus) — confirmed by Resend's own delivery webhook,
+  // not just "the send request was accepted" like SENT above.
+  PENDING: 'მოლოდინში', DELIVERED: 'ჩაბარებულია', BOUNCED: 'არ ჩაბარდა', COMPLAINED: 'სპამში მონიშნა',
 };
 const STATUS_COLOR: Record<string, string> = {
   DRAFT: 'bg-gray-100 text-gray-600', SCHEDULED: 'bg-blue-100 text-blue-700',
   SENDING: 'bg-yellow-100 text-yellow-700', SENT: 'bg-green-100 text-green-700', FAILED: 'bg-red-100 text-red-700',
+  PENDING: 'bg-gray-100 text-gray-600', DELIVERED: 'bg-green-100 text-green-700',
+  BOUNCED: 'bg-red-100 text-red-700', COMPLAINED: 'bg-red-100 text-red-700',
 };
 const AUDIENCE_LABEL: Record<string, string> = {
   specific: 'კონკრეტული ელფოსტა', all: 'ყველა მომხმარებელი', active: 'აქტიური გამომწერები',
@@ -996,7 +1001,10 @@ export default function EmailCenterClient({
                         {selectedCampaign.recipients.map((r) => (
                           <div key={r.id} className="flex items-center justify-between px-4 py-2.5 border-b border-gray-50 last:border-0 hover:bg-gray-50">
                             <span className="text-sm text-[#465940]">{r.email}</span>
-                            <span className={`text-xs font-bold px-2 py-0.5 rounded-full ${STATUS_COLOR[r.status] ?? 'bg-gray-100 text-gray-600'}`}>
+                            <span
+                              className={`text-xs font-bold px-2 py-0.5 rounded-full ${STATUS_COLOR[r.status] ?? 'bg-gray-100 text-gray-600'}`}
+                              title={r.status === 'FAILED' && r.errorMessage ? r.errorMessage : undefined}
+                            >
                               {STATUS_LABEL[r.status] ?? r.status}
                             </span>
                           </div>

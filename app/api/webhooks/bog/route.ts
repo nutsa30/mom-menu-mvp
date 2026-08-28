@@ -10,6 +10,7 @@ import {
   BillingInterval,
 } from '@/lib/bog';
 import { sendSubscriptionConfirmationEmail } from '@/lib/email';
+import { applyReferralAdjustments, REFERRED_TRIAL_DAYS, STANDARD_TRIAL_DAYS } from '@/lib/referral';
 import { NextResponse } from 'next/server';
 
 const PLAN_LABELS: Record<BillingInterval, string> = {
@@ -18,7 +19,6 @@ const PLAN_LABELS: Record<BillingInterval, string> = {
   6: '6 თვის გეგმა',
 };
 
-const SEVEN_DAYS_MS = 7 * 24 * 60 * 60 * 1000;
 const DAY_MS = 24 * 60 * 60 * 1000;
 // Flat day-multiples per interval (consistent with the existing 30-day-month convention —
 // not calendar-month arithmetic), used to compute the next subscriptionRenewsAt.
@@ -111,7 +111,12 @@ export async function POST(req: Request) {
         },
       });
 
-      const trialEndsAt = new Date(now.getTime() + SEVEN_DAYS_MS);
+      // Referred users (redeemed a friend's code before this checkout started) get a
+      // shorter 3-day trial instead of the standard 7 — their first real charge lands on
+      // day 4, still with the 10% discount applied (see applyReferralAdjustments below,
+      // called once that real charge actually succeeds — never during this trial hold).
+      const trialDays = user.referredByUserId ? REFERRED_TRIAL_DAYS : STANDARD_TRIAL_DAYS;
+      const trialEndsAt = new Date(now.getTime() + trialDays * DAY_MS);
       await prisma.user.update({
         where: { id: user.id },
         data: {
@@ -137,7 +142,7 @@ export async function POST(req: Request) {
 
     // isPaid — direct order (account already used its free trial): real, immediate charge.
     const { commissionAmount, netAmount } = computeCommission(grossAmount, cardType);
-    await prisma.payment.create({
+    const payment = await prisma.payment.create({
       data: {
         userId: user.id,
         plan: 'FULL_PLAN',
@@ -150,6 +155,12 @@ export async function POST(req: Request) {
         netAmount,
       },
     });
+
+    try {
+      await applyReferralAdjustments({ paymentId: payment.id, orderId, userId: user.id, grossAmount });
+    } catch (err: any) {
+      console.error('Referral adjustment failed (first-purchase direct charge)', { userId: user.id, orderId, error: err.message });
+    }
 
     const renewsAt = new Date(now.getTime() + INTERVAL_MS[decoded.interval]);
     await prisma.user.update({
@@ -223,7 +234,7 @@ export async function POST(req: Request) {
     const grossAmount = Number(PLAN_AMOUNTS_BY_INTERVAL[interval] ?? 0);
     const { commissionAmount, netAmount } = computeCommission(grossAmount, cardType);
 
-    await prisma.payment.create({
+    const payment = await prisma.payment.create({
       data: {
         userId: user.id,
         plan: 'FULL_PLAN',
@@ -236,6 +247,16 @@ export async function POST(req: Request) {
         netAmount,
       },
     });
+
+    // Covers BOTH cases with the same call: a trial converting to its first real charge
+    // (first-ever SUCCESS payment — earns the referrer, discounts this user) and an
+    // ordinary later renewal (already past their first payment — this is then just where
+    // the user's own accumulated referral credit, if any, gets consumed/refunded).
+    try {
+      await applyReferralAdjustments({ paymentId: payment.id, orderId, userId: user.id, grossAmount });
+    } catch (err: any) {
+      console.error('Referral adjustment failed (renewal)', { userId: user.id, orderId, error: err.message });
+    }
 
     await prisma.user.update({
       where: { id: user.id },

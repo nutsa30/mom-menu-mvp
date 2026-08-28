@@ -39,7 +39,12 @@ export async function POST(req: Request) {
     ),
   );
 
-  const anySuccess = results.some((r) => r.status === "fulfilled");
+  // Same fix as the real send path (app/api/admin/emails/route.ts): resend.emails.send()
+  // resolves ("fulfilled") even when Resend's API rejected the request — the actual
+  // success/failure is in `.value.error`, which the old check here never looked at.
+  const anySuccess = results.some(
+    (r) => r.status === "fulfilled" && !(r.value as { error: unknown }).error,
+  );
 
   await prisma.emailCampaign.create({
     data: {

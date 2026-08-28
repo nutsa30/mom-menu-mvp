@@ -152,33 +152,72 @@ export async function POST(req: Request) {
 
   const fromLabel = FROM_NAME[senderEmail] ?? "MomMenu";
 
-  const results = await Promise.allSettled(
-    recipients.map(({ email, name }) =>
-      resend.emails.send({
-        from: `${fromLabel} <${senderEmail}>`,
-        to: email,
-        subject,
-        html: layout(htmlContent.replace(/\{\{name\}\}/g, name)),
-      }),
-    ),
-  );
+  // IMPORTANT: resend.emails.send() does NOT throw/reject on an API-level failure (bad
+  // address, unverified domain, rate limit, suppression list, etc.) — it resolves with
+  // { data: null, error: {...} } instead. A send that Resend genuinely rejected therefore
+  // still shows up as "fulfilled" to Promise.allSettled. Checking only `.status ===
+  // "fulfilled"` (the old behavior here) counted every one of those as a successful send,
+  // which is exactly how a campaign could show 111/111 "SENT" while some recipients never
+  // actually got anything — Resend rejected the request and this code never looked.
+  //
+  // Firing all N requests fully in parallel also makes hitting Resend's own rate limit
+  // more likely for a larger recipient list — sending in small batches keeps well under it
+  // without depending on any Resend SDK behavior beyond emails.send(), which is already
+  // proven to work.
+  const BATCH_SIZE = 20;
+  const BATCH_DELAY_MS = 600;
+  type SendOutcome = { email: string; ok: boolean; messageId: string | null; error: string | null };
+  const outcomes: SendOutcome[] = [];
+
+  for (let start = 0; start < recipients.length; start += BATCH_SIZE) {
+    const batch = recipients.slice(start, start + BATCH_SIZE);
+    const settled = await Promise.allSettled(
+      batch.map(({ email, name }) =>
+        resend.emails.send({
+          from: `${fromLabel} <${senderEmail}>`,
+          to: email,
+          subject,
+          html: layout(htmlContent.replace(/\{\{name\}\}/g, name)),
+        }),
+      ),
+    );
+
+    for (let i = 0; i < settled.length; i++) {
+      const { email } = batch[i];
+      const result = settled[i];
+      if (result.status === "fulfilled") {
+        const { data, error } = result.value as { data: { id: string } | null; error: { message?: string; name?: string } | null };
+        if (error) {
+          outcomes.push({ email, ok: false, messageId: null, error: error.message ?? error.name ?? "Resend API error" });
+        } else {
+          outcomes.push({ email, ok: true, messageId: data?.id ?? null, error: null });
+        }
+      } else {
+        const reason = result.reason as any;
+        outcomes.push({ email, ok: false, messageId: null, error: reason?.message ?? String(reason) });
+      }
+    }
+
+    if (start + BATCH_SIZE < recipients.length) {
+      await new Promise((resolve) => setTimeout(resolve, BATCH_DELAY_MS));
+    }
+  }
 
   let sentCount = 0;
   const failedEmails: string[] = [];
 
-  for (let i = 0; i < results.length; i++) {
-    const { email } = recipients[i];
-    if (results[i].status === "fulfilled") {
+  for (const outcome of outcomes) {
+    if (outcome.ok) {
       sentCount++;
       await prisma.emailRecipient.updateMany({
-        where: { campaignId: campaign.id, email },
-        data: { status: "SENT", sentAt: new Date() },
+        where: { campaignId: campaign.id, email: outcome.email },
+        data: { status: "SENT", sentAt: new Date(), resendMessageId: outcome.messageId },
       });
     } else {
-      failedEmails.push(email);
+      failedEmails.push(outcome.email);
       await prisma.emailRecipient.updateMany({
-        where: { campaignId: campaign.id, email },
-        data: { status: "FAILED" },
+        where: { campaignId: campaign.id, email: outcome.email },
+        data: { status: "FAILED", errorMessage: outcome.error?.slice(0, 500) },
       });
     }
   }

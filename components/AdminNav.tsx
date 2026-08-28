@@ -25,6 +25,7 @@ const NAV_ICONS = {
   contact: <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22,6 12,13 2,6"/></svg>,
   notifications: <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg>,
   cancellations: <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"/><line x1="15" y1="9" x2="9" y2="15"/><line x1="9" y1="9" x2="15" y2="15"/></svg>,
+  referrals: <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="9" cy="7" r="4"/><path d="M2 21v-2a4 4 0 0 1 4-4h6a4 4 0 0 1 4 4v2"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/><path d="M22 21v-2a4 4 0 0 0-3-3.87"/></svg>,
   logout: <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>,
 };
 
@@ -61,6 +62,7 @@ export default function AdminNav() {
     { key: 'blogs',     label: d.blogs,                                                href: '/admin/blogs' },
     { key: 'howItWorks', label: locale === 'ka' ? 'როგორ მუშაობს' : 'How it works',  href: '/admin/how-it-works' },
     { key: 'promo',     label: locale === 'ka' ? 'პრომოკოდები'    : 'Promo codes',   href: '/admin/promo' },
+    { key: 'referrals', label: locale === 'ka' ? 'რეფერალები'     : 'Referrals',     href: '/admin/referrals' },
     { key: 'userStats', label: d.userStats,                                            href: '/admin/users' },
     { key: 'cancellations', label: locale === 'ka' ? 'გაუქმებები' : 'Cancellations',     href: '/admin/cancellations' },
     { key: 'ingredients', label: d.ingredientsNav,                                     href: '/admin/ingredients' },

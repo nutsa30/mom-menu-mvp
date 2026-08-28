@@ -1,6 +1,7 @@
 import { prisma } from '@/lib/prisma';
 import { setAuthCookie } from '@/lib/auth';
-import { sendAdminNewUserNotification, sendWelcomeEmail } from '@/lib/email';
+import { sendWelcomeEmail } from '@/lib/email';
+import { ensureReferralCode } from '@/lib/referral';
 import { NextResponse } from 'next/server';
 import crypto from 'crypto';
 
@@ -36,9 +37,17 @@ export async function POST(req: Request) {
       },
     });
     await prisma.pendingRegistration.delete({ where: { email } });
+    // This is the real signup completion point (the User row is only created here, once
+    // the emailed code is confirmed) — give every new user their permanent referral code
+    // right away, same as the Google sign-in path.
+    await ensureReferralCode(user.id);
 
     await setAuthCookie({ id: user.id, email: user.email, name: user.name, role: user.role });
-    sendAdminNewUserNotification(user.name, user.email).catch(() => {});
+    // Admin "new user registered" ping intentionally removed (per request): on the Resend
+    // free plan every one of these counted against the shared 100/day sending limit, so a
+    // handful of registrations could crowd out real user-facing emails (verification codes,
+    // welcome emails) for the rest of the day. Only the emails users themselves need to
+    // receive are sent from here now.
     sendWelcomeEmail(user.email, user.name).catch(() => {});
 
     return NextResponse.json({ success: true });
