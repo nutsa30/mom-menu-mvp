@@ -1,11 +1,12 @@
 'use client';
 
 import { useState } from 'react';
+import { useRouter } from 'next/navigation';
 
 type ReferralRow = {
   id: string; name: string; email: string; package: string;
   fullPrice: number | null; discount: number | null; actuallyPaid: number | null;
-  paymentStatus: string; ownerCredit: number; status: string;
+  paymentStatus: string; ownerCredit: number; status: string; canReverse: boolean;
 };
 
 type OwnerRow = {
@@ -17,8 +18,31 @@ type OwnerRow = {
 };
 
 export default function ReferralsAdminClient({ rows }: { rows: OwnerRow[] }) {
+  const router = useRouter();
   const [expanded, setExpanded] = useState<string | null>(null);
   const [tab, setTab] = useState<'all' | 'free'>('all');
+  const [reversing, setReversing] = useState<string | null>(null);
+
+  const reverseCredit = async (referredUserId: string, referredName: string) => {
+    if (!confirm(`დარწმუნებული ხართ, გინდათ „${referredName}"-ის მიერ დარიცხული 1.70₾ კრედიტის გაუქმება? გამოიყენეთ მხოლოდ მაშინ, თუ ამ მომხმარებლის გადახდა ბანკიდან/BOG-დან გარედან დაუბრუნდა.`)) return;
+    setReversing(referredUserId);
+    try {
+      const res = await fetch('/api/admin/referrals/reverse', {
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ referredUserId }),
+      });
+      if (!res.ok) {
+        const data = await res.json().catch(() => ({}));
+        alert(data.error || 'ვერ მოხერხდა გაუქმება.');
+        return;
+      }
+      router.refresh();
+    } catch {
+      alert('შეცდომა, სცადეთ მოგვიანებით.');
+    } finally {
+      setReversing(null);
+    }
+  };
 
   const totals = rows.reduce((acc, r) => ({
     invited: acc.invited + r.invitedCount,
@@ -127,6 +151,7 @@ export default function ReferralsAdminClient({ rows }: { rows: OwnerRow[] }) {
                                   <th className="px-3 py-2">გადახდის სტატუსი</th>
                                   <th className="px-3 py-2">Owner-ის კრედიტი</th>
                                   <th className="px-3 py-2">სტატუსი</th>
+                                  <th className="px-3 py-2"></th>
                                 </tr>
                               </thead>
                               <tbody className="divide-y divide-[#465940]/10">
@@ -143,6 +168,18 @@ export default function ReferralsAdminClient({ rows }: { rows: OwnerRow[] }) {
                                     <td className="px-3 py-2">{ref.paymentStatus}</td>
                                     <td className="px-3 py-2">{ref.ownerCredit.toFixed(2)}₾</td>
                                     <td className="px-3 py-2">{ref.status}</td>
+                                    <td className="px-3 py-2 text-right">
+                                      {ref.canReverse && (
+                                        <button
+                                          onClick={() => reverseCredit(ref.id, ref.name)}
+                                          disabled={reversing === ref.id}
+                                          title="მხოლოდ იმ შემთხვევისთვის, თუ ამ მომხმარებლის გადახდა გარედან (ბანკი/BOG) დაუბრუნდა"
+                                          className="text-xs font-bold text-red-600 bg-red-50 hover:bg-red-100 rounded-full px-3 py-1.5 transition disabled:opacity-50 whitespace-nowrap"
+                                        >
+                                          {reversing === ref.id ? '...' : 'Chargeback — კრედიტის გაუქმება'}
+                                        </button>
+                                      )}
+                                    </td>
                                   </tr>
                                 ))}
                               </tbody>

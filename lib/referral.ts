@@ -108,81 +108,85 @@ export async function applyReferralAdjustments(opts: {
   const user = await prisma.user.findUnique({ where: { id: opts.userId } });
   if (!user) return;
 
+  // ── (1) Figure out both amounts WITHOUT calling BOG yet ─────────────────────────
+  // A user can be a first-time referred payer AND already have their own banked credit
+  // (as someone else's referrer) on the very same payment. Rather than issuing two
+  // separate partial refunds against the same BOG order — untested, and not guaranteed
+  // to be supported — both amounts are combined into a single refundOrder() call below.
   let discountApplied = 0;
-  let discountRefundFailed = false;
-
-  // ── (1) Referred-user's 10%-off-first-payment, and the owner's +1.70₾ reward ──
-  // Gated on "is this truly the first SUCCESS payment this user has ever had" — the trial's
-  // preauthorization hold is recorded as REFUNDED, never SUCCESS, so this only fires once,
-  // on the real first charge, never on any later renewal.
+  let isFirstPayment = false;
   if (user.referredByUserId && !user.referralFirstPaymentAt) {
+    // Gated on "is this truly the first SUCCESS payment this user has ever had" — the
+    // trial's preauthorization hold is recorded as REFUNDED, never SUCCESS, so this only
+    // fires once, on the real first charge, never on any later renewal.
     const priorSuccessCount = await prisma.payment.count({
       where: { userId: user.id, status: 'SUCCESS', id: { not: opts.paymentId } },
     });
     if (priorSuccessCount === 0) {
       discountApplied = Math.round(opts.grossAmount * (REFERRAL_DISCOUNT_PERCENT / 100) * 100) / 100;
-      try {
-        await refundOrder(opts.orderId, discountApplied.toFixed(2));
-      } catch (err: any) {
-        console.error('Referral: first-payment discount refund failed, needs manual follow-up', {
-          userId: user.id, orderId: opts.orderId, amount: discountApplied, error: err.message,
-        });
-        discountRefundFailed = true;
-      }
-
-      await prisma.$transaction([
-        prisma.user.update({ where: { id: user.id }, data: { referralFirstPaymentAt: new Date() } }),
-        prisma.creditLedgerEntry.create({
-          data: {
-            ownerId: user.referredByUserId,
-            referredUserId: user.id,
-            type: 'EARNED',
-            amount: REFERRAL_CREDIT_AMOUNT,
-            sourcePaymentId: opts.paymentId,
-            note: `${user.name} — პირველი წარმატებული გადახდა`,
-          },
-        }),
-      ]);
+      isFirstPayment = true;
     }
   }
 
-  // ── (2) This user's OWN accumulated credit, consumed against their own payment ──
   const availableCredit = await getAvailableCredit(user.id);
   const remainingCapacity = Math.round((opts.grossAmount - discountApplied) * 100) / 100;
   const creditToApply = Math.max(0, Math.round(Math.min(availableCredit, remainingCapacity) * 100) / 100);
-  let creditRefundFailed = false;
 
-  if (creditToApply > 0) {
+  // ── (2) One combined refund call for whatever is owed back ──────────────────────
+  const totalRefund = Math.round((discountApplied + creditToApply) * 100) / 100;
+  let refundFailed = false;
+  if (totalRefund > 0) {
     try {
-      await refundOrder(opts.orderId, creditToApply.toFixed(2));
-      await prisma.creditLedgerEntry.create({
-        data: {
-          ownerId: user.id,
-          type: 'USED',
-          amount: -creditToApply,
-          appliedPaymentId: opts.paymentId,
-          note: 'გამოყენებულია საკუთარ გადახდაზე',
-        },
-      });
+      await refundOrder(opts.orderId, totalRefund.toFixed(2));
     } catch (err: any) {
-      console.error('Referral: credit-consumption refund failed, will retry on next payment', {
-        userId: user.id, orderId: opts.orderId, amount: creditToApply, error: err.message,
+      console.error('Referral: combined discount/credit refund failed', {
+        userId: user.id, orderId: opts.orderId, discountApplied, creditToApply, error: err.message,
       });
-      creditRefundFailed = true;
-      // Deliberately not writing a USED ledger entry — the balance stays intact and this
-      // exact check runs again on the user's next successful payment, so a transient BOG
-      // refund failure (e.g. error 163, insufficient settled balance) self-heals instead of
-      // silently losing the credit.
+      refundFailed = true;
     }
+  }
+
+  // ── (3) Record the effects ───────────────────────────────────────────────────────
+  // The first-payment reward (referrer's +1.70₾, and referralFirstPaymentAt) is recorded
+  // regardless of whether the refund itself succeeded — it's a one-time event that must be
+  // marked exactly once, with discountRefundFailed left as the signal for manual follow-up.
+  // Credit consumption stays retry-safe: the USED entry is only written on refund success,
+  // so a failed refund leaves the balance untouched for the next payment cycle to retry.
+  if (isFirstPayment) {
+    await prisma.$transaction([
+      prisma.user.update({ where: { id: user.id }, data: { referralFirstPaymentAt: new Date() } }),
+      prisma.creditLedgerEntry.create({
+        data: {
+          ownerId: user.referredByUserId!,
+          referredUserId: user.id,
+          type: 'EARNED',
+          amount: REFERRAL_CREDIT_AMOUNT,
+          sourcePaymentId: opts.paymentId,
+          note: `${user.name} — პირველი წარმატებული გადახდა`,
+        },
+      }),
+    ]);
+  }
+
+  if (creditToApply > 0 && !refundFailed) {
+    await prisma.creditLedgerEntry.create({
+      data: {
+        ownerId: user.id,
+        type: 'USED',
+        amount: -creditToApply,
+        appliedPaymentId: opts.paymentId,
+        note: 'გამოყენებულია საკუთარ გადახდაზე',
+      },
+    });
   }
 
   await prisma.payment.update({
     where: { id: opts.paymentId },
     data: {
       discountAmount: discountApplied > 0 ? discountApplied : null,
-      discountRefundFailed,
-      creditAppliedAmount: creditToApply > 0 ? creditToApply : null,
-      creditRefundFailed,
+      discountRefundFailed: discountApplied > 0 ? refundFailed : false,
+      creditAppliedAmount: (creditToApply > 0 && !refundFailed) ? creditToApply : null,
+      creditRefundFailed: creditToApply > 0 ? refundFailed : false,
     },
   });
 }

@@ -4,6 +4,11 @@ import { resend } from "@/lib/resend";
 import { layout } from "@/lib/email";
 import { NextResponse } from "next/server";
 
+// A campaign send can take a while now that it's paced to stay under Resend's rate
+// limit (see below) — ask Vercel for the most runtime it'll give a serverless function.
+// On the Hobby plan this is capped at 60s regardless; Pro/Enterprise allow more.
+export const maxDuration = 60;
+
 async function adminGuard() {
   const session = await getSession();
   if (!session || session.role !== "ADMIN") return null;
@@ -154,71 +159,75 @@ export async function POST(req: Request) {
 
   // IMPORTANT: resend.emails.send() does NOT throw/reject on an API-level failure (bad
   // address, unverified domain, rate limit, suppression list, etc.) — it resolves with
-  // { data: null, error: {...} } instead. A send that Resend genuinely rejected therefore
-  // still shows up as "fulfilled" to Promise.allSettled. Checking only `.status ===
-  // "fulfilled"` (the old behavior here) counted every one of those as a successful send,
-  // which is exactly how a campaign could show 111/111 "SENT" while some recipients never
-  // actually got anything — Resend rejected the request and this code never looked.
+  // { data: null, error: {...} } instead. Always check `.error`, never trust "fulfilled"
+  // alone — that's exactly how a campaign could once show 111/111 "SENT" while some
+  // recipients never actually got anything.
   //
-  // Firing all N requests fully in parallel also makes hitting Resend's own rate limit
-  // more likely for a larger recipient list — sending in small batches keeps well under it
-  // without depending on any Resend SDK behavior beyond emails.send(), which is already
-  // proven to work.
-  const BATCH_SIZE = 20;
-  const BATCH_DELAY_MS = 600;
-  type SendOutcome = { email: string; ok: boolean; messageId: string | null; error: string | null };
-  const outcomes: SendOutcome[] = [];
+  // Sending in parallel (even in small batches of ~20) massively exceeds Resend's actual
+  // rate limit (2 requests/second by default) and produces a wave of genuine "Too many
+  // requests" failures — confirmed live on this account. So this sends one email at a
+  // time, paced well under that limit, and retries a request specifically a few times
+  // with backoff if — and only if — it failed because of rate limiting (a bad address or
+  // any other real rejection fails immediately, no point retrying that).
+  const SEND_DELAY_MS = 600; // ~1.6 req/sec — safely under Resend's 2 req/sec default
+  const MAX_RATE_LIMIT_RETRIES = 3;
 
-  for (let start = 0; start < recipients.length; start += BATCH_SIZE) {
-    const batch = recipients.slice(start, start + BATCH_SIZE);
-    const settled = await Promise.allSettled(
-      batch.map(({ email, name }) =>
-        resend.emails.send({
-          from: `${fromLabel} <${senderEmail}>`,
-          to: email,
-          subject,
-          html: layout(htmlContent.replace(/\{\{name\}\}/g, name)),
-        }),
-      ),
-    );
-
-    for (let i = 0; i < settled.length; i++) {
-      const { email } = batch[i];
-      const result = settled[i];
-      if (result.status === "fulfilled") {
-        const { data, error } = result.value as { data: { id: string } | null; error: { message?: string; name?: string } | null };
-        if (error) {
-          outcomes.push({ email, ok: false, messageId: null, error: error.message ?? error.name ?? "Resend API error" });
-        } else {
-          outcomes.push({ email, ok: true, messageId: data?.id ?? null, error: null });
-        }
-      } else {
-        const reason = result.reason as any;
-        outcomes.push({ email, ok: false, messageId: null, error: reason?.message ?? String(reason) });
-      }
-    }
-
-    if (start + BATCH_SIZE < recipients.length) {
-      await new Promise((resolve) => setTimeout(resolve, BATCH_DELAY_MS));
-    }
+  function isRateLimitError(err: any): boolean {
+    const text = String(err?.message ?? err?.name ?? "").toLowerCase();
+    return text.includes("rate limit") || text.includes("too many request");
   }
 
   let sentCount = 0;
   const failedEmails: string[] = [];
 
-  for (const outcome of outcomes) {
+  for (let i = 0; i < recipients.length; i++) {
+    const { email, name } = recipients[i];
+    const html = layout(htmlContent.replace(/\{\{name\}\}/g, name));
+    let outcome: { ok: boolean; messageId: string | null; error: string | null } | null = null;
+
+    for (let attempt = 0; outcome === null; attempt++) {
+      try {
+        const { data, error } = await resend.emails.send({
+          from: `${fromLabel} <${senderEmail}>`,
+          to: email,
+          subject,
+          html,
+        });
+        if (!error) {
+          outcome = { ok: true, messageId: data?.id ?? null, error: null };
+        } else if (isRateLimitError(error) && attempt < MAX_RATE_LIMIT_RETRIES) {
+          await new Promise((r) => setTimeout(r, 1000 * (attempt + 1))); // 1s, 2s, 3s backoff
+        } else {
+          outcome = { ok: false, messageId: null, error: error.message ?? error.name ?? "Resend API error" };
+        }
+      } catch (err: any) {
+        if (isRateLimitError(err) && attempt < MAX_RATE_LIMIT_RETRIES) {
+          await new Promise((r) => setTimeout(r, 1000 * (attempt + 1)));
+        } else {
+          outcome = { ok: false, messageId: null, error: err?.message ?? String(err) };
+        }
+      }
+    }
+
+    // Write this recipient's result immediately (not batched at the end) — if a very
+    // large audience means this function runs out of time before finishing the loop,
+    // whatever was already processed still has an accurate status instead of being lost.
     if (outcome.ok) {
       sentCount++;
       await prisma.emailRecipient.updateMany({
-        where: { campaignId: campaign.id, email: outcome.email },
+        where: { campaignId: campaign.id, email },
         data: { status: "SENT", sentAt: new Date(), resendMessageId: outcome.messageId },
       });
     } else {
-      failedEmails.push(outcome.email);
+      failedEmails.push(email);
       await prisma.emailRecipient.updateMany({
-        where: { campaignId: campaign.id, email: outcome.email },
+        where: { campaignId: campaign.id, email },
         data: { status: "FAILED", errorMessage: outcome.error?.slice(0, 500) },
       });
+    }
+
+    if (i < recipients.length - 1) {
+      await new Promise((r) => setTimeout(r, SEND_DELAY_MS));
     }
   }
 

@@ -129,7 +129,14 @@ export default function EmailCenterClient({
   const [subject, setSubject] = useState('');
   const [senderEmail, setSenderEmail] = useState('info@mommenu.ge');
   const [audienceType, setAudienceType] = useState<AudienceType>('specific');
-  const [specificEmails, setSpecificEmails] = useState('');
+  // "specific" audience — a checkable list of every registered user, instead of pasting
+  // emails by hand. Lets a big send be split across several days: pick some today, send;
+  // tomorrow reopen with the same subject and the ones already reached show as sent.
+  const [allUsers, setAllUsers] = useState<{ email: string; name: string }[]>([]);
+  const [usersLoading, setUsersLoading] = useState(false);
+  const [alreadySentEmails, setAlreadySentEmails] = useState<Set<string>>(new Set());
+  const [selectedEmails, setSelectedEmails] = useState<Set<string>>(new Set());
+  const [recipientSearch, setRecipientSearch] = useState('');
   const [selectedAgeGroup, setSelectedAgeGroup] = useState('FROM_6');
   const [sendAction, setSendAction] = useState<SendAction>('send');
   const [scheduledAt, setScheduledAt] = useState('');
@@ -215,6 +222,64 @@ export default function EmailCenterClient({
     }
   };
 
+  const loadRecipientPicker = useCallback(async (subjectForLookup: string) => {
+    setUsersLoading(true);
+    try {
+      const res = await fetch(`/api/admin/emails/recipients?subject=${encodeURIComponent(subjectForLookup.trim())}`);
+      if (res.ok) {
+        const data = await res.json();
+        setAllUsers(data.users ?? []);
+        setAlreadySentEmails(new Set<string>(data.alreadySent ?? []));
+        // Never leave an already-sent address checked (e.g. subject was retyped to match
+        // an earlier campaign after some were already picked under a different subject).
+        setSelectedEmails((prev) => {
+          const already = new Set<string>(data.alreadySent ?? []);
+          const next = new Set<string>();
+          prev.forEach((e) => { if (!already.has(e)) next.add(e); });
+          return next;
+        });
+      }
+    } catch {
+      // leave whatever list is already loaded — a failed refresh shouldn't clear it
+    } finally {
+      setUsersLoading(false);
+    }
+  }, []);
+
+  // Load the picker once "specific" is selected, and re-check "already sent" every time
+  // the subject changes (debounced) — retyping a previous campaign's exact subject is
+  // how a multi-day send picks up where it left off.
+  useEffect(() => {
+    if (audienceType !== 'specific') return;
+    const t = setTimeout(() => { loadRecipientPicker(subject); }, 400);
+    return () => clearTimeout(t);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [audienceType, subject]);
+
+  const filteredUsers = allUsers.filter((u) => {
+    const q = recipientSearch.trim().toLowerCase();
+    if (!q) return true;
+    return u.email.toLowerCase().includes(q) || u.name.toLowerCase().includes(q);
+  });
+
+  const toggleEmail = (email: string) => {
+    setSelectedEmails((prev) => {
+      const next = new Set(prev);
+      if (next.has(email)) next.delete(email); else next.add(email);
+      return next;
+    });
+  };
+
+  const selectAllFiltered = () => {
+    setSelectedEmails((prev) => {
+      const next = new Set(prev);
+      for (const u of filteredUsers) if (!alreadySentEmails.has(u.email)) next.add(u.email);
+      return next;
+    });
+  };
+
+  const clearSelectedEmails = () => setSelectedEmails(new Set());
+
   const handleSend = async () => {
     const htmlContent = editorRef.current?.innerHTML ?? '';
     if (!subject.trim() || !htmlContent.trim()) {
@@ -222,8 +287,13 @@ export default function EmailCenterClient({
       return;
     }
 
+    if (audienceType === 'specific' && selectedEmails.size === 0) {
+      setSendResult({ type: 'error', msg: 'აირჩიეთ მინიმუმ ერთი მიმღები სიიდან.' });
+      return;
+    }
+
     const audienceFilter =
-      audienceType === 'specific' ? specificEmails :
+      audienceType === 'specific' ? Array.from(selectedEmails).join(',') :
       audienceType === 'age_group' ? selectedAgeGroup : undefined;
 
     if (sendAction === 'schedule' && !scheduledAt) {
@@ -253,6 +323,7 @@ export default function EmailCenterClient({
           `გაიგზავნა ${data.sent} მიმღებზე.`;
         setSendResult({ type: 'success', msg });
         setSubject('');
+        setSelectedEmails(new Set());
         if (editorRef.current) editorRef.current.innerHTML = '';
         await refreshData();
       }
@@ -619,15 +690,58 @@ export default function EmailCenterClient({
 
                 {audienceType === 'specific' && (
                   <div className="mt-4">
-                    <label className="block text-xs font-bold text-[#465940]/60 mb-1.5">ელფოსტები (მძიმით გამოყოფილი)</label>
-                    <textarea
-                      value={specificEmails}
-                      onChange={(e) => setSpecificEmails(e.target.value)}
-                      placeholder="email1@gmail.com, email2@gmail.com"
-                      rows={3}
-                      className="w-full px-3 py-2 rounded-xl border border-gray-200 text-xs focus:outline-none focus:border-[#465940] resize-none"
+                    <div className="flex items-center justify-between mb-1.5 gap-2">
+                      <label className="text-xs font-bold text-[#465940]/60">
+                        მიმღების არჩევა {selectedEmails.size > 0 && `(${selectedEmails.size} მონიშნული)`}
+                      </label>
+                      <div className="flex gap-2 flex-shrink-0">
+                        <button type="button" onClick={selectAllFiltered}
+                          className="text-[11px] font-bold text-[#465940] hover:underline">ყველას მონიშვნა</button>
+                        <button type="button" onClick={clearSelectedEmails}
+                          className="text-[11px] font-bold text-red-500 hover:underline">გასუფთავება</button>
+                      </div>
+                    </div>
+                    <input
+                      value={recipientSearch}
+                      onChange={(e) => setRecipientSearch(e.target.value)}
+                      placeholder="ძებნა სახელით ან ელფოსტით..."
+                      className="w-full px-3 py-2 rounded-xl border border-gray-200 text-xs focus:outline-none focus:border-[#465940] mb-2"
                       style={{ color: '#111' }}
                     />
+                    <div className="max-h-64 overflow-y-auto border border-gray-200 rounded-xl divide-y divide-gray-100">
+                      {usersLoading ? (
+                        <p className="text-xs text-gray-400 text-center py-4">იტვირთება...</p>
+                      ) : filteredUsers.length === 0 ? (
+                        <p className="text-xs text-gray-400 text-center py-4">მომხმარებელი ვერ მოიძებნა</p>
+                      ) : (
+                        filteredUsers.map((u) => {
+                          const alreadySent = alreadySentEmails.has(u.email);
+                          return (
+                            <label key={u.email}
+                              className={`flex items-center gap-2.5 px-3 py-2 text-xs ${alreadySent ? 'opacity-50' : 'cursor-pointer hover:bg-gray-50'}`}>
+                              <input
+                                type="checkbox"
+                                checked={selectedEmails.has(u.email)}
+                                disabled={alreadySent}
+                                onChange={() => toggleEmail(u.email)}
+                                className="accent-[#465940] flex-shrink-0"
+                              />
+                              <span className="flex-1 min-w-0 truncate" style={{ color: '#111' }}>
+                                {u.name} <span className="text-gray-400">— {u.email}</span>
+                              </span>
+                              {alreadySent && (
+                                <span className="text-[10px] font-bold text-green-600 whitespace-nowrap flex-shrink-0">✓ გაეგზავნა</span>
+                              )}
+                            </label>
+                          );
+                        })
+                      )}
+                    </div>
+                    {subject.trim() !== '' && (
+                      <p className="text-[11px] text-[#465940]/50 italic mt-1.5">
+                        „✓ გაეგზავნა" — ამ ზუსტი სათაურის მეილი უკვე წარმატებით გაეგზავნა ამ მისამართს (ვერ მონიშნავთ, რომ ორჯერ არ გაეგზავნოს). დიდი სიის რამდენიმე დღეზე გასანაწილებლად, დარჩენილებს ხვალ იმავე სათაურით გამოგზავნეთ.
+                      </p>
+                    )}
                   </div>
                 )}
 

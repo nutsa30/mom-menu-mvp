@@ -1,7 +1,6 @@
 import { prisma } from '@/lib/prisma';
 import { requireAdmin } from '@/lib/auth';
 import { PLAN_AMOUNTS_BY_INTERVAL, BillingInterval } from '@/lib/bog';
-import { hasPendingReferralDiscount, REFERRAL_DISCOUNT_PERCENT } from '@/lib/referral';
 import ReferralsAdminClient from './ReferralsAdminClient';
 
 export default async function ReferralsAdminPage() {
@@ -19,9 +18,7 @@ export default async function ReferralsAdminPage() {
       billingIntervalMonths: true,
       bogParentOrderId: true,
       subscriptionCanceledAt: true,
-      referredByUserId: true,
-      referralFirstPaymentAt: true,
-      creditLedgerAsOwner: { select: { type: true, amount: true } },
+      creditLedgerAsOwner: { select: { type: true, amount: true, referredUserId: true } },
       referrals: {
         select: {
           id: true,
@@ -55,24 +52,22 @@ export default async function ReferralsAdminPage() {
     const canceledCount = o.referrals.filter((r) => !!r.subscriptionCanceledAt).length;
 
     let totalEarned = 0, totalUsed = 0, totalReversed = 0;
+    const reversedReferredIds = new Set<string>();
     for (const entry of o.creditLedgerAsOwner) {
       if (entry.type === 'EARNED') totalEarned += entry.amount;
       else if (entry.type === 'USED') totalUsed += Math.abs(entry.amount);
-      else if (entry.type === 'REVERSED') totalReversed += Math.abs(entry.amount);
+      else if (entry.type === 'REVERSED') {
+        totalReversed += Math.abs(entry.amount);
+        if (entry.referredUserId) reversedReferredIds.add(entry.referredUserId);
+      }
     }
     const availableCredit = Math.round((totalEarned - totalUsed - totalReversed) * 100) / 100;
 
     const interval = o.billingIntervalMonths as BillingInterval | null;
     const packagePrice = interval ? planAmounts[interval] : null;
     const isActiveSubscriber = o.subscriptionStatus === 'FULL_PLAN' && !!o.bogParentOrderId;
-    // This owner may ALSO be someone else's referral, still awaiting their own first
-    // charge (e.g. mid-trial) — their guaranteed 10% off has to be reflected here too,
-    // same as on their own dashboard tab, or this figure overstates what they'll pay.
-    const expectedPrice = packagePrice !== null && hasPendingReferralDiscount(o)
-      ? Math.round(packagePrice * (1 - REFERRAL_DISCOUNT_PERCENT / 100) * 100) / 100
-      : packagePrice;
-    const nextChargeAmount = isActiveSubscriber && expectedPrice !== null
-      ? Math.max(0, Math.round((expectedPrice - availableCredit) * 100) / 100)
+    const nextChargeAmount = isActiveSubscriber && packagePrice !== null
+      ? Math.max(0, Math.round((packagePrice - availableCredit) * 100) / 100)
       : null;
 
     const referralRows = o.referrals.map((r) => {
@@ -96,6 +91,10 @@ export default async function ReferralsAdminPage() {
         paymentStatus: firstPayment ? 'გადახდილი' : 'არ გადახდილა',
         ownerCredit: r.referralFirstPaymentAt ? 1.7 : 0,
         status,
+        // Can this referral's earned credit be manually reversed (e.g. an external bank
+        // chargeback/refund the app has no webhook for)? Only if it was ever earned in
+        // the first place, and only once — never offer it again after it's been reversed.
+        canReverse: !!r.referralFirstPaymentAt && !reversedReferredIds.has(r.id),
       };
     });
 
