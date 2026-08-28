@@ -26,43 +26,69 @@ export default function UsersSearchTable({
   intervalPrices: Record<number, number>;
 }) {
   const [query, setQuery] = useState('');
+  // Registration-date filter — a select of the actual dates someone registered on
+  // (derived from the data itself), not a calendar picker, per how this is meant to be
+  // used: "show me who signed up on this specific day", not an arbitrary date range.
+  const [dateFilter, setDateFilter] = useState('');
+
+  const registrationDates = useMemo(() => {
+    const set = new Set<string>();
+    for (const u of users) set.add(new Date(u.createdAt).toISOString().slice(0, 10));
+    return Array.from(set).sort((a, b) => (a < b ? 1 : -1)); // newest first
+  }, [users]);
 
   const filtered = useMemo(() => {
     const q = query.trim().toLowerCase();
-    if (!q) return users;
-    return users.filter(
-      (u) => u.name?.toLowerCase().includes(q) || u.email?.toLowerCase().includes(q)
-    );
-  }, [users, query]);
+    return users.filter((u) => {
+      if (q && !(u.name?.toLowerCase().includes(q) || u.email?.toLowerCase().includes(q))) return false;
+      if (dateFilter && new Date(u.createdAt).toISOString().slice(0, 10) !== dateFilter) return false;
+      return true;
+    });
+  }, [users, query, dateFilter]);
 
   return (
     <div>
       <div className="p-4 sm:p-6 border-b border-[#465940]/10">
-        <div className="relative max-w-sm">
-          <svg
-            className="absolute left-3.5 top-1/2 -translate-y-1/2 text-[#465940]/40"
-            width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"
-          >
-            <circle cx="11" cy="11" r="8" />
-            <line x1="21" y1="21" x2="16.65" y2="16.65" />
-          </svg>
-          <input
-            value={query}
-            onChange={(e) => setQuery(e.target.value)}
-            placeholder={locale === 'ka' ? 'ძებნა სახელით ან ელფოსტით...' : 'Search by name or email...'}
-            className="w-full pl-9 pr-9 py-2.5 rounded-full border border-[#465940]/15 text-sm text-[#465940] bg-white focus:outline-none focus:border-[#465940] transition"
-          />
-          {query && (
-            <button
-              onClick={() => setQuery('')}
-              className="absolute right-3 top-1/2 -translate-y-1/2 text-[#465940]/40 hover:text-[#465940] transition text-lg leading-none"
-              aria-label={locale === 'ka' ? 'გასუფთავება' : 'Clear'}
+        <div className="flex flex-wrap items-center gap-2.5">
+          <div className="relative max-w-sm flex-1 min-w-[220px]">
+            <svg
+              className="absolute left-3.5 top-1/2 -translate-y-1/2 text-[#465940]/40"
+              width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"
             >
-              ×
-            </button>
-          )}
+              <circle cx="11" cy="11" r="8" />
+              <line x1="21" y1="21" x2="16.65" y2="16.65" />
+            </svg>
+            <input
+              value={query}
+              onChange={(e) => setQuery(e.target.value)}
+              placeholder={locale === 'ka' ? 'ძებნა სახელით ან ელფოსტით...' : 'Search by name or email...'}
+              className="w-full pl-9 pr-9 py-2.5 rounded-full border border-[#465940]/15 text-sm text-[#465940] bg-white focus:outline-none focus:border-[#465940] transition"
+            />
+            {query && (
+              <button
+                onClick={() => setQuery('')}
+                className="absolute right-3 top-1/2 -translate-y-1/2 text-[#465940]/40 hover:text-[#465940] transition text-lg leading-none"
+                aria-label={locale === 'ka' ? 'გასუფთავება' : 'Clear'}
+              >
+                ×
+              </button>
+            )}
+          </div>
+
+          <select
+            value={dateFilter}
+            onChange={(e) => setDateFilter(e.target.value)}
+            className="border border-[#465940]/15 rounded-full px-4 py-2.5 text-sm font-semibold text-[#465940]/80 focus:outline-none focus:border-[#465940] bg-white cursor-pointer"
+          >
+            <option value="">{locale === 'ka' ? 'ყველა თარიღი' : 'All dates'}</option>
+            {registrationDates.map((d) => (
+              <option key={d} value={d}>
+                {new Date(d).toLocaleDateString(locale === 'ka' ? 'ka-GE' : 'en-US', { year: 'numeric', month: 'long', day: 'numeric', timeZone: 'UTC' })}
+              </option>
+            ))}
+          </select>
         </div>
-        {query && (
+        {(query || dateFilter) && (
           <p className="text-xs text-[#465940]/50 mt-2">
             {locale === 'ka' ? `${filtered.length} შედეგი` : `${filtered.length} result${filtered.length === 1 ? '' : 's'}`}
           </p>

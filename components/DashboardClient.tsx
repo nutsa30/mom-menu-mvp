@@ -1895,8 +1895,16 @@ export default function DashboardClient({ user }: { user: any }) {
         { key: 'settings', label: 'პარამეტრები' },
       ];
 
+  // Bottom tab bar — laid out as a fixed 4-column grid instead of stretching every tab
+  // into one ever-narrower row. With up to 7 tabs + logout that row was cramming 8 items
+  // into single-row flex-1 columns on a phone screen, squeezing/overlapping the labels.
+  // A 4-column grid wraps naturally into two neat rows once there are more than 4 items,
+  // same idea as "ორ-ორად" (two by two), without hand-splitting the tab list.
+  const navItemCount = tabs.length + 1; // +1 for the logout button, which shares the grid
+  const navRows = Math.ceil(navItemCount / 4);
+
   return (
-    <div className="min-h-screen bg-[#465940] flex flex-col pb-16">
+    <div className={`min-h-screen bg-[#465940] flex flex-col ${navRows > 1 ? 'pb-28' : 'pb-16'}`}>
       {/* Header */}
       <header className="bg-gradient-to-r from-[#465940] to-[#465940] px-5 py-4 flex items-center justify-between sticky top-0 z-30 shadow-sm" style={{ paddingTop: 'calc(1rem + env(safe-area-inset-top))' }}>
         <div className="flex items-center gap-3">
@@ -1933,15 +1941,15 @@ export default function DashboardClient({ user }: { user: any }) {
       {/* Bottom tab bar – fixed, all screen sizes */}
       <nav className="fixed bottom-0 left-0 right-0 z-50 bg-[#FDFBF0]/95 backdrop-blur border-t border-[#465940]/10"
         style={{ paddingBottom: 'env(safe-area-inset-bottom)' }}>
-        <div className="flex max-w-4xl mx-auto">
+        <div className="grid grid-cols-4 max-w-4xl mx-auto">
           {tabs.map((t) => (
             <button key={t.key} onClick={() => setTab(t.key)}
-              className={`flex-1 flex flex-col items-center gap-0.5 py-2.5 transition-colors ${tab === t.key ? 'text-[#465940]' : 'text-[#465940]/60 hover:text-[#465940]/80'}`}>
-              <span className="text-[10px] font-bold tracking-wide">{t.label}</span>
+              className={`flex flex-col items-center justify-center gap-0.5 py-2.5 px-0.5 transition-colors ${tab === t.key ? 'text-[#465940]' : 'text-[#465940]/60 hover:text-[#465940]/80'}`}>
+              <span className="text-[10px] font-bold tracking-wide text-center leading-tight">{t.label}</span>
             </button>
           ))}
           <button onClick={logout}
-            className="flex-1 flex flex-col items-center gap-0.5 py-2.5 text-[#465940]/60 hover:text-[#465940]/80 transition-colors">
+            className="flex flex-col items-center justify-center gap-0.5 py-2.5 px-0.5 text-[#465940]/60 hover:text-[#465940]/80 transition-colors">
             <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
               <path d="M9 21H5a2 2 0 01-2-2V5a2 2 0 012-2h4M16 17l5-5-5-5M21 12H9"/>
             </svg>
