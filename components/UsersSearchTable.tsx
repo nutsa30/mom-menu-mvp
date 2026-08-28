@@ -154,7 +154,9 @@ export default function UsersSearchTable({
                     )}
                   </td>
                   <td className="px-4 py-4 text-sm text-[#465940]/70">{user._count.children}</td>
-                  <td className="px-4 py-4 text-sm text-[#465940]/60">{new Date(user.createdAt).toLocaleDateString()}</td>
+                  <td className="px-4 py-4 text-sm text-[#465940]/60">
+                    {new Date(user.createdAt).toLocaleDateString(locale === 'ka' ? 'ka-GE' : 'en-US', { timeZone: 'UTC' })}
+                  </td>
                   <td className="px-6 py-4">
                     <div className="flex items-center justify-end gap-2 flex-wrap">
                       <GiftSubscriptionButton userId={user.id} currentStatus={user.subscriptionStatus} isGifted={user.isGifted} intervalPrices={intervalPrices} />
