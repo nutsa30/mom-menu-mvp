@@ -21,9 +21,10 @@ const monthlyPriceFor = (u: { subscriptionStatus: string; billingIntervalMonths?
   priceFor(u) / (u.billingIntervalMonths || 1);
 
 export default async function AdminAnalyticsPage() {
-  const [users, planItems, recentUsers] = await Promise.all([
+  const [users, planItems, recentUsers, successfulPayers] = await Promise.all([
     prisma.user.findMany({
       select: {
+        id: true,
         subscriptionStatus: true,
         billingIntervalMonths: true,
         subscriptionStartedAt: true,
@@ -46,7 +47,13 @@ export default async function AdminAnalyticsPage() {
       take: 8,
       select: { name: true, email: true, subscriptionStatus: true, billingIntervalMonths: true, createdAt: true, isGifted: true },
     }),
+    // Who has ever actually been charged — the BOG webhook flips subscriptionStatus to
+    // FULL_PLAN the moment a trial's card-verification hold clears, well before any real
+    // money moves, so subscriptionStatus alone can't tell "committed, paying subscriber"
+    // apart from "still in their free trial, might cancel before ever paying a lari".
+    prisma.payment.findMany({ where: { status: 'SUCCESS' }, select: { userId: true }, distinct: ['userId'] }),
   ]);
+  const paidUserIds = new Set(successfulPayers.map((p) => p.userId));
 
   const dishIds = planItems.map((p) => p.dishId);
   const topDishes = await prisma.dish.findMany({
@@ -63,10 +70,20 @@ export default async function AdminAnalyticsPage() {
   // Real current packages — Recipe Plan is no longer sold (always 0 now).
   // Excludes anyone who's already canceled (still FULL_PLAN until their paid period
   // ends, but won't renew) — counts here reflect who's actually still subscribed going
-  // forward, not just who happens to still have access today.
-  const full1 = users.filter((u) => u.subscriptionStatus === 'FULL_PLAN' && u.billingIntervalMonths === 1 && !u.subscriptionCanceledAt).length;
-  const full3 = users.filter((u) => u.subscriptionStatus === 'FULL_PLAN' && u.billingIntervalMonths === 3 && !u.subscriptionCanceledAt).length;
-  const full6 = users.filter((u) => u.subscriptionStatus === 'FULL_PLAN' && u.billingIntervalMonths === 6 && !u.subscriptionCanceledAt).length;
+  // forward, not just who happens to still have access today. Also excludes anyone still
+  // in their free trial (paidUserIds) — see trialingCount below for where they're counted.
+  const full1 = users.filter((u) => u.subscriptionStatus === 'FULL_PLAN' && u.billingIntervalMonths === 1 && !u.subscriptionCanceledAt && paidUserIds.has(u.id)).length;
+  const full3 = users.filter((u) => u.subscriptionStatus === 'FULL_PLAN' && u.billingIntervalMonths === 3 && !u.subscriptionCanceledAt && paidUserIds.has(u.id)).length;
+  const full6 = users.filter((u) => u.subscriptionStatus === 'FULL_PLAN' && u.billingIntervalMonths === 6 && !u.subscriptionCanceledAt && paidUserIds.has(u.id)).length;
+  // Signed up for a paid tier and currently mid-trial — card verified, but not charged a
+  // single lari yet, and might cancel before ever converting. Kept separate from MRR/the
+  // interval counts above so a wave of new trial signups can't make revenue look higher
+  // than it actually is.
+  const trialingCount = users.filter(
+    (u) => !u.isGifted && !u.subscriptionCanceledAt &&
+      (u.subscriptionStatus === 'FULL_PLAN' || u.subscriptionStatus === 'RECIPE_PLAN') &&
+      !paidUserIds.has(u.id)
+  ).length;
   // "Canceled" counts anyone who's canceled, whether their access has already
   // expired (subscriptionStatus === 'CANCELED') or they're just riding out a
   // paid period they won't renew (still FULL_PLAN/RECIPE_PLAN but subscriptionCanceledAt is set).
@@ -102,7 +119,10 @@ export default async function AdminAnalyticsPage() {
   // MRR is normalized per-month: a 39₾/3-month subscriber contributes 13₾, not 39₾.
   // Gifted accounts (isGifted) are excluded everywhere below — they have a paid-tier
   // subscriptionStatus but brought in no actual cash, same convention as admin/users.
-  const payingUserRows = users.filter((u) => !u.isGifted && !u.subscriptionCanceledAt && (u.subscriptionStatus === 'RECIPE_PLAN' || u.subscriptionStatus === 'FULL_PLAN'));
+  // paidUserIds excludes anyone still in their free trial — subscriptionStatus alone
+  // flips to FULL_PLAN the moment the trial's card-verification hold clears, well before
+  // any real charge, so it can't tell "paying" apart from "trialing" on its own.
+  const payingUserRows = users.filter((u) => !u.isGifted && !u.subscriptionCanceledAt && (u.subscriptionStatus === 'RECIPE_PLAN' || u.subscriptionStatus === 'FULL_PLAN') && paidUserIds.has(u.id));
   const mrr = Math.round(payingUserRows.reduce((sum, u) => sum + monthlyPriceFor(u), 0));
   const payingUsers = payingUserRows.length;
   const arpu = payingUsers > 0 ? Math.round(mrr / payingUsers) : 0;
@@ -113,7 +133,8 @@ export default async function AdminAnalyticsPage() {
         !u.isGifted &&
         u.subscriptionStartedAt &&
         new Date(u.subscriptionStartedAt) > thirtyDaysAgo &&
-        (u.subscriptionStatus === 'RECIPE_PLAN' || u.subscriptionStatus === 'FULL_PLAN')
+        (u.subscriptionStatus === 'RECIPE_PLAN' || u.subscriptionStatus === 'FULL_PLAN') &&
+        paidUserIds.has(u.id)
     )
     .reduce((sum, u) => sum + monthlyPriceFor(u), 0));
 
@@ -182,6 +203,7 @@ export default async function AdminAnalyticsPage() {
     { label: `1 month (${INTERVAL_PRICE[1]}₾)`, value: full1, sub: 'active', color: 'text-[#465940]' },
     { label: `3 months (${INTERVAL_PRICE[3]}₾)`, value: full3, sub: 'active', color: 'text-[#465940]' },
     { label: `6 months (${INTERVAL_PRICE[6]}₾)`, value: full6, sub: 'active', color: 'text-[#465940]' },
+    { label: 'ტრიალზე', value: trialingCount, sub: 'ჯერ არ გადაუხდია — MRR-ში არ შედის', color: 'text-amber-600' },
     { label: 'Canceled', value: canceled, sub: 'churned', color: 'text-amber-600' },
     { label: 'Blocked', value: blocked, sub: 'accounts', color: 'text-[#465940]' },
     { label: 'Conversion rate', value: `${conversionRate}%`, sub: 'free → paid', color: 'text-[#465940]' },
@@ -271,15 +293,17 @@ export default async function AdminAnalyticsPage() {
               // Recipe Plan is no longer sold — only shown if a legacy subscriber still exists,
               // so this section reflects the actual current packages otherwise.
               ...(recipe > 0 ? (() => {
-                const realRecipeRows = users.filter((u) => !u.isGifted && !u.subscriptionCanceledAt && u.subscriptionStatus === 'RECIPE_PLAN');
+                const realRecipeRows = users.filter((u) => !u.isGifted && !u.subscriptionCanceledAt && u.subscriptionStatus === 'RECIPE_PLAN' && paidUserIds.has(u.id));
                 return [{ label: `Recipe Plan (${PRICES.RECIPE_PLAN}₾) — legacy`, rev: realRecipeRows.length * PRICES.RECIPE_PLAN, count: realRecipeRows.length, color: 'bg-[#465940]/40' }];
               })() : []),
-              // Same canceled-exclusion as full1/full3/full6 above and payingUserRows —
-              // someone who canceled hasn't paid yet for a next period and shouldn't count
-              // toward this breakdown's revenue or account totals, even while their access
-              // is still active through the period they already paid for.
+              // Same canceled- and trial-exclusion as full1/full3/full6 and payingUserRows
+              // above — someone who canceled hasn't paid for a next period, and someone
+              // still mid-trial hasn't paid for this one yet either, so neither should count
+              // toward this breakdown's revenue or account totals (this is what keeps these
+              // rows summing to the same "სულ MRR" shown at the bottom, instead of a lower
+              // number that leaves the admin wondering where the difference is coming from).
               ...([1, 3, 6] as BillingInterval[]).map((interval) => {
-                const rows = users.filter((u) => !u.isGifted && !u.subscriptionCanceledAt && u.subscriptionStatus === 'FULL_PLAN' && u.billingIntervalMonths === interval);
+                const rows = users.filter((u) => !u.isGifted && !u.subscriptionCanceledAt && u.subscriptionStatus === 'FULL_PLAN' && u.billingIntervalMonths === interval && paidUserIds.has(u.id));
                 return {
                   label: `${interval} Month (${INTERVAL_PRICE[interval]}₾)`,
                   rev: Math.round(rows.reduce((sum, u) => sum + monthlyPriceFor(u), 0)),
@@ -435,6 +459,7 @@ export default async function AdminAnalyticsPage() {
               { label: `1 თვე (${INTERVAL_PRICE[1]}₾)`, count: full1, color: 'bg-[#465940]/55' },
               { label: `3 თვე (${INTERVAL_PRICE[3]}₾)`, count: full3, color: 'bg-[#465940]/75' },
               { label: `6 თვე (${INTERVAL_PRICE[6]}₾)`, count: full6, color: 'bg-[#465940]' },
+              { label: 'ტრიალზე', count: trialingCount, color: 'bg-amber-300' },
               { label: 'Canceled', count: canceled, color: 'bg-red-300' },
             ].map((seg) => (
               <div key={seg.label} className="flex items-center gap-2 text-sm">
@@ -451,6 +476,7 @@ export default async function AdminAnalyticsPage() {
               { count: full1, color: 'bg-[#465940]/55' },
               { count: full3, color: 'bg-[#465940]/75' },
               { count: full6, color: 'bg-[#465940]' },
+              { count: trialingCount, color: 'bg-amber-300' },
               { count: canceled, color: 'bg-red-300' },
             ]
               .filter((s) => s.count > 0)
