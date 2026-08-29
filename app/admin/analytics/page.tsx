@@ -32,6 +32,7 @@ export default async function AdminAnalyticsPage() {
         createdAt: true,
         isBlocked: true,
         isGifted: true,
+        lastActiveAt: true,
       },
     }),
     prisma.mealPlanItem.groupBy({
@@ -82,6 +83,20 @@ export default async function AdminAnalyticsPage() {
 
   const conversionRate = total > 0 ? (((recipe + full) / total) * 100).toFixed(1) : '0';
   const retentionRate = newThisMonth > 0 ? ((activeThisMonth / newThisMonth) * 100).toFixed(1) : '0';
+
+  // ─── Real activity (who actually opened the dashboard recently) ────────────────────
+  // Distinct from subscriptionStartedAt above (when someone PAID, not when they last used
+  // the app) and from dish "ჭამა" votes (an optional click most parents skip entirely —
+  // see admin/dish-feedback, which badly undercounts real usage for that exact reason).
+  // lastActiveAt is set by /api/heartbeat every time the dashboard loads, in a normal
+  // browser tab or an installed home-screen PWA alike, so nobody's usage goes uncounted
+  // just because they open Mommenu from their phone's home screen instead of a browser.
+  const DAY_MS = 24 * 60 * 60 * 1000;
+  const nowMs = Date.now();
+  const activeSince = (ms: number) => users.filter((u) => u.lastActiveAt && nowMs - new Date(u.lastActiveAt).getTime() < ms).length;
+  const active24h = activeSince(DAY_MS);
+  const active7d = activeSince(7 * DAY_MS);
+  const active30d = activeSince(30 * DAY_MS);
 
   // ─── Revenue ───────────────────────────────────────────────────────────────
   // MRR is normalized per-month: a 39₾/3-month subscriber contributes 13₾, not 39₾.
@@ -178,6 +193,31 @@ export default async function AdminAnalyticsPage() {
       <div className="mb-8">
         <h1 className="text-3xl font-bold text-[#465940]">Analytics</h1>
         <p className="mt-1 text-sm text-[#465940]">Overview of users, subscriptions and revenue</p>
+      </div>
+
+      {/* ── Real activity ── */}
+      <div className="mb-4">
+        <h2 className="text-xs font-black uppercase tracking-widest text-[#465940]/50 mb-3">რეალური აქტივობა</h2>
+        <p className="text-[11px] text-[#465940]/50 -mt-2 mb-3">
+          ეყრდნობა დეშბორდის ფაქტობრივ გახსნას (ბრაუზერშიც და ჰოუმ-სქრინიდან გახსნილ PWA-შიც) — არა გამოწერის თარიღს და არა "ჭამა" ხმებს, რომლებსაც ბევრი მშობელი უბრალოდ ტოვებს.
+        </p>
+        <div className="grid gap-4 sm:grid-cols-3 mb-6">
+          <div className="rounded-[20px] bg-[#465940] p-5 shadow-sm">
+            <p className="text-xs font-bold uppercase tracking-wider text-[#FDFBF0]/70">აქტიური (24 სთ)</p>
+            <p className="mt-2 text-3xl font-black text-[#FDFBF0]">{active24h}</p>
+            <p className="mt-1 text-xs text-[#FDFBF0]/50">{total > 0 ? Math.round((active24h / total) * 100) : 0}% ყველა მომხმარებლიდან</p>
+          </div>
+          <div className="rounded-[20px] bg-[#FDFBF0] p-5 shadow-sm">
+            <p className="text-xs font-bold uppercase tracking-wider text-[#465940]">აქტიური (7 დღე)</p>
+            <p className="mt-2 text-3xl font-black text-[#465940]">{active7d}</p>
+            <p className="mt-1 text-xs text-[#465940]/50">{total > 0 ? Math.round((active7d / total) * 100) : 0}% ყველა მომხმარებლიდან</p>
+          </div>
+          <div className="rounded-[20px] bg-[#FDFBF0] p-5 shadow-sm">
+            <p className="text-xs font-bold uppercase tracking-wider text-[#465940]">აქტიური (30 დღე)</p>
+            <p className="mt-2 text-3xl font-black text-[#465940]">{active30d}</p>
+            <p className="mt-1 text-xs text-[#465940]/50">{total > 0 ? Math.round((active30d / total) * 100) : 0}% ყველა მომხმარებლიდან</p>
+          </div>
+        </div>
       </div>
 
       {/* ── Revenue cards ── */}

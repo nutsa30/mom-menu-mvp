@@ -1808,6 +1808,13 @@ export default function DashboardClient({ user }: { user: any }) {
     });
   }, []);
 
+  // Real "is this person actually using the site" signal for admin/analytics — fires once
+  // per dashboard load, identically whether opened in a normal browser tab or launched from
+  // a home-screen PWA icon (unlike GA, which can silently miss standalone PWA sessions).
+  useEffect(() => {
+    fetch('/api/heartbeat', { method: 'POST' }).catch(() => {});
+  }, []);
+
   // Manage fixed 7-day plan window per child; auto-renew when expired
   useEffect(() => {
     if (!activeChild) return;

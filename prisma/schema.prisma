@@ -113,6 +113,14 @@ model User {
   payments               Payment[]
   cancellations          SubscriptionCancellation[]
 
+  // Real usage signal, distinct from subscription/billing dates — updated (throttled to
+  // once per ~15min) by /api/heartbeat, called once whenever the dashboard actually loads.
+  // Works identically whether opened in a normal browser tab or an installed home-screen
+  // PWA (it's just a plain fetch to our own backend), unlike GA/GTM which can silently miss
+  // standalone PWA sessions — so admin/analytics' "active users" count doesn't undercount
+  // the parents who use Mommenu only from their home-screen icon.
+  lastActiveAt           DateTime?
+
   createdAt              DateTime           @default(now())
   updatedAt              DateTime           @updatedAt
 }
