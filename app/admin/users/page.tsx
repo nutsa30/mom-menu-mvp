@@ -88,11 +88,17 @@ export default async function AdminUsersPage({
   // Signed up for a paid tier and currently mid-trial — not yet counted above, and not
   // counted toward MRR below, since they haven't paid a single lari yet and some will
   // cancel before their trial ever converts to a real charge.
-  const trialingCount = users.filter(
-    (u) => !u.isGifted && !u.subscriptionCanceledAt &&
-      (u.subscriptionStatus === 'FULL_PLAN' || u.subscriptionStatus === 'RECIPE_PLAN') &&
-      !paidUserIds.has(u.id)
-  ).length;
+  const isTrialing = (u: (typeof users)[number]) =>
+    !u.isGifted && !u.subscriptionCanceledAt &&
+    (u.subscriptionStatus === 'FULL_PLAN' || u.subscriptionStatus === 'RECIPE_PLAN') &&
+    !paidUserIds.has(u.id);
+  // Broken out by which tier they picked (same as byInterval1/3/6, just the trial side of
+  // that same split) — a single lumped "17 on trial" number can't tell you how much of
+  // that will convert into 17₾/month vs 59₾/month once they actually pay.
+  const trialInterval1 = users.filter((u) => isTrialing(u) && u.subscriptionStatus === 'FULL_PLAN' && u.billingIntervalMonths === 1).length;
+  const trialInterval3 = users.filter((u) => isTrialing(u) && u.subscriptionStatus === 'FULL_PLAN' && u.billingIntervalMonths === 3).length;
+  const trialInterval6 = users.filter((u) => isTrialing(u) && u.subscriptionStatus === 'FULL_PLAN' && u.billingIntervalMonths === 6).length;
+  const trialingCount = users.filter(isTrialing).length;
   const canceledPendingCount = users.filter(
     (u) => u.subscriptionCanceledAt && (u.subscriptionStatus === 'FULL_PLAN' || u.subscriptionStatus === 'RECIPE_PLAN')
   ).length;
@@ -194,7 +200,10 @@ export default async function AdminUsersPage({
           { label: `1 თვე (${INTERVAL_PRICE[1]}₾)`, value: byInterval1, color: 'text-[#465940]', bg: 'bg-[#FDFBF0]/10' },
           { label: `3 თვე (${INTERVAL_PRICE[3]}₾)`, value: byInterval3, color: 'text-[#465940]', bg: 'bg-[#FDFBF0]/10' },
           { label: `6 თვე (${INTERVAL_PRICE[6]}₾)`, value: byInterval6, color: 'text-[#465940]', bg: 'bg-[#FDFBF0]/10' },
-          { label: 'ტრიალზე (ჯერ არ გადაუხდია)', value: trialingCount, color: 'text-amber-600', bg: 'bg-amber-50' },
+          {
+            label: 'ტრიალზე (ჯერ არ გადაუხდია)', value: trialingCount, color: 'text-amber-600', bg: 'bg-amber-50',
+            sub: `${trialInterval1}×1თვე · ${trialInterval3}×3თვე · ${trialInterval6}×6თვე`,
+          },
           { label: 'გაუქმებული (მალე)', value: canceledPendingCount, color: 'text-amber-600', bg: 'bg-amber-50' },
           { label: d.blocked, value: blocked, color: 'text-[#FDFBF0]', bg: 'bg-[#465940]' },
         ].map((s) => (
@@ -203,6 +212,7 @@ export default async function AdminUsersPage({
               <p className={`text-xs font-semibold ${s.color}`}>{s.label}</p>
             </div>
             <p className={`text-3xl font-black ${s.color}`}>{s.value}</p>
+            {'sub' in s && s.sub && <p className="text-[10px] text-[#465940]/50 mt-1">{s.sub}</p>}
           </div>
         ))}
       </div>

@@ -79,11 +79,16 @@ export default async function AdminAnalyticsPage() {
   // single lari yet, and might cancel before ever converting. Kept separate from MRR/the
   // interval counts above so a wave of new trial signups can't make revenue look higher
   // than it actually is.
-  const trialingCount = users.filter(
-    (u) => !u.isGifted && !u.subscriptionCanceledAt &&
-      (u.subscriptionStatus === 'FULL_PLAN' || u.subscriptionStatus === 'RECIPE_PLAN') &&
-      !paidUserIds.has(u.id)
-  ).length;
+  const isTrialing = (u: (typeof users)[number]) =>
+    !u.isGifted && !u.subscriptionCanceledAt &&
+    (u.subscriptionStatus === 'FULL_PLAN' || u.subscriptionStatus === 'RECIPE_PLAN') &&
+    !paidUserIds.has(u.id);
+  // Broken out by tier — a single lumped "X on trial" number can't tell you how much of
+  // that will convert into 17₾/month vs 59₾/month once each one actually pays.
+  const trialInterval1 = users.filter((u) => isTrialing(u) && u.subscriptionStatus === 'FULL_PLAN' && u.billingIntervalMonths === 1).length;
+  const trialInterval3 = users.filter((u) => isTrialing(u) && u.subscriptionStatus === 'FULL_PLAN' && u.billingIntervalMonths === 3).length;
+  const trialInterval6 = users.filter((u) => isTrialing(u) && u.subscriptionStatus === 'FULL_PLAN' && u.billingIntervalMonths === 6).length;
+  const trialingCount = users.filter(isTrialing).length;
   // "Canceled" counts anyone who's canceled, whether their access has already
   // expired (subscriptionStatus === 'CANCELED') or they're just riding out a
   // paid period they won't renew (still FULL_PLAN/RECIPE_PLAN but subscriptionCanceledAt is set).
@@ -203,7 +208,7 @@ export default async function AdminAnalyticsPage() {
     { label: `1 month (${INTERVAL_PRICE[1]}₾)`, value: full1, sub: 'active', color: 'text-[#465940]' },
     { label: `3 months (${INTERVAL_PRICE[3]}₾)`, value: full3, sub: 'active', color: 'text-[#465940]' },
     { label: `6 months (${INTERVAL_PRICE[6]}₾)`, value: full6, sub: 'active', color: 'text-[#465940]' },
-    { label: 'ტრიალზე', value: trialingCount, sub: 'ჯერ არ გადაუხდია — MRR-ში არ შედის', color: 'text-amber-600' },
+    { label: 'ტრიალზე', value: trialingCount, sub: `${trialInterval1}×1თვე · ${trialInterval3}×3თვე · ${trialInterval6}×6თვე`, color: 'text-amber-600' },
     { label: 'Canceled', value: canceled, sub: 'churned', color: 'text-amber-600' },
     { label: 'Blocked', value: blocked, sub: 'accounts', color: 'text-[#465940]' },
     { label: 'Conversion rate', value: `${conversionRate}%`, sub: 'free → paid', color: 'text-[#465940]' },
