@@ -93,8 +93,14 @@ interface EmailTemplate {
   key: string;
   subjectKa: string;
   bodyKa: string;
+  enabled: boolean;
   updatedAt: string;
 }
+
+// Mirrors lib/email.ts's DISABLEABLE_KEYS — only these periodic/broadcast templates get an
+// on/off switch. Critical transactional templates (welcome, password reset, subscription
+// confirmed, etc.) always show the static "ავტო" badge — they can't be turned off here.
+const DISABLEABLE_KEYS = ['subscription_expiring', 'weekly_menu', 'new_blog', 'birthday_wish'];
 
 const TEMPLATE_META: Record<string, { name: string; vars: string[] }> = {
   welcome:                { name: 'Welcome Email 💚',            vars: ['{{name}}'] },
@@ -155,6 +161,7 @@ export default function EmailCenterClient({
   const [editSubject, setEditSubject] = useState('');
   const [savingTemplate, setSavingTemplate] = useState(false);
   const [templateSaveResult, setTemplateSaveResult] = useState<{ type: 'success' | 'error'; msg: string } | null>(null);
+  const [togglingKey, setTogglingKey] = useState<string | null>(null);
   const templateEditorRef = useRef<HTMLDivElement>(null);
 
   // History state
@@ -434,6 +441,30 @@ export default function EmailCenterClient({
       setTemplateSaveResult({ type: 'error', msg: 'შეცდომა შენახვისას.' });
     } finally {
       setSavingTemplate(false);
+    }
+  };
+
+  // Turns a periodic template's sending on/off — takes effect immediately, no deploy needed
+  // (lib/email.ts's send functions check this same `enabled` flag before every send).
+  // Optimistic: flips the local card right away, rolls back if the request fails.
+  const toggleTemplateEnabled = async (key: string, next: boolean) => {
+    setTogglingKey(key);
+    setTemplates((prev) => prev.map((t) => (t.key === key ? { ...t, enabled: next } : t)));
+    try {
+      const res = await fetch('/api/admin/emails/templates', {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ key, enabled: next }),
+      });
+      if (!res.ok) {
+        setTemplates((prev) => prev.map((t) => (t.key === key ? { ...t, enabled: !next } : t)));
+        alert('❌ ვერ შეიცვალა. სცადეთ თავიდან.');
+      }
+    } catch {
+      setTemplates((prev) => prev.map((t) => (t.key === key ? { ...t, enabled: !next } : t)));
+      alert('❌ სერვერის შეცდომა.');
+    } finally {
+      setTogglingKey(null);
     }
   };
 
@@ -875,15 +906,47 @@ export default function EmailCenterClient({
             <div className="grid sm:grid-cols-2 gap-4">
               {templates.map((t) => {
                 const meta = TEMPLATE_META[t.key];
+                const canDisable = DISABLEABLE_KEYS.includes(t.key);
+                const isOff = canDisable && t.enabled === false;
                 return (
-                  <div key={t.key} className="bg-white rounded-2xl shadow-sm p-5 flex flex-col gap-3">
+                  <div
+                    key={t.key}
+                    className={`rounded-2xl shadow-sm p-5 flex flex-col gap-3 transition ${isOff ? 'bg-gray-50 opacity-70' : 'bg-white'}`}
+                  >
                     <div className="flex items-start justify-between gap-2">
                       <div className="min-w-0">
                         <p className="font-bold text-[#465940]">{meta?.name ?? t.key}</p>
                         <p className="text-xs text-gray-400 mt-0.5 truncate">{t.subjectKa}</p>
                       </div>
-                      <span className="flex-shrink-0 text-xs bg-green-50 text-green-700 px-2 py-0.5 rounded-full font-bold">ავტო</span>
+                      {canDisable ? (
+                        <button
+                          type="button"
+                          onClick={() => toggleTemplateEnabled(t.key, !t.enabled)}
+                          disabled={togglingKey === t.key}
+                          title={t.enabled ? 'გამორთვა — გაგზავნა შეწყდება მყისიერად' : 'ჩართვა'}
+                          className="flex-shrink-0 flex items-center gap-1.5 disabled:opacity-50"
+                        >
+                          <span className={`text-xs font-bold ${t.enabled ? 'text-green-700' : 'text-gray-400'}`}>
+                            {t.enabled ? 'ჩართული' : 'გამორთული'}
+                          </span>
+                          <span
+                            className={`relative inline-flex h-5 w-9 items-center rounded-full transition ${t.enabled ? 'bg-green-500' : 'bg-gray-300'}`}
+                          >
+                            <span
+                              className={`inline-block h-3.5 w-3.5 transform rounded-full bg-white transition ${t.enabled ? 'translate-x-4.5' : 'translate-x-1'}`}
+                              style={{ transform: t.enabled ? 'translateX(18px)' : 'translateX(2px)' }}
+                            />
+                          </span>
+                        </button>
+                      ) : (
+                        <span className="flex-shrink-0 text-xs bg-green-50 text-green-700 px-2 py-0.5 rounded-full font-bold">ავტო</span>
+                      )}
                     </div>
+                    {isOff && (
+                      <p className="text-xs text-amber-600 bg-amber-50 rounded-lg px-2.5 py-1.5 -mt-1">
+                        ⚠️ გამორთულია — ეს მეილი არავის ეგზავნება, სანამ არ ჩართავთ.
+                      </p>
+                    )}
                     <div className="flex flex-wrap gap-1">
                       {meta?.vars.map((v) => (
                         <span key={v} className="text-xs bg-[#465940]/10 text-[#465940] px-2 py-0.5 rounded-full font-mono">{v}</span>

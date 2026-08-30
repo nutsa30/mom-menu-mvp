@@ -795,6 +795,13 @@ model EmailTemplate {
   subjectEn String
   bodyKa    String
   bodyEn    String
+  // Admin on/off switch for periodic/broadcast templates (weekly menu, subscription
+  // expiring, birthday wish, new blog) — lib/email.ts's send functions for those keys
+  // check this and silently skip the send when false, so turning a reminder off in
+  // Email Center → Templates takes effect immediately, no code change/deploy needed.
+  // Critical transactional templates (welcome, password reset, email verify, etc.)
+  // ignore this field entirely — those can't be switched off from the admin UI.
+  enabled   Boolean  @default(true)
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 }

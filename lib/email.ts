@@ -147,12 +147,19 @@ export const TEMPLATE_DEFAULTS: Record<string, { subject: string; body: string }
 
 // ─── DB template fetcher with hardcoded fallback ──────────────────────────────
 
-async function getTemplate(key: string): Promise<{ subject: string; body: string }> {
+async function getTemplate(key: string): Promise<{ subject: string; body: string; enabled: boolean }> {
+  const fallback = TEMPLATE_DEFAULTS[key] ?? { subject: key, body: "" };
   try {
     const t = await prisma.emailTemplate.findUnique({ where: { key } });
-    if (t?.subjectKa && t?.bodyKa) return { subject: t.subjectKa, body: t.bodyKa };
+    if (t) {
+      return {
+        subject: t.subjectKa || fallback.subject,
+        body: t.bodyKa || fallback.body,
+        enabled: t.enabled,
+      };
+    }
   } catch {}
-  return TEMPLATE_DEFAULTS[key] ?? { subject: key, body: "" };
+  return { ...fallback, enabled: true };
 }
 
 // ─── Email Verification ───────────────────────────────────────────────────────
@@ -221,7 +228,8 @@ export async function sendPasswordChangedEmail(to: string, name: string) {
 // ─── Subscription Expiring ────────────────────────────────────────────────────
 
 export async function sendSubscriptionExpiringEmail(to: string, name: string) {
-  const { subject, body } = await getTemplate("subscription_expiring");
+  const { subject, body, enabled } = await getTemplate("subscription_expiring");
+  if (!enabled) return;
   const html = layout(body.replace(/\{\{name\}\}/g, name));
   await resend.emails.send({ from: FROM, to, subject, html });
 }
@@ -229,7 +237,8 @@ export async function sendSubscriptionExpiringEmail(to: string, name: string) {
 // ─── Weekly Menu ──────────────────────────────────────────────────────────────
 
 export async function sendWeeklyMenuEmail(to: string, name: string) {
-  const { subject, body } = await getTemplate("weekly_menu");
+  const { subject, body, enabled } = await getTemplate("weekly_menu");
+  if (!enabled) return;
   const html = layout(body.replace(/\{\{name\}\}/g, name));
   await resend.emails.send({ from: FROM, to, subject, html });
 }
@@ -237,7 +246,8 @@ export async function sendWeeklyMenuEmail(to: string, name: string) {
 // ─── Birthday Wish ──────────────────────────────────────────────────────────────
 
 export async function sendBirthdayEmail(to: string) {
-  const { subject, body } = await getTemplate("birthday_wish");
+  const { subject, body, enabled } = await getTemplate("birthday_wish");
+  if (!enabled) return;
   const html = layout(body);
   await resend.emails.send({ from: FROM, to, subject, html });
 }
@@ -261,7 +271,8 @@ export async function sendNewBlogEmail(
   blogTitle: string,
   blogUrl: string,
 ) {
-  const { subject, body } = await getTemplate("new_blog");
+  const { subject, body, enabled } = await getTemplate("new_blog");
+  if (!enabled) return;
   const html = layout(
     body
       .replace(/\{\{name\}\}/g, name)

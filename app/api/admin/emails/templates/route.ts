@@ -14,6 +14,13 @@ const TEMPLATE_KEYS = [
   "birthday_wish",
 ];
 
+// Only periodic/broadcast reminders can be switched off from the admin UI — these are the
+// only keys lib/email.ts's send functions actually check `enabled` for. Account-critical
+// transactional emails (welcome, password reset/changed, subscription confirmed) are left
+// out on purpose: silently turning those off would break signup/password-recovery/payment
+// confirmation instead of just skipping a nice-to-have reminder.
+const DISABLEABLE_KEYS = ["subscription_expiring", "weekly_menu", "new_blog", "birthday_wish"];
+
 async function adminGuard() {
   const session = await getSession();
   if (!session || session.role !== "ADMIN") return null;
@@ -62,24 +69,40 @@ export async function GET() {
   return NextResponse.json(templates);
 }
 
+// Content edits (subjectKa+bodyKa together) and the on/off toggle (enabled alone) both go
+// through this one PUT — pass whichever of the two you're changing.
 export async function PUT(req: Request) {
   const session = await adminGuard();
   if (!session) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
-  const { key, subjectKa, bodyKa } = await req.json();
+  const { key, subjectKa, bodyKa, enabled } = await req.json();
 
-  if (!key || !subjectKa?.trim() || !bodyKa?.trim()) {
-    return NextResponse.json({ error: "key, subjectKa, bodyKa are required" }, { status: 400 });
-  }
-
-  if (!TEMPLATE_KEYS.includes(key)) {
+  if (!key || !TEMPLATE_KEYS.includes(key)) {
     return NextResponse.json({ error: "Invalid template key" }, { status: 400 });
   }
 
-  const template = await prisma.emailTemplate.update({
-    where: { key },
-    data: { subjectKa, bodyKa },
-  });
+  const data: { subjectKa?: string; bodyKa?: string; enabled?: boolean } = {};
+
+  if (subjectKa !== undefined || bodyKa !== undefined) {
+    if (!subjectKa?.trim() || !bodyKa?.trim()) {
+      return NextResponse.json({ error: "subjectKa and bodyKa are required together" }, { status: 400 });
+    }
+    data.subjectKa = subjectKa;
+    data.bodyKa = bodyKa;
+  }
+
+  if (typeof enabled === "boolean") {
+    if (!DISABLEABLE_KEYS.includes(key)) {
+      return NextResponse.json({ error: "This template can't be turned off" }, { status: 400 });
+    }
+    data.enabled = enabled;
+  }
+
+  if (Object.keys(data).length === 0) {
+    return NextResponse.json({ error: "Nothing to update" }, { status: 400 });
+  }
+
+  const template = await prisma.emailTemplate.update({ where: { key }, data });
 
   return NextResponse.json(template);
 }
