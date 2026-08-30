@@ -9,28 +9,28 @@ const REC: Record<string, Record<string, number>> = {
     carbsGrams: 95, fatGrams: 30, fiberGrams: 0,
     calciumMg: 270, ironMg: 11, zincMg: 3, potassiumMg: 700, magnesiumMg: 75, phosphorusMg: 275, sodiumMg: 370,
     vitaminAmcg: 500, vitaminCmg: 50, vitaminDmcg: 10, vitaminEmg: 5, vitaminKmcg: 2.5,
-    vitaminB6mg: 0.3, vitaminB12mcg: 0.5, folateMcg: 80,
+    vitaminB1mg: 0.3, vitaminB2mg: 0.4, vitaminB6mg: 0.3, vitaminB12mcg: 0.5, folateMcg: 80,
   },
   FROM_9: {
     calories: 850, proteinGrams: 12,
     carbsGrams: 110, fatGrams: 32, fiberGrams: 7,
     calciumMg: 270, ironMg: 11, zincMg: 3, potassiumMg: 700, magnesiumMg: 75, phosphorusMg: 275, sodiumMg: 370,
     vitaminAmcg: 500, vitaminCmg: 50, vitaminDmcg: 10, vitaminEmg: 5, vitaminKmcg: 2.5,
-    vitaminB6mg: 0.3, vitaminB12mcg: 0.5, folateMcg: 80,
+    vitaminB1mg: 0.3, vitaminB2mg: 0.4, vitaminB6mg: 0.3, vitaminB12mcg: 0.5, folateMcg: 80,
   },
   FROM_12: {
     calories: 1000, proteinGrams: 13,
     carbsGrams: 130, fatGrams: 35, fiberGrams: 14,
     calciumMg: 700, ironMg: 7, zincMg: 3, potassiumMg: 3000, magnesiumMg: 80, phosphorusMg: 460, sodiumMg: 800,
     vitaminAmcg: 300, vitaminCmg: 15, vitaminDmcg: 15, vitaminEmg: 6, vitaminKmcg: 30,
-    vitaminB6mg: 0.5, vitaminB12mcg: 0.9, folateMcg: 150,
+    vitaminB1mg: 0.5, vitaminB2mg: 0.5, vitaminB6mg: 0.5, vitaminB12mcg: 0.9, folateMcg: 150,
   },
   FROM_24: {
     calories: 1200, proteinGrams: 19,
     carbsGrams: 130, fatGrams: 39, fiberGrams: 22,
     calciumMg: 1000, ironMg: 10, zincMg: 5, potassiumMg: 3800, magnesiumMg: 130, phosphorusMg: 500, sodiumMg: 1200,
     vitaminAmcg: 400, vitaminCmg: 25, vitaminDmcg: 15, vitaminEmg: 7, vitaminKmcg: 55,
-    vitaminB6mg: 0.6, vitaminB12mcg: 1.2, folateMcg: 200,
+    vitaminB1mg: 0.6, vitaminB2mg: 0.6, vitaminB6mg: 0.6, vitaminB12mcg: 1.2, folateMcg: 200,
   },
 };
 
@@ -39,7 +39,7 @@ const KEYS = [
   'carbsGrams', 'fatGrams', 'fiberGrams',
   'calciumMg', 'ironMg', 'zincMg', 'potassiumMg', 'magnesiumMg', 'phosphorusMg', 'sodiumMg',
   'vitaminAmcg', 'vitaminCmg', 'vitaminDmcg', 'vitaminEmg', 'vitaminKmcg',
-  'vitaminB6mg', 'vitaminB12mcg', 'folateMcg',
+  'vitaminB1mg', 'vitaminB2mg', 'vitaminB6mg', 'vitaminB12mcg', 'folateMcg',
 ] as const;
 
 export async function GET(req: NextRequest) {

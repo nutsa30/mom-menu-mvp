@@ -27,6 +27,8 @@ const NUTRIENTS = [
   { key: 'vitaminDmcg', label: 'D ვიტამინი',        unit: 'mcg' },
   { key: 'vitaminEmg',  label: 'E ვიტამინი',        unit: 'mg'  },
   { key: 'vitaminKmcg', label: 'K ვიტამინი',        unit: 'mcg' },
+  { key: 'vitaminB1mg', label: 'B1 ვიტამინი',       unit: 'mg'  },
+  { key: 'vitaminB2mg', label: 'B2 ვიტამინი',       unit: 'mg'  },
   { key: 'vitaminB6mg', label: 'B6 ვიტამინი',       unit: 'mg'  },
   { key: 'vitaminB12mcg',label: 'B12 ვიტამინი',     unit: 'mcg' },
   { key: 'folateMcg',   label: 'ფოლატი (B9)',        unit: 'mcg' },

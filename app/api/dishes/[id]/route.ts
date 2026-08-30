@@ -49,6 +49,8 @@ export async function PUT(
         vitaminDmcg: body.vitaminDmcg ? Number(body.vitaminDmcg) : null,
         vitaminEmg: body.vitaminEmg ? Number(body.vitaminEmg) : null,
         vitaminKmcg: body.vitaminKmcg ? Number(body.vitaminKmcg) : null,
+        vitaminB1mg: body.vitaminB1mg ? Number(body.vitaminB1mg) : null,
+        vitaminB2mg: body.vitaminB2mg ? Number(body.vitaminB2mg) : null,
         vitaminB6mg: body.vitaminB6mg ? Number(body.vitaminB6mg) : null,
         vitaminB12mcg: body.vitaminB12mcg ? Number(body.vitaminB12mcg) : null,
         folateMcg: body.folateMcg ? Number(body.folateMcg) : null,

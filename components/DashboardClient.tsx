@@ -49,6 +49,8 @@ const NUTRIENT_LABELS: Record<string, string> = {
   vitaminDmcg: 'D ვიტამინი',
   vitaminEmg: 'E ვიტამინი',
   vitaminKmcg: 'K ვიტამინი',
+  vitaminB1mg: 'B1 ვიტამინი',
+  vitaminB2mg: 'B2 ვიტამინი',
   vitaminB6mg: 'B6 ვიტამინი',
   vitaminB12mcg: 'B12 ვიტამინი',
   folateMcg: 'ფოლატი',
@@ -58,7 +60,7 @@ const NUTRIENT_UNIT: Record<string, string> = {
   proteinGrams: 'g', carbsGrams: 'g', fatGrams: 'g', fiberGrams: 'g',
   zincMg: 'mg', potassiumMg: 'mg', magnesiumMg: 'mg', phosphorusMg: 'mg',
   sodiumMg: 'mg', calciumMg: 'mg', ironMg: 'mg', vitaminCmg: 'mg',
-  vitaminEmg: 'mg', vitaminB6mg: 'mg',
+  vitaminEmg: 'mg', vitaminB1mg: 'mg', vitaminB2mg: 'mg', vitaminB6mg: 'mg',
   vitaminAmcg: 'mcg', vitaminDmcg: 'mcg', vitaminKmcg: 'mcg',
   vitaminB12mcg: 'mcg', folateMcg: 'mcg',
 };
