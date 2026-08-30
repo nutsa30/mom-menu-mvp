@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect, useCallback } from 'react';
+import { isPureeStyle } from '@/lib/meal';
 
 const MEAL_LABEL: Record<string, string> = {
   BREAKFAST: 'საუზმე', LUNCH: 'სადილი', SNACK: 'სნექი', DINNER: 'ვახშამი',
@@ -19,18 +20,6 @@ type Dish = {
   id: string; titleKa: string; titleEn: string; imageUrl: string | null;
   ingredientsKa: string[]; mealType: string;
 };
-
-// No structured texture field on Dish exists yet, so BLW-mode filtering goes by title
-// keywords: soup/stew-style dishes are always shown (a soup isn't something you "bite"
-// either way, so it's exempted), everything else that reads as puree/porridge/cream is
-// hidden — BLW mode is specifically for once a baby is ready for handheld, bite-able
-// food, not spoon-fed mush.
-const SOUP_KEYWORDS = ['სუპი', 'ოსპი', 'ბოსტნეულით'];
-const PUREE_KEYWORDS = ['პიურე', 'ფაფა', 'კრემი'];
-function isPureeStyle(titleKa: string): boolean {
-  if (SOUP_KEYWORDS.some(k => titleKa.includes(k))) return false;
-  return PUREE_KEYWORDS.some(k => titleKa.includes(k));
-}
 
 function DishCard({ dish }: { dish: Dish }) {
   return (

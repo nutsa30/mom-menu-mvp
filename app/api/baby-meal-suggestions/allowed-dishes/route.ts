@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getSession } from '@/lib/auth';
 import { prisma } from '@/lib/prisma';
-import { getSuitableAgeGroups } from '@/lib/meal';
+import { getSuitableAgeGroups, isPureeStyle } from '@/lib/meal';
 
 /**
  * GET /api/baby-meal-suggestions/allowed-dishes?childId=X
@@ -32,10 +32,20 @@ export async function GET(req: NextRequest) {
     prisma.babyIngredient.findMany(),
     prisma.dish.findMany({
       where: { ageGroups: { hasSome: getSuitableAgeGroups(child.ageGroup) } },
-      select: { id: true, titleKa: true, titleEn: true, imageUrl: true, ingredientsKa: true, mealType: true },
+      select: { id: true, titleKa: true, titleEn: true, imageUrl: true, ingredientsKa: true, mealType: true, ageGroups: true },
       orderBy: { titleKa: 'asc' },
     }),
   ]);
+
+  // The query above is cumulative on purpose — a FROM_12 baby also gets FROM_6/FROM_9-tagged
+  // dishes, for variety, since a real dish (soup, lunch, etc.) tagged for a younger age is
+  // still fine to eat later. The one exception is a FROM_6-stage puree/porridge/cream: nothing
+  // stops an older baby eating it, but it reads as a brand-new-eater food once they've moved
+  // past FROM_6, so it's trimmed out of anyone past that stage. FROM_9+ purees/porridges stay
+  // cumulative like everything else — by then any baby eats them regardless of the tag.
+  const dishPool = child.ageGroup === 'FROM_6'
+    ? dishes
+    : dishes.filter(d => !(isPureeStyle(d.titleKa) && d.ageGroups.includes('FROM_6')));
 
   const safeIds = new Set(statuses.filter(s => s.tried && !s.allergic).map(s => s.ingredientId));
   const allergicIds = new Set(statuses.filter(s => s.allergic).map(s => s.ingredientId));
@@ -56,7 +66,7 @@ export async function GET(req: NextRequest) {
     return matched;
   };
 
-  const allowed = dishes
+  const allowed = dishPool
     .map(d => ({ dish: d, matched: matchIngredientLines(d.ingredientsKa) }))
     .filter(({ matched }) => {
       if (matched.size === 0) return false; // no trackable ingredient — not a matchable recipe here

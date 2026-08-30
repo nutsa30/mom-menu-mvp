@@ -43,6 +43,20 @@ export function getMealTypesForAge(birthDate: Date | null | undefined): MealType
   return ['BREAKFAST', 'SNACK', 'LUNCH', 'DINNER'];
 }
 
+// A dish reads as "baby-food style" (puree/porridge/cream) rather than something with real
+// texture. Used two ways: (1) BLW mode on the recipes tab hides these, since BLW is
+// specifically about bite-able handheld food; (2) the cumulative age filter below trims a
+// FROM_6-stage puree/porridge out of an older baby's recipe list — nothing stops an older
+// baby eating it, it just reads as babyish next to real dishes once they've moved past that
+// stage. Soups/stews are exempted: they're spoon-fed at any age, so they don't carry the same
+// "made for a brand-new eater" signal a puree/porridge/cream does.
+const SOUP_KEYWORDS = ['სუპი', 'ოსპი', 'ბოსტნეულით'];
+const PUREE_KEYWORDS = ['პიურე', 'ფაფა', 'კრემი'];
+export function isPureeStyle(titleKa: string): boolean {
+  if (SOUP_KEYWORDS.some(k => titleKa.includes(k))) return false;
+  return PUREE_KEYWORDS.some(k => titleKa.includes(k));
+}
+
 export function mealLabel(type: MealType, locale: 'ka' | 'en') {
   const map = {
     BREAKFAST: { ka: 'საუზმე', en: 'Breakfast' },
