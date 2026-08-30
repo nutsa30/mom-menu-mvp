@@ -335,7 +335,7 @@ export default function NewMealPage() {
                       <input type="number" min="0" step="0.1" placeholder="0"
                         value={nutrients[n.key]}
                         onChange={(e) => setNutrients((p) => ({ ...p, [n.key]: e.target.value }))}
-                        className="w-24 px-3 py-1.5 rounded-lg border border-[#465940]/20 focus:outline-none focus:border-[#465940] text-sm text-right" />
+                        className="w-24 px-3 py-1.5 rounded-lg border border-[#465940]/20 focus:outline-none focus:border-[#465940] text-sm text-right text-[#465940]" />
                       <span className="text-xs text-[#465940]/60 w-8">{n.unit}</span>
                     </div>
                   ) : (
