@@ -94,10 +94,7 @@ export default function SubscriptionClient({ planAmounts }: { planAmounts: Recor
     <main className="min-h-screen bg-[#6F7A5C] px-6 py-16">
       <div className="mx-auto max-w-5xl text-center">
         <h1 className="text-4xl font-black text-[#F5F1E4] mb-3">პაკეტის არჩევა</h1>
-        <p className="text-[#F5F1E4]/60 mb-3">გაუქმება ნებისმიერ დროს შეგიძლია</p>
-        <p className="text-[#F5F1E4]/50 text-sm max-w-xl mx-auto mb-12">
-          აირჩიეთ ნებისმიერი პაკეტი — სატესტო პერიოდი სრულიად უფასოა (7 დღე ჩვეულებრივ, 3 დღე რეფერალის ან პრომოკოდის გამოყენებისას), ბარათი მხოლოდ დროებით მოწმდება, თანხა არ ჩამოგეჭრებათ. გაუქმება შესაძლებელია ნებისმიერ დროს, სრულიად უფასოდ.
-        </p>
+        <p className="text-[#F5F1E4]/60 mb-12">გაუქმება ნებისმიერ დროს შეგიძლია</p>
 
         <div className="grid gap-6 md:grid-cols-3">
           {([1, 3, 6] as BillingInterval[]).map((interval) => {
