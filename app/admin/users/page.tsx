@@ -78,6 +78,18 @@ export default async function AdminUsersPage({
   ]);
   const paidUserIds = new Set(successfulPayers.map((p) => p.userId));
 
+  // Total real revenue a specific promo code has brought in — a dedicated query, not
+  // derived from the `payments` list above, since that one is capped at the 100 most
+  // recent and would silently undercount an older/heavily-used code. Only queried when a
+  // promo filter is actually active, so this doesn't run on every normal page load.
+  const promoRevenue = activePromo
+    ? await prisma.payment.aggregate({
+        where: { status: 'SUCCESS', user: { promoCodeId: activePromo } },
+        _sum: { grossAmount: true },
+        _count: true,
+      })
+    : null;
+
   const total = users.length;
   const recipePlan = users.filter((u) => u.subscriptionStatus === 'RECIPE_PLAN').length;
   const fullPlan = users.filter((u) => u.subscriptionStatus === 'FULL_PLAN').length;
@@ -344,6 +356,18 @@ export default async function AdminUsersPage({
         activePromo={activePromo}
         locale={locale}
       />
+
+      {activePromo && promoRevenue && (
+        <div className="mb-6 -mt-2 bg-[#465940] rounded-2xl p-5 shadow-sm flex flex-wrap items-center gap-x-8 gap-y-2">
+          <div>
+            <p className="text-xs font-semibold text-[#FDFBF0]/70 mb-1">
+              "{promoCodes.find((p) => p.id === activePromo)?.code ?? ''}" კოდით — შემოსავალი
+            </p>
+            <p className="text-2xl font-black text-[#FDFBF0]">{(promoRevenue._sum.grossAmount ?? 0).toFixed(2)}₾</p>
+          </div>
+          <p className="text-xs text-[#FDFBF0]/60">{promoRevenue._count} წარმატებული გადახდა (ტრიალის დაბრუნებადი თანხის გარეშე)</p>
+        </div>
+      )}
 
       {/* Table — planLabel/promoPrice are pre-computed here (server-side, env-configured
           prices) since functions like subLabelFor/priceFor can't be passed as props into
