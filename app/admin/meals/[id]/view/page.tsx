@@ -42,44 +42,44 @@ export default async function ViewMealPage({
 
         <div className="mb-8 flex items-center justify-between">
           <div>
-            <p className="mb-2 text-sm font-semibold text-primary">
+            <p className="mb-2 text-sm font-semibold text-[#465940]">
               {dish.ageGroups.join(", ")} · {dish.mealType}
             </p>
-            <h1 className="text-3xl font-bold">{dish.titleEn}</h1>
-            <h2 className="mt-2 text-xl text-on-surface-variant">
+            <h1 className="text-3xl font-bold text-[#465940]">{dish.titleEn}</h1>
+            <h2 className="mt-2 text-xl text-[#465940]/70">
               {dish.titleKa}
             </h2>
           </div>
 
           <Link
             href="/admin"
-            className="rounded-full border border-outline-variant px-5 py-2 font-semibold"
+            className="rounded-full border border-[#465940]/20 px-5 py-2 font-semibold text-[#465940]"
           >
             Back
           </Link>
         </div>
 
         <div className="grid gap-6 md:grid-cols-2">
-          <section className="rounded-3xl bg-background p-6">
-            <h3 className="mb-3 font-bold">English description</h3>
-            <p className="leading-7 text-on-surface-variant">
+          <section className="rounded-3xl bg-white p-6">
+            <h3 className="mb-3 font-bold text-[#465940]">English description</h3>
+            <p className="leading-7 text-[#465940]/70">
               {dish.descriptionEn}
             </p>
           </section>
 
-          <section className="rounded-3xl bg-background p-6">
-            <h3 className="mb-3 font-bold">ქართული აღწერა</h3>
-            <p className="leading-7 text-on-surface-variant">
+          <section className="rounded-3xl bg-white p-6">
+            <h3 className="mb-3 font-bold text-[#465940]">ქართული აღწერა</h3>
+            <p className="leading-7 text-[#465940]/70">
               {dish.descriptionKa}
             </p>
           </section>
         </div>
 
-        <section className="mt-8 rounded-3xl bg-background p-6">
-          <h3 className="mb-4 font-bold">Nutrients / ვიტამინები და მინერალები</h3>
+        <section className="mt-8 rounded-3xl bg-white p-6">
+          <h3 className="mb-4 font-bold text-[#465940]">Nutrients / ვიტამინები და მინერალები</h3>
 
           {visibleNutrients.length === 0 ? (
-            <p className="text-on-surface-variant">
+            <p className="text-[#465940]/70">
               ვიტამინები ჯერ დამატებული არ არის.
             </p>
           ) : (
@@ -92,8 +92,8 @@ export default async function ViewMealPage({
                     key={nutrient.key}
                     className="flex items-center justify-between rounded-2xl bg-[#FDFBF0] p-4"
                   >
-                    <span className="font-semibold">{nutrient.label}</span>
-                    <span className="text-on-surface-variant">
+                    <span className="font-semibold text-[#465940]">{nutrient.label}</span>
+                    <span className="text-[#465940]/70">
                       {Number(value)} {nutrient.unit}
                     </span>
                   </div>
@@ -104,18 +104,18 @@ export default async function ViewMealPage({
         </section>
 
         <div className="mt-8 grid gap-6 md:grid-cols-2">
-          <section className="rounded-3xl bg-background p-6">
-            <h3 className="mb-3 font-bold">Ingredients (EN)</h3>
-            <ul className="list-disc pl-5 space-y-1 text-on-surface-variant">
+          <section className="rounded-3xl bg-white p-6">
+            <h3 className="mb-3 font-bold text-[#465940]">Ingredients (EN)</h3>
+            <ul className="list-disc pl-5 space-y-1 text-[#465940]/70">
               {dish.ingredientsEn.map((item, i) => (
                 <li key={i}>{item}</li>
               ))}
             </ul>
           </section>
 
-          <section className="rounded-3xl bg-background p-6">
-            <h3 className="mb-3 font-bold">ინგრედიენტები (KA)</h3>
-            <ul className="list-disc pl-5 space-y-1 text-on-surface-variant">
+          <section className="rounded-3xl bg-white p-6">
+            <h3 className="mb-3 font-bold text-[#465940]">ინგრედიენტები (KA)</h3>
+            <ul className="list-disc pl-5 space-y-1 text-[#465940]/70">
               {dish.ingredientsKa.map((item, i) => (
                 <li key={i}>{item}</li>
               ))}
@@ -126,14 +126,14 @@ export default async function ViewMealPage({
         <div className="mt-8 flex gap-3">
           <Link
             href={`/admin/meals/${dish.id}`}
-            className="rounded-full bg-primary-container px-6 py-3 font-semibold text-[#FDFBF0]"
+            className="rounded-full bg-[#465940] px-6 py-3 font-semibold text-[#FDFBF0]"
           >
             Edit
           </Link>
 
           <Link
             href="/admin"
-            className="rounded-full border border-outline-variant px-6 py-3 font-semibold"
+            className="rounded-full border border-[#465940]/20 px-6 py-3 font-semibold text-[#465940]"
           >
             Back to admin
           </Link>
