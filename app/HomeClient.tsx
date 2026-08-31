@@ -190,7 +190,10 @@ export default function HomeClient({ s, dishes, dishCount, recentBlogs, planAmou
   const discountedPrice = (interval: BillingInterval, base: number) => {
     const status = promoStatus[interval];
     const pct = status?.valid ? status.discount : 0;
-    return pct > 0 ? Math.round(base * (1 - pct / 100)) : null;
+    // Cent-level rounding — matches applyDiscount() in lib/bog.ts exactly, so the price
+    // shown here is never off from what BOG's payment page actually charges (rounding to
+    // a whole number, as this used to, showed e.g. 14₾ on-site for a real 13.6₾ charge).
+    return pct > 0 ? Math.round(base * (1 - pct / 100) * 100) / 100 : null;
   };
 
   const mealEntries: { key: keyof Dishes; label: string; labelEn: string }[] = [
