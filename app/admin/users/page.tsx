@@ -93,6 +93,13 @@ export default async function AdminUsersPage({
   const byInterval1 = users.filter((u) => u.subscriptionStatus === 'FULL_PLAN' && u.billingIntervalMonths === 1 && !u.subscriptionCanceledAt && paidUserIds.has(u.id)).length;
   const byInterval3 = users.filter((u) => u.subscriptionStatus === 'FULL_PLAN' && u.billingIntervalMonths === 3 && !u.subscriptionCanceledAt && paidUserIds.has(u.id)).length;
   const byInterval6 = users.filter((u) => u.subscriptionStatus === 'FULL_PLAN' && u.billingIntervalMonths === 6 && !u.subscriptionCanceledAt && paidUserIds.has(u.id)).length;
+  // Of those same subscribers, how many are on a linked promo code (i.e. paying a
+  // discounted rate on this tier, not the sticker price the card header quotes) — shown
+  // as a sub-line on each interval card below so a "17₾" card doesn't silently include
+  // people who are actually paying less than that.
+  const byInterval1Promo = users.filter((u) => u.subscriptionStatus === 'FULL_PLAN' && u.billingIntervalMonths === 1 && !u.subscriptionCanceledAt && paidUserIds.has(u.id) && u.promoCode).length;
+  const byInterval3Promo = users.filter((u) => u.subscriptionStatus === 'FULL_PLAN' && u.billingIntervalMonths === 3 && !u.subscriptionCanceledAt && paidUserIds.has(u.id) && u.promoCode).length;
+  const byInterval6Promo = users.filter((u) => u.subscriptionStatus === 'FULL_PLAN' && u.billingIntervalMonths === 6 && !u.subscriptionCanceledAt && paidUserIds.has(u.id) && u.promoCode).length;
   // Signed up for a paid tier and currently mid-trial — not yet counted above, and not
   // counted toward MRR below, since they haven't paid a single lari yet and some will
   // cancel before their trial ever converts to a real charge.
@@ -205,9 +212,18 @@ export default async function AdminUsersPage({
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4 mb-6 lg:mb-8">
         {[
           { label: d.totalUsers, value: total, color: 'text-[#465940]', bg: 'bg-[#465940]/5' },
-          { label: `1 თვე (${INTERVAL_PRICE[1]}₾)`, value: byInterval1, color: 'text-[#465940]', bg: 'bg-[#FDFBF0]/10' },
-          { label: `3 თვე (${INTERVAL_PRICE[3]}₾)`, value: byInterval3, color: 'text-[#465940]', bg: 'bg-[#FDFBF0]/10' },
-          { label: `6 თვე (${INTERVAL_PRICE[6]}₾)`, value: byInterval6, color: 'text-[#465940]', bg: 'bg-[#FDFBF0]/10' },
+          {
+            label: `1 თვე (${INTERVAL_PRICE[1]}₾)`, value: byInterval1, color: 'text-[#465940]', bg: 'bg-[#FDFBF0]/10',
+            sub: byInterval1Promo > 0 ? `მათგან ${byInterval1Promo} პრომოკოდით` : undefined,
+          },
+          {
+            label: `3 თვე (${INTERVAL_PRICE[3]}₾)`, value: byInterval3, color: 'text-[#465940]', bg: 'bg-[#FDFBF0]/10',
+            sub: byInterval3Promo > 0 ? `მათგან ${byInterval3Promo} პრომოკოდით` : undefined,
+          },
+          {
+            label: `6 თვე (${INTERVAL_PRICE[6]}₾)`, value: byInterval6, color: 'text-[#465940]', bg: 'bg-[#FDFBF0]/10',
+            sub: byInterval6Promo > 0 ? `მათგან ${byInterval6Promo} პრომოკოდით` : undefined,
+          },
           {
             label: 'ტრიალზე (ჯერ არ გადაუხდია)', value: trialingCount, color: 'text-amber-600', bg: 'bg-amber-50',
             sub: `${trialInterval1}×1თვე · ${trialInterval3}×3თვე · ${trialInterval6}×6თვე`,
