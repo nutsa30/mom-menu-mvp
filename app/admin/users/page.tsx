@@ -2,7 +2,7 @@
 import { adminDict, getAdminLocale } from '@/lib/adminI18n';
 import UsersFilterBar from '@/components/UsersFilterBar';
 import UsersSearchTable from '@/components/UsersSearchTable';
-import { PLAN_AMOUNTS, PLAN_AMOUNTS_BY_INTERVAL, BillingInterval } from '@/lib/bog';
+import { PLAN_AMOUNTS, PLAN_AMOUNTS_BY_INTERVAL, BillingInterval, applyDiscount } from '@/lib/bog';
 
 // Real, currently-charged prices (env-configured, not hardcoded) — used for every
 // MRR/ARR/revenue calc below so this page never drifts from what customers actually pay.
@@ -13,18 +13,26 @@ const INTERVAL_PRICE: Record<BillingInterval, number> = {
   3: Number(PLAN_AMOUNTS_BY_INTERVAL[3] ?? 39),
   6: Number(PLAN_AMOUNTS_BY_INTERVAL[6] ?? 59),
 };
+type PriceableUser = {
+  subscriptionStatus: string;
+  billingIntervalMonths?: number | null;
+  promoCode?: { discountPercent: number } | null;
+};
 // Every current tier grants subscriptionStatus='FULL_PLAN' — the real price/cadence lives
 // in billingIntervalMonths, so this must be checked first or every current-tier user would
 // incorrectly price at the legacy flat FULL_PRICE regardless of which tier they're actually on.
-const priceFor = (user: { subscriptionStatus: string; billingIntervalMonths?: number | null }) => {
-  if (user.subscriptionStatus === 'FULL_PLAN' && user.billingIntervalMonths) {
-    return INTERVAL_PRICE[user.billingIntervalMonths as BillingInterval] ?? FULL_PRICE;
-  }
-  return user.subscriptionStatus === 'RECIPE_PLAN' ? RECIPE_PRICE : FULL_PRICE;
+// A promo-linked account is actually charged less, permanently, on every renewal (see
+// applyDiscount in lib/bog.ts) — without this, a discounted subscriber would inflate MRR by
+// whatever their promo knocked off.
+const priceFor = (user: PriceableUser) => {
+  const base = user.subscriptionStatus === 'FULL_PLAN' && user.billingIntervalMonths
+    ? INTERVAL_PRICE[user.billingIntervalMonths as BillingInterval] ?? FULL_PRICE
+    : (user.subscriptionStatus === 'RECIPE_PLAN' ? RECIPE_PRICE : FULL_PRICE);
+  return applyDiscount(base, user.promoCode?.discountPercent);
 };
 // Same price, normalized to a monthly figure — a 39₾/3-month plan contributes 13₾ to MRR,
 // not the full 39₾, since MRR is inherently a per-month measure.
-const monthlyPriceFor = (user: { subscriptionStatus: string; billingIntervalMonths?: number | null }) =>
+const monthlyPriceFor = (user: PriceableUser) =>
   priceFor(user) / (user.billingIntervalMonths || 1);
 
 export default async function AdminUsersPage({
@@ -44,7 +52,7 @@ export default async function AdminUsersPage({
         id: true, name: true, email: true, role: true,
         isBlocked: true, isGifted: true, subscriptionStatus: true, billingIntervalMonths: true,
         subscriptionStartedAt: true, subscriptionCanceledAt: true, subscriptionRenewsAt: true, createdAt: true,
-        promoCode: { select: { id: true, code: true, planType: true } },
+        promoCode: { select: { id: true, code: true, planType: true, discountPercent: true } },
         _count: { select: { children: true } },
       },
     }),

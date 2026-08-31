@@ -1,5 +1,5 @@
 import { prisma } from '@/lib/prisma';
-import { PLAN_AMOUNTS, PLAN_AMOUNTS_BY_INTERVAL, BillingInterval } from '@/lib/bog';
+import { PLAN_AMOUNTS, PLAN_AMOUNTS_BY_INTERVAL, BillingInterval, applyDiscount } from '@/lib/bog';
 
 const PRICES: Record<string, number> = {
   RECIPE_PLAN: Number(PLAN_AMOUNTS.RECIPE_PLAN ?? 15),
@@ -10,14 +10,24 @@ const INTERVAL_PRICE: Record<BillingInterval, number> = {
   3: Number(PLAN_AMOUNTS_BY_INTERVAL[3] ?? 39),
   6: Number(PLAN_AMOUNTS_BY_INTERVAL[6] ?? 59),
 };
+type PriceableUser = {
+  subscriptionStatus: string;
+  billingIntervalMonths?: number | null;
+  promoCode?: { discountPercent: number } | null;
+};
 // Every current tier grants subscriptionStatus='FULL_PLAN' — check billingIntervalMonths
-// first, or every current-tier user prices at the stale flat FULL_PLAN legacy amount.
-const priceFor = (u: { subscriptionStatus: string; billingIntervalMonths?: number | null }) =>
-  u.subscriptionStatus === 'FULL_PLAN' && u.billingIntervalMonths
+// first, or every current-tier user prices at the stale flat FULL_PLAN legacy amount. A
+// promo-linked account is actually charged less, permanently, on every renewal (see
+// applyDiscount in lib/bog.ts) — without this, a discounted subscriber would inflate
+// revenue totals by whatever their promo knocked off.
+const priceFor = (u: PriceableUser) => {
+  const base = u.subscriptionStatus === 'FULL_PLAN' && u.billingIntervalMonths
     ? INTERVAL_PRICE[u.billingIntervalMonths as BillingInterval] ?? PRICES.FULL_PLAN
     : PRICES[u.subscriptionStatus] ?? 0;
+  return applyDiscount(base, u.promoCode?.discountPercent);
+};
 // Normalized to a monthly figure for MRR purposes — a 39₾/3-month subscriber is 13₾ of MRR.
-const monthlyPriceFor = (u: { subscriptionStatus: string; billingIntervalMonths?: number | null }) =>
+const monthlyPriceFor = (u: PriceableUser) =>
   priceFor(u) / (u.billingIntervalMonths || 1);
 
 export default async function AdminAnalyticsPage() {
@@ -34,6 +44,7 @@ export default async function AdminAnalyticsPage() {
         isBlocked: true,
         isGifted: true,
         lastActiveAt: true,
+        promoCode: { select: { discountPercent: true } },
       },
     }),
     prisma.mealPlanItem.groupBy({

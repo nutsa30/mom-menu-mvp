@@ -45,7 +45,11 @@ export async function POST(req: Request) {
   const [updated] = await prisma.$transaction([
     prisma.user.update({
       where: { id: session.id },
-      data: { subscriptionCanceledAt: new Date() },
+      // Clears the promo-code link along with canceling: the discount it grants is
+      // permanent only for as long as this subscription runs (see bog-checkout/route.ts) —
+      // a later resubscribe without re-entering a code should pay full price, not silently
+      // inherit a discount tied to a subscription that already ended.
+      data: { subscriptionCanceledAt: new Date(), promoCodeId: null },
     }),
     prisma.subscriptionCancellation.create({
       data: {

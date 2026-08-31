@@ -9,13 +9,40 @@ export async function POST(req: Request) {
     const session = await getSession();
     if (!session) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
 
-    const { interval } = await req.json();
+    const { interval, promoCode } = await req.json();
     if (!isBillingInterval(interval)) {
       return NextResponse.json({ error: 'Invalid plan' }, { status: 400 });
     }
 
     const user = await prisma.user.findUnique({ where: { id: session.id }, include: { children: true } });
     if (!user) return NextResponse.json({ error: 'Not found' }, { status: 404 });
+
+    // A promo code shortens the trial to 3 days (see the "isBlocked" branch of the BOG
+    // webhook, which checks user.promoCodeId) AND permanently discounts every charge on
+    // THIS subscription — first payment and every renewal, since BOG's renewal API always
+    // inherits the parent order's original (already-discounted) amount. Only linked once,
+    // before the account's first-ever trial checkout, same constraint redeemReferralCode()
+    // enforces for referral codes (lib/referral.ts) — typing a code in on a later,
+    // already-trialed purchase can't retroactively shorten a trial that's already happened.
+    // Canceling clears promoCodeId (see app/subscription/cancel/route.ts) — a later
+    // resubscribe without re-entering a code pays full price, as a discount tied to a
+    // subscription that already ended shouldn't silently carry over to a new one.
+    let discountPercent: number | null = null;
+    if (promoCode && typeof promoCode === 'string' && !user.bogTrialUsed && !user.promoCodeId) {
+      const promo = await prisma.promoCode.findUnique({ where: { code: promoCode.trim().toUpperCase() } });
+      if (promo && promo.isActive && promo.planType === 'FULL_PLAN') {
+        const uses = await prisma.user.count({ where: { promoCodeId: promo.id } });
+        if (promo.maxUses === null || uses < promo.maxUses) {
+          await prisma.user.update({ where: { id: user.id }, data: { promoCodeId: promo.id } });
+          discountPercent = promo.discountPercent;
+        }
+      }
+    } else if (user.promoCodeId) {
+      // Already linked from an earlier checkout on this same still-open subscription
+      // (e.g. switching billing interval without canceling first) — keep the same discount.
+      const promo = await prisma.promoCode.findUnique({ where: { id: user.promoCodeId } });
+      discountPercent = promo?.discountPercent ?? null;
+    }
 
     // Site content only starts at 6 months — if every child on the account is younger
     // than that, there's nothing a package would unlock yet.
@@ -44,6 +71,7 @@ export async function POST(req: Request) {
       userId: user.id,
       email: user.email,
       name: user.name,
+      discountPercent,
     });
     return NextResponse.json({ url });
   } catch (err: any) {

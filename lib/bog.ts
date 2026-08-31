@@ -33,6 +33,19 @@ export const PLAN_AMOUNTS_BY_INTERVAL: Record<BillingInterval, string | undefine
   6: process.env.BOG_PLAN_6M_AMOUNT_GEL,
 };
 
+// A promo code's discount is applied by reducing the actual BOG order amount at creation
+// time — not a charge-then-refund like the referral program uses — so it's what the
+// customer sees and pays on BOG's own payment page, not something clawed back after.
+// Because BOG's renewal API always inherits the PARENT order's original amount (see the
+// big comment on createOrder below), setting the discounted amount once here makes every
+// future renewal charge at that same discounted rate automatically — no extra work needed
+// per renewal. That's also why this is used identically both when creating the order AND
+// whenever a Payment row's grossAmount needs to reflect what was really charged.
+export function applyDiscount(baseAmount: number, discountPercent?: number | null): number {
+  if (!discountPercent) return baseAmount;
+  return Math.round(baseAmount * (1 - discountPercent / 100) * 100) / 100;
+}
+
 const PLAN_DESCRIPTIONS_BY_INTERVAL: Record<BillingInterval, string> = {
   1: 'MomMenu — 1 თვის გეგმა',
   3: 'MomMenu — 3 თვის გეგმა',
@@ -153,13 +166,14 @@ async function createOrder(opts: {
   email: string;
   name: string;
   capture: 'manual' | 'automatic';
+  discountPercent?: number | null;
 }): Promise<{ url: string; orderId: string }> {
   const amount = PLAN_AMOUNTS_BY_INTERVAL[opts.interval];
   if (!amount) {
     throw new Error(`No BOG GEL amount configured for ${opts.interval}-month plan`);
   }
   const appUrl = process.env.NEXT_PUBLIC_APP_URL;
-  const planAmount = Number(amount);
+  const planAmount = applyDiscount(Number(amount), opts.discountPercent);
 
   const headers = await apiHeaders(crypto.randomUUID());
   const res = await fetch(`${API_BASE}/ecommerce/orders`, {
@@ -218,11 +232,11 @@ async function createOrder(opts: {
   return { url: redirectUrl, orderId };
 }
 
-export function createTrialOrder(opts: { interval: BillingInterval; userId: string; email: string; name: string }) {
+export function createTrialOrder(opts: { interval: BillingInterval; userId: string; email: string; name: string; discountPercent?: number | null }) {
   return createOrder({ ...opts, capture: 'manual' });
 }
 
-export function createDirectOrder(opts: { interval: BillingInterval; userId: string; email: string; name: string }) {
+export function createDirectOrder(opts: { interval: BillingInterval; userId: string; email: string; name: string; discountPercent?: number | null }) {
   return createOrder({ ...opts, capture: 'automatic' });
 }
 

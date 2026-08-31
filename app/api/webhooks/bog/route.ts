@@ -6,6 +6,7 @@ import {
   cancelPreauthorization,
   approvePreauthorization,
   computeCommission,
+  applyDiscount,
   PLAN_AMOUNTS_BY_INTERVAL,
   BillingInterval,
 } from '@/lib/bog';
@@ -70,7 +71,7 @@ export async function POST(req: Request) {
   if (decoded) {
     // ── First purchase: either a preauthorized trial ("blocked") or, for accounts
     // that already used their free trial, a direct real charge ("completed"). ──
-    const user = await prisma.user.findUnique({ where: { id: decoded.userId } });
+    const user = await prisma.user.findUnique({ where: { id: decoded.userId }, include: { promoCode: true } });
     if (!user) {
       console.error('BOG webhook: could not resolve user for first-purchase order', { orderId, externalOrderId });
       return NextResponse.json({ received: true });
@@ -84,7 +85,10 @@ export async function POST(req: Request) {
     const existing = await prisma.payment.findUnique({ where: { bogOrderId: orderId } });
     if (existing) return NextResponse.json({ received: true }); // already processed (retried callback)
 
-    const grossAmount = Number(PLAN_AMOUNTS_BY_INTERVAL[decoded.interval] ?? 0);
+    // Reflects what BOG actually charges — the order itself was created at this same
+    // discounted amount (see /api/subscription/bog-checkout), so this must match exactly
+    // or our own Payment/MRR records would overstate what a promo-code user really pays.
+    const grossAmount = applyDiscount(Number(PLAN_AMOUNTS_BY_INTERVAL[decoded.interval] ?? 0), user.promoCode?.discountPercent);
     const wasAlreadyOnThisTier = user.subscriptionStatus === 'FULL_PLAN' && user.billingIntervalMonths === decoded.interval;
     const now = new Date();
 
@@ -111,11 +115,13 @@ export async function POST(req: Request) {
         },
       });
 
-      // Referred users (redeemed a friend's code before this checkout started) get a
-      // shorter 3-day trial instead of the standard 7 — their first real charge lands on
-      // day 4, still with the 10% discount applied (see applyReferralAdjustments below,
-      // called once that real charge actually succeeds — never during this trial hold).
-      const trialDays = user.referredByUserId ? REFERRED_TRIAL_DAYS : STANDARD_TRIAL_DAYS;
+      // Anyone who came in on a code — a friend's referral OR an admin-issued promo code
+      // (promoCodeId, linked in /api/subscription/bog-checkout right before this order was
+      // created) — gets a shorter 3-day trial instead of the standard 7; only a fully
+      // organic signup (no code at all) gets the full 7. Referred users additionally keep
+      // their 10% discount, applied once the real charge succeeds (see
+      // applyReferralAdjustments below) — never during this trial hold.
+      const trialDays = (user.referredByUserId || user.promoCodeId) ? REFERRED_TRIAL_DAYS : STANDARD_TRIAL_DAYS;
       const trialEndsAt = new Date(now.getTime() + trialDays * DAY_MS);
       await prisma.user.update({
         where: { id: user.id },
@@ -187,7 +193,7 @@ export async function POST(req: Request) {
 
   if (renewal) {
     // ── Recurring renewal charge ────────────────────────────────────────
-    const user = await prisma.user.findUnique({ where: { id: renewal.userId } });
+    const user = await prisma.user.findUnique({ where: { id: renewal.userId }, include: { promoCode: true } });
     if (!user) {
       console.error('BOG webhook: could not resolve user for renewal order', { orderId, externalOrderId });
       return NextResponse.json({ received: true });
@@ -231,7 +237,10 @@ export async function POST(req: Request) {
     // use their stored billing interval. Falls back to 1 month only in the
     // unexpected case of a pre-migration account with no interval recorded.
     const interval = (user.billingIntervalMonths ?? 1) as BillingInterval;
-    const grossAmount = Number(PLAN_AMOUNTS_BY_INTERVAL[interval] ?? 0);
+    // Same discounted amount as the original order — BOG's renewal API always inherits the
+    // parent order's amount, so a promo-linked account is actually charged this reduced
+    // figure again here, not the full price.
+    const grossAmount = applyDiscount(Number(PLAN_AMOUNTS_BY_INTERVAL[interval] ?? 0), user.promoCode?.discountPercent);
     const { commissionAmount, netAmount } = computeCommission(grossAmount, cardType);
 
     const payment = await prisma.payment.create({

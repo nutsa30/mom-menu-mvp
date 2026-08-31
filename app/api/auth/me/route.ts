@@ -23,5 +23,9 @@ export async function GET() {
     subscriptionStartedAt: user.subscriptionStartedAt,
     subscriptionCanceledAt: user.subscriptionCanceledAt,
     createdAt: user.createdAt,
+    // Already redeemed a friend's referral code — the subscription page uses this to show
+    // the shorter 3-day trial up front, before any purchase, matching what the BOG webhook
+    // will actually grant at checkout.
+    hasReferral: !!user.referredByUserId,
   });
 }

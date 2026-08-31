@@ -11,6 +11,9 @@ export default function SubscriptionClient({ planAmounts }: { planAmounts: Recor
   const [loadingPlan, setLoadingPlan] = useState<BillingInterval | null>(null);
   const [currentPlan, setCurrentPlan] = useState<string | null>(null);
   const [currentInterval, setCurrentInterval] = useState<BillingInterval | null>(null);
+  // Already redeemed a friend's referral code — the trial is 3 days regardless of any
+  // promo code, matching what the BOG webhook actually grants (see /api/auth/me).
+  const [hasReferral, setHasReferral] = useState(false);
   const [promoInput, setPromoInput] = useState<Record<BillingInterval, string>>({ 1: '', 3: '', 6: '' });
   const [promoStatus, setPromoStatus] = useState<Record<BillingInterval, { discount: number; valid: boolean; msg: string } | undefined>>({ 1: undefined, 3: undefined, 6: undefined });
   const [promoLoading, setPromoLoading] = useState<BillingInterval | null>(null);
@@ -21,6 +24,7 @@ export default function SubscriptionClient({ planAmounts }: { planAmounts: Recor
       .then(d => {
         if (d?.subscriptionStatus) setCurrentPlan(d.subscriptionStatus);
         if (d?.billingIntervalMonths) setCurrentInterval(d.billingIntervalMonths);
+        if (d?.hasReferral) setHasReferral(true);
       })
       .catch(() => {});
   }, []);
@@ -38,7 +42,7 @@ export default function SubscriptionClient({ planAmounts }: { planAmounts: Recor
       });
       const data = await res.json();
       if (res.ok && data.valid) {
-        setPromoStatus(p => ({ ...p, [interval]: { discount: data.discountPercent, valid: true, msg: `✓ ${data.discountPercent}% ფასდაკლება გამოიყენება` } }));
+        setPromoStatus(p => ({ ...p, [interval]: { discount: data.discountPercent, valid: true, msg: `✓ ${data.discountPercent}% ფასდაკლება — სატესტო პერიოდი 3 დღეა (ჩვეულებრივი 7 დღის ნაცვლად)` } }));
       } else {
         const msg = data.error === 'wrong_plan' ? 'ეს კოდი სხვა გეგმისთვისაა'
           : data.error === 'limit_reached' ? 'კოდის ლიმიტი ამოიწურა'
@@ -55,9 +59,10 @@ export default function SubscriptionClient({ planAmounts }: { planAmounts: Recor
     const planLabel = interval === 1 ? '1 თვის გეგმა' : interval === 3 ? '3 თვის გეგმა' : '6 თვის გეგმა';
     ga.subscribe(planLabel, planAmounts[interval]);
     try {
+      const appliedPromo = promoStatus[interval]?.valid ? promoInput[interval]?.trim() : undefined;
       const res = await fetch('/api/subscription/bog-checkout', {
         method: 'POST', headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ interval }),
+        body: JSON.stringify({ interval, promoCode: appliedPromo }),
       });
       if (res.status === 401) { router.push('/login'); return; }
       const data = await res.json();
@@ -91,7 +96,7 @@ export default function SubscriptionClient({ planAmounts }: { planAmounts: Recor
         <h1 className="text-4xl font-black text-[#F5F1E4] mb-3">პაკეტის არჩევა</h1>
         <p className="text-[#F5F1E4]/60 mb-3">გაუქმება ნებისმიერ დროს შეგიძლია</p>
         <p className="text-[#F5F1E4]/50 text-sm max-w-xl mx-auto mb-12">
-          აირჩიეთ ნებისმიერი პაკეტი — 7 დღე სრულიად უფასოა, ბარათი მხოლოდ დროებით მოწმდება, თანხა არ ჩამოგეჭრებათ. პირველი გადახდა ხდება ზუსტად მე-8 დღეს, თუ ამ დრომდე არ გააუქმებთ. გაუქმება შესაძლებელია ნებისმიერ დროს, სრულიად უფასოდ.
+          აირჩიეთ ნებისმიერი პაკეტი — სატესტო პერიოდი სრულიად უფასოა (7 დღე ჩვეულებრივ, 3 დღე რეფერალის ან პრომოკოდის გამოყენებისას), ბარათი მხოლოდ დროებით მოწმდება, თანხა არ ჩამოგეჭრებათ. გაუქმება შესაძლებელია ნებისმიერ დროს, სრულიად უფასოდ.
         </p>
 
         <div className="grid gap-6 md:grid-cols-3">
@@ -105,6 +110,11 @@ export default function SubscriptionClient({ planAmounts }: { planAmounts: Recor
             const perMonth = (price / interval).toFixed(interval === 6 ? 1 : 0);
             const cadence = interval === 1 ? 'თვეში' : `ყოველ ${interval} თვეში`;
             const isActive = currentPlan === 'FULL_PLAN' && currentInterval === interval && !loadingPlan;
+            // A referral code (redeemed anywhere on the site already) or this card's own
+            // promo code shortens the trial to 3 days — mirrors exactly what the BOG
+            // webhook grants (referredByUserId / promoCodeId), so this never promises a
+            // trial length checkout won't actually give.
+            const trialDays = hasReferral || promoStatus[interval]?.valid ? 3 : 7;
 
             return (
               <div key={interval} className={`rounded-[28px] bg-[#F5F1E4] p-8 flex flex-col min-w-0 relative ${isRecommended ? 'md:scale-105 z-10 border-2' : ''}`}
@@ -122,7 +132,7 @@ export default function SubscriptionClient({ planAmounts }: { planAmounts: Recor
                 </p>
 
                 <div className="text-4xl font-black text-[#6F7A5C]">0₾</div>
-                <p className="text-[#6F7A5C]/60 text-sm font-medium mb-2">პირველი 7 დღე</p>
+                <p className="text-[#6F7A5C]/60 text-sm font-medium mb-2">პირველი {trialDays} დღე</p>
 
                 <div className="flex justify-center items-baseline gap-1.5 mb-1">
                   {disc ? (
@@ -140,7 +150,7 @@ export default function SubscriptionClient({ planAmounts }: { planAmounts: Recor
                 )}
 
                 <p className="text-[#6F7A5C]/40 text-[11px] italic mt-2 mb-5">
-                  თანხა ჩამოგეჭრებათ მე-8 დღეს. გაუქმება შესაძლებელია სატესტო პერიოდშივე, სრულიად უფასოდ.
+                  თანხა ჩამოგეჭრებათ მე-{trialDays + 1} დღეს. გაუქმება შესაძლებელია სატესტო პერიოდშივე, სრულიად უფასოდ.
                 </p>
 
                 <ul className="space-y-3 text-left flex-1 text-sm text-[#6F7A5C] mb-6">
