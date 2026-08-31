@@ -27,8 +27,14 @@ export async function POST(req: Request) {
     // Canceling clears promoCodeId (see app/subscription/cancel/route.ts) — a later
     // resubscribe without re-entering a code pays full price, as a discount tied to a
     // subscription that already ended shouldn't silently carry over to a new one.
+    // NOTE: intentionally NOT gated on !user.bogTrialUsed — that flag only controls
+    // whether THIS checkout gets a trial (createTrialOrder vs createDirectOrder below),
+    // which is structurally independent of the discount. A returning customer doing a
+    // real, immediate direct charge should still get their promo discount on it; only
+    // the trial-shortening (see the webhook's isBlocked branch) is naturally limited to
+    // first-ever trial orders, since createDirectOrder never produces a trial at all.
     let discountPercent: number | null = null;
-    if (promoCode && typeof promoCode === 'string' && !user.bogTrialUsed && !user.promoCodeId) {
+    if (promoCode && typeof promoCode === 'string' && !user.promoCodeId) {
       const promo = await prisma.promoCode.findUnique({ where: { code: promoCode.trim().toUpperCase() } });
       if (promo && promo.isActive && promo.planType === 'FULL_PLAN') {
         const uses = await prisma.user.count({ where: { promoCodeId: promo.id } });
