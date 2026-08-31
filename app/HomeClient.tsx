@@ -94,6 +94,9 @@ export default function HomeClient({ s, dishes, dishCount, recentBlogs, planAmou
   const [loadingPlan, setLoadingPlan] = useState<BillingInterval | null>(null);
   const [currentPlan, setCurrentPlan] = useState<string | null>(null);
   const [currentInterval, setCurrentInterval] = useState<BillingInterval | null>(null);
+  // Already redeemed a friend's referral code — the trial is 3 days regardless of any
+  // promo code, matching what the BOG webhook actually grants (see /api/auth/me).
+  const [hasReferral, setHasReferral] = useState(false);
   const [promoInput, setPromoInput] = useState<Record<BillingInterval, string>>({ 1: '', 3: '', 6: '' });
   const [promoStatus, setPromoStatus] = useState<Record<BillingInterval, { discount: number; valid: boolean; msg: string } | undefined>>({ 1: undefined, 3: undefined, 6: undefined });
   const [promoLoading, setPromoLoading] = useState<BillingInterval | null>(null);
@@ -122,6 +125,7 @@ export default function HomeClient({ s, dishes, dishCount, recentBlogs, planAmou
       .then(d => {
         if (d?.subscriptionStatus) setCurrentPlan(d.subscriptionStatus);
         if (d?.billingIntervalMonths) setCurrentInterval(d.billingIntervalMonths);
+        if (d?.hasReferral) setHasReferral(true);
       })
       .catch(() => {});
   }, []);
@@ -158,9 +162,10 @@ export default function HomeClient({ s, dishes, dishCount, recentBlogs, planAmou
     const planLabel = interval === 1 ? '1 თვის გეგმა' : interval === 3 ? '3 თვის გეგმა' : '6 თვის გეგმა';
     ga.subscribe(planLabel, planAmounts[interval]);
     try {
+      const appliedPromo = promoStatus[interval]?.valid ? promoInput[interval]?.trim() : undefined;
       const res = await fetch('/api/subscription/bog-checkout', {
         method: 'POST', headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ interval }),
+        body: JSON.stringify({ interval, promoCode: appliedPromo }),
       });
       if (res.status === 401) { router.push(`/login?lang=${locale}`); return; }
       const data = await res.json();
@@ -427,12 +432,7 @@ export default function HomeClient({ s, dishes, dishCount, recentBlogs, planAmou
               {ka ? 'აქცია: 7 დღე სრულიად უფასოდ' : 'Offer: 7 days completely free'}
             </span>
             <h2 className="text-2xl sm:text-3xl font-bold mb-3 text-[#F5F1E4]" style={{ fontFamily: SERIF_KA }}>{t('pricingTitleKa', 'pricingTitleEn')}</h2>
-            <p className="text-[#F5F1E4]/70 text-sm max-w-xl mx-auto mb-3">{t('pricingSubtitleKa', 'pricingSubtitleEn')}</p>
-            <p className="text-[#F5F1E4]/50 text-xs max-w-xl mx-auto">
-              {ka
-                ? 'აირჩიეთ ნებისმიერი პაკეტი — 7 დღე სრულიად უფასოა, ბარათი მხოლოდ დროებით მოწმდება, თანხა არ ჩამოგეჭრებათ. პირველი გადახდა ხდება ზუსტად მე-8 დღეს, თუ ამ დრომდე არ გააუქმებთ. გაუქმება შესაძლებელია ნებისმიერ დროს, სრულიად უფასოდ.'
-                : 'Pick any plan — the first 7 days are completely free, your card is only verified, not charged. The first real payment happens exactly on day 8, unless you cancel before then. Cancel anytime, at no cost.'}
-            </p>
+            <p className="text-[#F5F1E4]/70 text-sm max-w-xl mx-auto">{t('pricingSubtitleKa', 'pricingSubtitleEn')}</p>
           </div>
           <div ref={refPricingCards} className="grid md:grid-cols-3 gap-5 max-w-5xl mx-auto items-stretch">
             {([1, 3, 6] as BillingInterval[]).map((interval) => {
@@ -446,6 +446,11 @@ export default function HomeClient({ s, dishes, dishCount, recentBlogs, planAmou
               const cadenceKa = interval === 1 ? 'თვეში' : `ყოველ ${interval} თვეში`;
               const cadenceEn = interval === 1 ? 'month' : `${interval} months`;
               const isActive = currentPlan === 'FULL_PLAN' && currentInterval === interval && !loadingPlan;
+              // A referral code (redeemed anywhere on the site already) or this card's own
+              // promo code shortens the trial to 3 days — mirrors exactly what the BOG
+              // webhook grants (referredByUserId / promoCodeId), so this never promises a
+              // trial length checkout won't actually give.
+              const trialDays = hasReferral || promoStatus[interval]?.valid ? 3 : 7;
 
               return (
                 <div key={interval}
@@ -468,7 +473,7 @@ export default function HomeClient({ s, dishes, dishCount, recentBlogs, planAmou
                   </p>
 
                   <div className="text-4xl font-black text-[#6F7A5C]">0₾</div>
-                  <p className="text-[#6F7A5C]/60 text-sm font-medium mb-2">{ka ? 'პირველი 7 დღე' : 'first 7 days'}</p>
+                  <p className="text-[#6F7A5C]/60 text-sm font-medium mb-2">{ka ? `პირველი ${trialDays} დღე` : `first ${trialDays} days`}</p>
 
                   <div className="flex justify-center items-baseline gap-1.5">
                     {disc ? (
@@ -490,8 +495,8 @@ export default function HomeClient({ s, dishes, dishCount, recentBlogs, planAmou
 
                   <p className="text-[#6F7A5C]/40 text-[11px] italic mt-3 mb-5">
                     {ka
-                      ? 'თანხა ჩამოგეჭრებათ მე-8 დღეს. გაუქმება შესაძლებელია სატესტო პერიოდშივე, სრულიად უფასოდ.'
-                      : "You'll be charged on day 8. Cancel anytime during the trial at no cost."}
+                      ? `თანხა ჩამოგეჭრებათ მე-${trialDays + 1} დღეს. გაუქმება შესაძლებელია სატესტო პერიოდშივე, სრულიად უფასოდ.`
+                      : `You'll be charged on day ${trialDays + 1}. Cancel anytime during the trial at no cost.`}
                   </p>
 
                   <ul className="space-y-3 text-left flex-1 text-sm text-[#6F7A5C]">
