@@ -1798,9 +1798,7 @@ function PaymentFailedBanner({ paymentFailedAt }: { paymentFailedAt: string | Da
   return (
     <div className="mb-4 rounded-2xl bg-red-50 border border-red-200 px-4 py-3 flex items-start gap-2 text-sm text-red-700 shadow-sm">
       <span className="text-lg">⚠️</span>
-      <span>
-        <span className="font-bold">ბარათიდან თანხის ჩამოჭრა ვერ მოხერხდა</span> — შემდეგი მცდელობა ავტომატურად, ყოველდღიურად ხდება, სანამ არ წარიმატებს. სანამ არ ჩამოიჭრება, კონტენტი დაბლოკილია. თუ ბარათი შეიცვალა, გააუქმეთ და ხელახლა გამოიწერეთ ახალი ბარათით.
-      </span>
+      <span className="font-bold">გადახდა ვერ მოხერხდა</span>
     </div>
   );
 }
