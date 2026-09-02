@@ -35,6 +35,12 @@ export async function GET(req: NextRequest) {
     } catch (err: any) {
       console.error('BOG renewal charge failed to initiate:', user.id, err.message);
       results.failed++;
+      // No BOG order was even created here (the API call itself failed), so there's no
+      // orderId to record a Payment against — but access still needs to be cut, the same
+      // as a normal declined-card "rejected" callback (see the webhook's isFailed branch).
+      // subscriptionRenewsAt is left untouched so this user stays "due" and gets retried
+      // again tomorrow.
+      await prisma.user.update({ where: { id: user.id }, data: { paymentFailedAt: new Date() } }).catch(() => {});
     }
   }
 

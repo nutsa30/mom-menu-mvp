@@ -1789,6 +1789,22 @@ function TrialBanner({ trialEndsAt }: { trialEndsAt: string | Date | null | unde
   );
 }
 
+// Shown instead of TrialBanner once a renewal charge has actually failed — distinct copy
+// from the "locked" screens elsewhere (which say "available with the full package") since
+// this person DOES have a package, their card just didn't go through. Retries happen
+// automatically every day; nothing for them to click here.
+function PaymentFailedBanner({ paymentFailedAt }: { paymentFailedAt: string | Date | null | undefined }) {
+  if (!paymentFailedAt) return null;
+  return (
+    <div className="mb-4 rounded-2xl bg-red-50 border border-red-200 px-4 py-3 flex items-start gap-2 text-sm text-red-700 shadow-sm">
+      <span className="text-lg">⚠️</span>
+      <span>
+        <span className="font-bold">ბარათიდან თანხის ჩამოჭრა ვერ მოხერხდა</span> — შემდეგი მცდელობა ავტომატურად, ყოველდღიურად ხდება, სანამ არ წარიმატებს. სანამ არ ჩამოიჭრება, კონტენტი დაბლოკილია. თუ ბარათი შეიცვალა, გააუქმეთ და ხელახლა გამოიწერეთ ახალი ბარათით.
+      </span>
+    </div>
+  );
+}
+
 // ── Main Dashboard ────────────────────────────────────────────────────────────
 export default function DashboardClient({ user }: { user: any }) {
   const router = useRouter();
@@ -1876,7 +1892,11 @@ export default function DashboardClient({ user }: { user: any }) {
     window.location.href = '/';
   };
 
-  const isFullPlan = user.subscriptionStatus === 'FULL_PLAN';
+  // A renewal that came back declined (paymentFailedAt) blocks content the same as never
+  // having subscribed at all — subscriptionStatus itself deliberately stays 'FULL_PLAN' the
+  // whole time so bog-renew's daily cron keeps retrying the same saved card (see the BOG
+  // webhook's isFailed branch); this is what actually enforces "no access until it's paid".
+  const isFullPlan = user.subscriptionStatus === 'FULL_PLAN' && !user.paymentFailedAt;
   const isYoungBaby = activeChild?.ageGroup === 'FROM_6' || activeChild?.ageGroup === 'FROM_9';
 
   // Site content (first-foods, recipes, meal plans, everything) starts at 6 months — a
@@ -1969,6 +1989,7 @@ export default function DashboardClient({ user }: { user: any }) {
 
       {/* Content */}
       <main className="flex-1 p-4 sm:p-6 max-w-4xl mx-auto w-full">
+        <PaymentFailedBanner paymentFailedAt={user.paymentFailedAt} />
         <TrialBanner trialEndsAt={user.trialEndsAt} />
         {isTooYoung && (
           <div className="mb-4 rounded-2xl bg-[#FDFBF0] border border-[#465940]/10 p-5 text-center">

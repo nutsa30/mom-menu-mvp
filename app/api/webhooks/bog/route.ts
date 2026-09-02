@@ -217,11 +217,12 @@ export async function POST(req: Request) {
     }
 
     if (isFailed) {
-      // Single failed renewal — don't cut access on one transient failure. Revisit with
-      // proper dunning/retry once we've seen how BOG reports repeated failures. Recorded
-      // (not just logged) so a declined card shows up in admin's payments table instead
-      // of silently vanishing — subscriptionRenewsAt is deliberately left untouched, which
-      // is what makes tomorrow's cron retry this same renewal automatically.
+      // A declined renewal now cuts dashboard access immediately (paymentFailedAt — see
+      // DashboardClient's isFullPlan) rather than quietly leaving it active. Retries
+      // continue automatically: subscriptionStatus/subscriptionRenewsAt/bogParentOrderId
+      // are deliberately left untouched, so bog-renew's daily cron keeps seeing this
+      // account as "due" and keeps attempting the same saved card. Access is restored
+      // the instant a retry actually captures (see isPaid below, which clears this).
       const existingFailed = await prisma.payment.findUnique({ where: { bogOrderId: orderId } });
       if (existingFailed) return NextResponse.json({ received: true });
       const failedInterval = (user.billingIntervalMonths ?? 1) as BillingInterval;
@@ -239,6 +240,7 @@ export async function POST(req: Request) {
           netAmount: null,
         },
       });
+      await prisma.user.update({ where: { id: user.id }, data: { paymentFailedAt: new Date() } });
       console.error('BOG renewal charge failed', { userId: user.id, orderId, body });
       return NextResponse.json({ received: true });
     }
@@ -306,7 +308,10 @@ export async function POST(req: Request) {
 
     await prisma.user.update({
       where: { id: user.id },
-      data: { subscriptionRenewsAt: new Date(Date.now() + INTERVAL_MS[interval]) },
+      // Clears paymentFailedAt (a no-op if it was never set) — the moment a retry actually
+      // captures, access restores automatically, whether this was the first attempt or the
+      // fifth after several declines.
+      data: { subscriptionRenewsAt: new Date(Date.now() + INTERVAL_MS[interval]), paymentFailedAt: null },
     });
     return NextResponse.json({ received: true });
   }
