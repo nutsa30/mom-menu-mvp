@@ -103,7 +103,7 @@ export default function UsersSearchTable({
         </p>
       ) : (
         <div className="overflow-x-auto">
-          <table className="w-full min-w-[800px]">
+          <table className="w-full min-w-[940px]">
             <thead className="bg-[#465940]">
               <tr>
                 <th className="text-left px-6 py-3 text-xs font-semibold text-[#FDFBF0]/80 uppercase tracking-wide">სახელი</th>
@@ -112,6 +112,7 @@ export default function UsersSearchTable({
                 <th className="text-left px-4 py-3 text-xs font-semibold text-[#FDFBF0]/80 uppercase tracking-wide">პრომოკოდი</th>
                 <th className="text-left px-4 py-3 text-xs font-semibold text-[#FDFBF0]/80 uppercase tracking-wide">შვილები</th>
                 <th className="text-left px-4 py-3 text-xs font-semibold text-[#FDFBF0]/80 uppercase tracking-wide">რეგ. თარიღი</th>
+                <th className="text-left px-4 py-3 text-xs font-semibold text-[#FDFBF0]/80 uppercase tracking-wide">შეძენის დრო</th>
                 <th className="text-right px-6 py-3 text-xs font-semibold text-[#FDFBF0]/80 uppercase tracking-wide">მოქმედება</th>
               </tr>
             </thead>
@@ -156,6 +157,17 @@ export default function UsersSearchTable({
                   <td className="px-4 py-4 text-sm text-[#465940]/70">{user._count.children}</td>
                   <td className="px-4 py-4 text-sm text-[#465940]/60">
                     {new Date(user.createdAt).toLocaleDateString(locale === 'ka' ? 'ka-GE' : 'en-US', { timeZone: 'UTC' })}
+                  </td>
+                  <td className="px-4 py-4 text-sm text-[#465940]/60">
+                    {/* When they actually started a subscription/trial (bogTrialUsed getting
+                        set is the moment renewal cron eligibility begins) — shown with the
+                        hour, since the daily renewal cron only picks up whoever's exact
+                        renewal moment has already passed by the time it runs (5am UTC /
+                        9am Tbilisi), so two people who signed up the same calendar day can
+                        still get charged a day apart depending on the hour. */}
+                    {user.subscriptionStartedAt
+                      ? new Date(user.subscriptionStartedAt).toLocaleString('ka-GE', { timeZone: 'Asia/Tbilisi', dateStyle: 'short', timeStyle: 'short' })
+                      : <span className="text-[#465940]/40">—</span>}
                   </td>
                   <td className="px-6 py-4">
                     <div className="flex items-center justify-end gap-2 flex-wrap">
