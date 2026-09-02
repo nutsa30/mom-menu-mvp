@@ -263,6 +263,30 @@ export async function POST(req: Request) {
         });
       } catch (err: any) {
         console.error('BOG webhook: renewal capture failed to initiate, needs manual follow-up', { orderId, userId: user.id, error: err.message });
+        // The hold landed but approving/capturing it threw — that charge will never complete
+        // on its own. Treat it exactly like a declined card (isFailed above): cut access
+        // immediately, record a FAILED payment so it's visible in admin right away, and
+        // leave subscriptionRenewsAt untouched so tomorrow's cron retries the same saved
+        // card again automatically.
+        const existingApproveFailed = await prisma.payment.findUnique({ where: { bogOrderId: orderId } });
+        if (!existingApproveFailed) {
+          const failInterval = (user.billingIntervalMonths ?? 1) as BillingInterval;
+          const failGrossAmount = applyDiscount(Number(PLAN_AMOUNTS_BY_INTERVAL[failInterval] ?? 0), user.promoCode?.discountPercent);
+          await prisma.payment.create({
+            data: {
+              userId: user.id,
+              plan: 'FULL_PLAN',
+              billingIntervalMonths: failInterval,
+              status: 'FAILED',
+              bogOrderId: orderId,
+              cardType: cardType ?? null,
+              grossAmount: failGrossAmount,
+              commissionAmount: null,
+              netAmount: null,
+            },
+          }).catch(() => {});
+        }
+        await prisma.user.update({ where: { id: user.id }, data: { paymentFailedAt: new Date() } }).catch(() => {});
       }
       return NextResponse.json({ received: true });
     }
