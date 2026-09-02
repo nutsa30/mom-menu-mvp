@@ -77,11 +77,6 @@ export async function POST(req: Request) {
       return NextResponse.json({ received: true });
     }
 
-    if (isFailed) {
-      console.error('BOG first-purchase charge failed', { userId: user.id, orderId, body });
-      return NextResponse.json({ received: true });
-    }
-
     const existing = await prisma.payment.findUnique({ where: { bogOrderId: orderId } });
     if (existing) return NextResponse.json({ received: true }); // already processed (retried callback)
 
@@ -89,6 +84,28 @@ export async function POST(req: Request) {
     // discounted amount (see /api/subscription/bog-checkout), so this must match exactly
     // or our own Payment/MRR records would overstate what a promo-code user really pays.
     const grossAmount = applyDiscount(Number(PLAN_AMOUNTS_BY_INTERVAL[decoded.interval] ?? 0), user.promoCode?.discountPercent);
+
+    if (isFailed) {
+      // Recorded (not just logged) so a declined card is visible in admin's payments
+      // table instead of silently vanishing — previously this branch only console.error'd,
+      // which meant a repeatedly-declining renewal looked identical to "never attempted".
+      await prisma.payment.create({
+        data: {
+          userId: user.id,
+          plan: 'FULL_PLAN',
+          billingIntervalMonths: decoded.interval,
+          status: 'FAILED',
+          bogOrderId: orderId,
+          cardType: cardType ?? null,
+          grossAmount,
+          commissionAmount: null,
+          netAmount: null,
+        },
+      });
+      console.error('BOG first-purchase charge failed', { userId: user.id, orderId, body });
+      return NextResponse.json({ received: true });
+    }
+
     const wasAlreadyOnThisTier = user.subscriptionStatus === 'FULL_PLAN' && user.billingIntervalMonths === decoded.interval;
     const now = new Date();
 
@@ -201,7 +218,27 @@ export async function POST(req: Request) {
 
     if (isFailed) {
       // Single failed renewal — don't cut access on one transient failure. Revisit with
-      // proper dunning/retry once we've seen how BOG reports repeated failures.
+      // proper dunning/retry once we've seen how BOG reports repeated failures. Recorded
+      // (not just logged) so a declined card shows up in admin's payments table instead
+      // of silently vanishing — subscriptionRenewsAt is deliberately left untouched, which
+      // is what makes tomorrow's cron retry this same renewal automatically.
+      const existingFailed = await prisma.payment.findUnique({ where: { bogOrderId: orderId } });
+      if (existingFailed) return NextResponse.json({ received: true });
+      const failedInterval = (user.billingIntervalMonths ?? 1) as BillingInterval;
+      const failedGrossAmount = applyDiscount(Number(PLAN_AMOUNTS_BY_INTERVAL[failedInterval] ?? 0), user.promoCode?.discountPercent);
+      await prisma.payment.create({
+        data: {
+          userId: user.id,
+          plan: 'FULL_PLAN',
+          billingIntervalMonths: failedInterval,
+          status: 'FAILED',
+          bogOrderId: orderId,
+          cardType: cardType ?? null,
+          grossAmount: failedGrossAmount,
+          commissionAmount: null,
+          netAmount: null,
+        },
+      });
       console.error('BOG renewal charge failed', { userId: user.id, orderId, body });
       return NextResponse.json({ received: true });
     }
