@@ -103,21 +103,31 @@ export default async function AdminUsersPage({
   // Also requires paidUserIds — otherwise someone still mid-trial (card verified, not
   // charged yet) already reads as a real "1/3/6-month subscriber" here, the moment the
   // BOG webhook flips their subscriptionStatus to FULL_PLAN on trial start.
-  const byInterval1 = users.filter((u) => u.subscriptionStatus === 'FULL_PLAN' && u.billingIntervalMonths === 1 && !u.subscriptionCanceledAt && paidUserIds.has(u.id)).length;
-  const byInterval3 = users.filter((u) => u.subscriptionStatus === 'FULL_PLAN' && u.billingIntervalMonths === 3 && !u.subscriptionCanceledAt && paidUserIds.has(u.id)).length;
-  const byInterval6 = users.filter((u) => u.subscriptionStatus === 'FULL_PLAN' && u.billingIntervalMonths === 6 && !u.subscriptionCanceledAt && paidUserIds.has(u.id)).length;
+  // !paymentFailedAt excludes anyone currently locked out over a declined renewal —
+  // subscriptionStatus deliberately stays FULL_PLAN for them (see paymentFailedAt's
+  // definition in schema.prisma) so the daily cron keeps retrying, but that means they'd
+  // otherwise still read as an active paying subscriber here even though they're blocked
+  // and not actually being charged right now. They move to the "⚠️ გადახდა ვერ ჩამოეჭრა"
+  // card instead — this is what pulls them out of wherever they used to be counted.
+  const byInterval1 = users.filter((u) => u.subscriptionStatus === 'FULL_PLAN' && u.billingIntervalMonths === 1 && !u.subscriptionCanceledAt && !u.paymentFailedAt && paidUserIds.has(u.id)).length;
+  const byInterval3 = users.filter((u) => u.subscriptionStatus === 'FULL_PLAN' && u.billingIntervalMonths === 3 && !u.subscriptionCanceledAt && !u.paymentFailedAt && paidUserIds.has(u.id)).length;
+  const byInterval6 = users.filter((u) => u.subscriptionStatus === 'FULL_PLAN' && u.billingIntervalMonths === 6 && !u.subscriptionCanceledAt && !u.paymentFailedAt && paidUserIds.has(u.id)).length;
   // Of those same subscribers, how many are on a linked promo code (i.e. paying a
   // discounted rate on this tier, not the sticker price the card header quotes) — shown
   // as a sub-line on each interval card below so a "17₾" card doesn't silently include
   // people who are actually paying less than that.
-  const byInterval1Promo = users.filter((u) => u.subscriptionStatus === 'FULL_PLAN' && u.billingIntervalMonths === 1 && !u.subscriptionCanceledAt && paidUserIds.has(u.id) && u.promoCode).length;
-  const byInterval3Promo = users.filter((u) => u.subscriptionStatus === 'FULL_PLAN' && u.billingIntervalMonths === 3 && !u.subscriptionCanceledAt && paidUserIds.has(u.id) && u.promoCode).length;
-  const byInterval6Promo = users.filter((u) => u.subscriptionStatus === 'FULL_PLAN' && u.billingIntervalMonths === 6 && !u.subscriptionCanceledAt && paidUserIds.has(u.id) && u.promoCode).length;
+  const byInterval1Promo = users.filter((u) => u.subscriptionStatus === 'FULL_PLAN' && u.billingIntervalMonths === 1 && !u.subscriptionCanceledAt && !u.paymentFailedAt && paidUserIds.has(u.id) && u.promoCode).length;
+  const byInterval3Promo = users.filter((u) => u.subscriptionStatus === 'FULL_PLAN' && u.billingIntervalMonths === 3 && !u.subscriptionCanceledAt && !u.paymentFailedAt && paidUserIds.has(u.id) && u.promoCode).length;
+  const byInterval6Promo = users.filter((u) => u.subscriptionStatus === 'FULL_PLAN' && u.billingIntervalMonths === 6 && !u.subscriptionCanceledAt && !u.paymentFailedAt && paidUserIds.has(u.id) && u.promoCode).length;
   // Signed up for a paid tier and currently mid-trial — not yet counted above, and not
   // counted toward MRR below, since they haven't paid a single lari yet and some will
-  // cancel before their trial ever converts to a real charge.
+  // cancel before their trial ever converts to a real charge. !paymentFailedAt matters
+  // here too: if the trial's very first real charge is declined, paymentFailedAt gets set
+  // but paidUserIds never gains them (no SUCCESS payment exists) — without excluding them
+  // here they'd stay stuck showing as "still on trial" forever instead of moving to the
+  // payment-failed card.
   const isTrialing = (u: (typeof users)[number]) =>
-    !u.isGifted && !u.subscriptionCanceledAt &&
+    !u.isGifted && !u.subscriptionCanceledAt && !u.paymentFailedAt &&
     (u.subscriptionStatus === 'FULL_PLAN' || u.subscriptionStatus === 'RECIPE_PLAN') &&
     !paidUserIds.has(u.id);
   // Broken out by which tier they picked (same as byInterval1/3/6, just the trial side of
@@ -154,15 +164,18 @@ export default async function AdminUsersPage({
   const thirtyDaysAgo = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000);
   // paidUserIds excludes anyone still mid-trial (see byInterval1/3/6 above) — this is what
   // keeps MRR from counting revenue that hasn't actually landed yet, and might not.
-  const realRecipe = users.filter((u) => !u.isGifted && !u.subscriptionCanceledAt && u.subscriptionStatus === 'RECIPE_PLAN' && paidUserIds.has(u.id)).length;
-  const realFull   = users.filter((u) => !u.isGifted && !u.subscriptionCanceledAt && u.subscriptionStatus === 'FULL_PLAN' && paidUserIds.has(u.id)).length;
-  const realPaying = users.filter((u) => !u.isGifted && !u.subscriptionCanceledAt && (u.subscriptionStatus === 'RECIPE_PLAN' || u.subscriptionStatus === 'FULL_PLAN') && paidUserIds.has(u.id));
+  // !paymentFailedAt excludes anyone currently blocked over a declined renewal — no money
+  // is actually coming in from them right now, so they shouldn't inflate MRR either.
+  const realRecipe = users.filter((u) => !u.isGifted && !u.subscriptionCanceledAt && !u.paymentFailedAt && u.subscriptionStatus === 'RECIPE_PLAN' && paidUserIds.has(u.id)).length;
+  const realFull   = users.filter((u) => !u.isGifted && !u.subscriptionCanceledAt && !u.paymentFailedAt && u.subscriptionStatus === 'FULL_PLAN' && paidUserIds.has(u.id)).length;
+  const realPaying = users.filter((u) => !u.isGifted && !u.subscriptionCanceledAt && !u.paymentFailedAt && (u.subscriptionStatus === 'RECIPE_PLAN' || u.subscriptionStatus === 'FULL_PLAN') && paidUserIds.has(u.id));
   const mrr = Math.round(realPaying.reduce((sum, u) => sum + monthlyPriceFor(u), 0));
   const payingUsers = realRecipe + realFull;
   const arpu = payingUsers > 0 ? Math.round(mrr / payingUsers) : 0;
   const newMrr = Math.round(users
     .filter((u) =>
       !u.isGifted &&
+      !u.paymentFailedAt &&
       u.subscriptionStartedAt &&
       new Date(u.subscriptionStartedAt) > thirtyDaysAgo &&
       (u.subscriptionStatus === 'RECIPE_PLAN' || u.subscriptionStatus === 'FULL_PLAN') &&
