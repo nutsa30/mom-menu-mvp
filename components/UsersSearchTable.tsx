@@ -141,6 +141,11 @@ export default function UsersSearchTable({
                         გაუქმებული — წვდომა {user.subscriptionRenewsAt ? new Date(user.subscriptionRenewsAt).toLocaleDateString('ka-GE') : '?'}-მდე
                       </p>
                     )}
+                    {user.paymentFailedAt && (
+                      <p className="text-[10px] text-red-600 font-semibold mt-1">
+                        ⚠️ გადახდა ვერ ჩამოეჭრა — დაბლოკილია
+                      </p>
+                    )}
                   </td>
                   <td className="px-4 py-4">
                     {user.promoCode ? (

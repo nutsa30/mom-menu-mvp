@@ -9,6 +9,7 @@ const TABS = [
   { key: 'promo15', label: '15₾ პრომო' },
   { key: 'promo30', label: '30₾ პრომო' },
   { key: 'gifted', label: '🎁 გაჩუქებული' },
+  { key: 'paymentFailed', label: '⚠️ გადახდა ვერ ჩამოეჭრა' },
 ];
 
 export default function UsersFilterBar({

@@ -52,6 +52,7 @@ export default async function AdminUsersPage({
         id: true, name: true, email: true, role: true,
         isBlocked: true, isGifted: true, subscriptionStatus: true, billingIntervalMonths: true,
         subscriptionStartedAt: true, subscriptionCanceledAt: true, subscriptionRenewsAt: true, createdAt: true,
+        paymentFailedAt: true,
         promoCode: { select: { id: true, code: true, planType: true, discountPercent: true } },
         _count: { select: { children: true } },
       },
@@ -139,6 +140,11 @@ export default async function AdminUsersPage({
   const giftedCount = giftedPaying.length;
   const giftedValue = giftedPaying.reduce((sum, u) => sum + monthlyPriceFor(u), 0);
 
+  // Currently locked out of dashboard content because their last renewal charge was
+  // declined (see DashboardClient's isFullPlan / the BOG webhook's paymentFailedAt) — the
+  // daily cron keeps retrying automatically, this is just who's blocked right now.
+  const paymentFailedCount = users.filter((u) => !!u.paymentFailedAt).length;
+
   // Revenue — gifted users excluded (they bring no cash). MRR is normalized per-month:
   // a 39₾/3-month subscriber contributes 13₾ to MRR, not the full 39₾, since a 3- or
   // 6-month tier is not itself a monthly charge. Also excludes anyone who's already
@@ -208,9 +214,10 @@ export default async function AdminUsersPage({
   if (activeTab === 'promo15') filteredUsers = filteredUsers.filter((u) => u.promoCode?.planType === 'RECIPE_PLAN' && u.subscriptionStatus === 'RECIPE_PLAN');
   else if (activeTab === 'promo30') filteredUsers = filteredUsers.filter((u) => u.promoCode?.planType === 'FULL_PLAN' && u.subscriptionStatus === 'FULL_PLAN');
   else if (activeTab === 'gifted') filteredUsers = filteredUsers.filter((u) => u.isGifted && (u.subscriptionStatus === 'RECIPE_PLAN' || u.subscriptionStatus === 'FULL_PLAN'));
+  else if (activeTab === 'paymentFailed') filteredUsers = filteredUsers.filter((u) => !!u.paymentFailedAt);
   if (activePromo) filteredUsers = filteredUsers.filter((u) => u.promoCode?.id === activePromo);
 
-  const counts = { all: total, promo15: promoRecipe, promo30: promoFull, gifted: giftedCount };
+  const counts = { all: total, promo15: promoRecipe, promo30: promoFull, gifted: giftedCount, paymentFailed: paymentFailedCount };
 
   return (
     <div className="p-4 sm:p-6 lg:p-8">
@@ -241,6 +248,7 @@ export default async function AdminUsersPage({
             sub: `${trialInterval1}×1თვე · ${trialInterval3}×3თვე · ${trialInterval6}×6თვე`,
           },
           { label: 'გაუქმებული (მალე)', value: canceledPendingCount, color: 'text-amber-600', bg: 'bg-amber-50' },
+          { label: '⚠️ გადახდა ვერ ჩამოეჭრა', value: paymentFailedCount, color: 'text-red-600', bg: 'bg-red-50' },
           { label: d.blocked, value: blocked, color: 'text-[#FDFBF0]', bg: 'bg-[#465940]' },
         ].map((s) => (
           <div key={s.label} className="bg-[#FDFBF0] rounded-2xl p-5 border border-[#465940]/10 shadow-sm">
