@@ -169,6 +169,12 @@ model Payment {
   commissionAmount Float?
   netAmount        Float?
 
+  // Why a FAILED payment failed — whatever BOG's callback (or, for an internal API
+  // exception, the error message itself) actually said, so admin can see the real reason
+  // (insufficient funds, expired card, bank-side block, etc.) without digging through
+  // server logs. Null for SUCCESS/REFUNDED rows.
+  failureReason    String?
+
   // ── Referral program adjustments on this specific payment ──────────────────────
   // Both are implemented as a partial BOG refund issued right after this payment
   // captures (BOG's recurring-charge API always inherits the parent order's original

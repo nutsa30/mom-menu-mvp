@@ -356,6 +356,9 @@ export default async function AdminUsersPage({
                         }`}>
                           {p.status}
                         </span>
+                        {p.status === 'FAILED' && (p as any).failureReason && (
+                          <p className="text-[10px] text-red-500 mt-1 max-w-[180px]">{(p as any).failureReason}</p>
+                        )}
                       </td>
                       <td className="px-4 py-4 text-sm text-[#465940]/70">{p.cardType ?? '—'}</td>
                       <td className="px-4 py-4 text-sm text-[#465940]/70 text-right">{p.grossAmount.toFixed(2)}₾</td>

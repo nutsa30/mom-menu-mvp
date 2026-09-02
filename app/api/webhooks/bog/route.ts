@@ -14,6 +14,25 @@ import { sendSubscriptionConfirmationEmail } from '@/lib/email';
 import { applyReferralAdjustments, REFERRED_TRIAL_DAYS, STANDARD_TRIAL_DAYS } from '@/lib/referral';
 import { NextResponse } from 'next/server';
 
+// Best-effort human-readable reason for a failed/rejected order. BOG's exact field name
+// for this isn't consistently documented across their API surface, so this checks the
+// most likely spots first and falls back to a compact dump of the whole callback body —
+// better to capture whatever BOG actually sent than to silently discard it, since this is
+// the only way admin can see WHY a charge was declined (insufficient funds vs expired
+// card vs a bank-side block) without digging through server logs.
+function describeFailure(body: any): string {
+  const candidate =
+    body?.reject_reason?.value ?? body?.reject_reason ??
+    body?.response_code?.value ?? body?.response_code ??
+    body?.order_status?.value ?? body?.order_status?.key;
+  if (candidate) return String(candidate).slice(0, 300);
+  try {
+    return JSON.stringify(body).slice(0, 300);
+  } catch {
+    return 'უცნობი მიზეზი';
+  }
+}
+
 const PLAN_LABELS: Record<BillingInterval, string> = {
   1: '1 თვის გეგმა',
   3: '3 თვის გეგმა',
@@ -100,6 +119,7 @@ export async function POST(req: Request) {
           grossAmount,
           commissionAmount: null,
           netAmount: null,
+          failureReason: describeFailure(body),
         },
       });
       console.error('BOG first-purchase charge failed', { userId: user.id, orderId, body });
@@ -238,6 +258,7 @@ export async function POST(req: Request) {
           grossAmount: failedGrossAmount,
           commissionAmount: null,
           netAmount: null,
+          failureReason: describeFailure(body),
         },
       });
       await prisma.user.update({ where: { id: user.id }, data: { paymentFailedAt: new Date() } });
@@ -283,6 +304,7 @@ export async function POST(req: Request) {
               grossAmount: failGrossAmount,
               commissionAmount: null,
               netAmount: null,
+              failureReason: (err?.message ? String(err.message) : 'დამტკიცების მცდელობა ვერ შესრულდა').slice(0, 300),
             },
           }).catch(() => {});
         }
