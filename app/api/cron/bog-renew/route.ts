@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
-import { chargeSavedCard, BillingInterval } from '@/lib/bog';
+import { chargeSavedCard, applyDiscount, PLAN_AMOUNTS_BY_INTERVAL, BillingInterval } from '@/lib/bog';
 
 const SECRET = process.env.CRON_SECRET || 'mm2026';
 
@@ -20,6 +20,7 @@ export async function GET(req: NextRequest) {
       subscriptionStatus: { in: ['RECIPE_PLAN', 'FULL_PLAN'] },
       subscriptionRenewsAt: { lte: new Date() },
     },
+    include: { promoCode: true },
   });
 
   const results = { charged: 0, failed: 0 };
@@ -35,13 +36,37 @@ export async function GET(req: NextRequest) {
     } catch (err: any) {
       console.error('BOG renewal charge failed to initiate:', user.id, err.message);
       results.failed++;
-      // No BOG order was even created here (the API call itself failed), so there's no
-      // orderId to record a Payment against — but access still needs to be cut, the same
-      // as a normal declined-card "rejected" callback (see the webhook's isFailed branch).
-      // subscriptionRenewsAt is left untouched so this user stays "due" and gets retried
-      // again tomorrow.
+      // The API call to CREATE the charge itself failed here (as opposed to BOG later
+      // reporting "rejected" on a charge it did create — see the webhook's isFailed
+      // branch), so there's no real bogOrderId to key a Payment off of. Use a synthetic,
+      // guaranteed-unique one instead of skipping the record entirely — otherwise this
+      // failure (and, critically, WHY it failed — rate limiting, a stale parent order,
+      // etc.) would be invisible anywhere admin or these diagnostic scripts can see, only
+      // in Vercel's function logs.
+      const interval = (user.billingIntervalMonths ?? 1) as BillingInterval;
+      const grossAmount = applyDiscount(Number(PLAN_AMOUNTS_BY_INTERVAL[interval] ?? 0), user.promoCode?.discountPercent);
+      await prisma.payment.create({
+        data: {
+          userId: user.id,
+          plan: 'FULL_PLAN',
+          billingIntervalMonths: interval,
+          status: 'FAILED',
+          bogOrderId: `cron-init-fail-${user.id}-${Date.now()}`,
+          grossAmount,
+          commissionAmount: null,
+          netAmount: null,
+          failureReason: `[ვერ დაიწყო] ${String(err.message ?? err).slice(0, 280)}`,
+        },
+      }).catch(() => {});
+      // Access still needs to be cut, the same as a normal declined-card "rejected"
+      // callback. subscriptionRenewsAt is left untouched so this user stays "due" and
+      // gets retried on the next cron run.
       await prisma.user.update({ where: { id: user.id }, data: { paymentFailedAt: new Date() } }).catch(() => {});
     }
+    // A short pause between attempts — charging everyone due back-to-back with zero delay
+    // risks tripping a per-second rate limit on BOG's side, which would fail a charge for
+    // a reason that has nothing to do with the customer's card. Cheap insurance.
+    await new Promise((r) => setTimeout(r, 400));
   }
 
   // Users who canceled (subscriptionCanceledAt set) keep access through the period they
