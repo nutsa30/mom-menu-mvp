@@ -272,12 +272,21 @@ export async function POST(req: Request) {
       // Access/Payment recording happens on the follow-up "completed" callback that
       // this triggers, not here.
       try {
-        await approvePreauthorization(orderId);
-        // Push renewsAt forward so bog-renew's daily cron doesn't see this account as
-        // still "due" and fire a SECOND /subscribe (a second hold on the same card)
-        // while this one is still waiting for BOG's "completed" confirmation to land.
-        // If approve failed (catch below), leave renewsAt untouched — that's what makes
-        // tomorrow's cron retry this same renewal instead of silently giving up on it.
+        // One retry after a short pause before giving up — a single transient network
+        // blip (BOG's side or ours) shouldn't be enough to block a customer whose card is
+        // otherwise perfectly fine and cost a real renewal.
+        try {
+          await approvePreauthorization(orderId);
+        } catch (firstErr: any) {
+          console.error('BOG webhook: first approve attempt failed, retrying once', { orderId, userId: user.id, error: firstErr.message });
+          await new Promise((r) => setTimeout(r, 1500));
+          await approvePreauthorization(orderId);
+        }
+        // Push renewsAt forward so bog-renew's cron doesn't see this account as still
+        // "due" and fire a SECOND /subscribe (a second hold on the same card) while this
+        // one is still waiting for BOG's "completed" confirmation to land. If approve
+        // failed (catch below), leave renewsAt untouched — that's what makes the next
+        // cron run retry this same renewal instead of silently giving up on it.
         await prisma.user.update({
           where: { id: user.id },
           data: { subscriptionRenewsAt: new Date(Date.now() + 24 * 60 * 60 * 1000) },

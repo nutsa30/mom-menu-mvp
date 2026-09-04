@@ -2,7 +2,7 @@
   "crons": [
     {
       "path": "/api/cron/bog-renew?secret=mm2026",
-      "schedule": "0 5 * * *"
+      "schedule": "0 */4 * * *"
     },
     {
       "path": "/api/cron/update-age-groups?secret=mm2026",
