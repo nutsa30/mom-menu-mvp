@@ -232,6 +232,36 @@ export default async function AdminUsersPage({
 
   const counts = { all: total, promo15: promoRecipe, promo30: promoFull, gifted: giftedCount, paymentFailed: paymentFailedCount };
 
+  // "Due today" — anyone whose next charge (a trial converting to its first real payment,
+  // or an ordinary renewal — both live in the same subscriptionRenewsAt field, see the BOG
+  // webhook) falls on today's calendar date, so admin can see today's queue at a glance
+  // instead of waiting for the 4-hourly cron to work through it and reading results after
+  // the fact from the transactions table above. Gifted subscriptions never go through BOG
+  // (no real charge happens), so they're excluded here even though isGifted's own
+  // subscriptionRenewsAt is used elsewhere to auto-expire them.
+  const todayStart = new Date();
+  todayStart.setHours(0, 0, 0, 0);
+  const todayEnd = new Date(todayStart);
+  todayEnd.setDate(todayEnd.getDate() + 1);
+  const dueTodayUsers = users
+    .filter((u) =>
+      !u.isGifted &&
+      !u.subscriptionCanceledAt &&
+      (u.subscriptionStatus === 'FULL_PLAN' || u.subscriptionStatus === 'RECIPE_PLAN') &&
+      u.subscriptionRenewsAt &&
+      new Date(u.subscriptionRenewsAt) >= todayStart &&
+      new Date(u.subscriptionRenewsAt) < todayEnd
+    )
+    .map((u) => ({
+      ...u,
+      // Hasn't ever completed a real payment yet — today's charge is their trial
+      // converting to its first real one, not a routine renewal.
+      isFirstCharge: !paidUserIds.has(u.id),
+      planLabel: subLabelFor(u),
+      amount: priceFor(u),
+    }))
+    .sort((a, b) => new Date(a.subscriptionRenewsAt!).getTime() - new Date(b.subscriptionRenewsAt!).getTime());
+
   return (
     <div className="p-4 sm:p-6 lg:p-8">
       <div className="mb-6 lg:mb-8">
@@ -364,6 +394,65 @@ export default async function AdminUsersPage({
                       <td className="px-4 py-4 text-sm text-[#465940]/70 text-right">{p.grossAmount.toFixed(2)}₾</td>
                       <td className="px-4 py-4 text-sm text-[#465940]/70 text-right">{p.commissionAmount != null ? `${p.commissionAmount.toFixed(2)}₾` : '—'}</td>
                       <td className="px-6 py-4 text-sm text-[#465940] font-semibold text-right">{p.netAmount != null ? `${p.netAmount.toFixed(2)}₾` : '—'}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          )}
+        </div>
+      </div>
+
+      {/* Today's due list — trial conversions and renewals expected to charge today,
+          between the transactions table above and the full users list below. */}
+      <div className="mb-6 lg:mb-8">
+        <h2 className="text-xl font-black text-[#465940] mb-1">დღეს გადასახდელები</h2>
+        <p className="text-[#465940]/60 text-sm mb-4">
+          {dueTodayUsers.length} ადამიანს დღეს უწევს გადახდა (ტრიალის დასრულება ან გამოწერის განახლება) — {todayStart.toLocaleDateString('ka-GE')}
+        </p>
+
+        <div className="bg-[#FDFBF0] rounded-2xl border border-[#465940]/10 shadow-sm overflow-hidden">
+          {dueTodayUsers.length === 0 ? (
+            <p className="text-center py-12 text-[#465940]/60 text-sm">დღეს არავის უწევს გადახდა</p>
+          ) : (
+            <div className="overflow-x-auto">
+              <table className="w-full min-w-[720px]">
+                <thead className="bg-[#465940]">
+                  <tr>
+                    <th className="text-left px-6 py-3 text-xs font-semibold text-[#FDFBF0]/80 uppercase tracking-wide">დრო</th>
+                    <th className="text-left px-4 py-3 text-xs font-semibold text-[#FDFBF0]/80 uppercase tracking-wide">მომხმარებელი</th>
+                    <th className="text-left px-4 py-3 text-xs font-semibold text-[#FDFBF0]/80 uppercase tracking-wide">გეგმა</th>
+                    <th className="text-left px-4 py-3 text-xs font-semibold text-[#FDFBF0]/80 uppercase tracking-wide">ტიპი</th>
+                    <th className="text-left px-4 py-3 text-xs font-semibold text-[#FDFBF0]/80 uppercase tracking-wide">სტატუსი</th>
+                    <th className="text-right px-6 py-3 text-xs font-semibold text-[#FDFBF0]/80 uppercase tracking-wide">თანხა</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-[#465940]/5">
+                  {dueTodayUsers.map((u) => (
+                    <tr key={u.id} className="hover:bg-[#465940]/5 transition">
+                      <td className="px-6 py-4 text-sm text-[#465940]/70">
+                        {new Date(u.subscriptionRenewsAt!).toLocaleTimeString('ka-GE', { hour: '2-digit', minute: '2-digit' })}
+                      </td>
+                      <td className="px-4 py-4">
+                        <p className="text-sm font-semibold text-[#465940]">{u.name}</p>
+                        <p className="text-xs text-[#465940]/50">{u.email}</p>
+                      </td>
+                      <td className="px-4 py-4 text-sm text-[#465940]/70">{u.planLabel}</td>
+                      <td className="px-4 py-4">
+                        <span className={`inline-block px-2.5 py-1 rounded-full text-xs font-bold ${
+                          u.isFirstCharge ? 'bg-amber-50 text-amber-700' : 'bg-[#465940]/10 text-[#465940]'
+                        }`}>
+                          {u.isFirstCharge ? 'ტრიალის დასრულება' : 'განახლება'}
+                        </span>
+                      </td>
+                      <td className="px-4 py-4">
+                        {u.paymentFailedAt ? (
+                          <span className="inline-block px-2.5 py-1 rounded-full text-xs font-bold bg-red-50 text-red-600">დაბლოკილი</span>
+                        ) : (
+                          <span className="inline-block px-2.5 py-1 rounded-full text-xs font-bold bg-emerald-50 text-emerald-700">აქტიური</span>
+                        )}
+                      </td>
+                      <td className="px-6 py-4 text-sm text-[#465940] font-semibold text-right">{u.amount.toFixed(2)}₾</td>
                     </tr>
                   ))}
                 </tbody>
