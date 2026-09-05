@@ -48,6 +48,17 @@ const INTERVAL_MS: Record<BillingInterval, number> = {
   6: 180 * DAY_MS,
 };
 
+// Accounts whose renewal charge reaches BOG fine and gets a genuine, real bank decline
+// (e.g. "insufficient funds") — as opposed to the separate "card was never saved by BOG"
+// cohort, which 404s before ever reaching a real decision and is handled by resetting them
+// to FREE (see prisma/reset-broken-card-users.ts). For these, retrying every 4 hours (the
+// bog-renew cron's normal cadence) risks the customer's bank flagging repeated same-card
+// attempts as suspicious. Slow their retries down to once a day instead by pushing
+// subscriptionRenewsAt forward on every decline, rather than leaving it untouched.
+const SLOW_RETRY_EMAILS = new Set<string>([
+  'mariami.macharashvili.2@iliauni.edu.ge',
+]);
+
 export async function POST(req: Request) {
   const rawBody = await req.text();
 
@@ -261,7 +272,16 @@ export async function POST(req: Request) {
           failureReason: describeFailure(body),
         },
       });
-      await prisma.user.update({ where: { id: user.id }, data: { paymentFailedAt: new Date() } });
+      await prisma.user.update({
+        where: { id: user.id },
+        data: {
+          paymentFailedAt: new Date(),
+          // Slow-retry accounts (see SLOW_RETRY_EMAILS above): push renewsAt to tomorrow so
+          // the next attempt is ~24h away instead of the default 4h cron cadence. Everyone
+          // else keeps subscriptionRenewsAt untouched, unchanged from before.
+          ...(SLOW_RETRY_EMAILS.has(user.email) ? { subscriptionRenewsAt: new Date(Date.now() + DAY_MS) } : {}),
+        },
+      });
       console.error('BOG renewal charge failed', { userId: user.id, orderId, body });
       return NextResponse.json({ received: true });
     }
