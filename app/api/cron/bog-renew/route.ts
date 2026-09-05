@@ -34,15 +34,27 @@ export async function GET(req: NextRequest) {
       });
       results.charged++;
     } catch (err: any) {
-      console.error('BOG renewal charge failed to initiate:', user.id, err.message);
+      const errMessage = String(err?.message ?? err);
+      console.error('BOG renewal charge failed to initiate:', user.id, errMessage);
       results.failed++;
+
+      // A specific, permanent failure mode: BOG has no tokenized card on file for this
+      // subscription at all (confirmed live against production — see
+      // "Error during getting saved card info with cardId ..."). This is NOT a decline
+      // (insufficient funds, expired card) and NOT timing/rate-limiting — it means the
+      // card-save step never actually persisted on BOG's side back when the customer
+      // started their trial, so every future retry will 404 identically, forever. Only a
+      // fresh checkout (customer re-enters their card) can fix it. Flag it distinctly in
+      // the failureReason so admin doesn't mistake it for an ordinary decline — this is
+      // the one to look out for and reach out about manually.
+      const cardNotSaved = /getting saved card info/i.test(errMessage);
+
       // The API call to CREATE the charge itself failed here (as opposed to BOG later
       // reporting "rejected" on a charge it did create — see the webhook's isFailed
       // branch), so there's no real bogOrderId to key a Payment off of. Use a synthetic,
       // guaranteed-unique one instead of skipping the record entirely — otherwise this
-      // failure (and, critically, WHY it failed — rate limiting, a stale parent order,
-      // etc.) would be invisible anywhere admin or these diagnostic scripts can see, only
-      // in Vercel's function logs.
+      // failure (and, critically, WHY it failed) would be invisible anywhere admin or
+      // these diagnostic scripts can see, only in Vercel's function logs.
       const interval = (user.billingIntervalMonths ?? 1) as BillingInterval;
       const grossAmount = applyDiscount(Number(PLAN_AMOUNTS_BY_INTERVAL[interval] ?? 0), user.promoCode?.discountPercent);
       await prisma.payment.create({
@@ -55,13 +67,18 @@ export async function GET(req: NextRequest) {
           grossAmount,
           commissionAmount: null,
           netAmount: null,
-          failureReason: `[ვერ დაიწყო] ${String(err.message ?? err).slice(0, 280)}`,
+          failureReason: cardNotSaved
+            ? `[ბარათი ვერ მოიძებნა] ${errMessage.slice(0, 260)}`
+            : `[ვერ დაიწყო] ${errMessage.slice(0, 280)}`,
         },
-      }).catch(() => {});
+      }).catch((writeErr) => console.error('Failed to write synthetic FAILED payment row:', user.id, writeErr));
       // Access still needs to be cut, the same as a normal declined-card "rejected"
       // callback. subscriptionRenewsAt is left untouched so this user stays "due" and
-      // gets retried on the next cron run.
-      await prisma.user.update({ where: { id: user.id }, data: { paymentFailedAt: new Date() } }).catch(() => {});
+      // gets retried on the next cron run (harmless for the card-not-saved case too —
+      // it'll just 404 again next time, cheaply, until the customer re-adds their card).
+      await prisma.user.update({ where: { id: user.id }, data: { paymentFailedAt: new Date() } }).catch((writeErr) =>
+        console.error('Failed to set paymentFailedAt:', user.id, writeErr),
+      );
     }
     // A short pause between attempts — charging everyone due back-to-back with zero delay
     // risks tripping a per-second rate limit on BOG's side, which would fail a charge for
