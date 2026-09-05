@@ -239,10 +239,17 @@ export default async function AdminUsersPage({
   // the fact from the transactions table above. Gifted subscriptions never go through BOG
   // (no real charge happens), so they're excluded here even though isGifted's own
   // subscriptionRenewsAt is used elsewhere to auto-expire them.
-  const todayStart = new Date();
-  todayStart.setHours(0, 0, 0, 0);
-  const todayEnd = new Date(todayStart);
-  todayEnd.setDate(todayEnd.getDate() + 1);
+  //
+  // "Today" must mean today in Tbilisi (the admin's own timezone), not the server's —
+  // Vercel functions run in UTC, so new Date().setHours(0,0,0,0) would compute UTC
+  // midnight, silently shifting the whole window 4 hours from what a Tbilisi reader means
+  // by "today". Georgia has used a fixed UTC+4 offset (no DST) since 2017.
+  const TBILISI_OFFSET_MS = 4 * 60 * 60 * 1000;
+  const nowInTbilisi = new Date(Date.now() + TBILISI_OFFSET_MS);
+  const todayStart = new Date(
+    Date.UTC(nowInTbilisi.getUTCFullYear(), nowInTbilisi.getUTCMonth(), nowInTbilisi.getUTCDate()) - TBILISI_OFFSET_MS
+  );
+  const todayEnd = new Date(todayStart.getTime() + 24 * 60 * 60 * 1000);
   const dueTodayUsers = users
     .filter((u) =>
       !u.isGifted &&
@@ -408,7 +415,7 @@ export default async function AdminUsersPage({
       <div className="mb-6 lg:mb-8">
         <h2 className="text-xl font-black text-[#465940] mb-1">დღეს გადასახდელები</h2>
         <p className="text-[#465940]/60 text-sm mb-4">
-          {dueTodayUsers.length} ადამიანს დღეს უწევს გადახდა (ტრიალის დასრულება ან გამოწერის განახლება) — {todayStart.toLocaleDateString('ka-GE')}
+          {dueTodayUsers.length} ადამიანს დღეს უწევს გადახდა (ტრიალის დასრულება ან გამოწერის განახლება) — {todayStart.toLocaleDateString('ka-GE', { timeZone: 'Asia/Tbilisi' })}
         </p>
 
         <div className="bg-[#FDFBF0] rounded-2xl border border-[#465940]/10 shadow-sm overflow-hidden">
@@ -431,7 +438,7 @@ export default async function AdminUsersPage({
                   {dueTodayUsers.map((u) => (
                     <tr key={u.id} className="hover:bg-[#465940]/5 transition">
                       <td className="px-6 py-4 text-sm text-[#465940]/70">
-                        {new Date(u.subscriptionRenewsAt!).toLocaleTimeString('ka-GE', { hour: '2-digit', minute: '2-digit' })}
+                        {new Date(u.subscriptionRenewsAt!).toLocaleTimeString('ka-GE', { hour: '2-digit', minute: '2-digit', timeZone: 'Asia/Tbilisi' })}
                       </td>
                       <td className="px-4 py-4">
                         <p className="text-sm font-semibold text-[#465940]">{u.name}</p>
