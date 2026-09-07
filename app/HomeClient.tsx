@@ -100,6 +100,13 @@ export default function HomeClient({ s, dishes, dishCount, recentBlogs, planAmou
   const [promoInput, setPromoInput] = useState<Record<BillingInterval, string>>({ 1: '', 3: '', 6: '' });
   const [promoStatus, setPromoStatus] = useState<Record<BillingInterval, { discount: number; valid: boolean; msg: string } | undefined>>({ 1: undefined, 3: undefined, 6: undefined });
   const [promoLoading, setPromoLoading] = useState<BillingInterval | null>(null);
+  // Set when /api/subscription/bog-checkout refuses an interval switch because there's
+  // still paid time left on the currently active plan (see that route's onActivePaidPeriod
+  // check) — shown as a detail modal instead of a plain alert() so the reason and the way
+  // out (cancel, then resubscribe once the paid period ends) are both actually visible.
+  // Mirrors the same handling in app/subscription/SubscriptionClient.tsx — this page has
+  // its own separate pricing section/checkout handler, so it needs the same fix applied here too.
+  const [intervalBlocked, setIntervalBlocked] = useState<{ currentInterval: BillingInterval; renewsAt: string | null } | null>(null);
 
   const refTestimonials = useFadeUp();
   const refTestimonialCards = useStaggeredFadeUp(100);
@@ -172,6 +179,8 @@ export default function HomeClient({ s, dishes, dishCount, recentBlogs, planAmou
       if (res.ok && data.url) { window.location.href = data.url; return; }
       if (data.error === 'already_subscribed') {
         alert(ka ? 'ეს პაკეტი უკვე აქტიური გაქვთ' : 'You already have this plan active');
+      } else if (data.error === 'interval_switch_blocked') {
+        setIntervalBlocked({ currentInterval: data.currentInterval, renewsAt: data.renewsAt ?? null });
       } else if (data.error === 'child_too_young') {
         alert(ka ? data.message : 'The package unlocks once your child turns 6 months old.');
       } else {
@@ -610,6 +619,94 @@ export default function HomeClient({ s, dishes, dishCount, recentBlogs, planAmou
         </section>
       )}
 
+      {intervalBlocked && (
+        <IntervalSwitchBlockedModal
+          ka={ka}
+          currentInterval={intervalBlocked.currentInterval}
+          renewsAt={intervalBlocked.renewsAt}
+          onClose={() => setIntervalBlocked(null)}
+          onGoCancel={() => router.push('/dashboard?tab=settings&focus=cancel')}
+        />
+      )}
     </main>
+  );
+}
+
+const INTERVAL_LABEL_KA: Record<BillingInterval, string> = { 1: '1-თვიან', 3: '3-თვიან', 6: '6-თვიან' };
+const INTERVAL_LABEL_EN: Record<BillingInterval, string> = { 1: '1-month', 3: '3-month', 6: '6-month' };
+
+// Explains why the "დაიწყე უფასოდ" / "Start Free" click didn't go through: switching
+// interval mid-period would otherwise charge immediately AND discard whatever paid days
+// remain on the current plan (see the interval_switch_blocked branch in
+// app/api/subscription/bog-checkout/route.ts). The way out is to cancel the current plan
+// first — access still runs out the paid period, nothing is lost — then come back and pick
+// the new interval once it's actually free. Same content/behavior as the identical modal in
+// app/subscription/SubscriptionClient.tsx, just bilingual to match this page.
+function IntervalSwitchBlockedModal({ ka, currentInterval, renewsAt, onClose, onGoCancel }: {
+  ka: boolean;
+  currentInterval: BillingInterval;
+  renewsAt: string | null;
+  onClose: () => void;
+  onGoCancel: () => void;
+}) {
+  const renewsLabel = renewsAt ? new Date(renewsAt).toLocaleDateString(ka ? 'ka-GE' : 'en-GB') : null;
+
+  return (
+    <div className="fixed inset-0 bg-black/40 z-50 flex items-end sm:items-center justify-center p-4" onClick={onClose}>
+      <div className="bg-[#F5F1E4] rounded-3xl w-full max-w-md overflow-hidden" onClick={e => e.stopPropagation()}>
+        <div className="p-6">
+          <h3 className="font-black text-[#6F7A5C] text-lg mb-3">
+            {ka ? 'ვერ გადავრთავთ პაკეტს ჯერ' : "Can't switch plans yet"}
+          </h3>
+          {ka ? (
+            <>
+              <p className="text-sm text-[#6F7A5C]/80 leading-relaxed mb-3">
+                თქვენ ამჟამად გაქვთ აქტიური {INTERVAL_LABEL_KA[currentInterval]} პაკეტი, რომელიც უკვე გადახდილია
+                {renewsLabel ? <> და მოქმედია <span className="font-bold">{renewsLabel}</span>-მდე</> : ''}.
+              </p>
+              <p className="text-sm text-[#6F7A5C]/80 leading-relaxed mb-3">
+                თუ ახლავე გადავრთავთ სხვა პაკეტზე, ახალი პაკეტის თანხა დაუყოვნებლივ ჩამოგეჭრებათ და დარჩენილი
+                გადახდილი დღეები დაიკარგება — ეს არასამართლიანი იქნებოდა თქვენთვის, ამიტომ არ ვუშვებთ.
+              </p>
+              <p className="text-sm text-[#6F7A5C]/80 leading-relaxed mb-5">
+                თუ ნამდვილად გსურთ სხვა პაკეტზე გადასვლა: გააუქმეთ მიმდინარე პაკეტი (წვდომას მაინც არ დაკარგავთ —
+                დარჩება {renewsLabel ? `${renewsLabel}-მდე` : 'გადახდილი პერიოდის ბოლომდე'}), და მას შემდეგ რაც ეს
+                პერიოდი ამოიწურება, თავისუფლად შეძლებთ ახალი პაკეტის აყვანას.
+              </p>
+            </>
+          ) : (
+            <>
+              <p className="text-sm text-[#6F7A5C]/80 leading-relaxed mb-3">
+                You currently have an active {INTERVAL_LABEL_EN[currentInterval]} plan that's already paid
+                {renewsLabel ? <> and runs through <span className="font-bold">{renewsLabel}</span></> : ''}.
+              </p>
+              <p className="text-sm text-[#6F7A5C]/80 leading-relaxed mb-3">
+                Switching plans right now would charge you immediately for the new plan and discard whatever paid
+                days remain on the current one — that wouldn't be fair to you, so we don't allow it.
+              </p>
+              <p className="text-sm text-[#6F7A5C]/80 leading-relaxed mb-5">
+                If you'd still like to switch: cancel your current plan (you won't lose access — it stays through
+                {renewsLabel ? ` ${renewsLabel}` : ' the end of the paid period'}), and once that period ends
+                you'll be free to pick a new plan.
+              </p>
+            </>
+          )}
+          <div className="flex flex-col gap-2">
+            <button
+              onClick={onGoCancel}
+              className="w-full bg-[#6F7A5C] hover:bg-[#6F7A5C]/90 text-[#F5F1E4] px-5 py-3 rounded-full text-sm font-bold transition"
+            >
+              {ka ? 'მიმდინარე პაკეტის გაუქმება' : 'Cancel current plan'}
+            </button>
+            <button
+              onClick={onClose}
+              className="w-full text-[#6F7A5C]/60 hover:text-[#6F7A5C] px-5 py-2 rounded-full text-sm font-semibold transition"
+            >
+              {ka ? 'დახურვა' : 'Close'}
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
   );
 }
