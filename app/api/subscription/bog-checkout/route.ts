@@ -56,15 +56,27 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: 'child_too_young', message: 'პაკეტის შეძენა შესაძლებელი იქნება, როცა ბავშვი 6 თვის გახდება.' }, { status: 400 });
     }
 
-    if (
-      user.subscriptionStatus === 'FULL_PLAN' &&
-      user.billingIntervalMonths === interval &&
-      user.subscriptionCanceledAt === null &&
-      (user.lsSubscriptionId || user.qpSubscriptionToken || user.bogParentOrderId)
-    ) {
+    const hasActiveProcessor = Boolean(user.lsSubscriptionId || user.qpSubscriptionToken || user.bogParentOrderId);
+    const onActivePaidPeriod = user.subscriptionStatus === 'FULL_PLAN' && user.subscriptionCanceledAt === null && hasActiveProcessor;
+
+    if (onActivePaidPeriod && user.billingIntervalMonths === interval) {
       // Already has this exact tier active on some processor — buying it again would
       // just start a fresh checkout without cancelling the running one.
       return NextResponse.json({ error: 'already_subscribed' }, { status: 400 });
+    }
+
+    if (onActivePaidPeriod && user.billingIntervalMonths !== interval) {
+      // Switching billing interval while paid time still remains on the current one would
+      // otherwise charge immediately for the new interval AND silently overwrite
+      // subscriptionRenewsAt (see the webhook's isPaid branch) — discarding whatever days
+      // were left on the plan they already paid for, with no proration. Block it here
+      // instead: the frontend shows an explanation and points them to cancel first, then
+      // resubscribe on the new interval once the current paid period actually runs out.
+      return NextResponse.json({
+        error: 'interval_switch_blocked',
+        currentInterval: user.billingIntervalMonths,
+        renewsAt: user.subscriptionRenewsAt,
+      }, { status: 400 });
     }
 
     // First-ever purchase on this account gets a 7-day free trial (preauthorized hold,

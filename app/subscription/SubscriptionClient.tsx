@@ -14,9 +14,19 @@ export default function SubscriptionClient({ planAmounts }: { planAmounts: Recor
   // Already redeemed a friend's referral code — the trial is 3 days regardless of any
   // promo code, matching what the BOG webhook actually grants (see /api/auth/me).
   const [hasReferral, setHasReferral] = useState(false);
+  // Already started a BOG trial before (any tier, ever) — a checkout from here on charges
+  // immediately with no trial, even when switching to a different interval than what's
+  // currently active (see /api/subscription/bog-checkout). Cards must not promise a free
+  // trial they won't actually give.
+  const [bogTrialUsed, setBogTrialUsed] = useState(false);
   const [promoInput, setPromoInput] = useState<Record<BillingInterval, string>>({ 1: '', 3: '', 6: '' });
   const [promoStatus, setPromoStatus] = useState<Record<BillingInterval, { discount: number; valid: boolean; msg: string } | undefined>>({ 1: undefined, 3: undefined, 6: undefined });
   const [promoLoading, setPromoLoading] = useState<BillingInterval | null>(null);
+  // Set when /api/subscription/bog-checkout refuses an interval switch because there's
+  // still paid time left on the currently active plan (see that route's onActivePaidPeriod
+  // check) — shown as a detail modal instead of a plain alert() so the reason and the way
+  // out (cancel, then resubscribe once the paid period ends) are both actually visible.
+  const [intervalBlocked, setIntervalBlocked] = useState<{ currentInterval: BillingInterval; renewsAt: string | null } | null>(null);
 
   useEffect(() => {
     fetch('/api/auth/me')
@@ -25,6 +35,7 @@ export default function SubscriptionClient({ planAmounts }: { planAmounts: Recor
         if (d?.subscriptionStatus) setCurrentPlan(d.subscriptionStatus);
         if (d?.billingIntervalMonths) setCurrentInterval(d.billingIntervalMonths);
         if (d?.hasReferral) setHasReferral(true);
+        if (d?.bogTrialUsed) setBogTrialUsed(true);
       })
       .catch(() => {});
   }, []);
@@ -72,6 +83,8 @@ export default function SubscriptionClient({ planAmounts }: { planAmounts: Recor
       }
       if (data.error === 'already_subscribed') {
         alert('ეს პაკეტი უკვე აქტიური გაქვთ');
+      } else if (data.error === 'interval_switch_blocked') {
+        setIntervalBlocked({ currentInterval: data.currentInterval, renewsAt: data.renewsAt ?? null });
       } else if (data.error === 'child_too_young') {
         alert(data.message);
       } else {
@@ -131,8 +144,14 @@ export default function SubscriptionClient({ planAmounts }: { planAmounts: Recor
                   {savings > 0 ? `ზოგავთ ${savings}₾-ს (${savingsPct}%)` : '—'}
                 </p>
 
-                <div className="text-4xl font-black text-[#6F7A5C]">0₾</div>
-                <p className="text-[#6F7A5C]/60 text-sm font-medium mb-2">პირველი {trialDays} დღე</p>
+                {bogTrialUsed ? (
+                  <div className="text-4xl font-black text-[#6F7A5C]">{disc ?? price}₾</div>
+                ) : (
+                  <>
+                    <div className="text-4xl font-black text-[#6F7A5C]">0₾</div>
+                    <p className="text-[#6F7A5C]/60 text-sm font-medium mb-2">პირველი {trialDays} დღე</p>
+                  </>
+                )}
 
                 <div className="flex justify-center items-baseline gap-1.5 mb-1">
                   {disc ? (
@@ -150,7 +169,9 @@ export default function SubscriptionClient({ planAmounts }: { planAmounts: Recor
                 )}
 
                 <p className="text-[#6F7A5C]/40 text-[11px] italic mt-2 mb-5">
-                  თანხა ჩამოგეჭრებათ მე-{trialDays + 1} დღეს. გაუქმება შესაძლებელია სატესტო პერიოდშივე, სრულიად უფასოდ.
+                  {bogTrialUsed
+                    ? 'თანხა ჩამოგეჭრებათ დაუყოვნებლივ — სატესტო პერიოდი ერთხელ უკვე გამოყენებული გაქვთ.'
+                    : `თანხა ჩამოგეჭრებათ მე-${trialDays + 1} დღეს. გაუქმება შესაძლებელია სატესტო პერიოდშივე, სრულიად უფასოდ.`}
                 </p>
 
                 <ul className="space-y-3 text-left flex-1 text-sm text-[#6F7A5C] mb-6">
@@ -198,6 +219,68 @@ export default function SubscriptionClient({ planAmounts }: { planAmounts: Recor
           ← დაბრუნება
         </a>
       </div>
+
+      {intervalBlocked && (
+        <IntervalSwitchBlockedModal
+          currentInterval={intervalBlocked.currentInterval}
+          renewsAt={intervalBlocked.renewsAt}
+          onClose={() => setIntervalBlocked(null)}
+          onGoCancel={() => router.push('/dashboard?tab=settings&focus=cancel')}
+        />
+      )}
     </main>
+  );
+}
+
+const INTERVAL_LABEL_KA: Record<BillingInterval, string> = { 1: '1-თვიან', 3: '3-თვიან', 6: '6-თვიან' };
+
+// Explains why the "დაწყება" click didn't go through: switching interval mid-period would
+// otherwise charge immediately AND discard whatever paid days remain on the current plan
+// (see the interval_switch_blocked branch in app/api/subscription/bog-checkout/route.ts).
+// The way out is to cancel the current plan first — access still runs out the paid period,
+// nothing is lost — then come back and pick the new interval once it's actually free.
+function IntervalSwitchBlockedModal({ currentInterval, renewsAt, onClose, onGoCancel }: {
+  currentInterval: BillingInterval;
+  renewsAt: string | null;
+  onClose: () => void;
+  onGoCancel: () => void;
+}) {
+  const renewsLabel = renewsAt ? new Date(renewsAt).toLocaleDateString('ka-GE') : null;
+
+  return (
+    <div className="fixed inset-0 bg-black/40 z-50 flex items-end sm:items-center justify-center p-4" onClick={onClose}>
+      <div className="bg-[#FDFBF0] rounded-3xl w-full max-w-md overflow-hidden" onClick={e => e.stopPropagation()}>
+        <div className="p-6">
+          <h3 className="font-black text-[#465940] text-lg mb-3">ვერ გადავრთავთ პაკეტს ჯერ</h3>
+          <p className="text-sm text-[#465940]/80 leading-relaxed mb-3">
+            თქვენ ამჟამად გაქვთ აქტიური {INTERVAL_LABEL_KA[currentInterval]} პაკეტი, რომელიც უკვე გადახდილია
+            {renewsLabel ? <> და მოქმედია <span className="font-bold">{renewsLabel}</span>-მდე</> : ''}.
+          </p>
+          <p className="text-sm text-[#465940]/80 leading-relaxed mb-3">
+            თუ ახლავე გადავრთავთ სხვა პაკეტზე, ახალი პაკეტის თანხა დაუყოვნებლივ ჩამოგეჭრებათ და დარჩენილი
+            გადახდილი დღეები დაიკარგება — ეს არასამართლიანი იქნებოდა თქვენთვის, ამიტომ არ ვუშვებთ.
+          </p>
+          <p className="text-sm text-[#465940]/80 leading-relaxed mb-5">
+            თუ ნამდვილად გსურთ სხვა პაკეტზე გადასვლა: გააუქმეთ მიმდინარე პაკეტი (წვდომას მაინც არ დაკარგავთ —
+            დარჩება {renewsLabel ? `${renewsLabel}-მდე` : 'გადახდილი პერიოდის ბოლომდე'}), და მას შემდეგ რაც ეს
+            პერიოდი ამოიწურება, თავისუფლად შეძლებთ ახალი პაკეტის აყვანას.
+          </p>
+          <div className="flex flex-col gap-2">
+            <button
+              onClick={onGoCancel}
+              className="w-full bg-[#465940] hover:bg-[#465940]/90 text-[#FDFBF0] px-5 py-3 rounded-full text-sm font-bold transition"
+            >
+              მიმდინარე პაკეტის გაუქმება
+            </button>
+            <button
+              onClick={onClose}
+              className="w-full text-[#465940]/60 hover:text-[#465940] px-5 py-2 rounded-full text-sm font-semibold transition"
+            >
+              დახურვა
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
   );
 }

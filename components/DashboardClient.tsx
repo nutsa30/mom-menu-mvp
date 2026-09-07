@@ -1452,6 +1452,20 @@ function SettingsTab({ user, activeChild }: { user: any; activeChild?: any }) {
   const [pwStatus, setPwStatus] = useState<'idle' | 'loading' | 'ok' | 'error'>('idle');
   const [pwError, setPwError] = useState('');
 
+  // Arrived via /dashboard?tab=settings&focus=cancel (the pricing page's blocked-switch
+  // modal) — scroll straight to the cancel button and flash it briefly so it's not just
+  // one more card in a long list to hunt through.
+  const [highlightCancel, setHighlightCancel] = useState(false);
+  useEffect(() => {
+    if (new URLSearchParams(window.location.search).get('focus') !== 'cancel') return;
+    const el = document.getElementById('cancel-subscription-section');
+    if (!el) return;
+    el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    setHighlightCancel(true);
+    const t = setTimeout(() => setHighlightCancel(false), 2500);
+    return () => clearTimeout(t);
+  }, []);
+
   const saveName = async () => {
     setNameStatus('saving');
     await fetch(`/api/users/${user.id}`, {
@@ -1557,7 +1571,7 @@ function SettingsTab({ user, activeChild }: { user: any; activeChild?: any }) {
       </div>
 
       {/* Account info */}
-      <div className={`${card} p-6`}>
+      <div id="cancel-subscription-section" className={`${card} p-6 transition-shadow ${highlightCancel ? 'ring-4 ring-[#D9803B]' : ''}`}>
         <h2 className="font-black text-[#465940] mb-3">ანგარიში</h2>
         <p className="text-sm text-[#465940]/70 mb-4"><span className="font-semibold text-[#465940]">სტატუსი:</span> {user.subscriptionStatus}</p>
         {user.lsSubscriptionId ? (
@@ -1813,6 +1827,16 @@ export default function DashboardClient({ user }: { user: any }) {
     ? 'child'
     : (firstChild.ageGroup === 'FROM_6' || firstChild.ageGroup === 'FROM_9') ? 'firstfoods' : 'today';
   const [tab, setTab] = useState<Tab>(defaultTab);
+
+  // Landed here from the pricing page's "can't switch interval yet" modal
+  // (app/subscription/SubscriptionClient.tsx → /dashboard?tab=settings&focus=cancel) —
+  // open straight on Settings instead of the usual default tab. Read directly off
+  // window.location rather than useSearchParams to avoid a Suspense boundary requirement
+  // for what's otherwise a plain client component.
+  useEffect(() => {
+    if (new URLSearchParams(window.location.search).get('tab') === 'settings') setTab('settings');
+  }, []);
+
   const [children, setChildren] = useState<any[]>(user.children ?? []);
   const [activeChild, setActiveChild] = useState<any>(firstChild ?? null);
   const [allDishes, setAllDishes] = useState<any[]>([]);
