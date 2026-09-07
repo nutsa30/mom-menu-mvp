@@ -263,7 +263,7 @@ function IntervalSwitchBlockedModal({ currentInterval, renewsAt, onClose, onGoCa
           <p className="text-sm text-[#465940]/80 leading-relaxed mb-5">
             თუ ნამდვილად გსურთ სხვა პაკეტზე გადასვლა: გააუქმეთ მიმდინარე პაკეტი (წვდომას მაინც არ დაკარგავთ —
             დარჩება {renewsLabel ? `${renewsLabel}-მდე` : 'გადახდილი პერიოდის ბოლომდე'}), და მას შემდეგ რაც ეს
-            პერიოდი ამოიწურება, თავისუფლად შეძლებთ ახალი პაკეტის აყვანას.
+            პერიოდი ამოიწურება, თავისუფლად შეძლებთ ახალი პაკეტის შეძენას.
           </p>
           <div className="flex flex-col gap-2">
             <button
