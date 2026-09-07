@@ -9,6 +9,7 @@ const REASON_LABEL: Record<string, string> = {
   MISSING_FEATURES: 'ფუნქციები არ ჰყოფნიდა',
   DISLIKED_MENU: 'მენიუ/რეცეპტები არ მოეწონა',
   TECHNICAL_ISSUE: 'ტექნიკური პრობლემა',
+  WANT_DIFFERENT_PLAN: 'სხვა პაკეტზე გადასვლა სურდა',
   OTHER: 'სხვა',
 };
 

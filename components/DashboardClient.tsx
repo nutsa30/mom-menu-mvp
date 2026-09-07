@@ -1655,6 +1655,7 @@ const CANCEL_REASONS: { value: string; label: string }[] = [
   { value: 'MISSING_FEATURES', label: 'ფუნქციები არ მყოფნის' },
   { value: 'DISLIKED_MENU', label: 'მენიუ/რეცეპტები არ მომეწონა' },
   { value: 'TECHNICAL_ISSUE', label: 'ტექნიკური პრობლემა' },
+  { value: 'WANT_DIFFERENT_PLAN', label: 'სხვა პაკეტზე გადასვლა მინდა' },
   { value: 'OTHER', label: 'სხვა' },
 ];
 

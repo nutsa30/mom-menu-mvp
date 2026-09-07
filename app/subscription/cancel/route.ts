@@ -8,7 +8,7 @@ import type { CancellationReason } from '@prisma/client';
 // components/DashboardClient.tsx (CancelReasonModal) and the CancellationReason enum
 // in prisma/schema.prisma.
 const VALID_REASONS: CancellationReason[] = [
-  'PRICE', 'NOT_NEEDED', 'NOT_USED_ENOUGH', 'MISSING_FEATURES', 'DISLIKED_MENU', 'TECHNICAL_ISSUE', 'OTHER',
+  'PRICE', 'NOT_NEEDED', 'NOT_USED_ENOUGH', 'MISSING_FEATURES', 'DISLIKED_MENU', 'TECHNICAL_ISSUE', 'WANT_DIFFERENT_PLAN', 'OTHER',
 ];
 
 // Cancels future billing without cutting off access early: subscriptionStatus stays
