@@ -1574,7 +1574,17 @@ function SettingsTab({ user, activeChild }: { user: any; activeChild?: any }) {
       <div id="cancel-subscription-section" className={`${card} p-6 transition-shadow ${highlightCancel ? 'ring-4 ring-[#D9803B]' : ''}`}>
         <h2 className="font-black text-[#465940] mb-3">ანგარიში</h2>
         <p className="text-sm text-[#465940]/70 mb-4"><span className="font-semibold text-[#465940]">სტატუსი:</span> {user.subscriptionStatus}</p>
-        {user.lsSubscriptionId ? (
+        {user.bogParentOrderId ? (
+          // A real, live BOG subscription always takes priority over a leftover
+          // lsSubscriptionId from before the account ever moved to BOG — otherwise anyone
+          // with both ends up stuck on the dead Lemon Squeezy portal button below, with no
+          // way to actually cancel their real, active subscription (found 2026-09-07:
+          // see prisma/check-cancel-button-conflict.ts for who this affected).
+          <CancelBogSubscriptionButton
+            subscriptionCanceledAt={user.subscriptionCanceledAt}
+            subscriptionRenewsAt={user.subscriptionRenewsAt}
+          />
+        ) : user.lsSubscriptionId ? (
           <ManageSubscriptionButton />
         ) : (user.subscriptionStatus === 'FULL_PLAN' || user.subscriptionStatus === 'RECIPE_PLAN') ? (
           <CancelBogSubscriptionButton
