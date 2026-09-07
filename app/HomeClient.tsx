@@ -656,7 +656,7 @@ function IntervalSwitchBlockedModal({ ka, currentInterval, renewsAt, onClose, on
       <div className="bg-[#F5F1E4] rounded-3xl w-full max-w-md overflow-hidden" onClick={e => e.stopPropagation()}>
         <div className="p-6">
           <h3 className="font-black text-[#6F7A5C] text-lg mb-3">
-            {ka ? 'ვერ გადავრთავთ პაკეტს ჯერ' : "Can't switch plans yet"}
+            {ka ? 'ვერ შეგიცვლით პაკეტს სანამ გაქვთ აქტიური გამოწერა' : "You can't change plans while you have an active subscription"}
           </h3>
           {ka ? (
             <>

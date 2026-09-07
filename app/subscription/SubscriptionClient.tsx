@@ -251,7 +251,7 @@ function IntervalSwitchBlockedModal({ currentInterval, renewsAt, onClose, onGoCa
     <div className="fixed inset-0 bg-black/40 z-50 flex items-end sm:items-center justify-center p-4" onClick={onClose}>
       <div className="bg-[#FDFBF0] rounded-3xl w-full max-w-md overflow-hidden" onClick={e => e.stopPropagation()}>
         <div className="p-6">
-          <h3 className="font-black text-[#465940] text-lg mb-3">ვერ გადავრთავთ პაკეტს ჯერ</h3>
+          <h3 className="font-black text-[#465940] text-lg mb-3">ვერ შეგიცვლით პაკეტს სანამ გაქვთ აქტიური გამოწერა</h3>
           <p className="text-sm text-[#465940]/80 leading-relaxed mb-3">
             თქვენ ამჟამად გაქვთ აქტიური {INTERVAL_LABEL_KA[currentInterval]} პაკეტი, რომელიც უკვე გადახდილია
             {renewsLabel ? <> და მოქმედია <span className="font-bold">{renewsLabel}</span>-მდე</> : ''}.
