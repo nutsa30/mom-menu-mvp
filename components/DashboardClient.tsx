@@ -1676,7 +1676,7 @@ function CancelReasonModal({ onClose, onConfirm, loading }: {
       <div className="bg-[#FDFBF0] rounded-3xl w-full max-w-md max-h-[85vh] overflow-hidden flex flex-col" onClick={e => e.stopPropagation()}>
         <div className="p-5 border-b border-[#465940]/10">
           <div className="flex items-center justify-between mb-1">
-            <h3 className="font-black text-[#465940]">რატომ ხდებით გაუქმებას?</h3>
+            <h3 className="font-black text-[#465940]">რატომ აუქმებთ?</h3>
             <button onClick={onClose} className="text-[#465940]/60 hover:text-[#465940]/80 text-2xl leading-none">×</button>
           </div>
           <p className="text-[11px] text-[#465940]/60">დაგვეხმარებით სერვისის გაუმჯობესებაში — აირჩიეთ მიზეზი გაუქმების დასასრულებლად</p>
