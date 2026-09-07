@@ -203,6 +203,18 @@ async function createOrder(opts: {
         fail: `${appUrl}/dashboard?sub=failed`,
       },
       capture: opts.capture,
+      // CONFIRMED with BOG support directly: automatic/recurring renewal charges
+      // (chargeSavedCard, below) only work for a card the customer entered by hand on
+      // this checkout page. Apple Pay and Google Pay do not support being recharged
+      // later at all — BOG's own systems never actually save a rechargeable card for
+      // those, which is exactly why some trial signups' renewals 404'd months later
+      // with "no saved card" while others worked fine (see
+      // prisma/reset-broken-card-users.ts). Every order created here becomes a parent
+      // order that WILL need a later recurring charge (trial conversion or plain
+      // renewal), so restrict checkout to card entry only — leaving this empty (the
+      // previous behavior) offers every method BOG supports, wallets included, and
+      // silently produces the same unrechargeable-card failure again.
+      payment_method: ['card'],
     }),
   });
 
