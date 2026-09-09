@@ -148,13 +148,16 @@ export default async function AdminUsersPage({
   // Broken out by which tier they picked (same as byInterval1/3/6, just the trial side of
   // that same split) — a single lumped "17 on trial" number can't tell you how much of
   // that will convert into 17₾/month vs 59₾/month once they actually pay.
-  const trialInterval1 = users.filter((u) => isTrialing(u) && u.subscriptionStatus === 'FULL_PLAN' && u.billingIntervalMonths === 1).length;
-  const trialInterval3 = users.filter((u) => isTrialing(u) && u.subscriptionStatus === 'FULL_PLAN' && u.billingIntervalMonths === 3).length;
-  const trialInterval6 = users.filter((u) => isTrialing(u) && u.subscriptionStatus === 'FULL_PLAN' && u.billingIntervalMonths === 6).length;
+  // Promo-code trialers are excluded here and counted only in trialInterval1/3/6Promo below
+  // (the "პრომოკოდით:" sub-line) so the two lines don't double-count the same person.
+  const trialInterval1 = users.filter((u) => isTrialing(u) && u.subscriptionStatus === 'FULL_PLAN' && u.billingIntervalMonths === 1 && !u.promoCode).length;
+  const trialInterval3 = users.filter((u) => isTrialing(u) && u.subscriptionStatus === 'FULL_PLAN' && u.billingIntervalMonths === 3 && !u.promoCode).length;
+  const trialInterval6 = users.filter((u) => isTrialing(u) && u.subscriptionStatus === 'FULL_PLAN' && u.billingIntervalMonths === 6 && !u.promoCode).length;
   // Same trial breakdown, restricted to accounts that redeemed a promo code before their
   // trial started (still worth tracking here even though they haven't paid a lari yet —
   // it's the first place admin would want to know "how much of my trial pipeline is
-  // discounted" before it converts to a real, discounted charge).
+  // discounted" before it converts to a real, discounted charge). Kept separate from
+  // trialInterval1/3/6 above (not a subset of it) so the top and bottom lines sum to the total.
   const trialInterval1Promo = users.filter((u) => isTrialing(u) && u.subscriptionStatus === 'FULL_PLAN' && u.billingIntervalMonths === 1 && u.promoCode).length;
   const trialInterval3Promo = users.filter((u) => isTrialing(u) && u.subscriptionStatus === 'FULL_PLAN' && u.billingIntervalMonths === 3 && u.promoCode).length;
   const trialInterval6Promo = users.filter((u) => isTrialing(u) && u.subscriptionStatus === 'FULL_PLAN' && u.billingIntervalMonths === 6 && u.promoCode).length;
