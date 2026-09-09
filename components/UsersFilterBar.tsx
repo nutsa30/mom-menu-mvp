@@ -4,12 +4,17 @@ import { useRouter, usePathname, useSearchParams } from 'next/navigation';
 
 type PromoCode = { id: string; code: string; planType: string };
 
+// promo1/3/6 replace the old promo15/promo30 tabs (those referenced the retired two-tier
+// RECIPE_PLAN/FULL_PLAN pricing — RECIPE_PLAN hasn't been sold in a long time, so that split
+// no longer means anything). These line up with the current three tiers instead, each
+// scoped to promo-code buyers on that specific tier (see promo1/3/6 filtering in
+// app/admin/users/page.tsx).
 const TABS = [
   { key: 'all', label: 'ყველა' },
-  { key: 'promo15', label: '15₾ პრომო' },
-  { key: 'promo30', label: '30₾ პრომო' },
+  { key: 'promo1', label: 'პრომო · 1თვე' },
+  { key: 'promo3', label: 'პრომო · 3თვე' },
+  { key: 'promo6', label: 'პრომო · 6თვე' },
   { key: 'gifted', label: '🎁 გაჩუქებული' },
-  { key: 'paymentFailed', label: '⚠️ გადახდა ვერ ჩამოეჭრა' },
 ];
 
 export default function UsersFilterBar({
@@ -45,12 +50,10 @@ export default function UsersFilterBar({
     router.push(buildUrl(activeTab, e.target.value));
   };
 
-  const visibleCodes =
-    activeTab === 'promo15'
-      ? promoCodes.filter((c) => c.planType === 'RECIPE_PLAN')
-      : activeTab === 'promo30'
-      ? promoCodes.filter((c) => c.planType === 'FULL_PLAN')
-      : promoCodes;
+  // Every current promo code is on the FULL_PLAN tier (RECIPE_PLAN isn't sold anymore) —
+  // scope the dropdown to those on a promo1/3/6 tab, same as before, just without the old
+  // 15₾/30₾ split that no longer maps to how anything is actually priced.
+  const visibleCodes = activeTab.startsWith('promo') ? promoCodes.filter((c) => c.planType === 'FULL_PLAN') : promoCodes;
 
   return (
     <div className="flex flex-wrap items-center gap-3 mb-4">

@@ -45,7 +45,7 @@ export default async function AdminUsersPage({
   const activeTab = searchParams.tab ?? 'all';
   const activePromo = searchParams.promo ?? '';
 
-  const [users, promoCodes, payments, successfulPayers] = await Promise.all([
+  const [users, promoCodes, payments, successfulPayers, promoRevenueTotal] = await Promise.all([
     prisma.user.findMany({
       orderBy: { createdAt: 'desc' },
       select: {
@@ -67,7 +67,9 @@ export default async function AdminUsersPage({
       where: { status: { not: 'REFUNDED' } },
       orderBy: { createdAt: 'desc' },
       take: 100,
-      include: { user: { select: { name: true, email: true } } },
+      // promoCode included so the transactions table below can flag which payments came
+      // from a promo-linked account, right where the money is actually shown.
+      include: { user: { select: { name: true, email: true, promoCode: { select: { code: true } } } } },
     }),
     // Who has ever actually been charged — a dedicated, unlimited query (the `payments`
     // list above is capped at the 100 most recent for the table below, so it can't be
@@ -76,6 +78,15 @@ export default async function AdminUsersPage({
     // trial's card-verification hold clears — well before any real charge — so
     // subscriptionStatus alone can't tell "paying" apart from "still in free trial".
     prisma.payment.findMany({ where: { status: 'SUCCESS' }, select: { userId: true }, distinct: ['userId'] }),
+    // Lifetime revenue from EVERY promo-code buyer combined, across all codes — separate
+    // from the single-code `promoRevenue` query below (which only runs once a specific code
+    // is selected in the filter dropdown) and not derived from the capped 100-row `payments`
+    // list above, so this stays accurate once there have been more than 100 payments total.
+    prisma.payment.aggregate({
+      where: { status: 'SUCCESS', user: { promoCodeId: { not: null } } },
+      _sum: { grossAmount: true, netAmount: true },
+      _count: true,
+    }),
   ]);
   const paidUserIds = new Set(successfulPayers.map((p) => p.userId));
 
@@ -119,6 +130,10 @@ export default async function AdminUsersPage({
   const byInterval1Promo = users.filter((u) => u.subscriptionStatus === 'FULL_PLAN' && u.billingIntervalMonths === 1 && !u.subscriptionCanceledAt && !u.paymentFailedAt && paidUserIds.has(u.id) && u.promoCode).length;
   const byInterval3Promo = users.filter((u) => u.subscriptionStatus === 'FULL_PLAN' && u.billingIntervalMonths === 3 && !u.subscriptionCanceledAt && !u.paymentFailedAt && paidUserIds.has(u.id) && u.promoCode).length;
   const byInterval6Promo = users.filter((u) => u.subscriptionStatus === 'FULL_PLAN' && u.billingIntervalMonths === 6 && !u.subscriptionCanceledAt && !u.paymentFailedAt && paidUserIds.has(u.id) && u.promoCode).length;
+  // Every currently-paying promo-code subscriber, combined across all three tiers — one
+  // number that answers "რამდენმა იყიდა პრომოკოდით" at a glance, without adding up the
+  // three sub-lines above by hand.
+  const promoPayingTotal = byInterval1Promo + byInterval3Promo + byInterval6Promo;
   // Signed up for a paid tier and currently mid-trial — not yet counted above, and not
   // counted toward MRR below, since they haven't paid a single lari yet and some will
   // cancel before their trial ever converts to a real charge. !paymentFailedAt matters
@@ -136,12 +151,17 @@ export default async function AdminUsersPage({
   const trialInterval1 = users.filter((u) => isTrialing(u) && u.subscriptionStatus === 'FULL_PLAN' && u.billingIntervalMonths === 1).length;
   const trialInterval3 = users.filter((u) => isTrialing(u) && u.subscriptionStatus === 'FULL_PLAN' && u.billingIntervalMonths === 3).length;
   const trialInterval6 = users.filter((u) => isTrialing(u) && u.subscriptionStatus === 'FULL_PLAN' && u.billingIntervalMonths === 6).length;
+  // Same trial breakdown, restricted to accounts that redeemed a promo code before their
+  // trial started (still worth tracking here even though they haven't paid a lari yet —
+  // it's the first place admin would want to know "how much of my trial pipeline is
+  // discounted" before it converts to a real, discounted charge).
+  const trialInterval1Promo = users.filter((u) => isTrialing(u) && u.subscriptionStatus === 'FULL_PLAN' && u.billingIntervalMonths === 1 && u.promoCode).length;
+  const trialInterval3Promo = users.filter((u) => isTrialing(u) && u.subscriptionStatus === 'FULL_PLAN' && u.billingIntervalMonths === 3 && u.promoCode).length;
+  const trialInterval6Promo = users.filter((u) => isTrialing(u) && u.subscriptionStatus === 'FULL_PLAN' && u.billingIntervalMonths === 6 && u.promoCode).length;
   const trialingCount = users.filter(isTrialing).length;
   const canceledPendingCount = users.filter(
     (u) => u.subscriptionCanceledAt && (u.subscriptionStatus === 'FULL_PLAN' || u.subscriptionStatus === 'RECIPE_PLAN')
   ).length;
-  const promoRecipe = users.filter((u) => u.promoCode?.planType === 'RECIPE_PLAN' && u.subscriptionStatus === 'RECIPE_PLAN').length;
-  const promoFull = users.filter((u) => u.promoCode?.planType === 'FULL_PLAN' && u.subscriptionStatus === 'FULL_PLAN').length;
 
   // Gifted subscriptions (have sub but paid nothing)
   const giftedPaying = users.filter(
@@ -222,15 +242,25 @@ export default async function AdminUsersPage({
     return u.subscriptionStatus;
   };
 
-  // Filter logic
+  // Filter logic — promo1/promo3/promo6 mirror byInterval1Promo/3Promo/6Promo exactly
+  // (currently paying, not canceled, not blocked on a failed charge, promo-linked) so the
+  // count on each tab button always matches the list it opens into.
+  const promoTierFilter = (interval: BillingInterval) => (u: (typeof users)[number]) =>
+    u.subscriptionStatus === 'FULL_PLAN' && u.billingIntervalMonths === interval &&
+    !u.subscriptionCanceledAt && !u.paymentFailedAt && paidUserIds.has(u.id) && !!u.promoCode;
   let filteredUsers = users;
-  if (activeTab === 'promo15') filteredUsers = filteredUsers.filter((u) => u.promoCode?.planType === 'RECIPE_PLAN' && u.subscriptionStatus === 'RECIPE_PLAN');
-  else if (activeTab === 'promo30') filteredUsers = filteredUsers.filter((u) => u.promoCode?.planType === 'FULL_PLAN' && u.subscriptionStatus === 'FULL_PLAN');
+  if (activeTab === 'promo1') filteredUsers = filteredUsers.filter(promoTierFilter(1));
+  else if (activeTab === 'promo3') filteredUsers = filteredUsers.filter(promoTierFilter(3));
+  else if (activeTab === 'promo6') filteredUsers = filteredUsers.filter(promoTierFilter(6));
   else if (activeTab === 'gifted') filteredUsers = filteredUsers.filter((u) => u.isGifted && (u.subscriptionStatus === 'RECIPE_PLAN' || u.subscriptionStatus === 'FULL_PLAN'));
   else if (activeTab === 'paymentFailed') filteredUsers = filteredUsers.filter((u) => !!u.paymentFailedAt);
   if (activePromo) filteredUsers = filteredUsers.filter((u) => u.promoCode?.id === activePromo);
 
-  const counts = { all: total, promo15: promoRecipe, promo30: promoFull, gifted: giftedCount, paymentFailed: paymentFailedCount };
+  const counts = {
+    all: total,
+    promo1: byInterval1Promo, promo3: byInterval3Promo, promo6: byInterval6Promo,
+    gifted: giftedCount, paymentFailed: paymentFailedCount,
+  };
 
   // "Due today" — anyone whose next charge (a trial converting to its first real payment,
   // or an ordinary renewal — both live in the same subscriptionRenewsAt field, see the BOG
@@ -295,18 +325,32 @@ export default async function AdminUsersPage({
           },
           {
             label: 'ტრიალზე (ჯერ არ გადაუხდია)', value: trialingCount, color: 'text-amber-600', bg: 'bg-amber-50',
-            sub: `${trialInterval1}×1თვე · ${trialInterval3}×3თვე · ${trialInterval6}×6თვე`,
+            sub: [
+              `${trialInterval1}×1თვე · ${trialInterval3}×3თვე · ${trialInterval6}×6თვე`,
+              `პრომოკოდით: ${trialInterval1Promo}×1თვე · ${trialInterval3Promo}×3თვე · ${trialInterval6Promo}×6თვე`,
+            ],
           },
           { label: 'გაუქმებული (მალე)', value: canceledPendingCount, color: 'text-amber-600', bg: 'bg-amber-50' },
           { label: '⚠️ გადახდა ვერ ჩამოეჭრა', value: paymentFailedCount, color: 'text-red-600', bg: 'bg-red-50' },
           { label: d.blocked, value: blocked, color: 'text-[#FDFBF0]', bg: 'bg-[#465940]' },
+          {
+            label: '🏷 სულ პრომოკოდით (გადამხდელი)', value: promoPayingTotal, color: 'text-[#465940]', bg: 'bg-[#FDFBF0]/10',
+            sub: [
+              `${byInterval1Promo}×1თვე · ${byInterval3Promo}×3თვე · ${byInterval6Promo}×6თვე`,
+              `ჩარიცხული: ${(promoRevenueTotal._sum.grossAmount ?? 0).toFixed(2)}₾ (${promoRevenueTotal._count} გადახდა)`,
+            ],
+          },
         ].map((s) => (
           <div key={s.label} className="bg-[#FDFBF0] rounded-2xl p-5 border border-[#465940]/10 shadow-sm">
             <div className={`inline-block px-2 py-0.5 rounded-lg ${s.bg} mb-3`}>
               <p className={`text-xs font-semibold ${s.color}`}>{s.label}</p>
             </div>
             <p className={`text-3xl font-black ${s.color}`}>{s.value}</p>
-            {'sub' in s && s.sub && <p className="text-[10px] text-[#465940]/50 mt-1">{s.sub}</p>}
+            {'sub' in s && s.sub && (
+              Array.isArray(s.sub)
+                ? s.sub.map((line, i) => <p key={i} className="text-[10px] text-[#465940]/50 mt-1">{line}</p>)
+                : <p className="text-[10px] text-[#465940]/50 mt-1">{s.sub}</p>
+            )}
           </div>
         ))}
       </div>
@@ -384,7 +428,14 @@ export default async function AdminUsersPage({
                         <p className="text-sm font-semibold text-[#465940]">{p.user.name}</p>
                         <p className="text-xs text-[#465940]/50">{p.user.email}</p>
                       </td>
-                      <td className="px-4 py-4 text-sm text-[#465940]/70">{planLabelFor(p)}</td>
+                      <td className="px-4 py-4 text-sm text-[#465940]/70">
+                        {planLabelFor(p)}
+                        {(p as any).user?.promoCode && (
+                          <span className="ml-2 inline-block font-mono text-[10px] font-bold bg-amber-50 text-amber-700 border border-amber-200 px-1.5 py-0.5 rounded">
+                            {(p as any).user.promoCode.code}
+                          </span>
+                        )}
+                      </td>
                       <td className="px-4 py-4">
                         <span className={`inline-block px-2.5 py-1 rounded-full text-xs font-bold ${
                           p.status === 'SUCCESS' ? 'bg-[#465940]/10 text-[#465940]' :
