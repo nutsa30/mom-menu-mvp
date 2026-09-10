@@ -18,14 +18,18 @@ async function main() {
   console.log(`ბოლო 3 დღეში წარუმატებელი ჩამოჭრის მცდელობა: ${failed.length}\n`);
 
   for (const pay of failed) {
+    // pay.user can be null — account deletion nulls Payment.userId but keeps the Payment
+    // row itself (see schema.prisma), with a name/email snapshot as the fallback.
+    const name = pay.user?.name ?? (pay as any).deletedUserName ?? '—';
+    const email = pay.user?.email ?? (pay as any).deletedUserEmail ?? '—';
     console.log('──────────────────────────────');
-    console.log('მომხმარებელი:', pay.user.name, `(${pay.user.email})`);
+    console.log('მომხმარებელი:', name, `(${email})${pay.user ? '' : ' — ანგარიში წაშლილია'}`);
     console.log('თარიღი:', pay.createdAt.toISOString());
     console.log('თანხა:', pay.grossAmount, '₾ /', pay.billingIntervalMonths, 'თვე');
     console.log('ბარათის ტიპი:', pay.cardType ?? 'უცნობი');
     console.log('BOG Order ID:', pay.bogOrderId);
     console.log('მიზეზი:', (pay as any).failureReason ?? '(ჯერ არ ინახებოდა ამ თარიღისთვის)');
-    console.log('ამჟამად დაბლოკილია საიტზე:', pay.user.paymentFailedAt ? 'კი' : 'არა (მას შემდეგ გადაიხადა ან სხვაგვარად გასწორდა)');
+    console.log('ამჟამად დაბლოკილია საიტზე:', !pay.user ? 'ანგარიში წაშლილია — ვეღარ ვამოწმებთ' : (pay.user.paymentFailedAt ? 'კი' : 'არა (მას შემდეგ გადაიხადა ან სხვაგვარად გასწორდა)'));
   }
 
   if (failed.length === 0) {

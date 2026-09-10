@@ -148,6 +148,24 @@ model SubscriptionCancellation {
   createdAt  DateTime            @default(now())
 }
 
+// One row per full self-service account deletion (see /api/account/delete) — the "delete my
+// whole account" counterpart to SubscriptionCancellation above, kept the same way admin
+// wants to see it: who, when, why. Deliberately has NO relation to User (userEmail/userName
+// are a plain snapshot instead) — the User row is gone by the time this is read, so an FK
+// here would either force a cascade (destroying this very record) or dangle. Shown together
+// with SubscriptionCancellation on admin/cancellations, tagged by type, so admin can tell
+// "canceled the subscription" apart from "deleted the whole account" at a glance.
+model AccountDeletion {
+  id         String              @id @default(cuid())
+  userEmail  String
+  userName   String
+  plan       SubscriptionStatus  // what subscriptionStatus they were on right before deleting
+  reason     CancellationReason
+  reasonText String?             // free text — required when reason is OTHER, same as SubscriptionCancellation
+
+  createdAt  DateTime            @default(now())
+}
+
 enum PaymentStatus {
   SUCCESS
   FAILED
@@ -156,8 +174,16 @@ enum PaymentStatus {
 
 model Payment {
   id               String             @id @default(cuid())
-  userId           String
-  user             User               @relation(fields: [userId], references: [id], onDelete: Cascade)
+  // Optional + SetNull (not Cascade) on purpose: a customer's payment/revenue history is
+  // financial record-keeping and must survive them deleting their account (see
+  // /api/account/delete) — only the link to the now-gone User row is cleared, never the
+  // Payment row itself. deletedUserEmail/deletedUserName are a snapshot taken at the moment
+  // of deletion (see account/delete/route.ts) so admin can still see who a payment was for
+  // after their User row is gone and this relation reads null.
+  userId           String?
+  user             User?              @relation(fields: [userId], references: [id], onDelete: SetNull)
+  deletedUserEmail String?
+  deletedUserName  String?
 
   plan             SubscriptionStatus
   status           PaymentStatus      @default(SUCCESS)

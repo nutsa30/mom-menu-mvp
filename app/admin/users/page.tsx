@@ -428,8 +428,14 @@ export default async function AdminUsersPage({
                     <tr key={p.id} className="hover:bg-[#465940]/5 transition">
                       <td className="px-6 py-4 text-sm text-[#465940]/70">{new Date(p.createdAt).toLocaleDateString()}</td>
                       <td className="px-4 py-4">
-                        <p className="text-sm font-semibold text-[#465940]">{p.user.name}</p>
-                        <p className="text-xs text-[#465940]/50">{p.user.email}</p>
+                        {/* p.user can be null — account deletion nulls Payment.userId (see
+                            schema.prisma) but keeps the Payment row itself, with a name/email
+                            snapshot taken at that moment as the fallback. */}
+                        <p className="text-sm font-semibold text-[#465940]">{p.user?.name ?? (p as any).deletedUserName ?? '—'}</p>
+                        <p className="text-xs text-[#465940]/50">
+                          {p.user?.email ?? (p as any).deletedUserEmail ?? '—'}
+                          {!p.user && <span className="ml-1 text-[10px] text-[#465940]/40">(ანგარიში წაშლილია)</span>}
+                        </p>
                       </td>
                       <td className="px-4 py-4 text-sm text-[#465940]/70">
                         {planLabelFor(p)}

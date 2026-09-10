@@ -1516,16 +1516,27 @@ function SettingsTab({ user, activeChild }: { user: any; activeChild?: any }) {
   };
 
   const [deleting, setDeleting] = useState(false);
-  const deleteAccount = async () => {
+  const [showDeleteReasonModal, setShowDeleteReasonModal] = useState(false);
+  const [deleteError, setDeleteError] = useState('');
+  // A reason is picked first (DeleteAccountReasonModal, below), same as canceling a
+  // subscription — it's what lets admin/cancellations show who deleted their whole account
+  // and why, not just who canceled. The two window.confirm()s stay as a last-chance safety
+  // net for an action that's genuinely irreversible, on top of the reason step.
+  const deleteAccount = async (reason: string, reasonText: string) => {
     if (!confirm('ანგარიშის წაშლა საბოლოოა და ვერ გაუქმდება — შვილების, კვების გეგმებისა და გამოწერის ჩათვლით ყველაფერი წაიშლება. იმავე ელფოსტით ხელახლა რეგისტრაცია შესაძლებელია, მაგრამ თუ 7-დღიანი უფასო ტესტი უკვე გამოყენებულია, მეორედ აღარ მიეცემა. დარწმუნებული ხარ?')) return;
     if (!confirm('ბოლო შეკითხვა — ნამდვილად გსურს ანგარიშის წაშლა?')) return;
     setDeleting(true);
-    const res = await fetch('/api/account/delete', { method: 'POST' });
+    setDeleteError('');
+    const res = await fetch('/api/account/delete', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ reason, reasonText }),
+    });
     if (res.ok) {
       window.location.href = '/?lang=ka';
     } else {
       setDeleting(false);
-      alert('შეცდომა. სცადე თავიდან.');
+      setDeleteError('შეცდომა. სცადე თავიდან.');
     }
   };
 
@@ -1602,10 +1613,21 @@ function SettingsTab({ user, activeChild }: { user: any; activeChild?: any }) {
         <p className="text-sm text-[#465940]/70 mb-4">
           ანგარიშის წაშლა საბოლოოდ შლის შვილების პროფილებს, კვების გეგმებსა და ისტორიას. თუ აქტიური გამოწერა გაქვს, ისიც გაუქმდება — შემდგომი ჩამოჭრა აღარ მოხდება. იმავე ელფოსტით ხელახლა რეგისტრაცია შემდეგაც შესაძლებელია — თუმცა თუ ამ ელფოსტამ უკვე გამოიყენა 7-დღიანი უფასო ტესტ-პერიოდი, ხელახლა რეგისტრაციისას მეორედ აღარ მიეცემა: პაკეტზე გამოწერისთანავე თანხა ეგრევე ჩამოეჭრება, 7-დღიანი ტესტის გარეშე.
         </p>
-        <button onClick={deleteAccount} disabled={deleting}
+        <button onClick={() => setShowDeleteReasonModal(true)} disabled={deleting}
           className="bg-red-50 hover:bg-red-100 text-red-600 px-6 py-2.5 rounded-full text-sm font-bold transition disabled:opacity-60">
           {deleting ? 'იშლება...' : 'ანგარიშის წაშლა'}
         </button>
+        {deleteError && <p className="text-red-500 text-xs mt-2">{deleteError}</p>}
+        {showDeleteReasonModal && (
+          <DeleteAccountReasonModal
+            onClose={() => setShowDeleteReasonModal(false)}
+            onConfirm={(reason, reasonText) => {
+              setShowDeleteReasonModal(false);
+              deleteAccount(reason, reasonText);
+            }}
+            loading={deleting}
+          />
+        )}
       </div>
     </div>
   );
@@ -1710,6 +1732,65 @@ function CancelReasonModal({ onClose, onConfirm, loading }: {
             className="w-full bg-[#465940] hover:bg-[#465940]/90 text-[#FDFBF0] px-5 py-2.5 rounded-full text-sm font-bold transition disabled:opacity-40"
           >
             {loading ? 'უქმდება...' : 'გაუქმების დადასტურება'}
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// Reason-picker modal shown before a full account deletion is finalized — the "delete my
+// whole account" counterpart to CancelReasonModal above, reusing the same CANCEL_REASONS
+// list so admin/cancellations shows both under one shared reason vocabulary. A reason must
+// be picked (free text required instead when "სხვა" is picked), same rule as cancellation.
+function DeleteAccountReasonModal({ onClose, onConfirm, loading }: {
+  onClose: () => void;
+  onConfirm: (reason: string, reasonText: string) => void;
+  loading: boolean;
+}) {
+  const [reason, setReason] = useState('');
+  const [otherText, setOtherText] = useState('');
+  const canConfirm = reason && (reason !== 'OTHER' || otherText.trim().length > 0);
+
+  return (
+    <div className="fixed inset-0 bg-black/40 z-50 flex items-end sm:items-center justify-center p-4" onClick={onClose}>
+      <div className="bg-[#FDFBF0] rounded-3xl w-full max-w-md max-h-[85vh] overflow-hidden flex flex-col" onClick={e => e.stopPropagation()}>
+        <div className="p-5 border-b border-[#465940]/10">
+          <div className="flex items-center justify-between mb-1">
+            <h3 className="font-black text-red-600">რატომ შლით ანგარიშს?</h3>
+            <button onClick={onClose} className="text-[#465940]/60 hover:text-[#465940]/80 text-2xl leading-none">×</button>
+          </div>
+          <p className="text-[11px] text-[#465940]/60">დაგვეხმარებით სერვისის გაუმჯობესებაში — აირჩიეთ მიზეზი ანგარიშის წაშლის დასასრულებლად</p>
+        </div>
+        <div className="overflow-y-auto p-4 space-y-2">
+          {CANCEL_REASONS.map(r => (
+            <label key={r.value}
+              className={`flex items-center gap-3 p-3 rounded-2xl border cursor-pointer transition ${
+                reason === r.value ? 'border-red-500 bg-red-50' : 'border-[#465940]/10 hover:bg-[#465940]/5'
+              }`}>
+              <input type="radio" name="deleteReason" value={r.value} checked={reason === r.value}
+                onChange={() => setReason(r.value)} className="accent-red-600" />
+              <span className="text-sm text-[#465940] font-medium">{r.label}</span>
+            </label>
+          ))}
+          {reason === 'OTHER' && (
+            <textarea
+              value={otherText}
+              onChange={e => setOtherText(e.target.value)}
+              placeholder="დაწერეთ მიზეზი..."
+              rows={3}
+              className="w-full mt-1 px-3 py-2 rounded-xl border border-[#465940]/20 text-sm text-[#465940] bg-white focus:outline-none focus:border-[#465940]"
+            />
+          )}
+        </div>
+        <div className="p-4 border-t border-[#465940]/10">
+          <p className="text-[11px] text-[#465940]/50 mb-2">შემდეგ საფეხურზე კიდევ დაგადასტურებინებთ — ეს ჯერ საბოლოო ნაბიჯი არ არის.</p>
+          <button
+            onClick={() => canConfirm && onConfirm(reason, otherText.trim())}
+            disabled={!canConfirm || loading}
+            className="w-full bg-red-600 hover:bg-red-700 text-white px-5 py-2.5 rounded-full text-sm font-bold transition disabled:opacity-40"
+          >
+            გაგრძელება
           </button>
         </div>
       </div>
