@@ -2,6 +2,7 @@
 import { adminDict, getAdminLocale } from '@/lib/adminI18n';
 import UsersFilterBar from '@/components/UsersFilterBar';
 import UsersSearchTable from '@/components/UsersSearchTable';
+import PaymentsTable from '@/components/PaymentsTable';
 import { PLAN_AMOUNTS, PLAN_AMOUNTS_BY_INTERVAL, BillingInterval, applyDiscount } from '@/lib/bog';
 
 // Real, currently-charged prices (env-configured, not hardcoded) — used for every
@@ -302,6 +303,26 @@ export default async function AdminUsersPage({
     }))
     .sort((a, b) => new Date(a.subscriptionRenewsAt!).getTime() - new Date(b.subscriptionRenewsAt!).getTime());
 
+  // Pre-formatted rows for the transactions table (PaymentsTable, a client component so it
+  // can collapse to the most recent few and expand on click — see its own comment). Plain
+  // data only, no functions: planLabelFor/p.user access has to happen here, server-side,
+  // since functions can't cross into a client component as props.
+  const paymentRows = payments.map((p) => ({
+    id: p.id,
+    createdAt: p.createdAt.toISOString(),
+    name: p.user?.name ?? (p as any).deletedUserName ?? '—',
+    email: p.user?.email ?? (p as any).deletedUserEmail ?? '—',
+    isDeletedUser: !p.user,
+    planLabel: planLabelFor(p),
+    promoCode: (p as any).user?.promoCode?.code ?? null,
+    status: p.status,
+    failureReason: (p as any).failureReason ?? null,
+    cardType: p.cardType,
+    grossAmount: p.grossAmount,
+    commissionAmount: p.commissionAmount,
+    netAmount: p.netAmount,
+  }));
+
   return (
     <div className="p-4 sm:p-6 lg:p-8">
       <div className="mb-6 lg:mb-8">
@@ -405,69 +426,7 @@ export default async function AdminUsersPage({
           </div>
         </div>
 
-        <div className="bg-[#FDFBF0] rounded-2xl border border-[#465940]/10 shadow-sm overflow-hidden">
-          {payments.length === 0 ? (
-            <p className="text-center py-12 text-[#465940]/60 text-sm">ჯერ არცერთი BOG გადახდა არ დაფიქსირებულა</p>
-          ) : (
-            <div className="overflow-x-auto">
-              <table className="w-full min-w-[760px]">
-                <thead className="bg-[#465940]">
-                  <tr>
-                    <th className="text-left px-6 py-3 text-xs font-semibold text-[#FDFBF0]/80 uppercase tracking-wide">თარიღი</th>
-                    <th className="text-left px-4 py-3 text-xs font-semibold text-[#FDFBF0]/80 uppercase tracking-wide">მომხმარებელი</th>
-                    <th className="text-left px-4 py-3 text-xs font-semibold text-[#FDFBF0]/80 uppercase tracking-wide">გეგმა</th>
-                    <th className="text-left px-4 py-3 text-xs font-semibold text-[#FDFBF0]/80 uppercase tracking-wide">სტატუსი</th>
-                    <th className="text-left px-4 py-3 text-xs font-semibold text-[#FDFBF0]/80 uppercase tracking-wide">ბარათი</th>
-                    <th className="text-right px-4 py-3 text-xs font-semibold text-[#FDFBF0]/80 uppercase tracking-wide">ბრუტო</th>
-                    <th className="text-right px-4 py-3 text-xs font-semibold text-[#FDFBF0]/80 uppercase tracking-wide">საკომისიო</th>
-                    <th className="text-right px-6 py-3 text-xs font-semibold text-[#FDFBF0]/80 uppercase tracking-wide">წმინდა</th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-[#465940]/5">
-                  {payments.map((p) => (
-                    <tr key={p.id} className="hover:bg-[#465940]/5 transition">
-                      <td className="px-6 py-4 text-sm text-[#465940]/70">{new Date(p.createdAt).toLocaleDateString()}</td>
-                      <td className="px-4 py-4">
-                        {/* p.user can be null — account deletion nulls Payment.userId (see
-                            schema.prisma) but keeps the Payment row itself, with a name/email
-                            snapshot taken at that moment as the fallback. */}
-                        <p className="text-sm font-semibold text-[#465940]">{p.user?.name ?? (p as any).deletedUserName ?? '—'}</p>
-                        <p className="text-xs text-[#465940]/50">
-                          {p.user?.email ?? (p as any).deletedUserEmail ?? '—'}
-                          {!p.user && <span className="ml-1 text-[10px] text-[#465940]/40">(ანგარიში წაშლილია)</span>}
-                        </p>
-                      </td>
-                      <td className="px-4 py-4 text-sm text-[#465940]/70">
-                        {planLabelFor(p)}
-                        {(p as any).user?.promoCode && (
-                          <span className="ml-2 inline-block font-mono text-[10px] font-bold bg-amber-50 text-amber-700 border border-amber-200 px-1.5 py-0.5 rounded">
-                            {(p as any).user.promoCode.code}
-                          </span>
-                        )}
-                      </td>
-                      <td className="px-4 py-4">
-                        <span className={`inline-block px-2.5 py-1 rounded-full text-xs font-bold ${
-                          p.status === 'SUCCESS' ? 'bg-[#465940]/10 text-[#465940]' :
-                          p.status === 'REFUNDED' ? 'bg-amber-50 text-amber-700' :
-                          'bg-red-50 text-red-600'
-                        }`}>
-                          {p.status}
-                        </span>
-                        {p.status === 'FAILED' && (p as any).failureReason && (
-                          <p className="text-[10px] text-red-500 mt-1 max-w-[180px]">{(p as any).failureReason}</p>
-                        )}
-                      </td>
-                      <td className="px-4 py-4 text-sm text-[#465940]/70">{p.cardType ?? '—'}</td>
-                      <td className="px-4 py-4 text-sm text-[#465940]/70 text-right">{p.grossAmount.toFixed(2)}₾</td>
-                      <td className="px-4 py-4 text-sm text-[#465940]/70 text-right">{p.commissionAmount != null ? `${p.commissionAmount.toFixed(2)}₾` : '—'}</td>
-                      <td className="px-6 py-4 text-sm text-[#465940] font-semibold text-right">{p.netAmount != null ? `${p.netAmount.toFixed(2)}₾` : '—'}</td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          )}
-        </div>
+        <PaymentsTable payments={paymentRows} />
       </div>
 
       {/* Today's due list — trial conversions and renewals expected to charge today,
