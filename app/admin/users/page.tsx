@@ -263,6 +263,15 @@ export default async function AdminUsersPage({
     net: monthRevenueAgg._sum.netAmount ?? 0,
     count: monthRevenueAgg._count,
   };
+  // Net MRR/ARR — what actually lands on the card after BOG's commission, not just the
+  // sticker-price recurring total. There's no way to know each individual subscriber's
+  // exact card type (local 2% vs. Amex 3.5%) from subscriptionStatus alone, so this applies
+  // the REAL blended commission rate observed across every actual payment so far
+  // (allTimeTotals.net / allTimeTotals.gross) — more accurate than assuming a flat 2%, and
+  // it self-corrects as more payments come in with whatever the real card-type mix is.
+  // Falls back to a flat 2% (the local-card rate) only before any real payment exists yet.
+  const netRate = allTimeTotals.gross > 0 ? allTimeTotals.net / allTimeTotals.gross : 0.98;
+  const netMrr = Math.round(mrr * netRate * 100) / 100;
   // Payment-record plan label — uses the payment's OWN stored amount/interval rather than a
   // static lookup, since every current-tier payment has plan='FULL_PLAN' regardless of which
   // of the three real prices (17/39/59₾) was actually charged.
@@ -426,11 +435,13 @@ export default async function AdminUsersPage({
           <p className="text-xs font-semibold text-[#FDFBF0]/70 mb-3">MRR (ყოველთვიური)</p>
           <p className="text-3xl font-black text-[#FDFBF0]">{mrr}₾</p>
           <p className="text-[10px] text-[#FDFBF0]/50 mt-1">{payingUsers} გადამხდელი · გაჩუქ./ტრიალი გამოკლ.</p>
+          <p className="text-[10px] text-[#FDFBF0]/50 mt-1">ბანკის საკომისიოს გამოკლებით: ~{netMrr.toFixed(2)}₾</p>
         </div>
         <div className="bg-[#FDFBF0] rounded-2xl p-5 border border-[#465940]/10 shadow-sm">
           <p className="text-xs font-semibold text-[#465940] mb-3">ARR (წლიური)</p>
           <p className="text-3xl font-black text-[#465940]">{mrr * 12}₾</p>
           <p className="text-[10px] text-[#465940]/50 mt-1">MRR × 12</p>
+          <p className="text-[10px] text-[#465940]/50 mt-1">საკომისიოს გამოკლებით: ~{(netMrr * 12).toFixed(2)}₾</p>
         </div>
         <div className="bg-[#FDFBF0] rounded-2xl p-5 border border-[#465940]/10 shadow-sm">
           <p className="text-xs font-semibold text-[#465940] mb-3">ახალი MRR (30 დღე)</p>
