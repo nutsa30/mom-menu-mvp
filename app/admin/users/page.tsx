@@ -432,16 +432,16 @@ export default async function AdminUsersPage({
       {/* Revenue cards */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4 mb-6 lg:mb-8">
         <div className="bg-[#465940] rounded-2xl p-5 shadow-sm">
-          <p className="text-xs font-semibold text-[#FDFBF0]/70 mb-3">MRR (ყოველთვიური)</p>
-          <p className="text-3xl font-black text-[#FDFBF0]">{mrr}₾</p>
+          <p className="text-xs font-semibold text-[#FDFBF0]/70 mb-3">MRR (ყოველთვიური, საკომისიოს გამოკლებით)</p>
+          <p className="text-3xl font-black text-[#FDFBF0]">~{netMrr.toFixed(2)}₾</p>
           <p className="text-[10px] text-[#FDFBF0]/50 mt-1">{payingUsers} გადამხდელი · გაჩუქ./ტრიალი გამოკლ.</p>
-          <p className="text-[10px] text-[#FDFBF0]/50 mt-1">ბანკის საკომისიოს გამოკლებით: ~{netMrr.toFixed(2)}₾</p>
+          <p className="text-[10px] text-[#FDFBF0]/50 mt-1">საკომისიოს ჩამოჭრამდე: {mrr}₾</p>
         </div>
         <div className="bg-[#FDFBF0] rounded-2xl p-5 border border-[#465940]/10 shadow-sm">
-          <p className="text-xs font-semibold text-[#465940] mb-3">ARR (წლიური)</p>
-          <p className="text-3xl font-black text-[#465940]">{mrr * 12}₾</p>
-          <p className="text-[10px] text-[#465940]/50 mt-1">MRR × 12</p>
-          <p className="text-[10px] text-[#465940]/50 mt-1">საკომისიოს გამოკლებით: ~{(netMrr * 12).toFixed(2)}₾</p>
+          <p className="text-xs font-semibold text-[#465940] mb-3">ARR (წლიური, საკომისიოს გამოკლებით)</p>
+          <p className="text-3xl font-black text-[#465940]">~{(netMrr * 12).toFixed(2)}₾</p>
+          <p className="text-[10px] text-[#465940]/50 mt-1">წმინდა MRR × 12</p>
+          <p className="text-[10px] text-[#465940]/50 mt-1">საკომისიოს ჩამოჭრამდე: {mrr * 12}₾</p>
         </div>
         <div className="bg-[#FDFBF0] rounded-2xl p-5 border border-[#465940]/10 shadow-sm">
           <p className="text-xs font-semibold text-[#465940] mb-3">ახალი MRR (30 დღე)</p>
