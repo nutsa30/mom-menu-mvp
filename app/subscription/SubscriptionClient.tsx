@@ -6,14 +6,16 @@ import { ga } from '@/lib/gtag';
 
 type BillingInterval = 1 | 3 | 6;
 
+// Only a promo code still grants a free trial (2026-09-13 decision) — everyone else is
+// charged immediately on subscribing. Mirrors PROMO_TRIAL_DAYS in the webhook and
+// bog-checkout/route.ts's eligibleForTrial check, which is what actually enforces this.
+const PROMO_TRIAL_DAYS = 3;
+
 export default function SubscriptionClient({ planAmounts }: { planAmounts: Record<BillingInterval, number> }) {
   const router = useRouter();
   const [loadingPlan, setLoadingPlan] = useState<BillingInterval | null>(null);
   const [currentPlan, setCurrentPlan] = useState<string | null>(null);
   const [currentInterval, setCurrentInterval] = useState<BillingInterval | null>(null);
-  // Already redeemed a friend's referral code — the trial is 3 days regardless of any
-  // promo code, matching what the BOG webhook actually grants (see /api/auth/me).
-  const [hasReferral, setHasReferral] = useState(false);
   // Already started a BOG trial before (any tier, ever) — a checkout from here on charges
   // immediately with no trial, even when switching to a different interval than what's
   // currently active (see /api/subscription/bog-checkout). Cards must not promise a free
@@ -34,7 +36,6 @@ export default function SubscriptionClient({ planAmounts }: { planAmounts: Recor
       .then(d => {
         if (d?.subscriptionStatus) setCurrentPlan(d.subscriptionStatus);
         if (d?.billingIntervalMonths) setCurrentInterval(d.billingIntervalMonths);
-        if (d?.hasReferral) setHasReferral(true);
         if (d?.bogTrialUsed) setBogTrialUsed(true);
       })
       .catch(() => {});
@@ -53,7 +54,7 @@ export default function SubscriptionClient({ planAmounts }: { planAmounts: Recor
       });
       const data = await res.json();
       if (res.ok && data.valid) {
-        setPromoStatus(p => ({ ...p, [interval]: { discount: data.discountPercent, valid: true, msg: `✓ ${data.discountPercent}% ფასდაკლება — სატესტო პერიოდი 3 დღეა (ჩვეულებრივი 7 დღის ნაცვლად)` } }));
+        setPromoStatus(p => ({ ...p, [interval]: { discount: data.discountPercent, valid: true, msg: `✓ ${data.discountPercent}% ფასდაკლება — ${PROMO_TRIAL_DAYS}-დღიანი სატესტო პერიოდით` } }));
       } else {
         const msg = data.error === 'wrong_plan' ? 'ეს კოდი სხვა გეგმისთვისაა'
           : data.error === 'limit_reached' ? 'კოდის ლიმიტი ამოიწურა'
@@ -123,11 +124,11 @@ export default function SubscriptionClient({ planAmounts }: { planAmounts: Recor
             const perMonth = (price / interval).toFixed(interval === 6 ? 1 : 0);
             const cadence = interval === 1 ? 'თვეში' : `ყოველ ${interval} თვეში`;
             const isActive = currentPlan === 'FULL_PLAN' && currentInterval === interval && !loadingPlan;
-            // A referral code (redeemed anywhere on the site already) or this card's own
-            // promo code shortens the trial to 3 days — mirrors exactly what the BOG
-            // webhook grants (referredByUserId / promoCodeId), so this never promises a
-            // trial length checkout won't actually give.
-            const trialDays = hasReferral || promoStatus[interval]?.valid ? 3 : 7;
+            // Free trial retired for everyone except promo-code signups (2026-09-13
+            // decision) — a referral code alone no longer grants one. Only a promo code
+            // entered on this card does, and only if this account hasn't already used a
+            // trial before (mirrors bog-checkout/route.ts's eligibleForTrial check exactly).
+            const hasTrial = !bogTrialUsed && Boolean(promoStatus[interval]?.valid);
 
             return (
               <div key={interval} className={`rounded-[28px] bg-[#F5F1E4] p-8 flex flex-col min-w-0 relative ${isRecommended ? 'md:scale-105 z-10 border-2' : ''}`}
@@ -144,13 +145,13 @@ export default function SubscriptionClient({ planAmounts }: { planAmounts: Recor
                   {savings > 0 ? `ზოგავთ ${savings}₾-ს (${savingsPct}%)` : '—'}
                 </p>
 
-                {bogTrialUsed ? (
-                  <div className="text-4xl font-black text-[#6F7A5C]">{disc ?? price}₾</div>
-                ) : (
+                {hasTrial ? (
                   <>
                     <div className="text-4xl font-black text-[#6F7A5C]">0₾</div>
-                    <p className="text-[#6F7A5C]/60 text-sm font-medium mb-2">პირველი {trialDays} დღე</p>
+                    <p className="text-[#6F7A5C]/60 text-sm font-medium mb-2">პირველი {PROMO_TRIAL_DAYS} დღე</p>
                   </>
+                ) : (
+                  <div className="text-4xl font-black text-[#6F7A5C]">{disc ?? price}₾</div>
                 )}
 
                 <div className="flex justify-center items-baseline gap-1.5 mb-1">
@@ -169,9 +170,11 @@ export default function SubscriptionClient({ planAmounts }: { planAmounts: Recor
                 )}
 
                 <p className="text-[#6F7A5C]/40 text-[11px] italic mt-2 mb-5">
-                  {bogTrialUsed
-                    ? 'თანხა ჩამოგეჭრებათ დაუყოვნებლივ — სატესტო პერიოდი ერთხელ უკვე გამოყენებული გაქვთ.'
-                    : `თანხა ჩამოგეჭრებათ მე-${trialDays + 1} დღეს. გაუქმება შესაძლებელია სატესტო პერიოდშივე, სრულიად უფასოდ.`}
+                  {hasTrial
+                    ? `თანხა ჩამოგეჭრებათ მე-${PROMO_TRIAL_DAYS + 1} დღეს. გაუქმება შესაძლებელია სატესტო პერიოდშივე, სრულიად უფასოდ.`
+                    : bogTrialUsed
+                      ? 'თანხა ჩამოგეჭრებათ დაუყოვნებლივ — სატესტო პერიოდი ერთხელ უკვე გამოყენებული გაქვთ.'
+                      : 'თანხა ჩამოგეჭრებათ დაუყოვნებლივ, გამოწერისთანავე.'}
                 </p>
 
                 <ul className="space-y-3 text-left flex-1 text-sm text-[#6F7A5C] mb-6">
@@ -205,7 +208,13 @@ export default function SubscriptionClient({ planAmounts }: { planAmounts: Recor
                   className="w-full py-3.5 mt-3 rounded-full font-bold transition disabled:opacity-60"
                   style={isRecommended ? { background: '#D9803B', color: '#FFFFFF' } : { border: '1px solid #6F7A5C', color: '#6F7A5C' }}
                 >
-                  {isActive ? '✓ აქტიურია' : loadingPlan === interval ? 'მუშავდება...' : 'დაწყება'}
+                  {isActive
+                    ? '✓ აქტიურია'
+                    : loadingPlan === interval
+                      ? 'მუშავდება...'
+                      : hasTrial
+                        ? `დაწყება — ${PROMO_TRIAL_DAYS} დღით უფასოდ`
+                        : 'შეიძინე ახლავე'}
                 </button>
                 <p className="text-[#6F7A5C]/50 text-xs mt-2 text-center">
                   ავტომატურად განახლდება {cadence}. გაუქმება ნებისმიერ დროს.

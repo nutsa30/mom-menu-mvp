@@ -154,12 +154,15 @@ export function decodeRenewalOrderId(externalOrderId: string | null | undefined)
 // Two entry points, one shared helper:
 // - createTrialOrder: capture "manual" (preauthorization). The webhook releases the hold
 //   (cancelPreauthorization) the moment the card-save is confirmed, so the customer is
-//   never actually charged during the 7-day free trial — BOG only places a temporary hold
-//   that disappears, it never shows as a real transaction+refund pair. Renewal 7 days
-//   later goes through the same parent order and gets approved (captured) for real.
-// - createDirectOrder: capture "automatic", real immediate charge, no trial. Used for
-//   accounts that already used their free trial once (see User.bogTrialUsed) — a repeat
-//   purchase should charge immediately, not grant a second trial.
+//   never actually charged during the free trial — BOG only places a temporary hold that
+//   disappears, it never shows as a real transaction+refund pair. Renewal PROMO_TRIAL_DAYS
+//   (lib/referral.ts) later goes through the same parent order and gets approved (captured)
+//   for real. Only reached for a promo-code signup at all (2026-09-13: the free trial is
+//   retired for everyone else) — see bog-checkout/route.ts's eligibleForTrial.
+// - createDirectOrder: capture "automatic", real immediate charge, no trial. The only path
+//   for a first purchase with no promo code, and for any repeat purchase regardless of
+//   code (see User.bogTrialUsed) — a repeat purchase should charge immediately, not grant
+//   a second trial.
 async function createOrder(opts: {
   interval: BillingInterval;
   userId: string;

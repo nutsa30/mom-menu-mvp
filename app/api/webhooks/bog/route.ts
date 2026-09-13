@@ -11,7 +11,7 @@ import {
   BillingInterval,
 } from '@/lib/bog';
 import { sendSubscriptionConfirmationEmail } from '@/lib/email';
-import { applyReferralAdjustments, REFERRED_TRIAL_DAYS, STANDARD_TRIAL_DAYS } from '@/lib/referral';
+import { applyReferralAdjustments, PROMO_TRIAL_DAYS } from '@/lib/referral';
 import { NextResponse } from 'next/server';
 
 // Best-effort human-readable reason for a failed/rejected order. BOG's exact field name
@@ -163,13 +163,16 @@ export async function POST(req: Request) {
         },
       });
 
-      // Anyone who came in on a code — a friend's referral OR an admin-issued promo code
-      // (promoCodeId, linked in /api/subscription/bog-checkout right before this order was
-      // created) — gets a shorter 3-day trial instead of the standard 7; only a fully
-      // organic signup (no code at all) gets the full 7. Referred users additionally keep
-      // their 10% discount, applied once the real charge succeeds (see
-      // applyReferralAdjustments below) — never during this trial hold.
-      const trialDays = (user.referredByUserId || user.promoCodeId) ? REFERRED_TRIAL_DAYS : STANDARD_TRIAL_DAYS;
+      // Free trial retired for everyone except promo-code signups (2026-09-13 decision) —
+      // bog-checkout/route.ts's eligibleForTrial check is what actually decides whether a
+      // checkout ever reaches this "isBlocked" (trial hold) branch at all: only a promo-code
+      // checkout does, on the account's first-ever purchase. A referral-only signup (no
+      // promo code) now goes straight through createDirectOrder instead, landing in the
+      // isPaid branch below, not here. So by the time this branch runs, it's always a
+      // promo signup — PROMO_TRIAL_DAYS unconditionally. Referred users still keep their
+      // 10% discount regardless, applied once the real charge succeeds (see
+      // applyReferralAdjustments below) — that's independent of trial length entirely.
+      const trialDays = PROMO_TRIAL_DAYS;
       const trialEndsAt = new Date(now.getTime() + trialDays * DAY_MS);
       await prisma.user.update({
         where: { id: user.id },

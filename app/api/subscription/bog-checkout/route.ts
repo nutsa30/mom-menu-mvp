@@ -79,11 +79,15 @@ export async function POST(req: Request) {
       }, { status: 400 });
     }
 
-    // First-ever purchase on this account gets a 7-day free trial (preauthorized hold,
-    // released once the card-save is confirmed — never actually charged). Any purchase
-    // after that (re-subscribing post-cancellation, switching tiers, etc.) charges
-    // immediately, no trial.
-    const createOrder = user.bogTrialUsed ? createDirectOrder : createTrialOrder;
+    // Free trial retired for everyone except promo-code signups (2026-09-13 decision) — a
+    // referral-only signup (no promo code) now also charges immediately, same as a plain
+    // signup with no code at all; only a promo code we created still grants a short trial
+    // (preauthorized hold, released once the card-save is confirmed — never actually
+    // charged), and only on this account's first-ever purchase. discountPercent is set
+    // above whenever a promo is actually linked (this checkout or an earlier still-open
+    // one), so checking it here is exactly "does this order have a promo code on it".
+    const eligibleForTrial = !user.bogTrialUsed && discountPercent !== null;
+    const createOrder = eligibleForTrial ? createTrialOrder : createDirectOrder;
     const { url } = await createOrder({
       interval,
       userId: user.id,

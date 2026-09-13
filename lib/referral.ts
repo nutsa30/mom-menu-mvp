@@ -5,10 +5,16 @@ import { refundOrder } from './bog';
 // ─── Referral / promo-code program ──────────────────────────────────────────
 // Every registered user gets one permanent, unique "referral code" (distinct from the
 // admin-managed global PromoCode model). Sharing it gets a friend 10% off their first
-// payment and a 3-day trial instead of 7; the code owner earns a flat 1.70₾ credit the
-// moment — and only the moment — that friend's first real payment succeeds. Credit
-// accumulates forever and is consumed (refunded back) against the owner's own future
-// payments. See CreditLedgerEntry in schema.prisma for the full audit trail this writes.
+// payment; the code owner earns a flat 1.70₾ credit the moment — and only the moment —
+// that friend's first real payment succeeds. Credit accumulates forever and is consumed
+// (refunded back) against the owner's own future payments. See CreditLedgerEntry in
+// schema.prisma for the full audit trail this writes.
+//
+// A referral no longer grants a free trial on its own (2026-09-13 decision retired the
+// free trial for everyone except promo-code signups) — a referred friend with no promo
+// code now gets charged immediately too, same as anyone else without one. PROMO_TRIAL_DAYS
+// below is for that one remaining case: a promo code created in admin, checked in
+// bog-checkout/route.ts's eligibleForTrial and used in the webhook's isBlocked branch.
 //
 // IMPORTANT technical constraint this whole module works around: BOG's recurring-charge
 // API (POST .../orders/:parent_order_id/subscribe) always inherits the PARENT order's
@@ -22,8 +28,7 @@ import { refundOrder } from './bog';
 
 export const REFERRAL_CREDIT_AMOUNT = 1.7;
 export const REFERRAL_DISCOUNT_PERCENT = 10;
-export const REFERRED_TRIAL_DAYS = 3;
-export const STANDARD_TRIAL_DAYS = 7;
+export const PROMO_TRIAL_DAYS = 3;
 
 const CODE_ALPHABET = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789'; // no 0/O/1/I — avoids visual ambiguity
 const CODE_LENGTH = 7;
@@ -77,7 +82,8 @@ type RedeemResult =
 
 // Redeeming a code is the ONE moment referredByUserId is ever set — permanently, and only
 // if it isn't set already. Only available before the user's first checkout (bogParentOrderId
-// still null) since trial length is decided the instant that checkout starts.
+// still null) since eligibility for the 10% first-payment discount is decided the instant
+// that checkout starts.
 export async function redeemReferralCode(userId: string, rawCode: string): Promise<RedeemResult> {
   const code = rawCode.trim().toUpperCase();
   const user = await prisma.user.findUnique({ where: { id: userId } });

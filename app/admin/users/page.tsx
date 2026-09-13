@@ -146,19 +146,14 @@ export default async function AdminUsersPage({
     !u.isGifted && !u.subscriptionCanceledAt && !u.paymentFailedAt &&
     (u.subscriptionStatus === 'FULL_PLAN' || u.subscriptionStatus === 'RECIPE_PLAN') &&
     !paidUserIds.has(u.id);
-  // Broken out by which tier they picked (same as byInterval1/3/6, just the trial side of
-  // that same split) — a single lumped "17 on trial" number can't tell you how much of
-  // that will convert into 17₾/month vs 59₾/month once they actually pay.
-  // Promo-code trialers are excluded here and counted only in trialInterval1/3/6Promo below
-  // (the "პრომოკოდით:" sub-line) so the two lines don't double-count the same person.
-  const trialInterval1 = users.filter((u) => isTrialing(u) && u.subscriptionStatus === 'FULL_PLAN' && u.billingIntervalMonths === 1 && !u.promoCode).length;
-  const trialInterval3 = users.filter((u) => isTrialing(u) && u.subscriptionStatus === 'FULL_PLAN' && u.billingIntervalMonths === 3 && !u.promoCode).length;
-  const trialInterval6 = users.filter((u) => isTrialing(u) && u.subscriptionStatus === 'FULL_PLAN' && u.billingIntervalMonths === 6 && !u.promoCode).length;
-  // Same trial breakdown, restricted to accounts that redeemed a promo code before their
-  // trial started (still worth tracking here even though they haven't paid a lari yet —
-  // it's the first place admin would want to know "how much of my trial pipeline is
-  // discounted" before it converts to a real, discounted charge). Kept separate from
-  // trialInterval1/3/6 above (not a subset of it) so the top and bottom lines sum to the total.
+  // Broken out by which tier they picked — a single lumped "17 on trial" number can't tell
+  // you how much of that will convert into 17₾/month vs 59₾/month once they actually pay.
+  // Non-promo breakdown deliberately removed (2026-09-13): the free trial is retired for
+  // everyone except promo-code signups going forward, so every account still on a
+  // non-promo trial right now is a leftover from before that change, phasing itself out on
+  // its own (converts or fails) — not worth a permanent breakdown line for a bucket that's
+  // headed to zero and staying there. trialingCount (below) still counts everyone currently
+  // trialing, promo or not, so that leftover is still visible in the total while it lasts.
   const trialInterval1Promo = users.filter((u) => isTrialing(u) && u.subscriptionStatus === 'FULL_PLAN' && u.billingIntervalMonths === 1 && u.promoCode).length;
   const trialInterval3Promo = users.filter((u) => isTrialing(u) && u.subscriptionStatus === 'FULL_PLAN' && u.billingIntervalMonths === 3 && u.promoCode).length;
   const trialInterval6Promo = users.filter((u) => isTrialing(u) && u.subscriptionStatus === 'FULL_PLAN' && u.billingIntervalMonths === 6 && u.promoCode).length;
@@ -348,11 +343,13 @@ export default async function AdminUsersPage({
             sub: byInterval6Promo > 0 ? `მათგან ${byInterval6Promo} პრომოკოდით` : undefined,
           },
           {
+            // Sub-line now shows only the promo-code breakdown (2026-09-13: free trial
+            // retired except for promo-code signups, so a non-promo breakdown here would
+            // just be a leftover heading toward permanent zero — see the variables' own
+            // comment above). trialingCount itself still counts everyone currently trialing,
+            // promo or not, while any pre-existing non-promo trials finish phasing out.
             label: 'ტრიალზე (ჯერ არ გადაუხდია)', value: trialingCount, color: 'text-amber-600', bg: 'bg-amber-50',
-            sub: [
-              `${trialInterval1}×1თვე · ${trialInterval3}×3თვე · ${trialInterval6}×6თვე`,
-              `პრომოკოდით: ${trialInterval1Promo}×1თვე · ${trialInterval3Promo}×3თვე · ${trialInterval6Promo}×6თვე`,
-            ],
+            sub: `პრომოკოდით: ${trialInterval1Promo}×1თვე · ${trialInterval3Promo}×3თვე · ${trialInterval6Promo}×6თვე`,
           },
           { label: 'გაუქმებული (მალე)', value: canceledPendingCount, color: 'text-amber-600', bg: 'bg-amber-50' },
           { label: '⚠️ გადახდა ვერ ჩამოეჭრა', value: paymentFailedCount, color: 'text-red-600', bg: 'bg-red-50' },

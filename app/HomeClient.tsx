@@ -64,6 +64,10 @@ const MEAL_COLORS: Record<string, string> = {
 };
 
 const SERIF_KA = "'Noto Serif Georgian', serif";
+// Only a promo code still grants a free trial (2026-09-13 decision) — everyone else is
+// charged immediately on subscribing. Mirrors PROMO_TRIAL_DAYS in the webhook and
+// bog-checkout/route.ts's eligibleForTrial check, which is what actually enforces this.
+const PROMO_TRIAL_DAYS = 3;
 
 type BillingInterval = 1 | 3 | 6;
 
@@ -94,9 +98,6 @@ export default function HomeClient({ s, dishes, dishCount, recentBlogs, planAmou
   const [loadingPlan, setLoadingPlan] = useState<BillingInterval | null>(null);
   const [currentPlan, setCurrentPlan] = useState<string | null>(null);
   const [currentInterval, setCurrentInterval] = useState<BillingInterval | null>(null);
-  // Already redeemed a friend's referral code — the trial is 3 days regardless of any
-  // promo code, matching what the BOG webhook actually grants (see /api/auth/me).
-  const [hasReferral, setHasReferral] = useState(false);
   const [promoInput, setPromoInput] = useState<Record<BillingInterval, string>>({ 1: '', 3: '', 6: '' });
   const [promoStatus, setPromoStatus] = useState<Record<BillingInterval, { discount: number; valid: boolean; msg: string } | undefined>>({ 1: undefined, 3: undefined, 6: undefined });
   const [promoLoading, setPromoLoading] = useState<BillingInterval | null>(null);
@@ -132,7 +133,6 @@ export default function HomeClient({ s, dishes, dishCount, recentBlogs, planAmou
       .then(d => {
         if (d?.subscriptionStatus) setCurrentPlan(d.subscriptionStatus);
         if (d?.billingIntervalMonths) setCurrentInterval(d.billingIntervalMonths);
-        if (d?.hasReferral) setHasReferral(true);
       })
       .catch(() => {});
   }, []);
@@ -440,9 +440,6 @@ export default function HomeClient({ s, dishes, dishCount, recentBlogs, planAmou
       <section id="pricing" className="relative z-10 py-14 sm:py-24" style={{ background: '#6F7A5C' }}>
         <div className="max-w-7xl mx-auto px-5">
           <div ref={refPricing} className="fade-up text-center mb-10 sm:mb-12">
-            <span className="inline-flex items-center gap-2 mb-4 px-4 py-1.5 rounded-full text-xs sm:text-sm font-bold" style={{ background: 'rgba(217,128,59,0.18)', color: '#D9803B' }}>
-              {ka ? 'აქცია: 7 დღე სრულიად უფასოდ' : 'Offer: 7 days completely free'}
-            </span>
             <h2 className="text-2xl sm:text-3xl font-bold mb-3 text-[#F5F1E4]" style={{ fontFamily: SERIF_KA }}>{t('pricingTitleKa', 'pricingTitleEn')}</h2>
             <p className="text-[#F5F1E4]/70 text-sm max-w-xl mx-auto">{t('pricingSubtitleKa', 'pricingSubtitleEn')}</p>
           </div>
@@ -458,11 +455,12 @@ export default function HomeClient({ s, dishes, dishCount, recentBlogs, planAmou
               const cadenceKa = interval === 1 ? 'თვეში' : `ყოველ ${interval} თვეში`;
               const cadenceEn = interval === 1 ? 'month' : `${interval} months`;
               const isActive = currentPlan === 'FULL_PLAN' && currentInterval === interval && !loadingPlan;
-              // A referral code (redeemed anywhere on the site already) or this card's own
-              // promo code shortens the trial to 3 days — mirrors exactly what the BOG
-              // webhook grants (referredByUserId / promoCodeId), so this never promises a
-              // trial length checkout won't actually give.
-              const trialDays = hasReferral || promoStatus[interval]?.valid ? 3 : 7;
+              // Free trial retired for everyone except promo-code signups (2026-09-13
+              // decision) — a referral code alone no longer grants one. Only a promo code
+              // entered on this specific card does, always for exactly PROMO_TRIAL_DAYS
+              // (mirrors bog-checkout/route.ts's eligibleForTrial check, which is what
+              // actually decides this at checkout time, and the webhook's own trialDays).
+              const hasTrial = Boolean(promoStatus[interval]?.valid);
 
               return (
                 <div key={interval}
@@ -484,8 +482,12 @@ export default function HomeClient({ s, dishes, dishCount, recentBlogs, planAmou
                     {savings > 0 ? (ka ? `ზოგავთ ${savings}₾-ს (${savingsPct}%)` : `Save ${savings}₾ (${savingsPct}%)`) : '—'}
                   </p>
 
-                  <div className="text-4xl font-black text-[#6F7A5C]">0₾</div>
-                  <p className="text-[#6F7A5C]/60 text-sm font-medium mb-2">{ka ? `პირველი ${trialDays} დღე` : `first ${trialDays} days`}</p>
+                  {hasTrial && (
+                    <>
+                      <div className="text-4xl font-black text-[#6F7A5C]">0₾</div>
+                      <p className="text-[#6F7A5C]/60 text-sm font-medium mb-2">{ka ? `პირველი ${PROMO_TRIAL_DAYS} დღე` : `first ${PROMO_TRIAL_DAYS} days`}</p>
+                    </>
+                  )}
 
                   <div className="flex justify-center items-baseline gap-1.5">
                     {disc ? (
@@ -506,9 +508,11 @@ export default function HomeClient({ s, dishes, dishCount, recentBlogs, planAmou
                   {promoStatus[interval]?.valid && <p className="text-[#D9803B] text-xs font-bold mt-1">{promoStatus[interval]!.discount}% {ka ? 'ფასდაკლება' : 'off'}</p>}
 
                   <p className="text-[#6F7A5C]/40 text-[11px] italic mt-3 mb-5">
-                    {ka
-                      ? `თანხა ჩამოგეჭრებათ მე-${trialDays + 1} დღეს. გაუქმება შესაძლებელია სატესტო პერიოდშივე, სრულიად უფასოდ.`
-                      : `You'll be charged on day ${trialDays + 1}. Cancel anytime during the trial at no cost.`}
+                    {hasTrial
+                      ? (ka
+                          ? `თანხა ჩამოგეჭრებათ მე-${PROMO_TRIAL_DAYS + 1} დღეს. გაუქმება შესაძლებელია სატესტო პერიოდშივე, სრულიად უფასოდ.`
+                          : `You'll be charged on day ${PROMO_TRIAL_DAYS + 1}. Cancel anytime during the trial at no cost.`)
+                      : (ka ? 'გადახდა ხდება გამოწერისთანავე.' : 'Charged immediately upon subscribing.')}
                   </p>
 
                   <ul className="space-y-3 text-left flex-1 text-sm text-[#6F7A5C]">
@@ -535,7 +539,13 @@ export default function HomeClient({ s, dishes, dishCount, recentBlogs, planAmou
                   <button onClick={() => handleSubscribeBog(interval)} disabled={loadingPlan !== null || isActive}
                     className={`w-full py-3.5 mt-4 rounded-full font-bold transition disabled:opacity-60 ${isRecommended ? 'shadow-lg hover:opacity-90' : 'border-2 hover:bg-[#6F7A5C]/10'}`}
                     style={isRecommended ? { background: '#D9803B', color: '#FFFFFF' } : { borderColor: '#6F7A5C', color: '#6F7A5C' }}>
-                    {isActive ? (ka ? '✓ აქტიურია' : '✓ Active') : loadingPlan === interval ? (ka ? 'მუშავდება...' : 'Processing...') : (ka ? 'დაიწყე უფასოდ' : 'Start Free')}
+                    {isActive
+                      ? (ka ? '✓ აქტიურია' : '✓ Active')
+                      : loadingPlan === interval
+                        ? (ka ? 'მუშავდება...' : 'Processing...')
+                        : hasTrial
+                          ? (ka ? `დაიწყე ${PROMO_TRIAL_DAYS} დღით უფასოდ` : `Start ${PROMO_TRIAL_DAYS}-day free trial`)
+                          : (ka ? 'შეიძინე ახლავე' : 'Subscribe now')}
                   </button>
                   <p className="text-[#6F7A5C]/45 text-xs mt-2">
                     {ka ? `ავტომატურად განახლდება ${cadenceKa}. გაუქმება ნებისმიერ დროს.` : `Renews automatically every ${cadenceEn}. Cancel anytime.`}
