@@ -46,7 +46,30 @@ export default async function AdminUsersPage({
   const activeTab = searchParams.tab ?? 'all';
   const activePromo = searchParams.promo ?? '';
 
-  const [users, promoCodes, payments, successfulPayers, promoRevenueTotal] = await Promise.all([
+  // Tbilisi "now" (Georgia has used a fixed UTC+4 offset, no DST, since 2017) — computed
+  // once here and reused both for the calendar-month revenue boundaries below and the "due
+  // today" list further down, so every date-based section on this page agrees on what day/
+  // month it actually is for an admin reading this from Tbilisi. Vercel functions run in
+  // UTC, so a naive new Date().setHours(0,0,0,0) would silently shift every window by 4
+  // hours from what a Tbilisi reader means by "today"/"this month".
+  const TBILISI_OFFSET_MS = 4 * 60 * 60 * 1000;
+  const nowInTbilisi = new Date(Date.now() + TBILISI_OFFSET_MS);
+  const todayStart = new Date(
+    Date.UTC(nowInTbilisi.getUTCFullYear(), nowInTbilisi.getUTCMonth(), nowInTbilisi.getUTCDate()) - TBILISI_OFFSET_MS
+  );
+  const todayEnd = new Date(todayStart.getTime() + 24 * 60 * 60 * 1000);
+  // Current calendar month, 1st through the last day (Tbilisi time) — a real month-to-date
+  // window, not a rolling 30-day one, per the owner's explicit request: the old "last 30
+  // days" gross-revenue card mixed days from two different calendar months together,
+  // making a clean month-over-month comparison impossible.
+  const monthStart = new Date(
+    Date.UTC(nowInTbilisi.getUTCFullYear(), nowInTbilisi.getUTCMonth(), 1) - TBILISI_OFFSET_MS
+  );
+  const nextMonthStart = new Date(
+    Date.UTC(nowInTbilisi.getUTCFullYear(), nowInTbilisi.getUTCMonth() + 1, 1) - TBILISI_OFFSET_MS
+  );
+
+  const [users, promoCodes, payments, successfulPayers, promoRevenueTotal, allTimeRevenueAgg, monthRevenueAgg] = await Promise.all([
     prisma.user.findMany({
       orderBy: { createdAt: 'desc' },
       select: {
@@ -86,6 +109,22 @@ export default async function AdminUsersPage({
     prisma.payment.aggregate({
       where: { status: 'SUCCESS', user: { promoCodeId: { not: null } } },
       _sum: { grossAmount: true, netAmount: true },
+      _count: true,
+    }),
+    // Lifetime revenue, every SUCCESS payment ever — a dedicated, unbounded aggregate, not
+    // derived from the `payments` list above (capped at the 100 most recent), so this stays
+    // correct once there have been more than 100 payments total. Owner explicitly wants this
+    // as a running-since-day-one total, separate from the current-month figure below.
+    prisma.payment.aggregate({
+      where: { status: 'SUCCESS' },
+      _sum: { grossAmount: true, commissionAmount: true, netAmount: true },
+      _count: true,
+    }),
+    // Current calendar month only (1st through the last day, Tbilisi time) — replaces the
+    // old rolling "last 30 days" window per the owner's request.
+    prisma.payment.aggregate({
+      where: { status: 'SUCCESS', createdAt: { gte: monthStart, lt: nextMonthStart } },
+      _sum: { grossAmount: true, commissionAmount: true, netAmount: true },
       _count: true,
     }),
   ]);
@@ -205,16 +244,24 @@ export default async function AdminUsersPage({
     )
     .reduce((sum, u) => sum + monthlyPriceFor(u), 0));
 
-  // BOG payment revenue (gross / commission / net) — separate from the MRR cards
-  // above, which are derived from subscriptionStatus, not actual charged amounts.
-  const successfulPayments = payments.filter((p) => p.status === 'SUCCESS');
-  const paymentsThisMonth = successfulPayments.filter((p) => new Date(p.createdAt) > thirtyDaysAgo);
-  const sum = (arr: typeof payments, field: 'grossAmount' | 'commissionAmount' | 'netAmount') =>
-    arr.reduce((s, p) => s + (p[field] ?? 0), 0);
-  const revenueTotals = {
-    gross: sum(paymentsThisMonth, 'grossAmount'),
-    commission: sum(paymentsThisMonth, 'commissionAmount'),
-    net: sum(paymentsThisMonth, 'netAmount'),
+  // BOG payment revenue (gross / commission / net) — separate from the MRR cards above,
+  // which are derived from subscriptionStatus (who's an active subscriber right now), not
+  // from actual charged amounts. Two windows, both from the unbounded aggregate queries
+  // above rather than the capped 100-row `payments` list, so neither undercounts once
+  // there have been more than 100 payments total:
+  //  - allTimeTotals: every SUCCESS payment ever, since day one.
+  //  - monthTotals: only this calendar month (1st–last day, Tbilisi time).
+  const allTimeTotals = {
+    gross: allTimeRevenueAgg._sum.grossAmount ?? 0,
+    commission: allTimeRevenueAgg._sum.commissionAmount ?? 0,
+    net: allTimeRevenueAgg._sum.netAmount ?? 0,
+    count: allTimeRevenueAgg._count,
+  };
+  const monthTotals = {
+    gross: monthRevenueAgg._sum.grossAmount ?? 0,
+    commission: monthRevenueAgg._sum.commissionAmount ?? 0,
+    net: monthRevenueAgg._sum.netAmount ?? 0,
+    count: monthRevenueAgg._count,
   };
   // Payment-record plan label — uses the payment's OWN stored amount/interval rather than a
   // static lookup, since every current-tier payment has plan='FULL_PLAN' regardless of which
@@ -271,17 +318,8 @@ export default async function AdminUsersPage({
   // the fact from the transactions table above. Gifted subscriptions never go through BOG
   // (no real charge happens), so they're excluded here even though isGifted's own
   // subscriptionRenewsAt is used elsewhere to auto-expire them.
-  //
-  // "Today" must mean today in Tbilisi (the admin's own timezone), not the server's —
-  // Vercel functions run in UTC, so new Date().setHours(0,0,0,0) would compute UTC
-  // midnight, silently shifting the whole window 4 hours from what a Tbilisi reader means
-  // by "today". Georgia has used a fixed UTC+4 offset (no DST) since 2017.
-  const TBILISI_OFFSET_MS = 4 * 60 * 60 * 1000;
-  const nowInTbilisi = new Date(Date.now() + TBILISI_OFFSET_MS);
-  const todayStart = new Date(
-    Date.UTC(nowInTbilisi.getUTCFullYear(), nowInTbilisi.getUTCMonth(), nowInTbilisi.getUTCDate()) - TBILISI_OFFSET_MS
-  );
-  const todayEnd = new Date(todayStart.getTime() + 24 * 60 * 60 * 1000);
+  // (todayStart/todayEnd are Tbilisi-local day boundaries, computed near the top of this
+  // function alongside the calendar-month boundaries the revenue cards above use.)
   const dueTodayUsers = users
     .filter((u) =>
       !u.isGifted &&
@@ -406,25 +444,51 @@ export default async function AdminUsersPage({
         </div>
       </div>
 
-      {/* BOG payment revenue breakdown */}
+      {/* BOG payment revenue breakdown — two separate windows: a lifetime running total
+          since the very first payment ever, and the current calendar month (1st through
+          the last day, Tbilisi time). Replaces the old rolling "last 30 days" window, which
+          mixed days from two different calendar months and made a clean month-to-month
+          comparison impossible. */}
       <div className="mb-6 lg:mb-8">
         <h2 className="text-xl font-black text-[#465940] mb-1">გადახდების ანალიტიკა (BOG)</h2>
-        <p className="text-[#465940]/60 text-sm mb-4">ბოლო 30 დღე · მხოლოდ წარმატებული გადახდები, ტრიალის დაბრუნებადი თანხის გარეშე</p>
+        <p className="text-[#465940]/60 text-sm mb-4">მხოლოდ წარმატებული გადახდები, ტრიალის დაბრუნებადი თანხის გარეშე</p>
 
-        <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 sm:gap-4 mb-4">
+        <p className="text-xs font-bold text-[#465940]/70 mb-2 uppercase tracking-wide">მთლიანი შემოსავალი (დასაწყისიდან)</p>
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 sm:gap-4 mb-5">
           <div className="bg-[#465940] rounded-2xl p-5 shadow-sm">
             <p className="text-xs font-semibold text-[#FDFBF0]/70 mb-3">ბრუტო შემოსავალი</p>
-            <p className="text-3xl font-black text-[#FDFBF0]">{revenueTotals.gross.toFixed(2)}₾</p>
-            <p className="text-[10px] text-[#FDFBF0]/50 mt-1">{paymentsThisMonth.length} ტრანზაქცია</p>
+            <p className="text-3xl font-black text-[#FDFBF0]">{allTimeTotals.gross.toFixed(2)}₾</p>
+            <p className="text-[10px] text-[#FDFBF0]/50 mt-1">{allTimeTotals.count} ტრანზაქცია სულ</p>
           </div>
           <div className="bg-[#FDFBF0] rounded-2xl p-5 border border-[#465940]/10 shadow-sm">
             <p className="text-xs font-semibold text-[#465940] mb-3">BOG საკომისიო</p>
-            <p className="text-3xl font-black text-[#465940]">{revenueTotals.commission.toFixed(2)}₾</p>
+            <p className="text-3xl font-black text-[#465940]">{allTimeTotals.commission.toFixed(2)}₾</p>
             <p className="text-[10px] text-[#465940]/50 mt-1">2% ლოკ. / 3.5% Amex</p>
           </div>
           <div className="bg-[#FDFBF0] rounded-2xl p-5 border border-[#465940]/10 shadow-sm">
             <p className="text-xs font-semibold text-[#465940] mb-3">წმინდა შემოსავალი</p>
-            <p className="text-3xl font-black text-[#465940]">{revenueTotals.net.toFixed(2)}₾</p>
+            <p className="text-3xl font-black text-[#465940]">{allTimeTotals.net.toFixed(2)}₾</p>
+            <p className="text-[10px] text-[#465940]/50 mt-1">ბრუტო − საკომისიო</p>
+          </div>
+        </div>
+
+        <p className="text-xs font-bold text-[#465940]/70 mb-2 uppercase tracking-wide">
+          ეს თვე ({monthStart.toLocaleDateString('ka-GE', { timeZone: 'Asia/Tbilisi', day: 'numeric', month: 'long' })} – {new Date(nextMonthStart.getTime() - 1).toLocaleDateString('ka-GE', { timeZone: 'Asia/Tbilisi', day: 'numeric', month: 'long' })})
+        </p>
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 sm:gap-4 mb-4">
+          <div className="bg-[#465940] rounded-2xl p-5 shadow-sm">
+            <p className="text-xs font-semibold text-[#FDFBF0]/70 mb-3">ბრუტო შემოსავალი</p>
+            <p className="text-3xl font-black text-[#FDFBF0]">{monthTotals.gross.toFixed(2)}₾</p>
+            <p className="text-[10px] text-[#FDFBF0]/50 mt-1">{monthTotals.count} ტრანზაქცია</p>
+          </div>
+          <div className="bg-[#FDFBF0] rounded-2xl p-5 border border-[#465940]/10 shadow-sm">
+            <p className="text-xs font-semibold text-[#465940] mb-3">BOG საკომისიო</p>
+            <p className="text-3xl font-black text-[#465940]">{monthTotals.commission.toFixed(2)}₾</p>
+            <p className="text-[10px] text-[#465940]/50 mt-1">2% ლოკ. / 3.5% Amex</p>
+          </div>
+          <div className="bg-[#FDFBF0] rounded-2xl p-5 border border-[#465940]/10 shadow-sm">
+            <p className="text-xs font-semibold text-[#465940] mb-3">წმინდა შემოსავალი</p>
+            <p className="text-3xl font-black text-[#465940]">{monthTotals.net.toFixed(2)}₾</p>
             <p className="text-[10px] text-[#465940]/50 mt-1">ბრუტო − საკომისიო</p>
           </div>
         </div>
