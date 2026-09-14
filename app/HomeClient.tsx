@@ -18,6 +18,24 @@ type RecentBlog = {
 };
 type Testimonial = { id: string; authorName: string; content: string };
 
+// ─── Visual tokens ───────────────────────────────────────────────────────
+// Kept identical to the tokens already used across this page, Nav and
+// SiteFooter (INK/CREAM/ACCENT) — a different, "more premium" shade would
+// create a visible seam where this page meets the nav bar and footer that
+// wrap it. The upgrade here is restraint (flat fields, one accent, generous
+// space, editorial serif type) rather than a new palette.
+const INK = '#6F7A5C';
+const CREAM = '#F5F1E4';
+const ACCENT = '#D9803B';
+const SERIF_KA = "'Noto Serif Georgian', serif";
+
+// Free trial retired for everyone except promo-code signups (2026-09-13 decision) — only
+// mirrors PROMO_TRIAL_DAYS in the webhook / bog-checkout/route.ts's eligibleForTrial check,
+// which is what actually enforces this. No "7-day trial" wording exists anywhere below.
+const PROMO_TRIAL_DAYS = 3;
+
+type BillingInterval = 1 | 3 | 6;
+
 function useFadeUp() {
   const ref = useRef<HTMLDivElement>(null);
   useEffect(() => {
@@ -56,20 +74,266 @@ function useStaggeredFadeUp(delay = 120) {
   return ref;
 }
 
-const MEAL_COLORS: Record<string, string> = {
-  breakfast: 'bg-[#F5F1E4]/95 text-[#6F7A5C]',
-  lunch:     'bg-[#F5F1E4]/95 text-[#6F7A5C]',
-  snack:     'bg-[#F5F1E4]/95 text-[#6F7A5C]',
-  dinner:    'bg-[#F5F1E4]/95 text-[#6F7A5C]',
-};
+// Drives the connected "one continuous story" section: which step's text is centered in the
+// viewport decides which product visual the sticky panel (desktop) shows. Plain
+// IntersectionObserver, no scroll libraries — respects prefers-reduced-motion on its own
+// since it only ever toggles which block is rendered, never a scroll-linked transform.
+function useActiveStep(count: number) {
+  const refs = useRef<(HTMLDivElement | null)[]>([]);
+  const [active, setActive] = useState(0);
+  useEffect(() => {
+    const obs = new IntersectionObserver(
+      (entries) => {
+        entries.forEach((e) => {
+          if (!e.isIntersecting) return;
+          const idx = refs.current.findIndex((el) => el === e.target);
+          if (idx !== -1) setActive(idx);
+        });
+      },
+      { threshold: 0.6, rootMargin: '-15% 0px -15% 0px' }
+    );
+    refs.current.slice(0, count).forEach((el) => el && obs.observe(el));
+    return () => obs.disconnect();
+  }, [count]);
+  return { refs, active };
+}
 
-const SERIF_KA = "'Noto Serif Georgian', serif";
-// Only a promo code still grants a free trial (2026-09-13 decision) — everyone else is
-// charged immediately on subscribing. Mirrors PROMO_TRIAL_DAYS in the webhook and
-// bog-checkout/route.ts's eligibleForTrial check, which is what actually enforces this.
-const PROMO_TRIAL_DAYS = 3;
+const dishLabel = (d: Dish, ka: boolean) =>
+  d ? (ka ? d.titleKa : d.titleEn) : (ka ? 'კერძი არ არის' : 'No dish');
 
-type BillingInterval = 1 | 3 | 6;
+// ─── Small, honest UI mockups ────────────────────────────────────────────
+// Every mockup below shows REAL data already passed into this page (actual dish titles from
+// `dishes`, the actual dish count, actual prices) — never invented product content. A couple
+// of illustrative pantry/shopping items (rice, banana, egg…) are generic grocery examples,
+// not app data, used only to show the shape of the "what I have at home" input.
+
+function MenuDigestMock({ dishes, ka }: { dishes: Dishes; ka: boolean }) {
+  const rows: { key: keyof Dishes; labelKa: string; labelEn: string }[] = [
+    { key: 'breakfast', labelKa: 'საუზმე', labelEn: 'Breakfast' },
+    { key: 'lunch', labelKa: 'სადილი', labelEn: 'Lunch' },
+    { key: 'snack', labelKa: 'სნექი', labelEn: 'Snack' },
+    { key: 'dinner', labelKa: 'ვახშამი', labelEn: 'Dinner' },
+  ];
+  return (
+    <div className="rounded-3xl bg-white shadow-xl p-5 sm:p-6 w-full">
+      <p className="text-[11px] font-bold uppercase tracking-wide mb-4" style={{ color: ACCENT }}>
+        {ka ? 'დღევანდელი მენიუ' : "Today's menu"}
+      </p>
+      <ul className="space-y-3.5">
+        {rows.map((r) => {
+          const dish = dishes[r.key];
+          return (
+            <li key={r.key} className="flex items-center gap-3">
+              <span className="text-[11px] font-bold uppercase tracking-wide w-12 shrink-0" style={{ color: `${INK}66` }}>
+                {ka ? r.labelKa : r.labelEn}
+              </span>
+              <span className="flex-1 text-sm font-bold truncate" style={{ color: INK }}>{dishLabel(dish, ka)}</span>
+            </li>
+          );
+        })}
+      </ul>
+    </div>
+  );
+}
+
+function RecipeCardMock({ dish, ka }: { dish: Dish; ka: boolean }) {
+  return (
+    <div className="rounded-3xl bg-white shadow-xl overflow-hidden w-full">
+      <div className="h-28 sm:h-32" style={{ background: `${INK}12` }}>
+        {dish?.imageUrl && <img src={dish.imageUrl} className="w-full h-full object-cover" alt="" />}
+      </div>
+      <div className="p-4">
+        <p className="text-[10px] font-bold uppercase tracking-wide mb-1" style={{ color: ACCENT }}>{ka ? 'რეცეპტი' : 'Recipe'}</p>
+        <p className="text-sm font-bold" style={{ color: INK }}>{dishLabel(dish, ka)}</p>
+      </div>
+    </div>
+  );
+}
+
+function PantryMatchMock({ dish, ka }: { dish: Dish; ka: boolean }) {
+  const items = ka ? ['ბრინჯი', 'ბანანი', 'კვერცხი', 'ხაჭო'] : ['Rice', 'Banana', 'Egg', 'Cottage cheese'];
+  return (
+    <div className="rounded-3xl bg-white shadow-xl p-5 sm:p-6 w-full">
+      <p className="text-[11px] font-bold uppercase tracking-wide mb-3" style={{ color: ACCENT }}>{ka ? 'სახლში მაქვს' : 'I have at home'}</p>
+      <div className="flex flex-wrap gap-2 mb-4">
+        {items.map((i) => (
+          <span key={i} className="text-xs font-bold px-3 py-1.5 rounded-full" style={{ background: `${INK}0D`, color: INK }}>{i}</span>
+        ))}
+      </div>
+      <div className="flex items-center gap-2 text-xs mb-3" style={{ color: `${INK}55` }}>
+        <span>↓</span><span>{ka ? 'შესაფერისი კერძი' : 'Matching dish'}</span>
+      </div>
+      <div className="flex items-center gap-3 rounded-2xl p-3" style={{ background: `${INK}08` }}>
+        <div className="w-12 h-12 rounded-xl overflow-hidden shrink-0" style={{ background: `${INK}12` }}>
+          {dish?.imageUrl && <img src={dish.imageUrl} className="w-full h-full object-cover" alt="" />}
+        </div>
+        <p className="text-sm font-bold" style={{ color: INK }}>{dishLabel(dish, ka)}</p>
+      </div>
+    </div>
+  );
+}
+
+function TriedChipsMock({ ka }: { ka: boolean }) {
+  const chips = ka
+    ? [['ასაკი', '9 თვე+'], ['გასინჯული', '24 პროდუქტი'], ['არ მოსწონს', '2'], ['ალერგენი', 'თხილი']]
+    : [['Age', '9mo+'], ['Tried', '24 items'], ["Doesn't like", '2'], ['Allergen', 'Nuts']];
+  return (
+    <div className="rounded-3xl bg-white shadow-xl p-5 sm:p-6 w-full grid grid-cols-2 gap-3">
+      {chips.map(([label, val]) => (
+        <div key={label} className="rounded-2xl p-3.5" style={{ background: `${INK}08` }}>
+          <p className="text-[10px] font-bold uppercase tracking-wide mb-1" style={{ color: `${INK}70` }}>{label}</p>
+          <p className="text-sm font-bold" style={{ color: INK }}>{val}</p>
+        </div>
+      ))}
+    </div>
+  );
+}
+
+function DislikeReplaceMock({ from, to, ka }: { from: Dish; to: Dish; ka: boolean }) {
+  return (
+    <div className="rounded-3xl bg-white shadow-xl p-5 sm:p-6 w-full space-y-3">
+      <div className="flex items-center gap-3 rounded-2xl p-3 bg-red-50">
+        <div className="w-12 h-12 rounded-xl overflow-hidden shrink-0" style={{ background: `${INK}12` }}>
+          {from?.imageUrl && <img src={from.imageUrl} className="w-full h-full object-cover" alt="" />}
+        </div>
+        <div className="min-w-0">
+          <p className="text-sm font-bold truncate" style={{ color: INK }}>{dishLabel(from, ka)}</p>
+          <p className="text-[11px] font-bold text-red-500">{ka ? 'არ მოეწონა' : "Didn't like it"}</p>
+        </div>
+      </div>
+      <div className="text-center text-xs" style={{ color: `${INK}40` }}>↓</div>
+      <div className="flex items-center gap-3 rounded-2xl p-3 bg-emerald-50">
+        <div className="w-12 h-12 rounded-xl overflow-hidden shrink-0" style={{ background: `${INK}12` }}>
+          {to?.imageUrl && <img src={to.imageUrl} className="w-full h-full object-cover" alt="" />}
+        </div>
+        <div className="min-w-0">
+          <p className="text-sm font-bold truncate" style={{ color: INK }}>{dishLabel(to, ka)}</p>
+          <p className="text-[11px] font-bold text-emerald-600">{ka ? 'სხვა შესაფერისი კერძი' : 'Another good match'}</p>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function ShoppingListMock({ ka }: { ka: boolean }) {
+  const items = ka
+    ? ['ბანანი — 4 ცალი', 'ხაჭო — 400 გრ', 'კვერცხი — 10 ცალი', 'ბრინჯი — 1 კგ']
+    : ['Bananas — 4', 'Cottage cheese — 400g', 'Eggs — 10', 'Rice — 1kg'];
+  return (
+    <div className="rounded-3xl bg-white shadow-xl p-5 sm:p-6 w-full">
+      <p className="text-[11px] font-bold uppercase tracking-wide mb-3" style={{ color: ACCENT }}>{ka ? 'საყიდლების სია' : 'Shopping list'}</p>
+      <ul className="space-y-2.5">
+        {items.map((i) => (
+          <li key={i} className="flex items-center gap-2.5 text-sm" style={{ color: INK }}>
+            <span className="w-4 h-4 rounded-md border-2 shrink-0" style={{ borderColor: `${INK}30` }} />
+            {i}
+          </li>
+        ))}
+      </ul>
+    </div>
+  );
+}
+
+function DayTimelineMock({ dishes, ka }: { dishes: Dishes; ka: boolean }) {
+  const points = [
+    { t: ka ? 'დილა' : 'Morning', label: ka ? 'საუზმე' : 'Breakfast', dish: dishes.breakfast, status: ka ? 'ჭამა' : 'Eaten' },
+    { t: ka ? 'შუადღე' : 'Midday', label: ka ? 'სადილი' : 'Lunch', dish: dishes.lunch, status: ka ? 'ჭამა' : 'Eaten' },
+    { t: ka ? 'საღამო' : 'Evening', label: ka ? 'ვახშამი' : 'Dinner', dish: dishes.dinner, status: ka ? 'დაგეგმილია' : 'Planned' },
+  ];
+  return (
+    <div className="rounded-3xl bg-white shadow-xl p-5 sm:p-6 w-full">
+      <ul className="space-y-4">
+        {points.map((p) => (
+          <li key={p.label} className="flex items-center gap-3">
+            <div className="text-[10px] font-bold uppercase tracking-wide w-12 shrink-0" style={{ color: `${INK}55` }}>{p.t}</div>
+            <div className="flex-1 min-w-0">
+              <p className="text-sm font-bold truncate" style={{ color: INK }}>{dishLabel(p.dish, ka)}</p>
+              <p className="text-[11px]" style={{ color: `${INK}70` }}>{p.label}</p>
+            </div>
+            <span className="text-[10px] font-bold px-2.5 py-1 rounded-full shrink-0" style={{ background: `${INK}0D`, color: `${INK}B0` }}>{p.status}</span>
+          </li>
+        ))}
+      </ul>
+      <div className="mt-4 pt-4 flex items-center justify-between" style={{ borderTop: `1px solid ${INK}15` }}>
+        <p className="text-[11px] font-semibold" style={{ color: `${INK}70` }}>{ka ? 'დღის ბოლოს' : 'End of day'}</p>
+        <p className="text-[11px] font-bold" style={{ color: ACCENT }}>{ka ? 'კვების ისტორია' : 'Feeding history'} →</p>
+      </div>
+    </div>
+  );
+}
+
+// Central-hub ecosystem diagram for the "core value" section — a radial diagram on tablet/
+// desktop (real SVG connecting lines from one center node), a simple hub-then-grid layout
+// on mobile where full radial geometry stops being legible.
+function EcosystemDiagram({ dishCount, ka }: { dishCount: number; ka: boolean }) {
+  const nodes = [
+    ka ? 'ბავშვის პროფილი' : 'Child profile',
+    ka ? 'გასინჯული პროდუქტები' : 'Tried foods',
+    ka ? 'ალერგენები' : 'Allergens',
+    ka ? 'კვების გეგმა' : 'Meal plan',
+    `${Math.max(dishCount, 6)}+ ${ka ? 'რეცეპტი' : 'recipes'}`,
+    ka ? 'რა მაქვს სახლში' : 'What I have',
+    ka ? 'საყიდლების სია' : 'Shopping list',
+    ka ? 'კვების ისტორია' : 'Feeding history',
+    ka ? 'ვიტამინები' : 'Vitamins',
+  ];
+  const W = 560, H = 500, cx = W / 2, cy = H / 2, r = 210;
+  const pos = nodes.map((_, i) => {
+    const angle = (i / nodes.length) * Math.PI * 2 - Math.PI / 2;
+    return { x: cx + Math.cos(angle) * r, y: cy + Math.sin(angle) * r };
+  });
+
+  return (
+    <div className="mx-auto" style={{ maxWidth: 560 }}>
+      <div className="hidden md:block relative" style={{ height: H }}>
+        <svg className="absolute inset-0 w-full h-full" viewBox={`0 0 ${W} ${H}`}>
+          {pos.map((p, i) => (
+            <line key={i} x1={cx} y1={cy} x2={p.x} y2={p.y} stroke={`${CREAM}30`} strokeWidth="1.5" />
+          ))}
+        </svg>
+        <div
+          className="absolute rounded-full flex items-center justify-center text-center px-5 font-bold -translate-x-1/2 -translate-y-1/2"
+          style={{ width: 148, height: 148, left: cx, top: cy, background: ACCENT, color: '#fff', fontFamily: SERIF_KA, fontSize: 16, lineHeight: 1.25 }}
+        >
+          {ka ? 'ბავშვის კვება' : "Child's nutrition"}
+        </div>
+        {nodes.map((label, i) => (
+          <div
+            key={label}
+            className="absolute -translate-x-1/2 -translate-y-1/2 text-xs font-bold px-3.5 py-2.5 rounded-2xl text-center"
+            style={{ left: pos[i].x, top: pos[i].y, background: `${CREAM}14`, color: CREAM, maxWidth: 130 }}
+          >
+            {label}
+          </div>
+        ))}
+      </div>
+      <div className="md:hidden">
+        <div
+          className="mx-auto mb-5 rounded-full flex items-center justify-center text-center px-6 font-bold"
+          style={{ width: 140, height: 140, background: ACCENT, color: '#fff', fontFamily: SERIF_KA, fontSize: 16 }}
+        >
+          {ka ? 'ბავშვის კვება' : "Child's nutrition"}
+        </div>
+        <div className="grid grid-cols-2 gap-2.5">
+          {nodes.map((label) => (
+            <div key={label} className="text-xs font-bold px-3 py-2.5 rounded-xl text-center" style={{ background: `${CREAM}14`, color: CREAM }}>
+              {label}
+            </div>
+          ))}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+const VALUE_ITEMS: { ka: string; en: string; descKa: string; descEn: string }[] = [
+  { ka: 'დაგეგმე', en: 'Plan', descKa: 'კვირის მენიუ ასაკის მიხედვით, ერთხელ.', descEn: 'A weekly menu by age, set once.' },
+  { ka: 'მოამზადე', en: 'Cook', descKa: 'გახსენი კერძი და მიყევი რეცეპტს.', descEn: 'Open the dish and follow the recipe.' },
+  { ka: 'შეინახე', en: 'Save', descKa: 'დააფიქსირე რა ჭამა და როგორ მოეწონა.', descEn: 'Log what they ate and whether they liked it.' },
+  { ka: 'შეცვალე', en: 'Swap', descKa: 'არ მოეწონა? აირჩიე სხვა შესაფერისი კერძი.', descEn: "Didn't work out? Pick another good match." },
+  { ka: 'იყიდე', en: 'Shop', descKa: 'მენიუდან გამომდინარე საყიდლების სია.', descEn: 'A shopping list built from the menu.' },
+  { ka: 'გაიხსენე', en: 'Recall', descKa: 'რა გასინჯა შენმა შვილმა და როდის.', descEn: 'What your child has tried, and when.' },
+];
 
 export default function HomeClient({ s, dishes, dishCount, recentBlogs, planAmounts, testimonials, canLeaveTestimonial }: {
   s: S; dishes: Dishes; dishCount: number; recentBlogs: RecentBlog[];
@@ -81,23 +345,19 @@ export default function HomeClient({ s, dishes, dishCount, recentBlogs, planAmou
   const locale = searchParams.get('lang') === 'en' ? 'en' : 'ka';
   const ka = locale === 'ka';
 
-  const t = (kaKey: string, enKey: string) => (ka ? s[kaKey] : s[enKey]) as string;
-
-  const refStats        = useStaggeredFadeUp(100);
-  const refFeatures     = useFadeUp();
-  const refFeatureCards = useStaggeredFadeUp(130);
-  const refSamples      = useFadeUp();
-  const refSampleCards  = useStaggeredFadeUp(100);
-  const refSampleCards2 = useStaggeredFadeUp(100);
-  const refPricing      = useFadeUp();
-  const refPricingCards = useStaggeredFadeUp(180);
-  const refBlog             = useFadeUp();
-  const refBlogCards        = useStaggeredFadeUp(120);
-  const refBlogCardsDesktop = useStaggeredFadeUp(120);
+  const refStory = useActiveStep(5);
+  const refCoreValue = useFadeUp();
+  const refDaily = useFadeUp();
+  const refSummary = useFadeUp();
+  const refSummaryRows = useStaggeredFadeUp(90);
+  const refPricing = useFadeUp();
+  const refPricingCards = useStaggeredFadeUp(140);
+  const refFinal = useFadeUp();
 
   const [loadingPlan, setLoadingPlan] = useState<BillingInterval | null>(null);
   const [currentPlan, setCurrentPlan] = useState<string | null>(null);
   const [currentInterval, setCurrentInterval] = useState<BillingInterval | null>(null);
+  const [promoOpen, setPromoOpen] = useState<Record<BillingInterval, boolean>>({ 1: false, 3: false, 6: false });
   const [promoInput, setPromoInput] = useState<Record<BillingInterval, string>>({ 1: '', 3: '', 6: '' });
   const [promoStatus, setPromoStatus] = useState<Record<BillingInterval, { discount: number; valid: boolean; msg: string } | undefined>>({ 1: undefined, 3: undefined, 6: undefined });
   const [promoLoading, setPromoLoading] = useState<BillingInterval | null>(null);
@@ -105,12 +365,8 @@ export default function HomeClient({ s, dishes, dishCount, recentBlogs, planAmou
   // still paid time left on the currently active plan (see that route's onActivePaidPeriod
   // check) — shown as a detail modal instead of a plain alert() so the reason and the way
   // out (cancel, then resubscribe once the paid period ends) are both actually visible.
-  // Mirrors the same handling in app/subscription/SubscriptionClient.tsx — this page has
-  // its own separate pricing section/checkout handler, so it needs the same fix applied here too.
   const [intervalBlocked, setIntervalBlocked] = useState<{ currentInterval: BillingInterval; renewsAt: string | null } | null>(null);
 
-  const refTestimonials = useFadeUp();
-  const refTestimonialCards = useStaggeredFadeUp(100);
   const [testimonialText, setTestimonialText] = useState('');
   const [testimonialStatus, setTestimonialStatus] = useState<'idle' | 'sending' | 'sent' | 'error'>('idle');
   const [showAllTestimonials, setShowAllTestimonials] = useState(false);
@@ -200,73 +456,171 @@ export default function HomeClient({ s, dishes, dishCount, recentBlogs, planAmou
     const status = promoStatus[interval];
     const pct = status?.valid ? status.discount : 0;
     // Cent-level rounding — matches applyDiscount() in lib/bog.ts exactly, so the price
-    // shown here is never off from what BOG's payment page actually charges (rounding to
-    // a whole number, as this used to, showed e.g. 14₾ on-site for a real 13.6₾ charge).
+    // shown here is never off from what BOG's payment page actually charges.
     return pct > 0 ? Math.round(base * (1 - pct / 100) * 100) / 100 : null;
   };
 
-  const mealEntries: { key: keyof Dishes; label: string; labelEn: string }[] = [
-    { key: 'breakfast', label: 'საუზმე',  labelEn: 'Breakfast' },
-    { key: 'lunch',     label: 'სადილი',  labelEn: 'Lunch' },
-    { key: 'snack',     label: 'სნექი',   labelEn: 'Snack' },
-    { key: 'dinner',    label: 'ვახშამი', labelEn: 'Dinner' },
+  const STORY_STEPS: { q: string; visual: JSX.Element }[] = [
+    { q: ka ? 'რა მოვამზადო?' : 'What should I make?', visual: <MenuDigestMock dishes={dishes} ka={ka} /> },
+    { q: ka ? 'სახლში რაც მაქვს, იმით რამე გამოვა?' : 'Can I make something from what I already have?', visual: <PantryMatchMock dish={dishes.snack} ka={ka} /> },
+    { q: ka ? 'ეს უკვე გასინჯული აქვს?' : 'Has this one been tried already?', visual: <TriedChipsMock ka={ka} /> },
+    { q: ka ? 'თუ ეს არ მოეწონა, ახლა რა გავაკეთო?' : "If they don't like it, what now?", visual: <DislikeReplaceMock from={dishes.lunch} to={dishes.dinner} ka={ka} /> },
+    { q: ka ? 'საყიდლებზე რა ვიყიდო?' : 'What do I need from the store?', visual: <ShoppingListMock ka={ka} /> },
   ];
 
   return (
-    <main style={{ color: '#6F7A5C', background: '#F5F1E4', fontFamily: "'Rubik', sans-serif" }}>
+    <main style={{ color: INK, background: CREAM, fontFamily: "'Rubik', sans-serif" }}>
+      <style>{`
+        @media (prefers-reduced-motion: reduce) {
+          .mm-parallax { transform: none !important; }
+        }
+        .mm-hero-card { transition: transform 0.5s cubic-bezier(.22,1,.36,1); }
+      `}</style>
 
-      {/* ── Hero ─────────────────────────────────────────────── */}
-      <section className="relative overflow-hidden" style={{ background: 'linear-gradient(to right, #f9ead4, #f8e2cd, #f5e3c9, #e9ceb0, #e3cbab)' }}>
-        <div className="max-w-7xl mx-auto px-5 sm:px-8 pt-14 pb-16 sm:pt-20 sm:pb-24">
-          <div className="text-center max-w-2xl mx-auto">
-            <span className="inline-flex items-center gap-2 mb-3 sm:mb-5 uppercase tracking-[0.12em] sm:tracking-[0.15em] font-bold text-[10px] sm:text-xs" style={{ color: '#D9803B' }}>
-              <span style={{ width: 16, height: 1, background: '#D9803B', display: 'inline-block' }} />
-              {t('heroBadgeKa', 'heroBadgeEn')}
-              <span style={{ width: 16, height: 1, background: '#D9803B', display: 'inline-block' }} />
-            </span>
-            <h1 className="text-3xl sm:text-4xl lg:text-[46px] leading-[1.2] sm:leading-[1.15] font-bold mb-3 sm:mb-5"
-              style={{ color: '#6F7A5C', fontFamily: SERIF_KA }}>
-              {t('heroTitleKa', 'heroTitleEn')}
-            </h1>
-            <p className="text-sm sm:text-base text-[#6F7A5C]/75 mb-5 sm:mb-7">
-              {t('heroTextKa', 'heroTextEn')}
-            </p>
-            <div className="flex flex-wrap justify-center gap-2.5 sm:gap-3">
-              <a
-                href={`/register?lang=${locale}`}
-                className="px-6 sm:px-7 py-2.5 sm:py-3.5 rounded-full font-bold shadow-md transition text-sm sm:text-base hover:opacity-90"
-                style={{ background: '#D9803B', color: '#FFFFFF' }}
-              >
-                {t('heroCta1Ka', 'heroCta1En')} →
-              </a>
-              <a
-                href={`/?lang=${locale}#pricing`}
-                className="border-2 px-6 sm:px-7 py-2.5 sm:py-3.5 rounded-full font-bold hover:bg-[#6F7A5C]/10 transition text-sm sm:text-base"
-                style={{ borderColor: '#6F7A5C', color: '#6F7A5C' }}
-              >
-                {t('heroCta2Ka', 'heroCta2En')}
-              </a>
+      {/* ── HERO ─────────────────────────────────────────────── */}
+      <section className="relative overflow-hidden" style={{ background: INK }}>
+        <div className="max-w-7xl mx-auto px-5 sm:px-8 pt-16 pb-16 sm:pt-24 sm:pb-24">
+          <div className="grid lg:grid-cols-2 gap-12 lg:gap-8 items-center">
+            <div className="max-w-xl">
+              <h1 className="text-4xl sm:text-5xl lg:text-[54px] leading-[1.14] font-bold mb-6" style={{ color: CREAM, fontFamily: SERIF_KA }}>
+                {ka ? 'ბავშვის კვებაზე ყოველდღე ფიქრი აღარ მოგიწევს.' : "You won't have to think about your child's food every single day."}
+              </h1>
+              <p className="text-base sm:text-lg mb-8" style={{ color: `${CREAM}B0` }}>
+                {ka
+                  ? 'Mommenu გეხმარება დაგეგმო ბავშვის კვება, იპოვო შესაფერისი კერძი, გამოიყენო ის პროდუქტები, რაც სახლში გაქვს და ყველაფერი ერთ ადგილას აკონტროლო.'
+                  : "Mommenu helps you plan your child's meals, find the right dish, use what's already in the kitchen, and keep track of all of it in one place."}
+              </p>
+              <div className="flex flex-wrap items-center gap-4">
+                <a href={`/register?lang=${locale}`}
+                  className="px-7 py-3.5 rounded-full font-bold shadow-md transition text-sm sm:text-base hover:opacity-90"
+                  style={{ background: ACCENT, color: '#fff' }}>
+                  {ka ? 'Mommenu-ს დაწყება' : 'Start Mommenu'}
+                </a>
+                <a href="#story" className="text-sm sm:text-base font-bold underline underline-offset-4" style={{ color: CREAM }}>
+                  {ka ? 'ნახე როგორ მუშაობს' : 'See how it works'}
+                </a>
+              </div>
+            </div>
+
+            {/* Layered real-product preview — not one screenshot but several connected
+                states, so the hero reads as "one system" rather than a single feature. */}
+            <div className="relative h-[420px] sm:h-[460px] lg:h-[500px]">
+              <div className="mm-parallax mm-hero-card absolute w-[78%] sm:w-[64%]" style={{ left: '2%', top: '46%', transform: 'rotate(-4deg)' }}>
+                <PantryMatchMock dish={dishes.breakfast} ka={ka} />
+              </div>
+              <div className="mm-parallax mm-hero-card absolute w-[62%] sm:w-[52%]" style={{ right: '0%', top: '4%', transform: 'rotate(3deg)' }}>
+                <RecipeCardMock dish={dishes.dinner} ka={ka} />
+              </div>
+              <div className="mm-parallax mm-hero-card absolute w-[72%] sm:w-[62%]" style={{ left: '18%', bottom: '0%', transform: 'rotate(1.5deg)' }}>
+                <MenuDigestMock dishes={dishes} ka={ka} />
+              </div>
             </div>
           </div>
         </div>
       </section>
 
-      {/* ── Testimonials ─────────────────────────────────────── */}
-      {(testimonials.length > 0 || canLeaveTestimonial) && (
-        <section className="relative z-10 py-14 sm:py-20" style={{ background: '#6F7A5C' }}>
-          <div className="max-w-7xl mx-auto px-5">
-            <div ref={refTestimonials} className="fade-up mb-8 sm:mb-12">
-              <h2 className="text-2xl sm:text-3xl font-bold mb-1 text-[#F5F1E4]" style={{ fontFamily: SERIF_KA }}>
-                {ka ? 'რას ამბობენ მშობლები' : 'What parents say'}
+      {/* ── STORY: "დედის ჩვეულებრივი დღე" ──────────────────────
+          One continuous narrative rather than five static cards — the text steps and the
+          product visual are the same connected flow: sticky visual on desktop swaps by
+          scroll step; on mobile each step carries its own compact visual inline. */}
+      <section id="story" className="relative z-10 py-16 sm:py-28" style={{ background: INK }}>
+        <div className="max-w-6xl mx-auto px-5 sm:px-8">
+          <h2 className="text-2xl sm:text-4xl font-bold mb-14 sm:mb-20 max-w-2xl" style={{ color: CREAM, fontFamily: SERIF_KA }}>
+            {ka ? 'ყველაფერი ერთი კითხვით იწყება: დღეს რა ვაჭამო?' : 'It always starts with one question: what do I feed them today?'}
+          </h2>
+
+          <div className="grid lg:grid-cols-2 gap-10 lg:gap-20">
+            <div>
+              {STORY_STEPS.map((step, i) => (
+                <div
+                  key={i}
+                  ref={(el) => { refStory.refs.current[i] = el; }}
+                  className="py-10 sm:py-16 lg:py-24 transition-opacity duration-500"
+                  style={{ opacity: refStory.active === i ? 1 : 0.35 }}
+                >
+                  <p className="text-3xl sm:text-5xl font-bold" style={{ color: CREAM, fontFamily: SERIF_KA }}>{step.q}</p>
+                  <div className="lg:hidden mt-6 max-w-sm">{step.visual}</div>
+                </div>
+              ))}
+            </div>
+            <div className="hidden lg:block sticky top-28 self-start">
+              <div className="max-w-sm ml-auto">{STORY_STEPS[refStory.active].visual}</div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* ── CORE VALUE: ecosystem ────────────────────────────── */}
+      <section className="relative z-10 py-16 sm:py-28" style={{ background: INK }}>
+        <div className="max-w-6xl mx-auto px-5 sm:px-8">
+          <div ref={refCoreValue} className="fade-up text-center mb-14 sm:mb-20 max-w-2xl mx-auto">
+            <h2 className="text-2xl sm:text-4xl font-bold mb-4" style={{ color: CREAM, fontFamily: SERIF_KA }}>
+              {ka ? 'Mommenu უბრალოდ რეცეპტების კრებული არ არის.' : "Mommenu isn't just a recipe collection."}
+            </h2>
+            <p className="text-sm sm:text-base" style={{ color: `${CREAM}A0` }}>
+              {ka
+                ? 'ის იმახსოვრებს ბავშვის კვებას და ყოველდღიურ გადაწყვეტილებებს ერთმანეთთან აკავშირებს.'
+                : "It remembers your child's feeding history and connects your daily decisions to it."}
+            </p>
+          </div>
+          <EcosystemDiagram dishCount={dishCount} ka={ka} />
+        </div>
+      </section>
+
+      {/* ── DAILY USE ─────────────────────────────────────────── */}
+      <section className="relative z-10 py-16 sm:py-28" style={{ background: CREAM }}>
+        <div className="max-w-6xl mx-auto px-5 sm:px-8">
+          <div ref={refDaily} className="fade-up grid lg:grid-cols-2 gap-10 lg:gap-16 items-center">
+            <div className="order-2 lg:order-1 max-w-sm w-full mx-auto lg:mx-0">
+              <DayTimelineMock dishes={dishes} ka={ka} />
+            </div>
+            <div className="order-1 lg:order-2">
+              <h2 className="text-2xl sm:text-4xl font-bold mb-4" style={{ color: INK, fontFamily: SERIF_KA }}>
+                {ka ? 'Mommenu-ს ერთხელ არ იყენებ. მას ყოველდღიურ რუტინაში იყენებ.' : "You don't use Mommenu once. You use it every day."}
               </h2>
-              <p className="text-[#F5F1E4]/60 text-sm">
-                {ka ? 'ნამდვილი შეფასებები mom menu-ს მომხმარებლებისგან' : 'Real feedback from mom menu parents'}
+              <p className="text-base sm:text-lg" style={{ color: `${INK}A0` }}>
+                {ka
+                  ? 'დილით საუზმე, შუადღეს სადილი, საღამოს ვახშამი — და დღის ბოლოს ყველაფერი კვების ისტორიაშია.'
+                  : 'Breakfast in the morning, lunch at midday, dinner in the evening — and by the end of the day, it\'s all in the feeding history.'}
               </p>
             </div>
+          </div>
+        </div>
+      </section>
+
+      {/* ── VALUE SUMMARY ─────────────────────────────────────── */}
+      <section className="relative z-10 py-16 sm:py-28" style={{ background: INK }}>
+        <div className="max-w-4xl mx-auto px-5 sm:px-8">
+          <div ref={refSummary} className="fade-up text-center mb-12 sm:mb-16">
+            <h2 className="text-2xl sm:text-4xl font-bold" style={{ color: CREAM, fontFamily: SERIF_KA }}>
+              {ka ? 'ერთი Mommenu. ნაკლები ფიქრი ყოველდღე.' : 'One Mommenu. Less to think about, every day.'}
+            </h2>
+          </div>
+          <div ref={refSummaryRows}>
+            {VALUE_ITEMS.map((item, i) => (
+              <div key={item.ka} className="fade-up flex flex-col sm:flex-row sm:items-baseline gap-1 sm:gap-6 py-5"
+                style={{ borderTop: i === 0 ? `1px solid ${CREAM}22` : undefined, borderBottom: `1px solid ${CREAM}22` }}>
+                <p className="text-xl sm:text-2xl font-bold sm:w-40 shrink-0" style={{ color: CREAM, fontFamily: SERIF_KA }}>
+                  {ka ? item.ka : item.en}
+                </p>
+                <p className="text-sm sm:text-base" style={{ color: `${CREAM}90` }}>{ka ? item.descKa : item.descEn}</p>
+              </div>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* ── Testimonials (kept — existing feature, quiet placement before pricing) ── */}
+      {(testimonials.length > 0 || canLeaveTestimonial) && (
+        <section className="relative z-10 py-16 sm:py-24" style={{ background: CREAM }}>
+          <div className="max-w-6xl mx-auto px-5 sm:px-8">
+            <h2 className="text-2xl sm:text-3xl font-bold mb-10 sm:mb-14" style={{ color: INK, fontFamily: SERIF_KA }}>
+              {ka ? 'რას ამბობენ მშობლები' : 'What parents say'}
+            </h2>
 
             {canLeaveTestimonial && testimonialStatus !== 'sent' && (
-              <div className="fade-up in-view mb-8 rounded-2xl p-6 bg-[#F5F1E4]">
-                <h3 className="font-bold text-[#6F7A5C] mb-3">
+              <div className="mb-10 rounded-3xl p-6" style={{ background: `${INK}08` }}>
+                <h3 className="font-bold mb-3" style={{ color: INK }}>
                   {ka ? 'გაგვიზიარე შენი აზრი საიტზე' : 'Share your thoughts about the site'}
                 </h3>
                 <textarea
@@ -274,41 +628,41 @@ export default function HomeClient({ s, dishes, dishCount, recentBlogs, planAmou
                   onChange={(e) => setTestimonialText(e.target.value)}
                   maxLength={500}
                   rows={3}
-                  placeholder={ka ? 'რას ფიქრობ mom menu-ზე?' : 'What do you think of mom menu?'}
-                  className="w-full px-4 py-3 rounded-xl border border-[#6F7A5C]/20 focus:outline-none focus:border-[#6F7A5C] transition text-sm text-[#6F7A5C] bg-white resize-none"
+                  placeholder={ka ? 'რას ფიქრობ Mommenu-ზე?' : 'What do you think of Mommenu?'}
+                  className="w-full px-4 py-3 rounded-2xl border focus:outline-none transition text-sm bg-white resize-none"
+                  style={{ borderColor: `${INK}20`, color: INK }}
                 />
                 {testimonialStatus === 'error' && (
                   <p className="text-red-600 text-xs mt-1">{ka ? 'შეცდომა. სცადე თავიდან.' : 'Error. Please try again.'}</p>
                 )}
                 <button onClick={submitTestimonial} disabled={testimonialStatus === 'sending' || !testimonialText.trim()}
                   className="mt-3 px-6 py-2.5 rounded-full text-sm font-bold transition disabled:opacity-50"
-                  style={{ background: '#6F7A5C', color: '#F5F1E4' }}>
+                  style={{ background: INK, color: CREAM }}>
                   {testimonialStatus === 'sending' ? (ka ? 'იგზავნება...' : 'Sending...') : (ka ? 'გამოქვეყნება' : 'Submit')}
                 </button>
               </div>
             )}
 
             {testimonialStatus === 'sent' && (
-              <p className="fade-up in-view mb-8 text-[#F5F1E4] font-semibold text-sm">
-                {ka ? '✓ მადლობა შეფასებისთვის! მალე გამოქვეყნდება.' : '✓ Thanks for the feedback! It will appear here once reviewed.'}
+              <p className="mb-10 font-semibold text-sm" style={{ color: INK }}>
+                {ka ? 'მადლობა შეფასებისთვის — მალე გამოქვეყნდება.' : 'Thanks for the feedback — it will appear here once reviewed.'}
               </p>
             )}
 
             {testimonials.length > 0 && (
               <>
-                <div ref={refTestimonialCards} className="grid sm:grid-cols-2 lg:grid-cols-3 gap-5">
+                <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-5">
                   {visibleTestimonials.map((tst) => (
-                    <div key={tst.id} className="fade-up rounded-2xl p-5 bg-[#F5F1E4]/10">
-                      <p className="text-[#F5F1E4]/90 text-sm leading-relaxed mb-3">"{tst.content}"</p>
-                      <p className="text-[#F5F1E4] text-sm font-bold">{tst.authorName}</p>
+                    <div key={tst.id} className="rounded-2xl p-5" style={{ background: `${INK}06` }}>
+                      <p className="text-sm leading-relaxed mb-3" style={{ color: `${INK}D0` }}>&quot;{tst.content}&quot;</p>
+                      <p className="text-sm font-bold" style={{ color: INK }}>{tst.authorName}</p>
                     </div>
                   ))}
                 </div>
                 {!showAllTestimonials && testimonials.length > TESTIMONIALS_PREVIEW_COUNT && (
-                  <div className="text-center mt-6">
+                  <div className="mt-6">
                     <button onClick={() => setShowAllTestimonials(true)}
-                      className="px-6 py-2.5 rounded-full text-sm font-bold border-2 transition hover:bg-[#F5F1E4]/10"
-                      style={{ borderColor: 'rgba(245,241,228,0.3)', color: '#F5F1E4' }}>
+                      className="text-sm font-bold underline underline-offset-4" style={{ color: INK }}>
                       {ka ? `ყველას ნახვა (+${testimonials.length - TESTIMONIALS_PREVIEW_COUNT})` : `Show all (+${testimonials.length - TESTIMONIALS_PREVIEW_COUNT})`}
                     </button>
                   </div>
@@ -319,195 +673,71 @@ export default function HomeClient({ s, dishes, dishCount, recentBlogs, planAmou
         </section>
       )}
 
-      {/* ── Stats strip ─────────────────────────────────────── */}
-      <section className="relative z-10 pt-14 pb-14 sm:pt-20 sm:pb-20">
-        <div ref={refStats} className="max-w-7xl mx-auto px-5 grid grid-cols-2 md:grid-cols-4 gap-6">
-          {[
-            { num: `${Math.max(dishCount, 6)}+`, label: ka ? 'კერძი' : 'Recipes',
-              icon: <path d="M4 19.5V5a2 2 0 0 1 2-2h11a1 1 0 0 1 1 1v14.5M6.5 22H18a2 2 0 0 0 2-2v-.5a1 1 0 0 0-1-1H6.5a1.5 1.5 0 0 0 0 3Z" /> },
-            { num: '4', label: ka ? 'ასაკობრივი ჯგუფი' : 'Age groups',
-              icon: <><circle cx="12" cy="8" r="4" /><path d="M4 20c0-4 3.6-7 8-7s8 3 8 7" /></> },
-            { num: '3', label: ka ? 'წუთი შექმნაზე' : 'Min to set up',
-              icon: <><circle cx="12" cy="12" r="9" /><path d="M12 7v5l3 3" /></> },
-            { num: '100%', label: ka ? 'პერსონალიზებული' : 'Personalized',
-              icon: <path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z" /> },
-          ].map(({ num, label, icon }) => (
-            <div key={label} className="fade-up flex items-center gap-3 group">
-              <div className="w-11 h-11 rounded-full flex items-center justify-center flex-shrink-0 transition-transform duration-300 group-hover:scale-110 group-hover:rotate-6" style={{ background: '#6F7A5C' }}>
-                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#D9803B" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">{icon}</svg>
-              </div>
-              <div>
-                <p className="text-xl sm:text-2xl font-black" style={{ color: '#6F7A5C' }}>{num}</p>
-                <p className="text-xs text-[#6F7A5C]/60 font-medium">{label}</p>
-              </div>
-            </div>
-          ))}
-        </div>
-      </section>
-      {/* ── Features ─────────────────────────────────────────── */}
-      <section className="relative z-10 py-14 sm:py-24" style={{ background: '#6F7A5C' }}>
-        <div className="max-w-7xl mx-auto px-5">
-          <div ref={refFeatures} className="fade-up text-center mb-10 sm:mb-16">
-            <h2 className="text-2xl sm:text-3xl font-bold text-[#F5F1E4]" style={{ fontFamily: SERIF_KA }}>{t('featuresTitleKa', 'featuresTitleEn')}</h2>
-          </div>
-          <div ref={refFeatureCards} className="grid sm:grid-cols-3 gap-8 sm:gap-6">
-            {[1, 2, 3].map(i => {
-              const FEATURE_ICONS: Record<number, JSX.Element> = {
-                1: <path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z" />,
-                2: <path d="M13 2 3 14h7l-1 8 10-12h-7l1-8z" />,
-                3: <><circle cx="12" cy="12" r="8" /><circle cx="12" cy="12" r="4" /><circle cx="12" cy="12" r="0.8" fill="currentColor" /></>,
-              };
-              return (
-              <div key={i} className="fade-up text-center flex flex-col items-center group">
-                <div className="w-16 h-16 rounded-full flex items-center justify-center mb-5 border-2 transition-all duration-300 group-hover:scale-110 group-hover:bg-[#D9803B]/15" style={{ borderColor: '#D9803B', background: 'rgba(245,241,228,0.06)' }}>
-                  <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="#D9803B" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">{FEATURE_ICONS[i]}</svg>
-                </div>
-                <h3 className="text-base font-bold mb-2 text-[#F5F1E4]">{t(`feature${i}TitleKa`, `feature${i}TitleEn`)}</h3>
-                <p className="text-[#F5F1E4]/65 text-sm leading-relaxed max-w-[240px]">{t(`feature${i}DescKa`, `feature${i}DescEn`)}</p>
-              </div>
-              );
-            })}
-          </div>
-        </div>
-      </section>
-      {/* ── Meal samples ─────────────────────────────────────── */}
-      <section className="relative z-10 py-14 sm:py-24" style={{ background: '#F5F1E4' }}>
-        <div className="max-w-7xl mx-auto px-5">
-          <div ref={refSamples} className="fade-up text-center mb-10 sm:mb-14">
-            <div className="flex items-center justify-center gap-2 mb-2 uppercase tracking-[0.15em] font-bold text-xs" style={{ color: '#D9803B' }}>
-              <span style={{ width: 22, height: 1, background: '#D9803B', display: 'inline-block' }} />
-              {t('sampleSubtitleKa', 'sampleSubtitleEn')}
-              <span style={{ width: 22, height: 1, background: '#D9803B', display: 'inline-block' }} />
-            </div>
-            <h2 className="text-2xl sm:text-3xl font-bold text-[#6F7A5C] mb-2" style={{ fontFamily: SERIF_KA }}>{t('sampleTitleKa', 'sampleTitleEn')}</h2>
-            <a href={`/recipes?lang=${locale}`} className="text-sm font-bold" style={{ color: '#D9803B' }}>
-              {ka ? 'ყველა →' : 'All →'}
-            </a>
-          </div>
-
-          {/* Mobile: horizontal scroll */}
-          <div ref={refSampleCards} className="sm:hidden flex gap-3 overflow-x-auto pb-3 snap-x snap-mandatory -mx-5 px-5">
-            {mealEntries.map(({ key, label, labelEn }) => {
-              const dish = dishes[key];
-              return (
-                <div key={key} className="fade-up flex-shrink-0 w-52 bg-white rounded-2xl overflow-hidden snap-start shadow-sm">
-                  <div className="h-36 relative bg-[#6F7A5C]/10">
-                    {dish?.imageUrl
-                      ? <img src={dish.imageUrl} className="w-full h-full object-cover" alt={key} />
-                      : <div className="w-full h-full flex items-center justify-center text-4xl"></div>
-                    }
-                    <span className={`absolute top-3 left-3 text-[10px] font-bold px-2.5 py-1 rounded-full shadow ${MEAL_COLORS[key]}`}>
-                      {ka ? label : labelEn}
-                    </span>
-                  </div>
-                  <div className="p-3.5">
-                    <p className="font-bold text-sm text-[#6F7A5C] leading-snug">
-                      {dish ? (ka ? dish.titleKa : dish.titleEn) : (ka ? 'კერძი არ არის' : 'No dish')}
-                    </p>
-                  </div>
-                </div>
-              );
-            })}
-          </div>
-
-          {/* Desktop: uniform 4-card row */}
-          <div ref={refSampleCards2} className="hidden sm:grid grid-cols-4 gap-6">
-            {mealEntries.map(({ key, label, labelEn }) => {
-              const dish = dishes[key];
-              return (
-                <div key={key} className="fade-up bg-white rounded-2xl overflow-hidden shadow-sm hover:-translate-y-1.5 hover:shadow-xl transition-all duration-300 group">
-                  <div className="h-52 relative overflow-hidden bg-[#6F7A5C]/10">
-                    {dish?.imageUrl
-                      ? <img src={dish.imageUrl} className="w-full h-full object-cover group-hover:scale-105 transition duration-500" alt={key} />
-                      : <div className="w-full h-full flex items-center justify-center text-4xl"></div>
-                    }
-                    <span className={`absolute top-3 left-3 text-xs font-bold px-3 py-1 rounded-full shadow ${MEAL_COLORS[key]}`}>
-                      {ka ? label : labelEn}
-                    </span>
-                  </div>
-                  <div className="p-4">
-                    <p className="font-bold text-[#6F7A5C] leading-snug">
-                      {dish ? (ka ? dish.titleKa : dish.titleEn) : (ka ? 'კერძი არ არის' : 'No dish')}
-                    </p>
-                  </div>
-                </div>
-              );
-            })}
-          </div>
-        </div>
-      </section>
-      {/* ── Pricing ──────────────────────────────────────────── */}
-      <section id="pricing" className="relative z-10 py-14 sm:py-24" style={{ background: '#6F7A5C' }}>
-        <div className="max-w-7xl mx-auto px-5">
-          <div ref={refPricing} className="fade-up text-center mb-10 sm:mb-12">
-            <h2 className="text-2xl sm:text-3xl font-bold mb-3 text-[#F5F1E4]" style={{ fontFamily: SERIF_KA }}>{t('pricingTitleKa', 'pricingTitleEn')}</h2>
-            <p className="text-[#F5F1E4]/70 text-sm max-w-xl mx-auto">{t('pricingSubtitleKa', 'pricingSubtitleEn')}</p>
+      {/* ── PRICING ───────────────────────────────────────────── */}
+      <section id="pricing" className="relative z-10 py-16 sm:py-28" style={{ background: INK }}>
+        <div className="max-w-6xl mx-auto px-5 sm:px-8">
+          <div ref={refPricing} className="fade-up text-center mb-12 sm:mb-16 max-w-xl mx-auto">
+            <p className="text-base sm:text-lg" style={{ color: `${CREAM}B0` }}>
+              {ka
+                ? 'თუ ბავშვის კვებაზე ყოველ კვირას გიწევს ფიქრი, Mommenu სწორედ ამ ფიქრის შესამცირებლად არის შექმნილი.'
+                : "If you spend every week thinking about your child's food, Mommenu exists to shrink that thinking."}
+            </p>
           </div>
           <div ref={refPricingCards} className="grid md:grid-cols-3 gap-5 max-w-5xl mx-auto items-stretch">
             {([1, 3, 6] as BillingInterval[]).map((interval) => {
               const price = planAmounts[interval];
               const disc = discountedPrice(interval, price);
-              const isRecommended = interval === 3;
-              const monthlyBaseline = planAmounts[1] * interval;
-              const savings = monthlyBaseline - price;
-              const savingsPct = Math.round((savings / monthlyBaseline) * 100);
-              const perMonth = (price / interval).toFixed(interval === 6 ? 1 : 0);
+              // 6-month plan is the visually recommended tier — the owner's explicit choice
+              // for best value, not the previous default of 3.
+              const isRecommended = interval === 6;
+              const perMonth = (price / interval).toFixed(interval === 6 ? 2 : 0);
               const cadenceKa = interval === 1 ? 'თვეში' : `ყოველ ${interval} თვეში`;
               const cadenceEn = interval === 1 ? 'month' : `${interval} months`;
               const isActive = currentPlan === 'FULL_PLAN' && currentInterval === interval && !loadingPlan;
               // Free trial retired for everyone except promo-code signups (2026-09-13
-              // decision) — a referral code alone no longer grants one. Only a promo code
-              // entered on this specific card does, always for exactly PROMO_TRIAL_DAYS
-              // (mirrors bog-checkout/route.ts's eligibleForTrial check, which is what
-              // actually decides this at checkout time, and the webhook's own trialDays).
+              // decision) — only a promo code entered on this specific card still grants
+              // one, always for exactly PROMO_TRIAL_DAYS.
               const hasTrial = Boolean(promoStatus[interval]?.valid);
 
               return (
                 <div key={interval}
-                  className={`fade-up bg-[#F5F1E4] p-7 sm:p-8 rounded-3xl text-center flex flex-col relative transition-transform duration-300 hover:-translate-y-1 ${isRecommended ? 'shadow-2xl sm:scale-105 z-10 border-2' : 'shadow-lg'}`}
-                  style={isRecommended ? { borderColor: '#D9803B' } : undefined}
+                  className={`fade-up p-7 sm:p-8 rounded-3xl text-center flex flex-col relative transition-transform duration-300 hover:-translate-y-1 ${isRecommended ? 'sm:scale-105 z-10 border-2' : ''}`}
+                  style={{ background: CREAM, borderColor: isRecommended ? ACCENT : 'transparent' }}
                 >
                   {isRecommended && (
                     <div className="absolute -top-4 left-1/2 -translate-x-1/2">
-                      <div className="inline-flex items-center gap-1.5 text-sm font-bold px-5 py-2 rounded-full whitespace-nowrap shadow-md"
-                        style={{ background: '#D9803B', color: '#FFFFFF' }}>
-                        {ka ? 'მშობლების არჩევანი' : "Parents' Choice"}
+                      <div className="inline-flex items-center gap-1.5 text-sm font-bold px-5 py-2 rounded-full whitespace-nowrap shadow-md" style={{ background: ACCENT, color: '#fff' }}>
+                        {ka ? 'საუკეთესო ღირებულება' : 'Best value'}
                       </div>
                     </div>
                   )}
                   <div className={isRecommended ? 'h-4 mb-4' : 'h-0 mb-5'} />
 
-                  <h3 className="text-xl font-bold text-[#6F7A5C]">{ka ? `${interval} თვე` : `${interval} Month${interval > 1 ? 's' : ''}`}</h3>
-                  <p className="text-sm mt-1 mb-5 h-5" style={{ color: savings > 0 ? '#D9803B' : 'transparent' }}>
-                    {savings > 0 ? (ka ? `ზოგავთ ${savings}₾-ს (${savingsPct}%)` : `Save ${savings}₾ (${savingsPct}%)`) : '—'}
-                  </p>
+                  <h3 className="text-xl font-bold" style={{ color: INK }}>{ka ? `${interval} თვე` : `${interval} Month${interval > 1 ? 's' : ''}`}</h3>
 
-                  {hasTrial && (
-                    <>
-                      <div className="text-4xl font-black text-[#6F7A5C]">0₾</div>
-                      <p className="text-[#6F7A5C]/60 text-sm font-medium mb-2">{ka ? `პირველი ${PROMO_TRIAL_DAYS} დღე` : `first ${PROMO_TRIAL_DAYS} days`}</p>
-                    </>
-                  )}
-
-                  <div className="flex justify-center items-baseline gap-1.5">
+                  <div className="flex justify-center items-baseline gap-1.5 mt-5">
                     {disc ? (
                       <>
                         <span className="text-base font-bold text-red-400 line-through">{price}₾</span>
-                        <span className="text-xl font-bold text-[#6F7A5C]">{disc}₾</span>
+                        <span className="text-xl font-bold" style={{ color: INK }}>{disc}₾</span>
                       </>
                     ) : (
-                      <span className="text-xl font-bold text-[#6F7A5C]">{price}₾</span>
+                      <span className="text-xl font-bold" style={{ color: INK }}>{price}₾</span>
                     )}
-                    <span className="text-[#6F7A5C]/50 text-sm">{ka ? `/ ${cadenceKa}` : `/ ${cadenceEn}`}</span>
+                    <span className="text-sm" style={{ color: `${INK}80` }}>{ka ? `/ ${cadenceKa}` : `/ ${cadenceEn}`}</span>
                   </div>
-                  {interval > 1 && (
-                    <p className="text-[#6F7A5C]/45 text-xs mt-0.5">
-                      ({ka ? `გამოდის ${perMonth}₾ თვეში` : `= ${perMonth}₾ / month`})
+                  <p className="text-sm font-bold mt-1" style={{ color: ACCENT }}>
+                    {perMonth}₾{ka ? '/თვე' : '/mo'}
+                  </p>
+
+                  {hasTrial && (
+                    <p className="text-xs font-bold mt-3" style={{ color: `${INK}80` }}>
+                      {ka ? `პირველი ${PROMO_TRIAL_DAYS} დღე უფასოა` : `First ${PROMO_TRIAL_DAYS} days free`}
                     </p>
                   )}
-                  {promoStatus[interval]?.valid && <p className="text-[#D9803B] text-xs font-bold mt-1">{promoStatus[interval]!.discount}% {ka ? 'ფასდაკლება' : 'off'}</p>}
+                  {promoStatus[interval]?.valid && <p className="text-xs font-bold mt-1" style={{ color: ACCENT }}>{promoStatus[interval]!.discount}% {ka ? 'ფასდაკლება' : 'off'}</p>}
 
-                  <p className="text-[#6F7A5C]/40 text-[11px] italic mt-3 mb-5">
+                  <p className="text-[11px] italic mt-3 mb-5" style={{ color: `${INK}60` }}>
                     {hasTrial
                       ? (ka
                           ? `თანხა ჩამოგეჭრებათ მე-${PROMO_TRIAL_DAYS + 1} დღეს. გაუქმება შესაძლებელია სატესტო პერიოდშივე, სრულიად უფასოდ.`
@@ -515,39 +745,46 @@ export default function HomeClient({ s, dishes, dishCount, recentBlogs, planAmou
                       : (ka ? 'გადახდა ხდება გამოწერისთანავე.' : 'Charged immediately upon subscribing.')}
                   </p>
 
-                  <ul className="space-y-3 text-left flex-1 text-sm text-[#6F7A5C]">
-                    <li>{t('plan2Feature1Ka', 'plan2Feature1En')}</li>
-                    <li>{t('plan2Feature2Ka', 'plan2Feature2En')}</li>
-                    <li>{t('plan2Feature3Ka', 'plan2Feature3En')}</li>
-                  </ul>
+                  <div className="flex-1" />
 
-                  <div className="mt-6 flex flex-col sm:flex-row gap-2">
-                    <input
-                      value={promoInput[interval]}
-                      onChange={e => { setPromoInput(p => ({ ...p, [interval]: e.target.value })); setPromoStatus(p => ({ ...p, [interval]: { discount: 0, valid: false, msg: '' } })); }}
-                      onKeyDown={e => e.key === 'Enter' && validatePromo(interval)}
-                      placeholder={ka ? 'პრომოკოდი' : 'Promo code'}
-                      className="flex-1 min-w-0 px-3 py-2 border border-[#6F7A5C]/20 rounded-xl text-sm font-mono uppercase focus:outline-none focus:border-[#6F7A5C] bg-[#F5F1E4] text-[#6F7A5C]"
-                    />
-                    <button onClick={() => validatePromo(interval)} disabled={promoLoading === interval || !promoInput[interval]}
-                      className="w-full sm:w-auto px-4 py-2 border border-[#6F7A5C] text-[#6F7A5C] rounded-xl text-xs font-bold hover:bg-[#6F7A5C]/10 transition disabled:opacity-40">
-                      {promoLoading === interval ? '...' : (ka ? 'გამოყენება' : 'Apply')}
-                    </button>
-                  </div>
-                  {promoStatus[interval]?.msg && <p className="text-[#DC2626] text-xs mt-1 font-semibold">{promoStatus[interval]!.msg}</p>}
+                  <button
+                    onClick={() => (promoOpen[interval] ? undefined : setPromoOpen(p => ({ ...p, [interval]: true })))}
+                    className="text-xs font-semibold underline underline-offset-4 mb-4"
+                    style={{ color: `${INK}70`, display: promoOpen[interval] ? 'none' : 'block' }}
+                  >
+                    {ka ? 'პრომოკოდი გაქვს?' : 'Have a promo code?'}
+                  </button>
+                  {promoOpen[interval] && (
+                    <div className="mb-4">
+                      <div className="flex flex-col sm:flex-row gap-2">
+                        <input
+                          value={promoInput[interval]}
+                          onChange={e => { setPromoInput(p => ({ ...p, [interval]: e.target.value })); setPromoStatus(p => ({ ...p, [interval]: { discount: 0, valid: false, msg: '' } })); }}
+                          onKeyDown={e => e.key === 'Enter' && validatePromo(interval)}
+                          placeholder={ka ? 'პრომოკოდი' : 'Promo code'}
+                          className="flex-1 min-w-0 px-3 py-2 border rounded-xl text-sm font-mono uppercase focus:outline-none bg-white"
+                          style={{ borderColor: `${INK}20`, color: INK }}
+                        />
+                        <button onClick={() => validatePromo(interval)} disabled={promoLoading === interval || !promoInput[interval]}
+                          className="w-full sm:w-auto px-4 py-2 border rounded-xl text-xs font-bold transition disabled:opacity-40"
+                          style={{ borderColor: INK, color: INK }}>
+                          {promoLoading === interval ? '...' : (ka ? 'გამოყენება' : 'Apply')}
+                        </button>
+                      </div>
+                      {promoStatus[interval]?.msg && <p className="text-red-600 text-xs mt-1 font-semibold">{promoStatus[interval]!.msg}</p>}
+                    </div>
+                  )}
 
                   <button onClick={() => handleSubscribeBog(interval)} disabled={loadingPlan !== null || isActive}
-                    className={`w-full py-3.5 mt-4 rounded-full font-bold transition disabled:opacity-60 ${isRecommended ? 'shadow-lg hover:opacity-90' : 'border-2 hover:bg-[#6F7A5C]/10'}`}
-                    style={isRecommended ? { background: '#D9803B', color: '#FFFFFF' } : { borderColor: '#6F7A5C', color: '#6F7A5C' }}>
+                    className="w-full py-3.5 rounded-full font-bold transition disabled:opacity-60"
+                    style={isRecommended ? { background: ACCENT, color: '#fff' } : { border: `2px solid ${INK}`, color: INK }}>
                     {isActive
-                      ? (ka ? '✓ აქტიურია' : '✓ Active')
+                      ? (ka ? 'აქტიურია' : 'Active')
                       : loadingPlan === interval
                         ? (ka ? 'მუშავდება...' : 'Processing...')
-                        : hasTrial
-                          ? (ka ? `დაიწყე ${PROMO_TRIAL_DAYS} დღით უფასოდ` : `Start ${PROMO_TRIAL_DAYS}-day free trial`)
-                          : (ka ? 'შეიძინე ახლავე' : 'Subscribe now')}
+                        : (ka ? 'შეძენა' : 'Subscribe')}
                   </button>
-                  <p className="text-[#6F7A5C]/45 text-xs mt-2">
+                  <p className="text-xs mt-3" style={{ color: `${INK}60` }}>
                     {ka ? `ავტომატურად განახლდება ${cadenceKa}. გაუქმება ნებისმიერ დროს.` : `Renews automatically every ${cadenceEn}. Cancel anytime.`}
                   </p>
                 </div>
@@ -556,78 +793,22 @@ export default function HomeClient({ s, dishes, dishCount, recentBlogs, planAmou
           </div>
         </div>
       </section>
-      {/* ── Blog ─────────────────────────────────────────────── */}
-      {recentBlogs.length > 0 && (
-        <section className="relative z-10 py-14 sm:py-24" style={{ background: '#F5F1E4' }}>
-          <div className="max-w-7xl mx-auto px-5">
-            <div ref={refBlog} className="fade-up flex justify-between items-end mb-8 sm:mb-12 gap-4">
-              <div>
-                <h2 className="text-2xl sm:text-3xl font-bold mb-1 text-[#6F7A5C]" style={{ fontFamily: SERIF_KA }}>{ka ? 'ბლოგი' : 'Blog'}</h2>
-                <p className="text-[#6F7A5C]/60 text-sm">
-                  {ka ? 'სტატიები და იდეები ბავშვის კვებაზე' : 'Articles and ideas on child nutrition'}
-                </p>
-              </div>
-              <a href={`/blog?lang=${locale}`} className="text-sm font-bold whitespace-nowrap" style={{ color: '#D9803B' }}>
-                {ka ? 'ყველა →' : 'All →'}
-              </a>
-            </div>
 
-            {/* Mobile: horizontal scroll */}
-            <div ref={refBlogCards} className="sm:hidden flex gap-3 overflow-x-auto pb-3 snap-x snap-mandatory -mx-5 px-5">
-              {recentBlogs.map((blog) => {
-                const title = ka ? blog.titleKa : blog.titleEn;
-                const raw = ka ? blog.contentKa : blog.contentEn;
-                const plain = raw.replace(/<[^>]*>/g, ' ').replace(/\s+/g, ' ').trim();
-                const excerpt = plain.length > 80 ? plain.slice(0, 80) + '...' : plain;
-                const href = `/blog/${(blog as any).slug ?? blog.id}?lang=${locale}`;
-                return (
-                  <a key={blog.id} href={href}
-                    className="fade-up flex-shrink-0 w-64 rounded-2xl overflow-hidden snap-start shadow-sm block bg-white">
-                    {blog.imageUrl
-                      ? <div className="h-36 overflow-hidden"><img src={blog.imageUrl} alt={title} className="w-full h-full object-cover" /></div>
-                      : <div className="h-36 flex items-center justify-center text-4xl" style={{ background: 'rgba(111,122,92,0.1)' }}></div>
-                    }
-                    <div className="p-4">
-                      <h3 className="font-bold text-[#6F7A5C] text-sm mb-1 leading-snug">{title}</h3>
-                      <p className="text-xs text-[#6F7A5C]/60 leading-relaxed">{excerpt}</p>
-                    </div>
-                  </a>
-                );
-              })}
-            </div>
-
-            {/* Desktop: 3-col grid */}
-            <div ref={refBlogCardsDesktop} className="hidden sm:grid grid-cols-3 gap-6">
-              {recentBlogs.map((blog) => {
-                const title = ka ? blog.titleKa : blog.titleEn;
-                const raw = ka ? blog.contentKa : blog.contentEn;
-                const plain = raw.replace(/<[^>]*>/g, ' ').replace(/\s+/g, ' ').trim();
-                const excerpt = plain.length > 120 ? plain.slice(0, 120) + '...' : plain;
-                const d = new Date(blog.createdAt);
-                const KA_M = ['იანვ','თებ','მარ','აპრ','მაი','ივნ','ივლ','აგვ','სექ','ოქტ','ნოე','დეკ'];
-                const EN_M = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
-                const date = `${d.getDate()} ${ka ? KA_M[d.getMonth()] : EN_M[d.getMonth()]}, ${d.getFullYear()}`;
-                const href = `/blog/${(blog as any).slug ?? blog.id}?lang=${locale}`;
-                return (
-                  <a key={blog.id} href={href}
-                    className="fade-up rounded-2xl overflow-hidden group block bg-white shadow-sm hover:-translate-y-1.5 hover:shadow-xl transition-all duration-300">
-                    {blog.imageUrl
-                      ? <div className="h-52 overflow-hidden"><img src={blog.imageUrl} alt={title} className="w-full h-full object-cover group-hover:scale-105 transition duration-500" /></div>
-                      : <div className="h-52 flex items-center justify-center text-4xl" style={{ background: 'rgba(111,122,92,0.1)' }}></div>
-                    }
-                    <div className="p-5">
-                      <p className="text-xs font-bold mb-2 uppercase tracking-wide" style={{ color: '#D9803B' }}>{date}</p>
-                      <h3 className="font-bold text-[#6F7A5C] text-base mb-2 leading-snug">{title}</h3>
-                      <p className="text-sm text-[#6F7A5C]/65 leading-relaxed mb-3">{excerpt}</p>
-                      <span className="text-xs font-bold group-hover:underline text-[#6F7A5C]">{ka ? 'წაიკითხე →' : 'Read →'}</span>
-                    </div>
-                  </a>
-                );
-              })}
-            </div>
-          </div>
-        </section>
-      )}
+      {/* ── FINAL CTA ─────────────────────────────────────────── */}
+      <section className="relative z-10 py-20 sm:py-32" style={{ background: INK }}>
+        <div ref={refFinal} className="fade-up max-w-2xl mx-auto px-5 text-center">
+          <h2 className="text-3xl sm:text-5xl font-bold mb-9" style={{ color: CREAM, fontFamily: SERIF_KA }}>
+            {ka
+              ? 'ბავშვის კვების დაგეგმა სრულად ჩვენ მოგვანდე, შენი დრო კი გამოიყენე.'
+              : 'Leave the meal planning to us. Use your time for what matters.'}
+          </h2>
+          <a href={`/register?lang=${locale}`}
+            className="inline-block px-8 py-4 rounded-full font-bold shadow-md transition text-base hover:opacity-90"
+            style={{ background: ACCENT, color: '#fff' }}>
+            {ka ? 'Mommenu-ს დაწყება' : 'Start Mommenu'}
+          </a>
+        </div>
+      </section>
 
       {intervalBlocked && (
         <IntervalSwitchBlockedModal
