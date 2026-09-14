@@ -5,7 +5,7 @@ import { useState, useEffect, useRef } from 'react';
 import { ga } from '@/lib/gtag';
 
 type S = Record<string, string | number>;
-type Dish = { titleKa: string; titleEn: string; imageUrl: string | null } | null;
+type Dish = { titleKa: string; titleEn: string; imageUrl: string | null; ingredientsKa: string[]; ingredientsEn: string[] } | null;
 type Dishes = { breakfast: Dish; lunch: Dish; snack: Dish; dinner: Dish };
 type RecentBlog = {
   id: string;
@@ -98,14 +98,24 @@ function useActiveStep(count: number) {
   return { refs, active };
 }
 
-// Desktop-only "pinned" scrollytelling driver: the wrapper is `count` viewport-heights tall,
-// its inner panel is `sticky top-0 h-screen` (so it visually stays put while the person
-// scrolls), and this hook turns raw scroll position into a 0..count-1 step index — the text/
-// visual swap in place instead of the page just sliding a list of dimmed blocks past the
-// viewport. No scroll-jacking: native scroll, just read via rAF-throttled scroll listener.
+// Desktop-only "pinned" scrollytelling driver: the wrapper is `count` viewport-heights tall
+// and its inner panel visually stays put while the person scrolls through it, swapping the
+// active question/visual in place. Deliberately NOT implemented with CSS `position: sticky`:
+// this app's root layout wraps every page in a div with `overflow-x: hidden` (added to avoid
+// an iOS fixed-element touch bug — see app/layout.tsx), and per the CSS spec a non-`visible`
+// overflow on one axis computes the other axis to `auto` too, which turns that wrapper into a
+// scroll-containing ancestor and silently breaks `position: sticky` in most browsers (the
+// panel just scrolls away instead of pinning) — that's why this looked fine on mobile (which
+// never uses this pinned panel) but showed long empty stretches on desktop. Fixed by driving
+// the pin manually: 'before' the wrapper reaches the top, the panel sits at the wrapper's own
+// top (normal document position); while scrolling through the wrapper, the panel is
+// `position: fixed` to the viewport; once the wrapper's bottom has scrolled past, the panel
+// rests at the wrapper's bottom. No scroll-jacking, no animation library — native scroll read
+// via a rAF-throttled listener.
 function useScrollStory(count: number) {
   const wrapperRef = useRef<HTMLDivElement | null>(null);
   const [active, setActive] = useState(0);
+  const [pin, setPin] = useState<'before' | 'pinned' | 'after'>('before');
   useEffect(() => {
     let raf = 0;
     const compute = () => {
@@ -114,9 +124,11 @@ function useScrollStory(count: number) {
       if (!el) return;
       const rect = el.getBoundingClientRect();
       const vh = window.innerHeight;
+
+      setPin(rect.top > 0 ? 'before' : rect.bottom <= vh ? 'after' : 'pinned');
+
       const total = rect.height - vh;
-      if (total <= 0) { setActive(0); return; }
-      const progress = Math.min(1, Math.max(0, -rect.top / total));
+      const progress = total <= 0 ? 0 : Math.min(1, Math.max(0, -rect.top / total));
       const idx = Math.min(count - 1, Math.floor(progress * count));
       setActive((prev) => (prev === idx ? prev : idx));
     };
@@ -130,7 +142,7 @@ function useScrollStory(count: number) {
       if (raf) cancelAnimationFrame(raf);
     };
   }, [count]);
-  return { wrapperRef, active };
+  return { wrapperRef, active, pin };
 }
 
 const dishLabel = (d: Dish, ka: boolean) =>
@@ -186,7 +198,14 @@ function RecipeCardMock({ dish, ka }: { dish: Dish; ka: boolean }) {
 }
 
 function PantryMatchMock({ dish, ka }: { dish: Dish; ka: boolean }) {
-  const items = ka ? ['ბრინჯი', 'ბანანი', 'კვერცხი', 'ხაჭო'] : ['Rice', 'Banana', 'Egg', 'Cottage cheese'];
+  // Pull the chips from the matched dish's own real ingredient list, so "I have at home" and
+  // "matching dish" always actually agree with each other — whichever dish happens to be most
+  // recently added never produces a mismatched pairing. Falls back to a couple of generic
+  // grocery examples only for the rare dish with no recorded ingredients yet.
+  const realIngredients = (ka ? dish?.ingredientsKa : dish?.ingredientsEn) ?? [];
+  const items = realIngredients.length > 0
+    ? realIngredients.slice(0, 4)
+    : ka ? ['ბრინჯი', 'ბანანი', 'კვერცხი', 'ხაჭო'] : ['Rice', 'Banana', 'Egg', 'Cottage cheese'];
   return (
     <div className="rounded-3xl bg-white shadow-xl p-5 sm:p-6 w-full">
       <p className="text-[11px] font-bold uppercase tracking-wide mb-3" style={{ color: ACCENT }}>{ka ? 'სახლში მაქვს' : 'I have at home'}</p>
@@ -590,7 +609,10 @@ export default function HomeClient({ s, dishes, dishCount, recentBlogs, planAmou
 
         {/* Desktop (lg+): pinned scrollytelling */}
         <div ref={storyPin.wrapperRef} className="hidden lg:block relative" style={{ height: `${STORY_STEPS.length * 85}vh` }}>
-          <div className="sticky top-0 h-screen flex items-center overflow-hidden">
+          <div
+            className="h-screen flex items-center overflow-hidden left-0 right-0"
+            style={{ position: storyPin.pin === 'pinned' ? 'fixed' : 'absolute', top: storyPin.pin === 'after' ? 'auto' : 0, bottom: storyPin.pin === 'after' ? 0 : 'auto' }}
+          >
             <div className="max-w-6xl mx-auto px-8 w-full">
               <h2 className="text-4xl font-bold mb-16 max-w-2xl" style={{ color: CREAM, fontFamily: SERIF_KA }}>
                 {ka ? 'ყველაფერი ერთი კითხვით იწყება: დღეს რა ვაჭამო?' : 'It always starts with one question: what do I feed them today?'}
