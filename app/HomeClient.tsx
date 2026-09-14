@@ -98,6 +98,41 @@ function useActiveStep(count: number) {
   return { refs, active };
 }
 
+// Desktop-only "pinned" scrollytelling driver: the wrapper is `count` viewport-heights tall,
+// its inner panel is `sticky top-0 h-screen` (so it visually stays put while the person
+// scrolls), and this hook turns raw scroll position into a 0..count-1 step index — the text/
+// visual swap in place instead of the page just sliding a list of dimmed blocks past the
+// viewport. No scroll-jacking: native scroll, just read via rAF-throttled scroll listener.
+function useScrollStory(count: number) {
+  const wrapperRef = useRef<HTMLDivElement | null>(null);
+  const [active, setActive] = useState(0);
+  useEffect(() => {
+    let raf = 0;
+    const compute = () => {
+      raf = 0;
+      const el = wrapperRef.current;
+      if (!el) return;
+      const rect = el.getBoundingClientRect();
+      const vh = window.innerHeight;
+      const total = rect.height - vh;
+      if (total <= 0) { setActive(0); return; }
+      const progress = Math.min(1, Math.max(0, -rect.top / total));
+      const idx = Math.min(count - 1, Math.floor(progress * count));
+      setActive((prev) => (prev === idx ? prev : idx));
+    };
+    const onScroll = () => { if (!raf) raf = requestAnimationFrame(compute); };
+    window.addEventListener('scroll', onScroll, { passive: true });
+    window.addEventListener('resize', onScroll);
+    compute();
+    return () => {
+      window.removeEventListener('scroll', onScroll);
+      window.removeEventListener('resize', onScroll);
+      if (raf) cancelAnimationFrame(raf);
+    };
+  }, [count]);
+  return { wrapperRef, active };
+}
+
 const dishLabel = (d: Dish, ka: boolean) =>
   d ? (ka ? d.titleKa : d.titleEn) : (ka ? 'კერძი არ არის' : 'No dish');
 
@@ -346,6 +381,7 @@ export default function HomeClient({ s, dishes, dishCount, recentBlogs, planAmou
   const ka = locale === 'ka';
 
   const refStory = useActiveStep(5);
+  const storyPin = useScrollStory(5);
   const refCoreValue = useFadeUp();
   const refDaily = useFadeUp();
   const refSummary = useFadeUp();
@@ -504,14 +540,14 @@ export default function HomeClient({ s, dishes, dishCount, recentBlogs, planAmou
 
             {/* Layered real-product preview — not one screenshot but several connected
                 states, so the hero reads as "one system" rather than a single feature. */}
-            <div className="relative h-[420px] sm:h-[460px] lg:h-[500px]">
-              <div className="mm-parallax mm-hero-card absolute w-[78%] sm:w-[64%]" style={{ left: '2%', top: '46%', transform: 'rotate(-4deg)' }}>
+            <div className="relative h-[460px] sm:h-[540px] lg:h-[600px]">
+              <div className="mm-parallax mm-hero-card absolute w-[68%] sm:w-[54%]" style={{ left: '0%', top: '32%', transform: 'rotate(-4deg)' }}>
                 <PantryMatchMock dish={dishes.breakfast} ka={ka} />
               </div>
-              <div className="mm-parallax mm-hero-card absolute w-[62%] sm:w-[52%]" style={{ right: '0%', top: '4%', transform: 'rotate(3deg)' }}>
+              <div className="mm-parallax mm-hero-card absolute w-[58%] sm:w-[48%]" style={{ right: '0%', top: '0%', transform: 'rotate(3deg)' }}>
                 <RecipeCardMock dish={dishes.dinner} ka={ka} />
               </div>
-              <div className="mm-parallax mm-hero-card absolute w-[72%] sm:w-[62%]" style={{ left: '18%', bottom: '0%', transform: 'rotate(1.5deg)' }}>
+              <div className="mm-parallax mm-hero-card absolute w-[64%] sm:w-[54%]" style={{ left: '30%', bottom: '0%', transform: 'rotate(1.5deg)' }}>
                 <MenuDigestMock dishes={dishes} ka={ka} />
               </div>
             </div>
@@ -520,31 +556,64 @@ export default function HomeClient({ s, dishes, dishCount, recentBlogs, planAmou
       </section>
 
       {/* ── STORY: "დედის ჩვეულებრივი დღე" ──────────────────────
-          One continuous narrative rather than five static cards — the text steps and the
-          product visual are the same connected flow: sticky visual on desktop swaps by
-          scroll step; on mobile each step carries its own compact visual inline. */}
-      <section id="story" className="relative z-10 py-16 sm:py-28" style={{ background: INK }}>
-        <div className="max-w-6xl mx-auto px-5 sm:px-8">
-          <h2 className="text-2xl sm:text-4xl font-bold mb-14 sm:mb-20 max-w-2xl" style={{ color: CREAM, fontFamily: SERIF_KA }}>
-            {ka ? 'ყველაფერი ერთი კითხვით იწყება: დღეს რა ვაჭამო?' : 'It always starts with one question: what do I feed them today?'}
-          </h2>
-
-          <div className="grid lg:grid-cols-2 gap-10 lg:gap-20">
+          Mobile: a normal flowing column where each step fades in/out as it crosses the
+          viewport (useActiveStep). Desktop: a genuinely pinned scrollytelling panel — the
+          wrapper is 5 viewport-heights tall, the inner panel is position:sticky, so the
+          person stays put and the question + visual swap in place as they scroll
+          (useScrollStory turns scroll position into a step index). No scroll-jacking, no
+          animation library — native scroll read via a rAF-throttled listener. */}
+      <section id="story" className="relative z-10" style={{ background: INK }}>
+        {/* Mobile / tablet (< lg): flowing list */}
+        <div className="lg:hidden py-16 sm:py-28">
+          <div className="max-w-6xl mx-auto px-5 sm:px-8">
+            <h2 className="text-2xl sm:text-4xl font-bold mb-14 sm:mb-20 max-w-2xl" style={{ color: CREAM, fontFamily: SERIF_KA }}>
+              {ka ? 'ყველაფერი ერთი კითხვით იწყება: დღეს რა ვაჭამო?' : 'It always starts with one question: what do I feed them today?'}
+            </h2>
             <div>
               {STORY_STEPS.map((step, i) => (
                 <div
                   key={i}
                   ref={(el) => { refStory.refs.current[i] = el; }}
-                  className="py-10 sm:py-16 lg:py-24 transition-opacity duration-500"
-                  style={{ opacity: refStory.active === i ? 1 : 0.35 }}
+                  className="py-10 sm:py-16 transition-all duration-500 ease-out"
+                  style={{
+                    opacity: refStory.active === i ? 1 : 0,
+                    transform: refStory.active === i ? 'translateY(0)' : 'translateY(18px)',
+                  }}
                 >
                   <p className="text-3xl sm:text-5xl font-bold" style={{ color: CREAM, fontFamily: SERIF_KA }}>{step.q}</p>
-                  <div className="lg:hidden mt-6 max-w-sm">{step.visual}</div>
+                  <div className="mt-6 max-w-sm">{step.visual}</div>
                 </div>
               ))}
             </div>
-            <div className="hidden lg:block sticky top-28 self-start">
-              <div className="max-w-sm ml-auto">{STORY_STEPS[refStory.active].visual}</div>
+          </div>
+        </div>
+
+        {/* Desktop (lg+): pinned scrollytelling */}
+        <div ref={storyPin.wrapperRef} className="hidden lg:block relative" style={{ height: `${STORY_STEPS.length * 85}vh` }}>
+          <div className="sticky top-0 h-screen flex items-center overflow-hidden">
+            <div className="max-w-6xl mx-auto px-8 w-full">
+              <h2 className="text-4xl font-bold mb-16 max-w-2xl" style={{ color: CREAM, fontFamily: SERIF_KA }}>
+                {ka ? 'ყველაფერი ერთი კითხვით იწყება: დღეს რა ვაჭამო?' : 'It always starts with one question: what do I feed them today?'}
+              </h2>
+              <div className="grid grid-cols-2 gap-20 items-center">
+                <div className="relative h-[240px]">
+                  {STORY_STEPS.map((step, i) => (
+                    <p
+                      key={i}
+                      className="absolute top-0 left-0 right-0 text-5xl font-bold transition-all duration-500 ease-out"
+                      style={{
+                        color: CREAM,
+                        fontFamily: SERIF_KA,
+                        opacity: storyPin.active === i ? 1 : 0,
+                        transform: storyPin.active === i ? 'translateY(0)' : 'translateY(18px)',
+                      }}
+                    >
+                      {step.q}
+                    </p>
+                  ))}
+                </div>
+                <div className="max-w-sm ml-auto">{STORY_STEPS[storyPin.active].visual}</div>
+              </div>
             </div>
           </div>
         </div>
