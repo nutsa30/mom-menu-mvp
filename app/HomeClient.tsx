@@ -257,6 +257,75 @@ function QuickFilterMock({ dish, ka }: { dish: Dish; ka: boolean }) {
   );
 }
 
+// Feature 1 + 7, "დღეს რა ხდება?" day mode — same chips → guidance → matched-dish shape as
+// QuickFilterMock/PantryMatchMock, showing the actual reassuring copy and a real dish, not
+// a generic empty-state description of the feature.
+function DayModeMock({ dish, ka }: { dish: Dish; ka: boolean }) {
+  return (
+    <div className="rounded-3xl bg-white shadow-xl p-5 sm:p-6 w-full">
+      <p className="text-[11px] font-bold uppercase tracking-wide mb-3" style={{ color: ACCENT }}>{ka ? 'დღეს რა ხდება?' : "What's going on today?"}</p>
+      <div className="flex flex-wrap gap-2 mb-4">
+        <span className="text-xs font-bold px-3 py-1.5 rounded-full" style={{ background: ACCENT, color: '#fff' }}>{ka ? '😐 საერთოდ არ ჭამს' : '😐 Not eating at all'}</span>
+        <span className="text-xs font-bold px-3 py-1.5 rounded-full" style={{ background: `${INK}0D`, color: INK }}>{ka ? '🦷 კბილები ეჭრება' : '🦷 Teething'}</span>
+      </div>
+      <p className="text-xs mb-4 leading-relaxed" style={{ color: `${INK}80` }}>
+        {ka
+          ? 'ხანდახან ბავშვები უბრალოდ არ არიან მშიერი — ეს ნორმალურია. სცადე ზეწოლის გარეშე.'
+          : "Sometimes kids just aren't hungry — that's normal. No pressure needed."}
+      </p>
+      <div className="flex items-center gap-3 rounded-2xl p-3" style={{ background: `${INK}08` }}>
+        <div className="w-12 h-12 rounded-xl overflow-hidden shrink-0" style={{ background: `${INK}12` }}>
+          {dish?.imageUrl && <img src={dish.imageUrl} className="w-full h-full object-cover" alt="" />}
+        </div>
+        <p className="text-sm font-bold" style={{ color: INK }}>{dishLabel(dish, ka)}</p>
+      </div>
+    </div>
+  );
+}
+
+// Feature 3, "დღეს რა გამომივიდა?" — the same 6 food-group chips the app itself shows,
+// illustrated as a fully "good day" (every group checked) — this is the story section's
+// only purely illustrative mockup after TriedChipsMock, same precedent that page already
+// sets, since a specific day's real mix isn't available on a logged-out homepage.
+function FoodGroupsMock({ ka }: { ka: boolean }) {
+  const groups: [string, string][] = ka
+    ? [['⚡', 'ენერგია'], ['🍗', 'ცილა'], ['🥦', 'ბოსტნეული'], ['🍎', 'ხილი'], ['🌾', 'მარცვლეული'], ['🥑', 'ცხიმი']]
+    : [['⚡', 'Energy'], ['🍗', 'Protein'], ['🥦', 'Veg'], ['🍎', 'Fruit'], ['🌾', 'Grain'], ['🥑', 'Fat']];
+  return (
+    <div className="rounded-3xl bg-white shadow-xl p-5 sm:p-6 w-full">
+      <p className="text-[11px] font-bold uppercase tracking-wide mb-4" style={{ color: ACCENT }}>{ka ? 'დღეს რა გამომივიდა?' : 'How did today go?'}</p>
+      <div className="flex flex-wrap gap-2">
+        {groups.map(([emoji, label]) => (
+          <span key={label} className="flex items-center gap-1.5 text-xs font-bold px-3 py-1.5 rounded-full" style={{ background: INK, color: CREAM }}>
+            <span>{emoji}</span>{label}
+          </span>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+// Feature 9, "კვირის შეჯამება" — illustrative counts, same precedent as TriedChipsMock/
+// FoodGroupsMock above (a real weekly figure isn't available on a logged-out homepage).
+function WeeklySummaryMock({ ka }: { ka: boolean }) {
+  const stats: [string, string][] = ka
+    ? [['ახალი გასინჯული', '3'], ['სხვადასხვა კერძი', '14'], ['გაუმეორდა', '5']]
+    : [['New tried', '3'], ['Different dishes', '14'], ['Repeated', '5']];
+  return (
+    <div className="rounded-3xl bg-white shadow-xl p-5 sm:p-6 w-full">
+      <p className="text-[11px] font-bold uppercase tracking-wide mb-4" style={{ color: ACCENT }}>{ka ? 'კვირის შეჯამება 🌿' : 'Weekly summary 🌿'}</p>
+      <div className="grid grid-cols-3 gap-2.5">
+        {stats.map(([label, val]) => (
+          <div key={label} className="rounded-2xl p-3 text-center" style={{ background: `${INK}08` }}>
+            <p className="text-lg font-bold" style={{ color: INK }}>{val}</p>
+            <p className="text-[10px] font-bold mt-0.5" style={{ color: `${INK}70` }}>{label}</p>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
 function TriedChipsMock({ ka }: { ka: boolean }) {
   const chips = ka
     ? [['ასაკი', '9 თვე+'], ['გასინჯული', '24 პროდუქტი'], ['არ მოსწონს', '2'], ['ალერგენი', 'თხილი']]
@@ -429,8 +498,8 @@ export default function HomeClient({ s, dishes, dishCount, recentBlogs, planAmou
   const locale = searchParams.get('lang') === 'en' ? 'en' : 'ka';
   const ka = locale === 'ka';
 
-  const refStory = useActiveStep(6);
-  const storyPin = useScrollStory(6);
+  const refStory = useActiveStep(9);
+  const storyPin = useScrollStory(9);
   const refCoreValue = useFadeUp();
   const refDaily = useFadeUp();
   const refSummary = useFadeUp();
@@ -549,9 +618,12 @@ export default function HomeClient({ s, dishes, dishCount, recentBlogs, planAmou
     { q: ka ? 'რა მოვამზადო?' : 'What should I make?', visual: <MenuDigestMock dishes={dishes} ka={ka} /> },
     { q: ka ? 'მხოლოდ 10 წუთი მაქვს — რა გავაკეთო?' : 'I only have 10 minutes — what can I make?', visual: <QuickFilterMock dish={dishes.dinner} ka={ka} /> },
     { q: ka ? 'სახლში რაც მაქვს, იმით რამე გამოვა?' : 'Can I make something from what I already have?', visual: <PantryMatchMock dish={dishes.snack} ka={ka} /> },
+    { q: ka ? 'დღეს საერთოდ არ უნდა ჭამოს — რა ვქნა?' : "They don't want to eat at all today — what now?", visual: <DayModeMock dish={dishes.breakfast} ka={ka} /> },
     { q: ka ? 'ეს უკვე გასინჯული აქვს?' : 'Has this one been tried already?', visual: <TriedChipsMock ka={ka} /> },
     { q: ka ? 'თუ ეს არ მოეწონა, ახლა რა გავაკეთო?' : "If they don't like it, what now?", visual: <DislikeReplaceMock from={dishes.lunch} to={dishes.dinner} ka={ka} /> },
+    { q: ka ? 'დღეს მრავალფეროვნად ჭამა?' : 'Did they eat a good mix today?', visual: <FoodGroupsMock ka={ka} /> },
     { q: ka ? 'საყიდლებზე რა ვიყიდო?' : 'What do I need from the store?', visual: <ShoppingListMock ka={ka} /> },
+    { q: ka ? 'ეს კვირა როგორ წავიდა?' : 'How did this week go?', visual: <WeeklySummaryMock ka={ka} /> },
   ];
 
   return (
