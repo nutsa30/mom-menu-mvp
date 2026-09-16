@@ -37,6 +37,7 @@ export async function PUT(
         ingredientsEn: body.ingredientsEn || [],
         ingredientsKa: body.ingredientsKa || [],
         allergens: body.allergens || [],
+        tags: body.tags || [],
         imageUrl: body.imageUrl || null,
         mealType: body.mealType,
 

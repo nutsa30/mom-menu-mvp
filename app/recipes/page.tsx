@@ -51,6 +51,8 @@ export default async function RecipesPage({
       allergens: true,
       ingredientsKa: true,
       ingredientsEn: true,
+      tags: true,
+      blwNoteKa: true,
       calories: true,
       proteinGrams: true,
       carbsGrams: true,

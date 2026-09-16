@@ -46,7 +46,7 @@ export default function FavoriteDishes({ child }: { child: any }) {
         </div>
       )}
 
-      <RecipeModal dish={recipeModal} onClose={() => setRecipeModal(null)} />
+      <RecipeModal dish={recipeModal} onClose={() => setRecipeModal(null)} ageGroup={child?.ageGroup} textureStage={child?.textureStage} />
     </div>
   );
 }

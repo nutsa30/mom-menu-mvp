@@ -391,7 +391,7 @@ export default function AtHomeTab({ child, allDishes }: { child: any; allDishes:
         </div>
       )}
 
-      <RecipeModal dish={recipeModal} onClose={() => setRecipeModal(null)} />
+      <RecipeModal dish={recipeModal} onClose={() => setRecipeModal(null)} ageGroup={child?.ageGroup} textureStage={child?.textureStage} />
     </div>
   );
 }

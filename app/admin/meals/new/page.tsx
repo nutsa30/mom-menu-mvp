@@ -56,6 +56,17 @@ const ALLERGEN_LIST = [
   { key: 'lupin',      label: 'ლუპინი'            },
 ];
 
+// Feature 10, practical recipe filters — real, optional per-dish tags shown on
+// /recipes only once at least one dish actually carries them.
+const TAG_LIST = [
+  { key: 'TEN_MIN',    label: '⏱️ 10 წუთში'              },
+  { key: 'TWENTY_MIN', label: '⏱️ 20 წუთში'              },
+  { key: 'ONE_POT',    label: '🍲 ერთი ქვაბი'            },
+  { key: 'MAKE_AHEAD', label: '🧊 წინასწარ მოსამზადებელი' },
+  { key: 'TRAVEL',     label: '🚗 გზაში'                  },
+  { key: 'BUDGET',     label: '💸 ბიუჯეტური'              },
+];
+
 const inp = 'w-full px-4 py-3 rounded-xl border border-[#465940]/20 focus:outline-none focus:border-[#465940] transition text-sm text-[#465940] bg-white';
 const lbl = 'block text-sm font-semibold text-[#465940] mb-1.5';
 const sec = 'bg-[#FDFBF0] rounded-2xl border border-[#465940]/10 shadow-sm p-6';
@@ -75,6 +86,7 @@ export default function NewMealPage() {
   const [protein, setProtein] = useState('');
   const [ageGroups, setAgeGroups] = useState<string[]>([]);
   const [allergens, setAllergens] = useState<string[]>([]);
+  const [tags, setTags] = useState<string[]>([]);
   const [nutrients, setNutrients] = useState<Record<string, string>>({});
 
   const [blwNoteKa, setBlwNoteKa] = useState('');
@@ -144,7 +156,7 @@ export default function NewMealPage() {
           descriptionKa: descKa, descriptionEn: descEn,
           ingredientsKa: ingredientsKa.split(',').map((s) => s.trim()).filter(Boolean),
           ingredientsEn: ingredientsEn.split(',').map((s) => s.trim()).filter(Boolean),
-          mealType, ageGroups, allergens, imageUrl,
+          mealType, ageGroups, allergens, tags, imageUrl,
           calories: calories ? Number(calories) : null,
           proteinGrams: protein ? Number(protein) : null,
           ...nutrientPayload,
@@ -299,6 +311,19 @@ export default function NewMealPage() {
                 <button key={key} type="button" onClick={() => toggle(allergens, setAllergens, key)}
                   className={`px-3 py-1.5 rounded-full text-xs font-bold transition ${allergens.includes(key) ? 'bg-[#465940] text-[#FDFBF0]' : 'bg-[#465940]/10 text-[#465940]/80 hover:bg-[#465940]/15'}`}>
                   {allergens.includes(key) ? '✓ ' : ''}{label}
+                </button>
+              ))}
+            </div>
+          </div>
+
+          <div>
+            <label className={lbl}>პრაქტიკული ტეგები (რეცეპტების ფილტრისთვის)</label>
+            <p className="text-[11px] text-[#465940]/50 mb-2">მონიშნე მხოლოდ ის, რაც ამ კერძს რეალურად შეესაბამება — /recipes გვერდზე ფილტრი გამოჩნდება, როგორც კი რომელიმე კერძს ექნება ეს ტეგი.</p>
+            <div className="flex flex-wrap gap-2">
+              {TAG_LIST.map(({ key, label }) => (
+                <button key={key} type="button" onClick={() => toggle(tags, setTags, key)}
+                  className={`px-3 py-1.5 rounded-full text-xs font-bold transition ${tags.includes(key) ? 'bg-[#465940] text-[#FDFBF0]' : 'bg-[#465940]/10 text-[#465940]/80 hover:bg-[#465940]/15'}`}>
+                  {tags.includes(key) ? '✓ ' : ''}{label}
                 </button>
               ))}
             </div>

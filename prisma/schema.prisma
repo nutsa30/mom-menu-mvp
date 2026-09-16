@@ -278,6 +278,12 @@ model Child {
   milkType    String  @default("BREAST") // BREAST | FORMULA | BOTH | NONE
   milkStopped Boolean @default(false)
 
+  // Feature 6, "საკვების ტექსტურის გზა" — the mother's own pick, never inferred/diagnosed.
+  // Null (the default for every existing child) means "not set" — nothing changes for them
+  // until they choose one. Matched against each Dish's existing pureeNoteKa/blwNoteKa prep
+  // notes (real, already-authored data) rather than any new per-dish tagging.
+  textureStage String? // PUREE | MASHED | SOFT_PIECES | NORMAL
+
   userId    String
   user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
 
@@ -288,6 +294,7 @@ model Child {
   babyMealLogs           BabyMealLog[]
   dishVotes              DishVote[]
   extraFoodLogs          ExtraFoodLog[]
+  dayStatuses            DayStatus[]
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -348,6 +355,12 @@ model Dish {
   ageGroups     AgeGroup[]
   allergens     String[] @default([])
   mealType      MealType @default(BREAKFAST)
+
+  // Feature 10, practical recipe filters (10min/20min/one-pot/make-ahead/travel/budget).
+  // Real, optional, admin-set tags — empty by default for every existing dish, so nothing
+  // changes until tags are actually added. No invented time/price data: a filter chip only
+  // ever shows up once at least one real dish carries that tag.
+  tags          String[] @default([])
 
   blwNoteKa     String?
   blwNoteEn     String?
@@ -462,6 +475,25 @@ model DailyLog {
   updatedAt    DateTime    @updatedAt
 
   @@unique([childId, date, mealType])
+}
+
+// "დღეს საერთოდ არ ჭამს" (feature 1) and "დღეს სახლში არ ვჭამთ" (feature 7) share this one
+// small table instead of two — both are just "what's going on today" for a child on a given
+// date. One row per (child, date); no row = an ordinary day. "კვების SOS" (feature 8) is
+// meant to route into whichever of these applies, so this shared shape avoids a rebuild then.
+model DayStatus {
+  id      String @id @default(cuid())
+  childId String
+  child   Child  @relation(fields: [childId], references: [id], onDelete: Cascade)
+  date    String // YYYY-MM-DD, local date this status applies to
+
+  mode   String // NOT_EATING | AWAY_FROM_HOME
+  reason String? // sub-reason key specific to `mode` — e.g. WONT_EAT | ONLY_SPECIFIC | TEETHING | SICK | TIRED | AWAY_ALL_DAY for NOT_EATING; RESTAURANT | VISITING | TRAVELING | ON_THE_ROAD for AWAY_FROM_HOME
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([childId, date])
 }
 
 model Ingredient {

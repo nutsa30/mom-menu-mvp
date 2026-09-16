@@ -8,6 +8,11 @@ import AtHomeTab from './AtHomeTab';
 import RecipeModal from './RecipeModal';
 import TodayDigest from './TodayDigest';
 import FavoriteDishes from './FavoriteDishes';
+import WeeklySummary from './WeeklySummary';
+import DayModeBanner from './DayModeBanner';
+import DayFoodGroups from './DayFoodGroups';
+import MealSOS from './MealSOS';
+import SameIngredientAlternatives from './SameIngredientAlternatives';
 import ReferralTab from './ReferralTab';
 
 // Use local date (not UTC) to avoid timezone issues (e.g. Georgia is UTC+4)
@@ -130,13 +135,16 @@ function IntroductionBanner({ childId, childName }: { childId: string; childName
 }
 
 // ── Today Tab ────────────────────────────────────────────────────────────
-function TodayTab({ child, allDishes, planStart, isFullPlan }: { child: any; allDishes: any[]; planStart: string; isFullPlan: boolean }) {
+function TodayTab({ child, allDishes, planStart, isFullPlan, onWantsIntro }: { child: any; allDishes: any[]; planStart: string; isFullPlan: boolean; onWantsIntro: (childId: string) => void }) {
   const todayStr = localToday();
   const [logs, setLogs] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [substituteFor, setSubstituteFor] = useState<string | null>(null);
   const [recipeModal, setRecipeModal] = useState<any | null>(null);
   const [seasonalData, setSeasonalData] = useState<any>(null);
+  // Bumped by MealSOS (feature 8) after it sets today's DayStatus, so DayModeBanner (which
+  // self-fetches once on mount) remounts and picks up the change instead of going stale.
+  const [dayStatusVersion, setDayStatusVersion] = useState(0);
 
   const weekDays = Array.from({ length: 7 }, (_, i) => {
     const d = new Date(planStart + 'T12:00:00');
@@ -311,6 +319,22 @@ function TodayTab({ child, allDishes, planStart, isFullPlan }: { child: any; all
           write action here. */}
       {isToday && <TodayDigest child={child} allDishes={allDishes} />}
 
+      {/* "დღეს რა ხდება?" — features 1 ("დღეს საერთოდ არ ჭამს") + 7 ("დღეს სახლში არ
+          ვჭამთ"), one shared day-mode picker. Today-only, like every other write action
+          on this tab. */}
+      {isToday && <DayModeBanner key={dayStatusVersion} child={child} date={selectedDate} />}
+
+      {/* "კვების SOS" — feature 8, ties into the above (🔴/🟠) plus other existing
+          features (🟡 food-introduction tracker, 🔵 recipe catalog). Today-only. */}
+      {isToday && (
+        <MealSOS
+          child={child}
+          date={selectedDate}
+          onStatusSet={() => setDayStatusVersion((v) => v + 1)}
+          onWantsIntro={onWantsIntro}
+        />
+      )}
+
       {/* Day header */}
       <div className={`${card} p-4 flex items-center justify-between`}>
         <div>
@@ -436,14 +460,27 @@ function TodayTab({ child, allDishes, planStart, isFullPlan }: { child: any; all
                       replacement modal, just surfaced right where the dislike happened
                       instead of making the parent hunt for the substitute button. */}
                   {log && !isIngredient && isToday && log.voteLiked === false && (
-                    <div className="mt-2 flex items-center gap-2 bg-amber-50 border border-amber-200 rounded-xl px-3 py-2">
-                      <span className="text-xs text-amber-800 flex-1">გინდა სხვა კერძით ჩავანაცვლოთ?</span>
-                      <button
-                        onClick={() => setSubstituteFor(log.id)}
-                        className="px-3 py-1 rounded-full text-xs font-bold bg-[#465940] text-[#FDFBF0] hover:bg-[#465940]/80 transition flex-shrink-0"
-                      >
-                        შემიცვალე
-                      </button>
+                    <div className="mt-2 bg-amber-50 border border-amber-200 rounded-xl px-3 py-2">
+                      <div className="flex items-center gap-2">
+                        <span className="text-xs text-amber-800 flex-1">გინდა სხვა კერძით ჩავანაცვლოთ?</span>
+                        <button
+                          onClick={() => setSubstituteFor(log.id)}
+                          className="px-3 py-1 rounded-full text-xs font-bold bg-[#465940] text-[#FDFBF0] hover:bg-[#465940]/80 transition flex-shrink-0"
+                        >
+                          შემიცვალე
+                        </button>
+                      </div>
+                      {/* "იგივე პროდუქტი — სხვანაირად" — a disliked dish doesn't mean the
+                          child dislikes every ingredient in it forever, often just this one
+                          preparation. Tapping one swaps it into this slot the same way
+                          "შემიცვალე" does. */}
+                      {dish && (
+                        <SameIngredientAlternatives
+                          childId={child.id}
+                          dishId={dish.id}
+                          onPick={(altDish) => substitute(log.id, altDish.id)}
+                        />
+                      )}
                     </div>
                   )}
                 </div>
@@ -465,9 +502,17 @@ function TodayTab({ child, allDishes, planStart, isFullPlan }: { child: any; all
         </div>
       )}
 
+      {/* "დღეს რა გამომივიდა?" — feature 3, a simple food-group presence check for the
+          selected day (today only, like the other write-adjacent widgets on this tab). */}
+      {isToday && <DayFoodGroups child={child} date={selectedDate} />}
+
       {/* "ჩემი ბავშვის საყვარელი კერძები ❤️" — a small read over existing ჭამა/არ
           მოეწონა data, not day-specific, so it doesn't need to react to selectedDate. */}
       <FavoriteDishes child={child} />
+
+      {/* "კვირის შეჯამება" — rolling last-7-days read over existing DailyLog/ExtraFoodLog/
+          DishVote data, not day-specific either. */}
+      <WeeklySummary child={child} />
 
       {/* Introduction mode — only for 6-9 month olds */}
       {child.ageGroup === 'FROM_6' && (
@@ -548,7 +593,7 @@ function TodayTab({ child, allDishes, planStart, isFullPlan }: { child: any; all
       )}
 
       {/* Recipe modal — shared component, also used by "რა მაქვს სახლში?" */}
-      <RecipeModal dish={recipeModal} onClose={() => setRecipeModal(null)} />
+      <RecipeModal dish={recipeModal} onClose={() => setRecipeModal(null)} ageGroup={child?.ageGroup} textureStage={child?.textureStage} />
     </div>
   );
 }
@@ -931,9 +976,18 @@ const MILK_OPTIONS = [
   { value: 'NONE',    label: 'მხოლოდ მყარი' },
 ];
 
+// Feature 6, "საკვების ტექსტურის გზა" — one simple, visual 4-stage picker.
+const TEXTURE_OPTIONS = [
+  { value: 'PUREE',       label: 'პიურე', emoji: '🥣' },
+  { value: 'MASHED',      label: 'გამოხეხილი', emoji: '🥄' },
+  { value: 'SOFT_PIECES', label: 'რბილი ნაჭრები', emoji: '🍴' },
+  { value: 'NORMAL',      label: 'ჩვეულებრივი', emoji: '🍽️' },
+];
+
 // ── Child Tab ────────────────────────────────────────────────────────────────
-function ChildTab({ children: kids, userId, onUpdate, onDelete }: {
+function ChildTab({ children: kids, userId, onUpdate, onDelete, autoOpenIntroChildId, onAutoOpenHandled }: {
   children: any[]; userId: string; onUpdate: (c: any) => void; onDelete: (id: string) => void;
+  autoOpenIntroChildId?: string | null; onAutoOpenHandled?: () => void;
 }) {
   const [viewModal, setViewModal] = useState<any | null>(null);
   const [selected, setSelected] = useState<any | null>(null);
@@ -944,6 +998,7 @@ function ChildTab({ children: kids, userId, onUpdate, onDelete }: {
   const [likes, setLikes] = useState<string[]>([]);
   const [milkType, setMilkType] = useState('BREAST');
   const [milkStopped, setMilkStopped] = useState(false);
+  const [textureStage, setTextureStage] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
   const [deleting, setDeleting] = useState(false);
   const [newChildMode, setNewChildMode] = useState(false);
@@ -1018,8 +1073,18 @@ function ChildTab({ children: kids, userId, onUpdate, onDelete }: {
     setLikes(child.likes ?? []);
     setMilkType(child.milkType ?? 'BREAST');
     setMilkStopped(child.milkStopped ?? false);
+    setTextureStage(child.textureStage ?? null);
     loadIntroductions(child);
   };
+
+  // Feature 8 ("კვების SOS") 🟡 hand-off: opens this child's edit view (which is where the
+  // existing food-introduction tracker lives) instead of building a second entry point.
+  useEffect(() => {
+    if (!autoOpenIntroChildId) return;
+    const target = kids.find((k) => k.id === autoOpenIntroChildId);
+    if (target) openEdit(target);
+    onAutoOpenHandled?.();
+  }, [autoOpenIntroChildId]);
 
   const deleteChild = async (child: any) => {
     setDeleting(true);
@@ -1036,7 +1101,7 @@ function ChildTab({ children: kids, userId, onUpdate, onDelete }: {
     const res = await fetch(`/api/children/${selected.id}`, {
       method: 'PATCH',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ name, birthDate, allergies, dislikes, likes, milkType, milkStopped }),
+      body: JSON.stringify({ name, birthDate, allergies, dislikes, likes, milkType, milkStopped, textureStage }),
     });
     const updated = await res.json();
     setSaving(false);
@@ -1216,6 +1281,27 @@ function ChildTab({ children: kids, userId, onUpdate, onDelete }: {
                 <span className="text-sm text-[#465940]/70">სრულად მყარ კვებაზე გადასვლა</span>
               </label>
             )}
+          </div>
+
+          {/* Feature 6, "საკვების ტექსტურის გზა" — a simple, visual stage the mother picks
+              herself; matched to real per-dish prep notes wherever a recipe is opened.
+              Optional (null by default) so nothing changes for a family that skips it. */}
+          <div className="border-t border-[#465940]/10 pt-4">
+            <label className="block text-sm font-semibold text-[#465940] mb-1.5">საკვების ტექსტურის სტადია</label>
+            <p className="text-[11px] text-[#465940]/50 mb-3">ეს მხოლოდ ორიენტირია, არა დიაგნოზი — შენ საუკეთესოდ იცნობ შენს შვილს.</p>
+            <div className="grid grid-cols-2 gap-2">
+              {TEXTURE_OPTIONS.map(opt => (
+                <button key={opt.value} type="button"
+                  onClick={() => setTextureStage(textureStage === opt.value ? null : opt.value)}
+                  className={`py-2.5 px-3 rounded-xl text-sm font-semibold border-2 transition text-left ${
+                    textureStage === opt.value
+                      ? 'border-[#465940] bg-[#465940] text-[#FDFBF0]'
+                      : 'border-[#465940]/15 text-[#465940]/70 hover:border-[#465940]/30'
+                  }`}>
+                  {opt.emoji} {opt.label}
+                </button>
+              ))}
+            </div>
           </div>
 
           <button onClick={save} disabled={saving}
@@ -1919,6 +2005,10 @@ export default function DashboardClient({ user }: { user: any }) {
     ? 'child'
     : (firstChild.ageGroup === 'FROM_6' || firstChild.ageGroup === 'FROM_9') ? 'firstfoods' : 'today';
   const [tab, setTab] = useState<Tab>(defaultTab);
+  // Feature 8 ("კვების SOS") 🟡 option routes here: switches to "შვილი" and tells ChildTab
+  // which child's food-introduction tracker to open — reusing that existing feature
+  // instead of building a second one.
+  const [autoOpenIntroChildId, setAutoOpenIntroChildId] = useState<string | null>(null);
 
   // Landed here from the pricing page's "can't switch interval yet" modal
   // (app/subscription/SubscriptionClient.tsx → /dashboard?tab=settings&focus=cancel) —
@@ -2116,11 +2206,22 @@ export default function DashboardClient({ user }: { user: any }) {
         )}
         {tab === 'firstfoods' && activeChild && <FirstFoodsTab child={activeChild} isFullPlan={isFullPlan} />}
         {tab === 'recipes' && activeChild && <BabyRecipesTab child={activeChild} isFullPlan={isFullPlan} />}
-        {tab === 'today' && <TodayTab child={activeChild} allDishes={allDishes} planStart={planStart} isFullPlan={isFullPlan} />}
+        {tab === 'today' && (
+          <TodayTab
+            child={activeChild} allDishes={allDishes} planStart={planStart} isFullPlan={isFullPlan}
+            onWantsIntro={(childId) => { setAutoOpenIntroChildId(childId); setTab('child'); }}
+          />
+        )}
         {tab === 'athome' && <AtHomeTab child={activeChild} allDishes={allDishes} />}
         {tab === 'nutrition' && <NutritionTab child={activeChild} />}
         {tab === 'shopping' && <ShoppingListTab child={activeChild} planStart={planStart} />}
-        {tab === 'child' && <ChildTab children={children} userId={user.id} onUpdate={onChildUpdate} onDelete={onChildDelete} />}
+        {tab === 'child' && (
+          <ChildTab
+            children={children} userId={user.id} onUpdate={onChildUpdate} onDelete={onChildDelete}
+            autoOpenIntroChildId={autoOpenIntroChildId}
+            onAutoOpenHandled={() => setAutoOpenIntroChildId(null)}
+          />
+        )}
         {tab === 'referral' && <ReferralTab />}
         {tab === 'settings' && <SettingsTab user={user} activeChild={isYoungBaby ? activeChild : null} />}
       </main>

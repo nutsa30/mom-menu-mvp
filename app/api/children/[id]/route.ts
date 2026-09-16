@@ -16,6 +16,7 @@ export async function PATCH(req: NextRequest, { params }: { params: { id: string
   if (body.likes !== undefined) updateData.likes = body.likes;
   if (body.milkType !== undefined) updateData.milkType = body.milkType;
   if (body.milkStopped !== undefined) updateData.milkStopped = body.milkStopped;
+  if (body.textureStage !== undefined) updateData.textureStage = body.textureStage;
   if (body.birthDate !== undefined) {
     const bd = new Date(body.birthDate);
     updateData.birthDate = bd;

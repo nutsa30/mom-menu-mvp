@@ -14,6 +14,8 @@ type Dish = {
   allergens: string[];
   ingredientsKa: string[];
   ingredientsEn: string[];
+  tags: string[];
+  blwNoteKa: string | null;
   calories: number | null;
   proteinGrams: number | null;
   carbsGrams: number | null;
@@ -62,6 +64,26 @@ const AGE_GROUPS = [
 
 const AGE_ORDER = ['FROM_6', 'FROM_9', 'FROM_12', 'FROM_24'];
 
+// Feature 10, practical recipe filters — working on the EXISTING recipe catalog, no new
+// recipe data. Two (SELF_FEED, QUICK) read real fields every dish already has; the rest
+// read the optional admin-set Dish.tags. "სახლში რაც მაქვს" is deliberately left out —
+// that's the separate, already-shipped "რა მაქვს სახლში?" feature; adding it here would
+// just duplicate it. A filter only ever appears once at least one real dish matches it
+// (see `presentFilters` below), so an untagged catalog never shows a dead, empty filter.
+const PRACTICAL_FILTERS: { key: string; ka: string; en: string; emoji: string; test: (d: Dish) => boolean }[] = [
+  { key: 'SELF_FEED', ka: 'ბავშვს თვითონ შეუძლია ჭამა', en: 'Self-feeding', emoji: '👶', test: (d) => !!d.blwNoteKa },
+  { key: 'QUICK',      ka: 'მარტივი და სწრაფი',          en: 'Easy & quick', emoji: '😴', test: (d) => {
+      const n = Math.max(d.ingredientsKa?.length || 0, d.ingredientsEn?.length || 0);
+      return n > 0 && n <= 3;
+    } },
+  { key: 'TEN_MIN',    ka: '10 წუთში',                   en: '10 min',        emoji: '⏱️', test: (d) => d.tags?.includes('TEN_MIN') },
+  { key: 'TWENTY_MIN', ka: '20 წუთში',                   en: '20 min',        emoji: '⏱️', test: (d) => d.tags?.includes('TWENTY_MIN') },
+  { key: 'ONE_POT',    ka: 'ერთი ქვაბი',                 en: 'One pot',       emoji: '🍲', test: (d) => d.tags?.includes('ONE_POT') },
+  { key: 'MAKE_AHEAD', ka: 'წინასწარ მოსამზადებელი',     en: 'Make-ahead',    emoji: '🧊', test: (d) => d.tags?.includes('MAKE_AHEAD') },
+  { key: 'TRAVEL',     ka: 'გზაში',                       en: 'On the go',     emoji: '🚗', test: (d) => d.tags?.includes('TRAVEL') },
+  { key: 'BUDGET',     ka: 'ბიუჯეტური',                   en: 'Budget',        emoji: '💸', test: (d) => d.tags?.includes('BUDGET') },
+];
+
 const ALLERGEN_LABELS: Record<string, { ka: string; en: string }> = {
   dairy:      { ka: 'რძე',       en: 'Dairy'      },
   egg:        { ka: 'კვერცხი',   en: 'Egg'        },
@@ -106,6 +128,7 @@ function parseSteps(text: string): string[] {
 export default function RecipesClient({ dishes, locale, canRead, isLoggedIn }: Props) {
   const [mealFilter, setMealFilter] = useState('ALL');
   const [ageFilter, setAgeFilter] = useState('ALL');
+  const [practicalFilters, setPracticalFilters] = useState<string[]>([]);
   const [search, setSearch] = useState('');
   const [selected, setSelected] = useState<Dish | null>(null);
   const [page, setPage] = useState(1);
@@ -121,12 +144,21 @@ export default function RecipesClient({ dishes, locale, canRead, isLoggedIn }: P
   const desc = (d: Dish) => locale === 'ka' ? d.descriptionKa : d.descriptionEn;
   const ingredients = (d: Dish) => locale === 'ka' ? d.ingredientsKa : d.ingredientsEn;
 
+  // Only offer a practical filter that at least one real dish currently matches — an
+  // untagged catalog just doesn't show the tag-based ones yet, rather than showing an
+  // empty, seemingly-broken filter.
+  const presentFilters = PRACTICAL_FILTERS.filter((f) => dishes.some((d) => f.test(d)));
+
   const filtered = dishes.filter((d) => {
     if (mealFilter !== 'ALL' && d.mealType !== mealFilter) return false;
     if (ageFilter !== 'ALL') {
       const selectedIdx = AGE_ORDER.indexOf(ageFilter);
       const suitable = d.ageGroups.some((ag) => AGE_ORDER.indexOf(ag) <= selectedIdx);
       if (!suitable) return false;
+    }
+    if (practicalFilters.length > 0) {
+      const active = PRACTICAL_FILTERS.filter((f) => practicalFilters.includes(f.key));
+      if (!active.every((f) => f.test(d))) return false;
     }
     if (search.trim()) {
       const q = search.toLowerCase().trim();
@@ -190,7 +222,7 @@ export default function RecipesClient({ dishes, locale, canRead, isLoggedIn }: P
               <line x1="4" y1="6" x2="20" y2="6"/><line x1="8" y1="12" x2="20" y2="12"/><line x1="12" y1="18" x2="20" y2="18"/>
             </svg>
             {t('ფილტრი', 'Filters')}
-            {(mealFilter !== 'ALL' || ageFilter !== 'ALL') && (
+            {(mealFilter !== 'ALL' || ageFilter !== 'ALL' || practicalFilters.length > 0) && (
               <span className="w-2 h-2 rounded-full bg-[#6F7A5C] inline-block" />
             )}
             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"
@@ -237,6 +269,31 @@ export default function RecipesClient({ dishes, locale, canRead, isLoggedIn }: P
                   </button>
                 ))}
               </div>
+
+              {/* Feature 10 — practical filters, on the existing catalog only. */}
+              {presentFilters.length > 0 && (
+                <div className="flex flex-col sm:flex-row gap-2 sm:flex-wrap flex-1 sm:basis-full sm:mt-3">
+                  <p className="text-[10px] text-[#F5F1E4]/50 uppercase tracking-widest font-bold mb-1 sm:hidden">{t('პრაქტიკული', 'Practical')}</p>
+                  {presentFilters.map((f) => {
+                    const active = practicalFilters.includes(f.key);
+                    return (
+                      <button
+                        key={f.key}
+                        onClick={resetPage(() => setPracticalFilters((prev) =>
+                          active ? prev.filter((k) => k !== f.key) : [...prev, f.key]
+                        ))}
+                        className={`px-3 py-2 rounded-full text-xs font-bold transition text-left sm:text-center ${
+                          active
+                            ? 'bg-[#6F7A5C] text-[#F5F1E4]'
+                            : 'bg-[#F5F1E4] text-[#6F7A5C]/70 border border-[#6F7A5C]/20 hover:border-[#6F7A5C]/40'
+                        }`}
+                      >
+                        {f.emoji} {locale === 'ka' ? f.ka : f.en}
+                      </button>
+                    );
+                  })}
+                </div>
+              )}
             </div>
           )}
         </div>

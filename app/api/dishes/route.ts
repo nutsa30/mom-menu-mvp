@@ -15,6 +15,7 @@ export async function POST(req: Request) {
         ingredientsEn: body.ingredientsEn || [],
         ingredientsKa: body.ingredientsKa || [],
         allergens: body.allergens || [],
+        tags: body.tags || [],
         imageUrl: body.imageUrl || null,
         mealType: body.mealType,
 
