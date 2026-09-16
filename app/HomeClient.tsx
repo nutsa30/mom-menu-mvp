@@ -227,6 +227,36 @@ function PantryMatchMock({ dish, ka }: { dish: Dish; ka: boolean }) {
   );
 }
 
+// Feature 10, practical recipe filters — the homepage story gets its own small mockup so a
+// visiting parent sees the actual new capability (pick a time budget, get a real matching
+// dish), not just a description of it. Same visual shape as PantryMatchMock (chips → arrow
+// → matched dish), built from the same real `dishes` data passed into this page.
+function QuickFilterMock({ dish, ka }: { dish: Dish; ka: boolean }) {
+  const chips = ka ? ['⏱️ 10 წუთში', '⏱️ 20 წუთში'] : ['⏱️ 10 min', '⏱️ 20 min'];
+  return (
+    <div className="rounded-3xl bg-white shadow-xl p-5 sm:p-6 w-full">
+      <p className="text-[11px] font-bold uppercase tracking-wide mb-3" style={{ color: ACCENT }}>{ka ? 'დრო მაქვს მცირე' : 'Short on time'}</p>
+      <div className="flex flex-wrap gap-2 mb-4">
+        {chips.map((c, i) => (
+          <span key={c} className="text-xs font-bold px-3 py-1.5 rounded-full"
+            style={i === 0 ? { background: ACCENT, color: '#fff' } : { background: `${INK}0D`, color: INK }}>
+            {c}
+          </span>
+        ))}
+      </div>
+      <div className="flex items-center gap-2 text-xs mb-3" style={{ color: `${INK}55` }}>
+        <span>↓</span><span>{ka ? 'ამ დროში მომზადებადი კერძი' : 'Ready in that time'}</span>
+      </div>
+      <div className="flex items-center gap-3 rounded-2xl p-3" style={{ background: `${INK}08` }}>
+        <div className="w-12 h-12 rounded-xl overflow-hidden shrink-0" style={{ background: `${INK}12` }}>
+          {dish?.imageUrl && <img src={dish.imageUrl} className="w-full h-full object-cover" alt="" />}
+        </div>
+        <p className="text-sm font-bold" style={{ color: INK }}>{dishLabel(dish, ka)}</p>
+      </div>
+    </div>
+  );
+}
+
 function TriedChipsMock({ ka }: { ka: boolean }) {
   const chips = ka
     ? [['ასაკი', '9 თვე+'], ['გასინჯული', '24 პროდუქტი'], ['არ მოსწონს', '2'], ['ალერგენი', 'თხილი']]
@@ -399,8 +429,8 @@ export default function HomeClient({ s, dishes, dishCount, recentBlogs, planAmou
   const locale = searchParams.get('lang') === 'en' ? 'en' : 'ka';
   const ka = locale === 'ka';
 
-  const refStory = useActiveStep(5);
-  const storyPin = useScrollStory(5);
+  const refStory = useActiveStep(6);
+  const storyPin = useScrollStory(6);
   const refCoreValue = useFadeUp();
   const refDaily = useFadeUp();
   const refSummary = useFadeUp();
@@ -517,6 +547,7 @@ export default function HomeClient({ s, dishes, dishCount, recentBlogs, planAmou
 
   const STORY_STEPS: { q: string; visual: JSX.Element }[] = [
     { q: ka ? 'რა მოვამზადო?' : 'What should I make?', visual: <MenuDigestMock dishes={dishes} ka={ka} /> },
+    { q: ka ? 'მხოლოდ 10 წუთი მაქვს — რა გავაკეთო?' : 'I only have 10 minutes — what can I make?', visual: <QuickFilterMock dish={dishes.dinner} ka={ka} /> },
     { q: ka ? 'სახლში რაც მაქვს, იმით რამე გამოვა?' : 'Can I make something from what I already have?', visual: <PantryMatchMock dish={dishes.snack} ka={ka} /> },
     { q: ka ? 'ეს უკვე გასინჯული აქვს?' : 'Has this one been tried already?', visual: <TriedChipsMock ka={ka} /> },
     { q: ka ? 'თუ ეს არ მოეწონა, ახლა რა გავაკეთო?' : "If they don't like it, what now?", visual: <DislikeReplaceMock from={dishes.lunch} to={dishes.dinner} ka={ka} /> },
