@@ -623,7 +623,7 @@ export default function HomeClient({ s, dishes, dishCount, recentBlogs, planAmou
     { q: ka ? 'თუ ეს არ მოეწონა, ახლა რა გავაკეთო?' : "If they don't like it, what now?", visual: <DislikeReplaceMock from={dishes.lunch} to={dishes.dinner} ka={ka} /> },
     { q: ka ? 'დღეს მრავალფეროვნად ჭამა?' : 'Did they eat a good mix today?', visual: <FoodGroupsMock ka={ka} /> },
     { q: ka ? 'საყიდლებზე რა ვიყიდო?' : 'What do I need from the store?', visual: <ShoppingListMock ka={ka} /> },
-    { q: ka ? 'ეს კვირა როგორ წავიდა?' : 'How did this week go?', visual: <WeeklySummaryMock ka={ka} /> },
+    { q: ka ? 'როგორი კვირა გამოვიდა?' : 'How did this week go?', visual: <WeeklySummaryMock ka={ka} /> },
   ];
 
   return (
