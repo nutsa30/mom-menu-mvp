@@ -69,7 +69,7 @@ export default async function AdminUsersPage({
     Date.UTC(nowInTbilisi.getUTCFullYear(), nowInTbilisi.getUTCMonth() + 1, 1) - TBILISI_OFFSET_MS
   );
 
-  const [users, promoCodes, payments, successfulPayers, promoRevenueTotal, allTimeRevenueAgg, monthRevenueAgg] = await Promise.all([
+  const [users, promoCodes, payments, successfulPayers, allSuccessPaymentDates, promoRevenueTotal, allTimeRevenueAgg, monthRevenueAgg] = await Promise.all([
     prisma.user.findMany({
       orderBy: { createdAt: 'desc' },
       select: {
@@ -102,6 +102,12 @@ export default async function AdminUsersPage({
     // trial's card-verification hold clears — well before any real charge — so
     // subscriptionStatus alone can't tell "paying" apart from "still in free trial".
     prisma.payment.findMany({ where: { status: 'SUCCESS' }, select: { userId: true }, distinct: ['userId'] }),
+    // Every successful payment's date, per user — not just distinct userIds (a renewing
+    // subscriber has several) — so the users table below can offer a "purchase date" filter
+    // the same way it already offers a registration-date one: pick a date, see who actually
+    // paid that day. Unbounded (not the capped 100-row `payments` list above), so it stays
+    // correct once there have been more than 100 payments total.
+    prisma.payment.findMany({ where: { status: 'SUCCESS' }, select: { userId: true, createdAt: true } }),
     // Lifetime revenue from EVERY promo-code buyer combined, across all codes — separate
     // from the single-code `promoRevenue` query below (which only runs once a specific code
     // is selected in the filter dropdown) and not derived from the capped 100-row `payments`
@@ -129,6 +135,17 @@ export default async function AdminUsersPage({
     }),
   ]);
   const paidUserIds = new Set(successfulPayers.map((p) => p.userId));
+
+  // Per-user list of the calendar dates (UTC, same convention as the registration-date
+  // filter below) they actually had a successful payment on — a subscriber who's renewed a
+  // few times has several. Feeds the users table's "purchase date" filter/column.
+  const purchaseDatesByUser = new Map<string, string[]>();
+  for (const p of allSuccessPaymentDates) {
+    const day = p.createdAt.toISOString().slice(0, 10);
+    const existing = purchaseDatesByUser.get(p.userId);
+    if (existing) { if (!existing.includes(day)) existing.push(day); }
+    else purchaseDatesByUser.set(p.userId, [day]);
+  }
 
   // Total real revenue a specific promo code has brought in — a dedicated query, not
   // derived from the `payments` list above, since that one is capped at the 100 most
@@ -591,7 +608,12 @@ export default async function AdminUsersPage({
           the client component below. */}
       <div className="bg-[#FDFBF0] rounded-2xl border border-[#465940]/10 shadow-sm overflow-hidden">
         <UsersSearchTable
-          users={filteredUsers.map((u) => ({ ...u, planLabel: subLabelFor(u), promoPrice: priceFor(u) }))}
+          users={filteredUsers.map((u) => ({
+            ...u,
+            planLabel: subLabelFor(u),
+            promoPrice: priceFor(u),
+            purchaseDates: purchaseDatesByUser.get(u.id) ?? [],
+          }))}
           locale={locale}
           intervalPrices={INTERVAL_PRICE}
         />

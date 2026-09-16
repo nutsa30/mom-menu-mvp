@@ -30,10 +30,21 @@ export default function UsersSearchTable({
   // (derived from the data itself), not a calendar picker, per how this is meant to be
   // used: "show me who signed up on this specific day", not an arbitrary date range.
   const [dateFilter, setDateFilter] = useState('');
+  // Purchase-date filter — same idea, but against `user.purchaseDates` (every calendar date
+  // that user has a successful payment on, computed server-side; a renewing subscriber has
+  // several). Independent from dateFilter: pick a purchase date and see who actually paid
+  // that day, with their normal registration date still shown alongside in its own column.
+  const [purchaseDateFilter, setPurchaseDateFilter] = useState('');
 
   const registrationDates = useMemo(() => {
     const set = new Set<string>();
     for (const u of users) set.add(new Date(u.createdAt).toISOString().slice(0, 10));
+    return Array.from(set).sort((a, b) => (a < b ? 1 : -1)); // newest first
+  }, [users]);
+
+  const purchaseDates = useMemo(() => {
+    const set = new Set<string>();
+    for (const u of users) for (const d of u.purchaseDates ?? []) set.add(d);
     return Array.from(set).sort((a, b) => (a < b ? 1 : -1)); // newest first
   }, [users]);
 
@@ -42,9 +53,10 @@ export default function UsersSearchTable({
     return users.filter((u) => {
       if (q && !(u.name?.toLowerCase().includes(q) || u.email?.toLowerCase().includes(q))) return false;
       if (dateFilter && new Date(u.createdAt).toISOString().slice(0, 10) !== dateFilter) return false;
+      if (purchaseDateFilter && !(u.purchaseDates ?? []).includes(purchaseDateFilter)) return false;
       return true;
     });
-  }, [users, query, dateFilter]);
+  }, [users, query, dateFilter, purchaseDateFilter]);
 
   return (
     <div>
@@ -80,15 +92,28 @@ export default function UsersSearchTable({
             onChange={(e) => setDateFilter(e.target.value)}
             className="border border-[#465940]/15 rounded-full px-4 py-2.5 text-sm font-semibold text-[#465940]/80 focus:outline-none focus:border-[#465940] bg-white cursor-pointer"
           >
-            <option value="">{locale === 'ka' ? 'ყველა თარიღი' : 'All dates'}</option>
+            <option value="">{locale === 'ka' ? 'რეგისტრაცია: ყველა თარიღი' : 'Registered: all dates'}</option>
             {registrationDates.map((d) => (
               <option key={d} value={d}>
                 {new Date(d).toLocaleDateString(locale === 'ka' ? 'ka-GE' : 'en-US', { year: 'numeric', month: 'long', day: 'numeric', timeZone: 'UTC' })}
               </option>
             ))}
           </select>
+
+          <select
+            value={purchaseDateFilter}
+            onChange={(e) => setPurchaseDateFilter(e.target.value)}
+            className="border border-[#465940]/15 rounded-full px-4 py-2.5 text-sm font-semibold text-[#465940]/80 focus:outline-none focus:border-[#465940] bg-white cursor-pointer"
+          >
+            <option value="">{locale === 'ka' ? 'ყიდვა: ყველა თარიღი' : 'Purchased: all dates'}</option>
+            {purchaseDates.map((d) => (
+              <option key={d} value={d}>
+                {new Date(d).toLocaleDateString(locale === 'ka' ? 'ka-GE' : 'en-US', { year: 'numeric', month: 'long', day: 'numeric', timeZone: 'UTC' })}
+              </option>
+            ))}
+          </select>
         </div>
-        {(query || dateFilter) && (
+        {(query || dateFilter || purchaseDateFilter) && (
           <p className="text-xs text-[#465940]/50 mt-2">
             {locale === 'ka' ? `${filtered.length} შედეგი` : `${filtered.length} result${filtered.length === 1 ? '' : 's'}`}
           </p>
