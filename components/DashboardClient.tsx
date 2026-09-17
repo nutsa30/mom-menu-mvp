@@ -12,6 +12,7 @@ import WeeklySummary from './WeeklySummary';
 import DayModeBanner from './DayModeBanner';
 import DayFoodGroups from './DayFoodGroups';
 import MealSOS from './MealSOS';
+import QuickTimePick from './QuickTimePick';
 import SameIngredientAlternatives from './SameIngredientAlternatives';
 import ReferralTab from './ReferralTab';
 
@@ -324,8 +325,13 @@ function TodayTab({ child, allDishes, planStart, isFullPlan, onWantsIntro }: { c
           on this tab. */}
       {isToday && <DayModeBanner key={dayStatusVersion} child={child} date={selectedDate} />}
 
-      {/* "კვების SOS" — feature 8, ties into the above (🔴/🟠) plus other existing
-          features (🟡 food-introduction tracker, 🔵 recipe catalog). Today-only. */}
+      {/* "რამდენი დრო მაქვს?" — real Dish.prepTimeMinutes-based quick-pick, feeding off
+          the same time data feature 10's /recipes filters use. Today-only, "right now"
+          in spirit, like every other write/lookup action on this tab. */}
+      {isToday && <QuickTimePick child={child} />}
+
+      {/* "კვების SOS" — feature 8, ties into the above plus other existing features
+          (food-introduction tracker, recipe catalog). Today-only. */}
       {isToday && (
         <MealSOS
           child={child}
@@ -978,10 +984,10 @@ const MILK_OPTIONS = [
 
 // Feature 6, "საკვების ტექსტურის გზა" — one simple, visual 4-stage picker.
 const TEXTURE_OPTIONS = [
-  { value: 'PUREE',       label: 'პიურე', emoji: '🥣' },
-  { value: 'MASHED',      label: 'გამოხეხილი', emoji: '🥄' },
-  { value: 'SOFT_PIECES', label: 'რბილი ნაჭრები', emoji: '🍴' },
-  { value: 'NORMAL',      label: 'ჩვეულებრივი', emoji: '🍽️' },
+  { value: 'PUREE',       label: 'პიურე' },
+  { value: 'MASHED',      label: 'გამოხეხილი' },
+  { value: 'SOFT_PIECES', label: 'რბილი ნაჭრები' },
+  { value: 'NORMAL',      label: 'ჩვეულებრივი' },
 ];
 
 // ── Child Tab ────────────────────────────────────────────────────────────────
@@ -1077,8 +1083,9 @@ function ChildTab({ children: kids, userId, onUpdate, onDelete, autoOpenIntroChi
     loadIntroductions(child);
   };
 
-  // Feature 8 ("კვების SOS") 🟡 hand-off: opens this child's edit view (which is where the
-  // existing food-introduction tracker lives) instead of building a second entry point.
+  // Feature 8 ("კვების SOS") "ახალი პროდუქტის დამატება" hand-off: opens this child's edit
+  // view (which is where the existing food-introduction tracker lives) instead of
+  // building a second entry point.
   useEffect(() => {
     if (!autoOpenIntroChildId) return;
     const target = kids.find((k) => k.id === autoOpenIntroChildId);
@@ -1298,7 +1305,7 @@ function ChildTab({ children: kids, userId, onUpdate, onDelete, autoOpenIntroChi
                       ? 'border-[#465940] bg-[#465940] text-[#FDFBF0]'
                       : 'border-[#465940]/15 text-[#465940]/70 hover:border-[#465940]/30'
                   }`}>
-                  {opt.emoji} {opt.label}
+                  {opt.label}
                 </button>
               ))}
             </div>
@@ -2005,7 +2012,8 @@ export default function DashboardClient({ user }: { user: any }) {
     ? 'child'
     : (firstChild.ageGroup === 'FROM_6' || firstChild.ageGroup === 'FROM_9') ? 'firstfoods' : 'today';
   const [tab, setTab] = useState<Tab>(defaultTab);
-  // Feature 8 ("კვების SOS") 🟡 option routes here: switches to "შვილი" and tells ChildTab
+  // Feature 8 ("კვების SOS") "ახალი პროდუქტის დამატება" option routes here: switches to
+  // "შვილი" and tells ChildTab
   // which child's food-introduction tracker to open — reusing that existing feature
   // instead of building a second one.
   const [autoOpenIntroChildId, setAutoOpenIntroChildId] = useState<string | null>(null);

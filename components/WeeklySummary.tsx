@@ -50,26 +50,26 @@ export default function WeeklySummary({ child }: { child: any }) {
 
   return (
     <div className={`${card} p-5`}>
-      <h3 className="font-black text-[#465940] text-sm mb-1">{child.name}-ის კვირის შეჯამება 🌿</h3>
+      <h3 className="font-black text-[#465940] text-sm mb-1">{child.name}-ის კვირის შეჯამება</h3>
 
       {data.distinctCount === 0 ? (
         <p className="text-sm text-[#465940]/60 mt-2">
-          ჯერ ცოტა მონაცემია ამ კვირისთვის 🌿 როგორც კი {child.name} სცდის კერძებს, აქ თბილად შეჯამდება.
+          როგორც კი ცდის, აქ შევაჯამებთ.
         </p>
       ) : (
         <>
           <p className="text-sm text-[#465940]/70 mt-1">
             ამ კვირაში {child.name}-მ სცადა <span className="font-bold text-[#465940]">{data.distinctCount}</span> სხვადასხვა კერძი
-            {data.newCount > 0 && <> — მათგან <span className="font-bold text-[#465940]">{data.newCount}</span> პირველად! 🎉</>}
+            {data.newCount > 0 && <> — მათგან <span className="font-bold text-[#465940]">{data.newCount}</span> პირველად!</>}
           </p>
 
-          <Strip title="ახალი გასინჯული 🌱" items={data.newItems} />
-          <Strip title="მოეწონა ❤️" items={data.likedItems} />
-          <Strip title="ხშირად აირჩია 🔁" items={data.repeatedItems} />
+          <Strip title="ახალი გასინჯული" items={data.newItems} />
+          <Strip title="მოეწონა" items={data.likedItems} />
+          <Strip title="ხშირად აირჩია" items={data.repeatedItems} />
         </>
       )}
 
-      <Strip title="იდეები შემდეგი კვირისთვის ✨" items={data.suggestions} />
+      <Strip title="იდეები შემდეგი კვირისთვის" items={data.suggestions} />
 
       <RecipeModal dish={recipeModal} onClose={() => setRecipeModal(null)} ageGroup={child?.ageGroup} textureStage={child?.textureStage} />
     </div>

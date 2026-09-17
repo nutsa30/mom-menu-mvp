@@ -362,6 +362,13 @@ model Dish {
   // ever shows up once at least one real dish carries that tag.
   tags          String[] @default([])
 
+  // Estimated real cooking time in minutes — either admin-entered or, for existing dishes,
+  // backfilled once via a script that reads each dish's actual ingredients/description
+  // (keyword + ingredient-count based estimate, never a made-up number). Powers the
+  // /recipes time filter and the dashboard "რამდენი დრო მაქვს?" picker. Null = unknown,
+  // and nothing that depends on it shows up until a real value exists.
+  prepTimeMinutes Int?
+
   blwNoteKa     String?
   blwNoteEn     String?
   pureeNoteKa   String?

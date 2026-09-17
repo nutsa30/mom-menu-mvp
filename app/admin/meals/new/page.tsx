@@ -59,12 +59,10 @@ const ALLERGEN_LIST = [
 // Feature 10, practical recipe filters — real, optional per-dish tags shown on
 // /recipes only once at least one dish actually carries them.
 const TAG_LIST = [
-  { key: 'TEN_MIN',    label: '⏱️ 10 წუთში'              },
-  { key: 'TWENTY_MIN', label: '⏱️ 20 წუთში'              },
-  { key: 'ONE_POT',    label: '🍲 ერთი ქვაბი'            },
-  { key: 'MAKE_AHEAD', label: '🧊 წინასწარ მოსამზადებელი' },
-  { key: 'TRAVEL',     label: '🚗 გზაში'                  },
-  { key: 'BUDGET',     label: '💸 ბიუჯეტური'              },
+  { key: 'ONE_POT',    label: 'ერთი ქვაბი'            },
+  { key: 'MAKE_AHEAD', label: 'წინასწარ მოსამზადებელი' },
+  { key: 'TRAVEL',     label: 'გზაში'                  },
+  { key: 'BUDGET',     label: 'ბიუჯეტური'              },
 ];
 
 const inp = 'w-full px-4 py-3 rounded-xl border border-[#465940]/20 focus:outline-none focus:border-[#465940] transition text-sm text-[#465940] bg-white';
@@ -87,6 +85,7 @@ export default function NewMealPage() {
   const [ageGroups, setAgeGroups] = useState<string[]>([]);
   const [allergens, setAllergens] = useState<string[]>([]);
   const [tags, setTags] = useState<string[]>([]);
+  const [prepTimeMinutes, setPrepTimeMinutes] = useState('');
   const [nutrients, setNutrients] = useState<Record<string, string>>({});
 
   const [blwNoteKa, setBlwNoteKa] = useState('');
@@ -157,6 +156,7 @@ export default function NewMealPage() {
           ingredientsKa: ingredientsKa.split(',').map((s) => s.trim()).filter(Boolean),
           ingredientsEn: ingredientsEn.split(',').map((s) => s.trim()).filter(Boolean),
           mealType, ageGroups, allergens, tags, imageUrl,
+          prepTimeMinutes: prepTimeMinutes ? Number(prepTimeMinutes) : null,
           calories: calories ? Number(calories) : null,
           proteinGrams: protein ? Number(protein) : null,
           ...nutrientPayload,
@@ -314,6 +314,14 @@ export default function NewMealPage() {
                 </button>
               ))}
             </div>
+          </div>
+
+          <div>
+            <label className={lbl}>მომზადების დაახლოებითი დრო (წუთი)</label>
+            <p className="text-[11px] text-[#465940]/50 mb-2">გამოიყენება /recipes გვერდის დროის ფილტრში და დეშბორდზე „რამდენი დრო მაქვს?" არჩევანში. ცარიელი დატოვე, თუ არ იცი ზუსტად.</p>
+            <input type="number" min="0" step="5" value={prepTimeMinutes}
+              onChange={(e) => setPrepTimeMinutes(e.target.value)}
+              placeholder="მაგ. 20" className={`${inp} max-w-[160px]`} />
           </div>
 
           <div>

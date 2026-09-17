@@ -16,6 +16,7 @@ type Dish = {
   ingredientsEn: string[];
   tags: string[];
   blwNoteKa: string | null;
+  prepTimeMinutes: number | null;
   calories: number | null;
   proteinGrams: number | null;
   carbsGrams: number | null;
@@ -65,23 +66,23 @@ const AGE_GROUPS = [
 const AGE_ORDER = ['FROM_6', 'FROM_9', 'FROM_12', 'FROM_24'];
 
 // Feature 10, practical recipe filters — working on the EXISTING recipe catalog, no new
-// recipe data. Two (SELF_FEED, QUICK) read real fields every dish already has; the rest
-// read the optional admin-set Dish.tags. "სახლში რაც მაქვს" is deliberately left out —
-// that's the separate, already-shipped "რა მაქვს სახლში?" feature; adding it here would
-// just duplicate it. A filter only ever appears once at least one real dish matches it
-// (see `presentFilters` below), so an untagged catalog never shows a dead, empty filter.
-const PRACTICAL_FILTERS: { key: string; ka: string; en: string; emoji: string; test: (d: Dish) => boolean }[] = [
-  { key: 'SELF_FEED', ka: 'ბავშვს თვითონ შეუძლია ჭამა', en: 'Self-feeding', emoji: '👶', test: (d) => !!d.blwNoteKa },
-  { key: 'QUICK',      ka: 'მარტივი და სწრაფი',          en: 'Easy & quick', emoji: '😴', test: (d) => {
-      const n = Math.max(d.ingredientsKa?.length || 0, d.ingredientsEn?.length || 0);
-      return n > 0 && n <= 3;
-    } },
-  { key: 'TEN_MIN',    ka: '10 წუთში',                   en: '10 min',        emoji: '⏱️', test: (d) => d.tags?.includes('TEN_MIN') },
-  { key: 'TWENTY_MIN', ka: '20 წუთში',                   en: '20 min',        emoji: '⏱️', test: (d) => d.tags?.includes('TWENTY_MIN') },
-  { key: 'ONE_POT',    ka: 'ერთი ქვაბი',                 en: 'One pot',       emoji: '🍲', test: (d) => d.tags?.includes('ONE_POT') },
-  { key: 'MAKE_AHEAD', ka: 'წინასწარ მოსამზადებელი',     en: 'Make-ahead',    emoji: '🧊', test: (d) => d.tags?.includes('MAKE_AHEAD') },
-  { key: 'TRAVEL',     ka: 'გზაში',                       en: 'On the go',     emoji: '🚗', test: (d) => d.tags?.includes('TRAVEL') },
-  { key: 'BUDGET',     ka: 'ბიუჯეტური',                   en: 'Budget',        emoji: '💸', test: (d) => d.tags?.includes('BUDGET') },
+// recipe data. SELF_FEED reads a real field every dish already has; TEN_MIN/TWENTY_MIN
+// read the real, estimated Dish.prepTimeMinutes (never ingredient count alone — a dish
+// like "ლობიო" has few ingredients but takes far longer than 10 minutes, so time is
+// tracked as its own real field, admin-set or backfilled from an estimate, not guessed
+// from ingredient count); the rest read the optional admin-set Dish.tags. "სახლში რაც
+// მაქვს" is deliberately left out — that's the separate, already-shipped "რა მაქვს
+// სახლში?" feature; adding it here would just duplicate it. A filter only ever appears
+// once at least one real dish matches it (see `presentFilters` below), so an untagged/
+// untimed catalog never shows a dead, empty filter.
+const PRACTICAL_FILTERS: { key: string; ka: string; en: string; test: (d: Dish) => boolean }[] = [
+  { key: 'SELF_FEED', ka: 'ბავშვს თვითონ შეუძლია ჭამა', en: 'Self-feeding', test: (d) => !!d.blwNoteKa },
+  { key: 'TEN_MIN',    ka: '10 წუთში',                   en: '10 min',        test: (d) => d.prepTimeMinutes != null && d.prepTimeMinutes <= 10 },
+  { key: 'TWENTY_MIN', ka: '20 წუთში',                   en: '20 min',        test: (d) => d.prepTimeMinutes != null && d.prepTimeMinutes <= 20 },
+  { key: 'ONE_POT',    ka: 'ერთი ქვაბი',                 en: 'One pot',       test: (d) => d.tags?.includes('ONE_POT') },
+  { key: 'MAKE_AHEAD', ka: 'წინასწარ მოსამზადებელი',     en: 'Make-ahead',    test: (d) => d.tags?.includes('MAKE_AHEAD') },
+  { key: 'TRAVEL',     ka: 'გზაში',                       en: 'On the go',     test: (d) => d.tags?.includes('TRAVEL') },
+  { key: 'BUDGET',     ka: 'ბიუჯეტური',                   en: 'Budget',        test: (d) => d.tags?.includes('BUDGET') },
 ];
 
 const ALLERGEN_LABELS: Record<string, { ka: string; en: string }> = {
@@ -288,7 +289,7 @@ export default function RecipesClient({ dishes, locale, canRead, isLoggedIn }: P
                             : 'bg-[#F5F1E4] text-[#6F7A5C]/70 border border-[#6F7A5C]/20 hover:border-[#6F7A5C]/40'
                         }`}
                       >
-                        {f.emoji} {locale === 'ka' ? f.ka : f.en}
+                        {locale === 'ka' ? f.ka : f.en}
                       </button>
                     );
                   })}

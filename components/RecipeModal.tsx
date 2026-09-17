@@ -48,18 +48,23 @@ export default function RecipeModal({ dish, onClose, ageGroup, textureStage }: {
           <span className={`absolute top-3 left-3 px-2.5 py-1 rounded-full text-xs font-bold bg-[#FDFBF0]/90`}>
             {MEAL_LABEL[dish.mealType]}
           </span>
+          {dish.prepTimeMinutes != null && (
+            <span className="absolute top-3 right-14 px-2.5 py-1 rounded-full text-xs font-bold bg-[#FDFBF0]/90 text-[#465940]">
+              ~{dish.prepTimeMinutes} წუთი
+            </span>
+          )}
         </div>
         <div className="overflow-y-auto p-6 space-y-5">
           <h2 className="text-xl font-black text-[#465940]">{dish.titleKa}</h2>
           {portionText && (
             <div className="bg-[#465940]/5 rounded-xl p-3">
-              <p className="text-xs font-bold text-[#465940] mb-1">რამდენი შევთავაზო? 🥄</p>
+              <p className="text-xs font-bold text-[#465940] mb-1">რამდენი შევთავაზო?</p>
               <p className="text-xs text-[#465940]/75 leading-relaxed">{portionText}</p>
             </div>
           )}
           {textureNote && (
             <div className="bg-[#465940]/5 rounded-xl p-3">
-              <p className="text-xs font-bold text-[#465940] mb-1">{textureNote.label} 🍽️</p>
+              <p className="text-xs font-bold text-[#465940] mb-1">{textureNote.label}</p>
               <p className="text-xs text-[#465940]/75 leading-relaxed">{textureNote.text}</p>
             </div>
           )}

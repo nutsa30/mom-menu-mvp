@@ -232,7 +232,7 @@ function PantryMatchMock({ dish, ka }: { dish: Dish; ka: boolean }) {
 // dish), not just a description of it. Same visual shape as PantryMatchMock (chips → arrow
 // → matched dish), built from the same real `dishes` data passed into this page.
 function QuickFilterMock({ dish, ka }: { dish: Dish; ka: boolean }) {
-  const chips = ka ? ['⏱️ 10 წუთში', '⏱️ 20 წუთში'] : ['⏱️ 10 min', '⏱️ 20 min'];
+  const chips = ka ? ['10 წუთში', '20 წუთში'] : ['10 min', '20 min'];
   return (
     <div className="rounded-3xl bg-white shadow-xl p-5 sm:p-6 w-full">
       <p className="text-[11px] font-bold uppercase tracking-wide mb-3" style={{ color: ACCENT }}>{ka ? 'დრო მაქვს მცირე' : 'Short on time'}</p>
@@ -265,12 +265,12 @@ function DayModeMock({ dish, ka }: { dish: Dish; ka: boolean }) {
     <div className="rounded-3xl bg-white shadow-xl p-5 sm:p-6 w-full">
       <p className="text-[11px] font-bold uppercase tracking-wide mb-3" style={{ color: ACCENT }}>{ka ? 'დღეს რა ხდება?' : "What's going on today?"}</p>
       <div className="flex flex-wrap gap-2 mb-4">
-        <span className="text-xs font-bold px-3 py-1.5 rounded-full" style={{ background: ACCENT, color: '#fff' }}>{ka ? '😐 საერთოდ არ ჭამს' : '😐 Not eating at all'}</span>
-        <span className="text-xs font-bold px-3 py-1.5 rounded-full" style={{ background: `${INK}0D`, color: INK }}>{ka ? '🦷 კბილები ეჭრება' : '🦷 Teething'}</span>
+        <span className="text-xs font-bold px-3 py-1.5 rounded-full" style={{ background: ACCENT, color: '#fff' }}>{ka ? 'საერთოდ არ ჭამს' : 'Not eating at all'}</span>
+        <span className="text-xs font-bold px-3 py-1.5 rounded-full" style={{ background: `${INK}0D`, color: INK }}>{ka ? 'კბილები ეჭრება' : 'Teething'}</span>
       </div>
       <p className="text-xs mb-4 leading-relaxed" style={{ color: `${INK}80` }}>
         {ka
-          ? 'ხანდახან ბავშვები უბრალოდ არ არიან მშიერი — ეს ნორმალურია. სცადე ზეწოლის გარეშე.'
+          ? 'ხანდახან ბავშვებს უბრალოდ არ შიათ — ეს ნორმალურია. სცადე შესთავაზო ზეწოლის გარეშე.'
           : "Sometimes kids just aren't hungry — that's normal. No pressure needed."}
       </p>
       <div className="flex items-center gap-3 rounded-2xl p-3" style={{ background: `${INK}08` }}>
@@ -288,16 +288,16 @@ function DayModeMock({ dish, ka }: { dish: Dish; ka: boolean }) {
 // only purely illustrative mockup after TriedChipsMock, same precedent that page already
 // sets, since a specific day's real mix isn't available on a logged-out homepage.
 function FoodGroupsMock({ ka }: { ka: boolean }) {
-  const groups: [string, string][] = ka
-    ? [['⚡', 'ენერგია'], ['🍗', 'ცილა'], ['🥦', 'ბოსტნეული'], ['🍎', 'ხილი'], ['🌾', 'მარცვლეული'], ['🥑', 'ცხიმი']]
-    : [['⚡', 'Energy'], ['🍗', 'Protein'], ['🥦', 'Veg'], ['🍎', 'Fruit'], ['🌾', 'Grain'], ['🥑', 'Fat']];
+  const groups: string[] = ka
+    ? ['ენერგია', 'ცილა', 'ბოსტნეული', 'ხილი', 'მარცვლეული', 'ცხიმი']
+    : ['Energy', 'Protein', 'Veg', 'Fruit', 'Grain', 'Fat'];
   return (
     <div className="rounded-3xl bg-white shadow-xl p-5 sm:p-6 w-full">
       <p className="text-[11px] font-bold uppercase tracking-wide mb-4" style={{ color: ACCENT }}>{ka ? 'დღეს რა გამომივიდა?' : 'How did today go?'}</p>
       <div className="flex flex-wrap gap-2">
-        {groups.map(([emoji, label]) => (
+        {groups.map((label) => (
           <span key={label} className="flex items-center gap-1.5 text-xs font-bold px-3 py-1.5 rounded-full" style={{ background: INK, color: CREAM }}>
-            <span>{emoji}</span>{label}
+            {label}
           </span>
         ))}
       </div>
@@ -313,7 +313,7 @@ function WeeklySummaryMock({ ka }: { ka: boolean }) {
     : [['New tried', '3'], ['Different dishes', '14'], ['Repeated', '5']];
   return (
     <div className="rounded-3xl bg-white shadow-xl p-5 sm:p-6 w-full">
-      <p className="text-[11px] font-bold uppercase tracking-wide mb-4" style={{ color: ACCENT }}>{ka ? 'კვირის შეჯამება 🌿' : 'Weekly summary 🌿'}</p>
+      <p className="text-[11px] font-bold uppercase tracking-wide mb-4" style={{ color: ACCENT }}>{ka ? 'კვირის შეჯამება' : 'Weekly summary'}</p>
       <div className="grid grid-cols-3 gap-2.5">
         {stats.map(([label, val]) => (
           <div key={label} className="rounded-2xl p-3 text-center" style={{ background: `${INK}08` }}>

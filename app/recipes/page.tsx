@@ -53,6 +53,7 @@ export default async function RecipesPage({
       ingredientsEn: true,
       tags: true,
       blwNoteKa: true,
+      prepTimeMinutes: true,
       calories: true,
       proteinGrams: true,
       carbsGrams: true,

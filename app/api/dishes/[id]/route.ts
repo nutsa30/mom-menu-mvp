@@ -38,6 +38,7 @@ export async function PUT(
         ingredientsKa: body.ingredientsKa || [],
         allergens: body.allergens || [],
         tags: body.tags || [],
+        prepTimeMinutes: body.prepTimeMinutes !== undefined ? (body.prepTimeMinutes != null ? Number(body.prepTimeMinutes) : null) : undefined,
         imageUrl: body.imageUrl || null,
         mealType: body.mealType,
 

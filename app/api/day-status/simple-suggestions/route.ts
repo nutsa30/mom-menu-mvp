@@ -27,12 +27,22 @@ export async function GET(req: NextRequest) {
   let candidates = await prisma.dish.findMany({ where });
   candidates = narrowToStage(candidates, child.ageGroup);
 
-  const withIngredientCount = candidates
+  // Take a wider pool of genuinely-simple dishes (fewest ingredients), then pick 3 at
+  // random from that pool each time — otherwise this always returns the exact same 3
+  // dishes no matter what's selected in "დღეს რა ხდება?"/"კვების SOS" above it.
+  const simplePool = candidates
     .map((d) => ({ d, count: (d.ingredientsKa?.length || d.ingredientsEn?.length || 99) }))
     .filter((c) => c.count > 0)
     .sort((a, b) => a.count - b.count)
-    .slice(0, 3)
+    .slice(0, 8)
     .map((c) => c.d);
 
-  return NextResponse.json(withIngredientCount);
+  const picked: typeof simplePool = [];
+  const pool = [...simplePool];
+  while (pool.length && picked.length < 3) {
+    const i = Math.floor(Math.random() * pool.length);
+    picked.push(pool.splice(i, 1)[0]);
+  }
+
+  return NextResponse.json(picked);
 }
