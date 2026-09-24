@@ -23,7 +23,7 @@ export async function GET(req: NextRequest) {
     include: { promoCode: true },
   });
 
-  const results = { charged: 0, failed: 0 };
+  const results = { charged: 0, failed: 0, autoResetToFree: 0 };
   for (const user of due) {
     if (!user.bogParentOrderId) continue;
     try {
@@ -57,6 +57,7 @@ export async function GET(req: NextRequest) {
       // these diagnostic scripts can see, only in Vercel's function logs.
       const interval = (user.billingIntervalMonths ?? 1) as BillingInterval;
       const grossAmount = applyDiscount(Number(PLAN_AMOUNTS_BY_INTERVAL[interval] ?? 0), user.promoCode?.discountPercent);
+      const CARD_NOT_SAVED_TAG = '[ბარათი ვერ მოიძებნა]';
       await prisma.payment.create({
         data: {
           userId: user.id,
@@ -68,17 +69,52 @@ export async function GET(req: NextRequest) {
           commissionAmount: null,
           netAmount: null,
           failureReason: cardNotSaved
-            ? `[ბარათი ვერ მოიძებნა] ${errMessage.slice(0, 260)}`
+            ? `${CARD_NOT_SAVED_TAG} ${errMessage.slice(0, 260)}`
             : `[ვერ დაიწყო] ${errMessage.slice(0, 280)}`,
         },
       }).catch((writeErr) => console.error('Failed to write synthetic FAILED payment row:', user.id, writeErr));
-      // Access still needs to be cut, the same as a normal declined-card "rejected"
-      // callback. subscriptionRenewsAt is left untouched so this user stays "due" and
-      // gets retried on the next cron run (harmless for the card-not-saved case too —
-      // it'll just 404 again next time, cheaply, until the customer re-adds their card).
-      await prisma.user.update({ where: { id: user.id }, data: { paymentFailedAt: new Date() } }).catch((writeErr) =>
-        console.error('Failed to set paymentFailedAt:', user.id, writeErr),
-      );
+
+      // Ordinary declines (insufficient funds, expired card, etc.) keep retrying forever —
+      // that's a real, possibly-temporary block and the customer might fix it (add funds,
+      // update their card) at any point, so subscriptionRenewsAt stays untouched and the
+      // normal retry-every-run behavior below applies.
+      //
+      // "Card not saved" is different: it is a permanent, structural failure (see the
+      // comment above `cardNotSaved`) — if the bank has no tokenized card on file the
+      // first time, it will not have one the second time, or a week from now, either.
+      // Waiting doesn't change the outcome, it only piles up identical FAILED rows in
+      // admin. Per an explicit 2026-09-24 decision: reset straight to FREE the very first
+      // time this specific failure mode is seen — exactly what
+      // prisma/reset-broken-card-user.ts already did by hand for this same bug. A fresh
+      // checkout (re-entering a card) still works immediately afterwards, same as that
+      // script's reset.
+      const autoReset = cardNotSaved;
+
+      if (autoReset) {
+        await prisma.user.update({
+          where: { id: user.id },
+          data: {
+            subscriptionStatus: 'FREE',
+            subscriptionCanceledAt: null,
+            subscriptionRenewsAt: null,
+            bogParentOrderId: null,
+            billingIntervalMonths: null,
+            trialEndsAt: null,
+            paymentFailedAt: null,
+            subscriptionStartedAt: null,
+            // bogTrialUsed intentionally left unchanged (stays true) — a fresh checkout
+            // charges immediately, no second free trial, same as the manual reset scripts.
+          },
+        }).catch((writeErr) => console.error('Failed to auto-reset card-not-saved user to FREE:', user.id, writeErr));
+        results.autoResetToFree++;
+      } else {
+        // Access still needs to be cut, the same as a normal declined-card "rejected"
+        // callback. subscriptionRenewsAt is left untouched so this user stays "due" and
+        // gets retried on the next cron run.
+        await prisma.user.update({ where: { id: user.id }, data: { paymentFailedAt: new Date() } }).catch((writeErr) =>
+          console.error('Failed to set paymentFailedAt:', user.id, writeErr),
+        );
+      }
     }
     // A short pause between attempts — charging everyone due back-to-back with zero delay
     // risks tripping a per-second rate limit on BOG's side, which would fail a charge for
