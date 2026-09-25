@@ -59,7 +59,7 @@ export default async function AdminUsersPage({
   );
   const todayEnd = new Date(todayStart.getTime() + 24 * 60 * 60 * 1000);
 
-  const [users, promoCodes, successfulPayers, allSuccessPaymentDates, promoRevenueTotal, allTimeRevenueAgg] = await Promise.all([
+  const [users, promoCodes, successfulPayers, allSuccessPaymentDates, promoRevenueTotal, successfulPayments] = await Promise.all([
     prisma.user.findMany({
       orderBy: { createdAt: 'desc' },
       select: {
@@ -89,13 +89,17 @@ export default async function AdminUsersPage({
       _sum: { grossAmount: true, netAmount: true },
       _count: true,
     }),
-    // Lifetime gross/net, every SUCCESS payment ever — used only for the real blended BOG
-    // commission rate (netRate below), which the net MRR/ARR cards apply. The full
-    // gross/commission/net revenue breakdown itself now lives on the Analytics page only,
-    // per the owner's request not to show the same money figures on two different pages.
-    prisma.payment.aggregate({
+    // Every real charge ever, with who paid and how much — feeds the "გადახდის დღე" (payment
+    // day) picker below: unlike subscriptionRenewsAt (a single upcoming date per user), this
+    // is actual completed, bank-deducted charges, grouped by day-of-month across every month,
+    // so picking "2" shows the real billing-day cohort, not a one-off future date.
+    prisma.payment.findMany({
       where: { status: 'SUCCESS' },
-      _sum: { grossAmount: true, netAmount: true },
+      orderBy: { createdAt: 'desc' },
+      select: {
+        id: true, createdAt: true, grossAmount: true, plan: true, billingIntervalMonths: true,
+        user: { select: { name: true, email: true } },
+      },
     }),
   ]);
   const paidUserIds = new Set(successfulPayers.map((p) => p.userId));
@@ -196,51 +200,6 @@ export default async function AdminUsersPage({
   // daily cron keeps retrying automatically, this is just who's blocked right now.
   const paymentFailedCount = users.filter((u) => !!u.paymentFailedAt).length;
 
-  // Revenue — gifted users excluded (they bring no cash). MRR is normalized per-month:
-  // a 39₾/3-month subscriber contributes 13₾ to MRR, not the full 39₾, since a 3- or
-  // 6-month tier is not itself a monthly charge. Also excludes anyone who's already
-  // canceled (still FULL_PLAN/RECIPE_PLAN until their paid period ends, but won't renew)
-  // — matches admin/analytics' MRR convention and the byInterval1/3/6 cards above, so MRR
-  // drops the moment someone cancels instead of only once their period actually expires.
-  const thirtyDaysAgo = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000);
-  // paidUserIds excludes anyone still mid-trial (see byInterval1/3/6 above) — this is what
-  // keeps MRR from counting revenue that hasn't actually landed yet, and might not.
-  // !paymentFailedAt excludes anyone currently blocked over a declined renewal — no money
-  // is actually coming in from them right now, so they shouldn't inflate MRR either.
-  const realRecipe = users.filter((u) => !u.isGifted && !u.subscriptionCanceledAt && !u.paymentFailedAt && u.subscriptionStatus === 'RECIPE_PLAN' && paidUserIds.has(u.id)).length;
-  const realFull   = users.filter((u) => !u.isGifted && !u.subscriptionCanceledAt && !u.paymentFailedAt && u.subscriptionStatus === 'FULL_PLAN' && paidUserIds.has(u.id)).length;
-  const realPaying = users.filter((u) => !u.isGifted && !u.subscriptionCanceledAt && !u.paymentFailedAt && (u.subscriptionStatus === 'RECIPE_PLAN' || u.subscriptionStatus === 'FULL_PLAN') && paidUserIds.has(u.id));
-  const mrr = Math.round(realPaying.reduce((sum, u) => sum + monthlyPriceFor(u), 0));
-  const payingUsers = realRecipe + realFull;
-  const arpu = payingUsers > 0 ? Math.round(mrr / payingUsers) : 0;
-  const newMrr = Math.round(users
-    .filter((u) =>
-      !u.isGifted &&
-      !u.paymentFailedAt &&
-      u.subscriptionStartedAt &&
-      new Date(u.subscriptionStartedAt) > thirtyDaysAgo &&
-      (u.subscriptionStatus === 'RECIPE_PLAN' || u.subscriptionStatus === 'FULL_PLAN') &&
-      paidUserIds.has(u.id)
-    )
-    .reduce((sum, u) => sum + monthlyPriceFor(u), 0));
-
-  // All-time gross/net (unbounded, every SUCCESS payment ever) — used only to derive the
-  // real blended BOG commission rate below (netRate). The visible gross/commission/net
-  // revenue cards now live on the Analytics page only, per the owner's request not to show
-  // the same money figures on two different admin pages.
-  const allTimeTotals = {
-    gross: allTimeRevenueAgg._sum.grossAmount ?? 0,
-    net: allTimeRevenueAgg._sum.netAmount ?? 0,
-  };
-  // Net MRR/ARR — what actually lands on the card after BOG's commission, not just the
-  // sticker-price recurring total. There's no way to know each individual subscriber's
-  // exact card type (local 2% vs. Amex 3.5%) from subscriptionStatus alone, so this applies
-  // the REAL blended commission rate observed across every actual payment so far
-  // (allTimeTotals.net / allTimeTotals.gross) — more accurate than assuming a flat 2%, and
-  // it self-corrects as more payments come in with whatever the real card-type mix is.
-  // Falls back to a flat 2% (the local-card rate) only before any real payment exists yet.
-  const netRate = allTimeTotals.gross > 0 ? allTimeTotals.net / allTimeTotals.gross : 0.98;
-  const netMrr = Math.round(mrr * netRate * 100) / 100;
   // Built from the real, currently-configured prices rather than lib/adminI18n's static
   // strings, which hardcode stale numbers (e.g. "30₾") that drift as soon as pricing changes.
   const recipePlanLabel = `${RECIPE_PRICE}₾ ${locale === 'ka' ? 'რეცეპტები' : 'Recipe'}`;
@@ -282,21 +241,20 @@ export default async function AdminUsersPage({
     gifted: giftedCount, paymentFailed: paymentFailedCount,
   };
 
-  // "Due by date" — anyone whose next charge (a trial converting to its first real payment,
-  // or an ordinary renewal — both live in the same subscriptionRenewsAt field, see the BOG
-  // webhook) is still ahead of them, on ANY date — not just today — so admin can pick a
-  // date (e.g. "the 3rd") from a dropdown of the actual upcoming dates and see who's due
-  // then, the same "select an actual date from the data" pattern as the registration/
-  // purchase date filters on the users table below (DueByDateList does the date-dropdown
-  // + filtering client-side; this just prepares the full list once). Gifted subscriptions
-  // never go through BOG (no real charge happens), so they're excluded here even though
-  // isGifted's own subscriptionRenewsAt is used elsewhere to auto-expire them.
-  const upcomingDueUsers = users
+  // "Due today" — anyone whose next charge (a trial converting to its first real payment, or
+  // an ordinary renewal — both live in the same subscriptionRenewsAt field, see the BOG
+  // webhook) falls within today's Tbilisi window. Unfiltered, always today — the admin's
+  // daily "who's getting charged today" glance. Gifted subscriptions never go through BOG
+  // (no real charge happens), so they're excluded even though isGifted's own
+  // subscriptionRenewsAt is used elsewhere to auto-expire them.
+  const dueTodayUsers = users
     .filter((u) =>
       !u.isGifted &&
       !u.subscriptionCanceledAt &&
       (u.subscriptionStatus === 'FULL_PLAN' || u.subscriptionStatus === 'RECIPE_PLAN') &&
-      u.subscriptionRenewsAt
+      u.subscriptionRenewsAt &&
+      new Date(u.subscriptionRenewsAt) >= todayStart &&
+      new Date(u.subscriptionRenewsAt) < todayEnd
     )
     .map((u) => ({
       ...u,
@@ -307,10 +265,23 @@ export default async function AdminUsersPage({
       amount: priceFor(u),
     }))
     .sort((a, b) => new Date(a.subscriptionRenewsAt!).getTime() - new Date(b.subscriptionRenewsAt!).getTime());
-  // Tbilisi-local YYYY-MM-DD for "today", so DueByDateList can default its dropdown to
-  // today's date (when someone actually has a charge due then) instead of always the
-  // earliest upcoming one.
-  const todayKey = todayStart.toLocaleDateString('en-CA', { timeZone: 'Asia/Tbilisi' });
+
+  // Today's day-of-month (Tbilisi) — so the payment-day picker below can default to today's
+  // billing day when it actually has data, instead of always the first day that has any.
+  const todayDay = new Date(todayStart.getTime() + TBILISI_OFFSET_MS).getUTCDate();
+  // Pre-formatted rows for the "გადახდის დღე" picker (DueByDateList, repurposed as a
+  // historical-payments-by-day-of-month view — see its own comment). Plain data only, no
+  // functions, since functions can't cross into a client component as props.
+  const paymentDayRows = successfulPayments.map((p) => ({
+    id: p.id,
+    createdAt: p.createdAt.toISOString(),
+    // Tbilisi day-of-month, same UTC-shift convention used for todayStart/todayEnd above.
+    day: new Date(p.createdAt.getTime() + TBILISI_OFFSET_MS).getUTCDate(),
+    name: p.user?.name ?? '—',
+    email: p.user?.email ?? '—',
+    planLabel: p.plan === 'FULL_PLAN' && p.billingIntervalMonths ? `${p.grossAmount}₾ / ${p.billingIntervalMonths}თვ` : `${p.grossAmount}₾`,
+    amount: p.grossAmount,
+  }));
 
   return (
     <div className="p-4 sm:p-6 lg:p-8">
@@ -373,25 +344,10 @@ export default async function AdminUsersPage({
         ))}
       </div>
 
-      {/* Revenue cards */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4 mb-6 lg:mb-8">
-        <div className="bg-[#465940] rounded-2xl p-5 shadow-sm">
-          <p className="text-xs font-semibold text-[#FDFBF0]/70 mb-3">MRR (ყოველთვიური, საკომისიოს გამოკლებით)</p>
-          <p className="text-3xl font-black text-[#FDFBF0]">~{netMrr.toFixed(2)}₾</p>
-          <p className="text-[10px] text-[#FDFBF0]/50 mt-1">{payingUsers} გადამხდელი · გაჩუქ./ტრიალი გამოკლ.</p>
-          <p className="text-[10px] text-[#FDFBF0]/50 mt-1">საკომისიოს ჩამოჭრამდე: {mrr}₾</p>
-        </div>
-        <div className="bg-[#FDFBF0] rounded-2xl p-5 border border-[#465940]/10 shadow-sm">
-          <p className="text-xs font-semibold text-[#465940] mb-3">ARR (წლიური, საკომისიოს გამოკლებით)</p>
-          <p className="text-3xl font-black text-[#465940]">~{(netMrr * 12).toFixed(2)}₾</p>
-          <p className="text-[10px] text-[#465940]/50 mt-1">წმინდა MRR × 12</p>
-          <p className="text-[10px] text-[#465940]/50 mt-1">საკომისიოს ჩამოჭრამდე: {mrr * 12}₾</p>
-        </div>
-        <div className="bg-[#FDFBF0] rounded-2xl p-5 border border-[#465940]/10 shadow-sm">
-          <p className="text-xs font-semibold text-[#465940] mb-3">ახალი MRR (30 დღე)</p>
-          <p className="text-3xl font-black text-[#465940]">{newMrr}₾</p>
-          <p className="text-[10px] text-[#465940]/50 mt-1">გაჩუქებული არ შედის</p>
-        </div>
+      {/* MRR/ARR/new-MRR cards used to live here — removed per the owner's request: those
+          money figures now live only on the Analytics page. The gifted-subscriptions card
+          stays, since it's a user-management count, not a revenue figure shown elsewhere. */}
+      <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 sm:gap-4 mb-6 lg:mb-8">
         <div className="bg-amber-50 rounded-2xl p-5 border border-amber-200 shadow-sm">
           <p className="text-xs font-semibold text-amber-700 mb-3">🎁 გაჩუქებული</p>
           <p className="text-3xl font-black text-amber-600">{giftedCount}</p>
@@ -404,10 +360,67 @@ export default async function AdminUsersPage({
           only on the Analytics page, so the same numbers aren't shown twice across two
           different admin pages. */}
 
-      {/* Due-by-date list — trial conversions and renewals expected to charge, with a date
-          dropdown so admin isn't limited to only seeing today's queue, between the
-          transactions table above and the full users list below. */}
-      <DueByDateList users={upcomingDueUsers as any} todayKey={todayKey} />
+      {/* Due today — trial conversions and renewals expected to charge today. Unfiltered,
+          always today, no dropdown — the admin's daily glance at who's getting charged. */}
+      <div className="mb-6 lg:mb-8">
+        <h2 className="text-xl font-black text-[#465940] mb-4">დღეს გადასახდელები</h2>
+        {dueTodayUsers.length === 0 ? (
+          <p className="bg-[#FDFBF0] rounded-2xl p-6 text-center text-sm text-[#465940]/60 shadow-sm">
+            დღეს გადასახდელი არავინ არის.
+          </p>
+        ) : (
+          <div className="bg-[#FDFBF0] rounded-2xl border border-[#465940]/10 shadow-sm overflow-hidden">
+            <div className="overflow-x-auto">
+              <table className="w-full min-w-[720px]">
+                <thead className="bg-[#465940]">
+                  <tr>
+                    <th className="text-left px-6 py-3 text-xs font-semibold text-[#FDFBF0]/80 uppercase tracking-wide">დრო</th>
+                    <th className="text-left px-4 py-3 text-xs font-semibold text-[#FDFBF0]/80 uppercase tracking-wide">მომხმარებელი</th>
+                    <th className="text-left px-4 py-3 text-xs font-semibold text-[#FDFBF0]/80 uppercase tracking-wide">გეგმა</th>
+                    <th className="text-left px-4 py-3 text-xs font-semibold text-[#FDFBF0]/80 uppercase tracking-wide">ტიპი</th>
+                    <th className="text-left px-4 py-3 text-xs font-semibold text-[#FDFBF0]/80 uppercase tracking-wide">სტატუსი</th>
+                    <th className="text-right px-6 py-3 text-xs font-semibold text-[#FDFBF0]/80 uppercase tracking-wide">თანხა</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-[#465940]/5">
+                  {dueTodayUsers.map((u) => (
+                    <tr key={u.id} className="hover:bg-[#465940]/5 transition">
+                      <td className="px-6 py-4 text-sm text-[#465940]/70">
+                        {new Date(u.subscriptionRenewsAt!).toLocaleTimeString('ka-GE', { timeZone: 'Asia/Tbilisi', hour: '2-digit', minute: '2-digit' })}
+                      </td>
+                      <td className="px-4 py-4">
+                        <p className="text-sm font-semibold text-[#465940]">{u.name}</p>
+                        <p className="text-xs text-[#465940]/50">{u.email}</p>
+                      </td>
+                      <td className="px-4 py-4 text-sm text-[#465940]/70">{u.planLabel}</td>
+                      <td className="px-4 py-4">
+                        <span className={`inline-block px-2 py-0.5 rounded-full text-[10px] font-bold ${
+                          u.isFirstCharge ? 'bg-amber-50 text-amber-700' : 'bg-[#465940]/10 text-[#465940]'
+                        }`}>
+                          {u.isFirstCharge ? 'პირველი გადახდა' : 'განახლება'}
+                        </span>
+                      </td>
+                      <td className="px-4 py-4">
+                        {u.paymentFailedAt ? (
+                          <span className="text-[10px] font-bold text-red-600">⚠️ გადახდა ვერ ჩამოეჭრა</span>
+                        ) : (
+                          <span className="text-[#465940]/40 text-xs">—</span>
+                        )}
+                      </td>
+                      <td className="px-6 py-4 text-sm font-semibold text-[#465940] text-right">{u.amount}₾</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        )}
+      </div>
+
+      {/* Payment-day picker — pick a day-of-month (not a specific calendar date) and see
+          every actual completed, bank-deducted payment that ever landed on that day, across
+          all months — a recurring billing-day view, separate from "due today" above. */}
+      <DueByDateList payments={paymentDayRows} todayDay={todayDay} />
 
       <UsersFilterBar
         counts={counts}
