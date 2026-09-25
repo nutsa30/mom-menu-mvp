@@ -1,5 +1,7 @@
 import { prisma } from '@/lib/prisma';
 import { PLAN_AMOUNTS, PLAN_AMOUNTS_BY_INTERVAL, BillingInterval, applyDiscount } from '@/lib/bog';
+import { addWithdrawal } from './actions';
+import WithdrawalDeleteButton from '@/components/WithdrawalDeleteButton';
 
 const PRICES: Record<string, number> = {
   RECIPE_PLAN: Number(PLAN_AMOUNTS.RECIPE_PLAN ?? 15),
@@ -31,7 +33,7 @@ const monthlyPriceFor = (u: PriceableUser) =>
   priceFor(u) / (u.billingIntervalMonths || 1);
 
 export default async function AdminAnalyticsPage() {
-  const [users, planItems, recentUsers, successfulPayers] = await Promise.all([
+  const [users, planItems, recentUsers, successfulPayers, revenuePayments, withdrawals] = await Promise.all([
     prisma.user.findMany({
       select: {
         id: true,
@@ -63,8 +65,29 @@ export default async function AdminAnalyticsPage() {
     // money moves, so subscriptionStatus alone can't tell "committed, paying subscriber"
     // apart from "still in their free trial, might cancel before ever paying a lari".
     prisma.payment.findMany({ where: { status: 'SUCCESS' }, select: { userId: true }, distinct: ['userId'] }),
+    // All-time actual money collected — one row per real SUCCESS charge, with what BOG's
+    // commission and any referral refund actually left in the account, used for the
+    // "სრული შემოსავალი" balance card below (see totalNetRevenue).
+    prisma.payment.findMany({
+      where: { status: 'SUCCESS' },
+      select: { netAmount: true, discountAmount: true, discountRefundFailed: true, creditAppliedAmount: true, creditRefundFailed: true },
+    }),
+    prisma.withdrawal.findMany({ orderBy: { createdAt: 'desc' } }),
   ]);
   const paidUserIds = new Set(successfulPayers.map((p) => p.userId));
+
+  // ─── Balance ("სრული შემოსავალი" minus what's been withdrawn) ──────────────────────
+  // Net (not gross): what's actually left in the account after BOG's commission — and, when
+  // the refund actually went through, after any referral discount/credit refunded back out
+  // of this same payment. A refund BOG rejected (discountRefundFailed/creditRefundFailed)
+  // means that money never left, so it stays counted.
+  const totalNetRevenue = revenuePayments.reduce((sum, p) => {
+    const discount = p.discountRefundFailed ? 0 : (p.discountAmount ?? 0);
+    const credit = p.creditRefundFailed ? 0 : (p.creditAppliedAmount ?? 0);
+    return sum + (p.netAmount ?? 0) - discount - credit;
+  }, 0);
+  const totalWithdrawn = withdrawals.reduce((sum, w) => sum + w.amount, 0);
+  const remainingBalance = totalNetRevenue - totalWithdrawn;
 
   const dishIds = planItems.map((p) => p.dishId);
   const topDishes = await prisma.dish.findMany({
@@ -282,6 +305,69 @@ export default async function AdminAnalyticsPage() {
             <p className="mt-2 text-3xl font-black text-[#465940]">{arpu}₾</p>
             <p className="mt-1 text-xs text-[#465940]/50">paying users only</p>
           </div>
+        </div>
+      </div>
+
+      {/* ── Balance: total revenue collected, minus what's been withdrawn ── */}
+      <div className="mb-4">
+        <h2 className="text-xs font-black uppercase tracking-widest text-[#465940]/50 mb-3">ბალანსი</h2>
+        <p className="text-[11px] text-[#465940]/50 -mt-2 mb-3">
+          სრული შემოსავალი — წმინდა, ანუ BOG-ის საკომისიოს (და გატანილი რეფერალის ფასდაკლების/კრედიტის) გამოკლებით. ეს არ არის ზემოთ MRR/ARR-ის შეფასება, არამედ დღემდე რეალურად მიღებული თანხა.
+        </p>
+        <div className="grid gap-4 sm:grid-cols-3 mb-4">
+          <div className="rounded-[20px] bg-[#FDFBF0] p-5 shadow-sm">
+            <p className="text-xs font-bold uppercase tracking-wider text-[#465940]">სრული შემოსავალი</p>
+            <p className="mt-2 text-3xl font-black text-[#465940]">{totalNetRevenue.toFixed(2)}₾</p>
+            <p className="mt-1 text-xs text-[#465940]/50">წმინდა, დღემდე სულ</p>
+          </div>
+          <div className="rounded-[20px] bg-[#FDFBF0] p-5 shadow-sm">
+            <p className="text-xs font-bold uppercase tracking-wider text-[#465940]">სულ გატანილი</p>
+            <p className="mt-2 text-3xl font-black text-[#465940]">{totalWithdrawn.toFixed(2)}₾</p>
+            <p className="mt-1 text-xs text-[#465940]/50">{withdrawals.length} ჩანაწერი</p>
+          </div>
+          <div className="rounded-[20px] bg-[#465940] p-5 shadow-sm">
+            <p className="text-xs font-bold uppercase tracking-wider text-[#FDFBF0]/70">დარჩენილი ბალანსი</p>
+            <p className="mt-2 text-3xl font-black text-[#FDFBF0]">{remainingBalance.toFixed(2)}₾</p>
+            <p className="mt-1 text-xs text-[#FDFBF0]/50">სრული შემოსავალი − გატანილი</p>
+          </div>
+        </div>
+
+        <div className="rounded-[20px] bg-[#FDFBF0] p-5 shadow-sm mb-6">
+          <form action={addWithdrawal} className="flex flex-wrap items-end gap-3 mb-4">
+            <div>
+              <label className="block text-xs font-semibold text-[#465940]/70 mb-1">გატანილი თანხა (₾)</label>
+              <input name="amount" type="number" min="0.01" step="0.01" required placeholder="0.00"
+                className="w-32 px-3 py-2 rounded-xl border border-[#465940]/20 focus:outline-none focus:border-[#465940] text-sm text-[#465940] bg-white" />
+            </div>
+            <div className="flex-1 min-w-[160px]">
+              <label className="block text-xs font-semibold text-[#465940]/70 mb-1">შენიშვნა (არასავალდებულო)</label>
+              <input name="note" type="text" placeholder="მაგ. გატანა ბარათზე"
+                className="w-full px-3 py-2 rounded-xl border border-[#465940]/20 focus:outline-none focus:border-[#465940] text-sm text-[#465940] bg-white" />
+            </div>
+            <button type="submit"
+              className="px-5 py-2 rounded-full bg-[#465940] text-[#FDFBF0] text-sm font-bold hover:opacity-90 transition">
+              დამატება
+            </button>
+          </form>
+
+          {withdrawals.length > 0 ? (
+            <div className="space-y-1.5 max-h-64 overflow-y-auto">
+              {withdrawals.map((w) => (
+                <div key={w.id} className="flex items-center justify-between gap-3 text-sm py-1.5 border-t border-[#465940]/10 first:border-t-0">
+                  <div className="min-w-0">
+                    <span className="font-bold text-[#465940]">{w.amount.toFixed(2)}₾</span>
+                    {w.note && <span className="text-[#465940]/60 ml-2 truncate">{w.note}</span>}
+                  </div>
+                  <div className="flex items-center gap-3 flex-shrink-0">
+                    <span className="text-xs text-[#465940]/40">{new Date(w.createdAt).toLocaleDateString('ka-GE')}</span>
+                    <WithdrawalDeleteButton id={w.id} />
+                  </div>
+                </div>
+              ))}
+            </div>
+          ) : (
+            <p className="text-sm text-[#465940]/40">ჯერ არაფერია გატანილი.</p>
+          )}
         </div>
       </div>
 

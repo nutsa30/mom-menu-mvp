@@ -927,3 +927,16 @@ model PushSchedule {
   weeklyHour    Int      @default(10)
   updatedAt     DateTime @updatedAt
 }
+
+// A manual record of money the owner has taken out of the account — logged by hand on
+// admin/analytics, next to the "სრული შემოსავალი" (all-time net revenue) figure, purely so
+// that page can show a running "დარჩენილი ბალანსი" = all-time net revenue minus SUM(amount)
+// here. Nothing else in the app reads or writes this table; it has no relation to any other
+// model on purpose, since it isn't tied to a specific payment or user, just a running log of
+// withdrawals against the business's overall balance.
+model Withdrawal {
+  id        String   @id @default(cuid())
+  amount    Float
+  note      String?
+  createdAt DateTime @default(now())
+}
