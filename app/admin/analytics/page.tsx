@@ -33,6 +33,16 @@ const monthlyPriceFor = (u: PriceableUser) =>
   priceFor(u) / (u.billingIntervalMonths || 1);
 
 export default async function AdminAnalyticsPage() {
+  // Tbilisi "now" (Georgia has used a fixed UTC+4 offset, no DST, since 2017) — used only to
+  // find the current calendar month's boundaries (1st through the last day) for
+  // monthNetRevenue below, so "ეს თვე" agrees with what a Tbilisi-based owner means by "this
+  // month" instead of drifting by the few hours' difference from UTC.
+  const TBILISI_OFFSET_MS = 4 * 60 * 60 * 1000;
+  const nowInTbilisi = new Date(Date.now() + TBILISI_OFFSET_MS);
+  const monthStart = new Date(
+    Date.UTC(nowInTbilisi.getUTCFullYear(), nowInTbilisi.getUTCMonth(), 1) - TBILISI_OFFSET_MS
+  );
+
   const [users, planItems, recentUsers, successfulPayers, revenuePayments, withdrawals] = await Promise.all([
     prisma.user.findMany({
       select: {
@@ -66,11 +76,13 @@ export default async function AdminAnalyticsPage() {
     // apart from "still in their free trial, might cancel before ever paying a lari".
     prisma.payment.findMany({ where: { status: 'SUCCESS' }, select: { userId: true }, distinct: ['userId'] }),
     // All-time actual money collected — one row per real SUCCESS charge, with what BOG's
-    // commission and any referral refund actually left in the account, used for the
-    // "სრული შემოსავალი" balance card below (see totalNetRevenue).
+    // commission and any referral refund actually left in the account, used for both the
+    // "სრული შემოსავალი" (all-time) and "ამ თვის შემოსავალი" (this month) balance cards
+    // below (see totalNetRevenue/monthNetRevenue) — one unbounded query, filtered by
+    // createdAt in JS for the month figure, rather than a second DB round-trip.
     prisma.payment.findMany({
       where: { status: 'SUCCESS' },
-      select: { netAmount: true, discountAmount: true, discountRefundFailed: true, creditAppliedAmount: true, creditRefundFailed: true },
+      select: { createdAt: true, netAmount: true, commissionAmount: true, discountAmount: true, discountRefundFailed: true, creditAppliedAmount: true, creditRefundFailed: true },
     }),
     prisma.withdrawal.findMany({ orderBy: { createdAt: 'desc' } }),
   ]);
@@ -80,14 +92,31 @@ export default async function AdminAnalyticsPage() {
   // Net (not gross): what's actually left in the account after BOG's commission — and, when
   // the refund actually went through, after any referral discount/credit refunded back out
   // of this same payment. A refund BOG rejected (discountRefundFailed/creditRefundFailed)
-  // means that money never left, so it stays counted.
-  const totalNetRevenue = revenuePayments.reduce((sum, p) => {
+  // means that money never left, so it stays counted. Shared by both the all-time and the
+  // this-month figures below — same real-money logic, just a different date range.
+  const netOf = (p: (typeof revenuePayments)[number]) => {
     const discount = p.discountRefundFailed ? 0 : (p.discountAmount ?? 0);
     const credit = p.creditRefundFailed ? 0 : (p.creditAppliedAmount ?? 0);
-    return sum + (p.netAmount ?? 0) - discount - credit;
-  }, 0);
+    return (p.netAmount ?? 0) - discount - credit;
+  };
+  const totalNetRevenue = revenuePayments.reduce((sum, p) => sum + netOf(p), 0);
+  // This calendar month only (1st through today, Tbilisi time) — what should actually match
+  // the owner's real bank/card statement for the money that's landed so far this month,
+  // after BOG's commission (owner explicitly asked for this to match the real deposited
+  // amount, not a subscription-based MRR estimate).
+  const monthNetRevenue = revenuePayments
+    .filter((p) => p.createdAt >= monthStart)
+    .reduce((sum, p) => sum + netOf(p), 0);
   const totalWithdrawn = withdrawals.reduce((sum, w) => sum + w.amount, 0);
   const remainingBalance = totalNetRevenue - totalWithdrawn;
+  // How much BOG has actually taken in commission — separate from totalNetRevenue/
+  // monthNetRevenue above (which are already net of it); shown as its own figure since the
+  // owner explicitly asked to see the commission amount itself, not just infer it from the
+  // gap between gross and net.
+  const totalCommission = revenuePayments.reduce((sum, p) => sum + (p.commissionAmount ?? 0), 0);
+  const monthCommission = revenuePayments
+    .filter((p) => p.createdAt >= monthStart)
+    .reduce((sum, p) => sum + (p.commissionAmount ?? 0), 0);
 
   const dishIds = planItems.map((p) => p.dishId);
   const topDishes = await prisma.dish.findMany({
@@ -165,6 +194,11 @@ export default async function AdminAnalyticsPage() {
   const mrr = Math.round(payingUserRows.reduce((sum, u) => sum + monthlyPriceFor(u), 0));
   const payingUsers = payingUserRows.length;
   const arpu = payingUsers > 0 ? Math.round(mrr / payingUsers) : 0;
+  // How many of those paying users are on a promo code — a promo-linked account is
+  // permanently charged less on every renewal (applyDiscount in lib/bog.ts), so MRR here
+  // is genuinely lower than "tier price × head count" the moment even one subscriber has a
+  // discount — this sub-line is what makes that gap visible instead of looking like a bug.
+  const promoPayingCount = payingUserRows.filter((u) => u.promoCode).length;
 
   const newMrrThisMonth = Math.round(users
     .filter(
@@ -288,7 +322,9 @@ export default async function AdminAnalyticsPage() {
           <div className="rounded-[20px] bg-[#465940] p-5 shadow-sm">
             <p className="text-xs font-bold uppercase tracking-wider text-[#FDFBF0]/70">MRR (ყოველთვიური)</p>
             <p className="mt-2 text-3xl font-black text-[#FDFBF0]">{mrr}₾</p>
-            <p className="mt-1 text-xs text-[#FDFBF0]/50">{payingUsers} მომხმარებელი</p>
+            <p className="mt-1 text-xs text-[#FDFBF0]/50">
+              {payingUsers} მომხმარებელი{promoPayingCount > 0 ? ` · ${promoPayingCount} მათგან პრომოკოდით (ფასდაკლებული)` : ''}
+            </p>
           </div>
           <div className="rounded-[20px] bg-[#FDFBF0] p-5 shadow-sm">
             <p className="text-xs font-bold uppercase tracking-wider text-[#465940]">ახალი MRR (30 დღე)</p>
@@ -312,13 +348,23 @@ export default async function AdminAnalyticsPage() {
       <div className="mb-4">
         <h2 className="text-xs font-black uppercase tracking-widest text-[#465940]/50 mb-3">ბალანსი</h2>
         <p className="text-[11px] text-[#465940]/50 -mt-2 mb-3">
-          სრული შემოსავალი — წმინდა, ანუ BOG-ის საკომისიოს (და გატანილი რეფერალის ფასდაკლების/კრედიტის) გამოკლებით. ეს არ არის ზემოთ MRR/ARR-ის შეფასება, არამედ დღემდე რეალურად მიღებული თანხა.
+          წმინდა, ანუ BOG-ის საკომისიოს (და გატანილი რეფერალის ფასდაკლების/კრედიტის) გამოკლებით — ზუსტად ის თანხა, რაც რეალურად ჩამოგერიცხა ბარათზე. ეს არ არის ზემოთ MRR/ARR-ის შეფასება.
         </p>
-        <div className="grid gap-4 sm:grid-cols-3 mb-4">
+        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-5 mb-4">
           <div className="rounded-[20px] bg-[#FDFBF0] p-5 shadow-sm">
             <p className="text-xs font-bold uppercase tracking-wider text-[#465940]">სრული შემოსავალი</p>
             <p className="mt-2 text-3xl font-black text-[#465940]">{totalNetRevenue.toFixed(2)}₾</p>
             <p className="mt-1 text-xs text-[#465940]/50">წმინდა, დღემდე სულ</p>
+          </div>
+          <div className="rounded-[20px] bg-[#FDFBF0] p-5 shadow-sm">
+            <p className="text-xs font-bold uppercase tracking-wider text-[#465940]">ამ თვის შემოსავალი</p>
+            <p className="mt-2 text-3xl font-black text-[#465940]">{monthNetRevenue.toFixed(2)}₾</p>
+            <p className="mt-1 text-xs text-[#465940]/50">წმინდა, ამ თვეში ჩამორიცხული</p>
+          </div>
+          <div className="rounded-[20px] bg-[#FDFBF0] p-5 shadow-sm">
+            <p className="text-xs font-bold uppercase tracking-wider text-[#465940]">ბანკის საკომისიო</p>
+            <p className="mt-2 text-3xl font-black text-[#465940]">{totalCommission.toFixed(2)}₾</p>
+            <p className="mt-1 text-xs text-[#465940]/50">დღემდე სულ · ამ თვე: {monthCommission.toFixed(2)}₾</p>
           </div>
           <div className="rounded-[20px] bg-[#FDFBF0] p-5 shadow-sm">
             <p className="text-xs font-bold uppercase tracking-wider text-[#465940]">სულ გატანილი</p>
