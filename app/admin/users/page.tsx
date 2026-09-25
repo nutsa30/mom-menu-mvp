@@ -2,7 +2,7 @@
 import { adminDict, getAdminLocale } from '@/lib/adminI18n';
 import UsersFilterBar from '@/components/UsersFilterBar';
 import UsersSearchTable from '@/components/UsersSearchTable';
-import PaymentsTable from '@/components/PaymentsTable';
+import DueByDateList from '@/components/DueByDateList';
 import { PLAN_AMOUNTS, PLAN_AMOUNTS_BY_INTERVAL, BillingInterval, applyDiscount } from '@/lib/bog';
 
 // Real, currently-charged prices (env-configured, not hardcoded) — used for every
@@ -58,18 +58,8 @@ export default async function AdminUsersPage({
     Date.UTC(nowInTbilisi.getUTCFullYear(), nowInTbilisi.getUTCMonth(), nowInTbilisi.getUTCDate()) - TBILISI_OFFSET_MS
   );
   const todayEnd = new Date(todayStart.getTime() + 24 * 60 * 60 * 1000);
-  // Current calendar month, 1st through the last day (Tbilisi time) — a real month-to-date
-  // window, not a rolling 30-day one, per the owner's explicit request: the old "last 30
-  // days" gross-revenue card mixed days from two different calendar months together,
-  // making a clean month-over-month comparison impossible.
-  const monthStart = new Date(
-    Date.UTC(nowInTbilisi.getUTCFullYear(), nowInTbilisi.getUTCMonth(), 1) - TBILISI_OFFSET_MS
-  );
-  const nextMonthStart = new Date(
-    Date.UTC(nowInTbilisi.getUTCFullYear(), nowInTbilisi.getUTCMonth() + 1, 1) - TBILISI_OFFSET_MS
-  );
 
-  const [users, promoCodes, payments, successfulPayers, allSuccessPaymentDates, promoRevenueTotal, allTimeRevenueAgg, monthRevenueAgg] = await Promise.all([
+  const [users, promoCodes, successfulPayers, allSuccessPaymentDates, promoRevenueTotal, allTimeRevenueAgg] = await Promise.all([
     prisma.user.findMany({
       orderBy: { createdAt: 'desc' },
       select: {
@@ -82,56 +72,30 @@ export default async function AdminUsersPage({
       },
     }),
     prisma.promoCode.findMany({ orderBy: { createdAt: 'desc' }, select: { id: true, code: true, planType: true } }),
-    // REFUNDED is what every trial preauthorization release is recorded as (the hold gets
-    // canceled, never a real charge) — every free-trial signup creates one, which reads as
-    // a worrying "refund" in this table even though no money ever moved. There is currently
-    // no code path that produces REFUNDED for an actual captured-then-reversed charge, so
-    // excluding the status here hides only these expected trial-start artifacts.
-    prisma.payment.findMany({
-      where: { status: { not: 'REFUNDED' } },
-      orderBy: { createdAt: 'desc' },
-      take: 100,
-      // promoCode included so the transactions table below can flag which payments came
-      // from a promo-linked account, right where the money is actually shown.
-      include: { user: { select: { name: true, email: true, promoCode: { select: { code: true } } } } },
-    }),
-    // Who has ever actually been charged — a dedicated, unlimited query (the `payments`
-    // list above is capped at the 100 most recent for the table below, so it can't be
-    // trusted as a complete "has this user ever paid" source once there are more than 100
-    // payments total). The BOG webhook flips subscriptionStatus to FULL_PLAN the moment a
-    // trial's card-verification hold clears — well before any real charge — so
-    // subscriptionStatus alone can't tell "paying" apart from "still in free trial".
+    // Who has ever actually been charged. The BOG webhook flips subscriptionStatus to
+    // FULL_PLAN the moment a trial's card-verification hold clears — well before any real
+    // charge — so subscriptionStatus alone can't tell "paying" apart from "still in free trial".
     prisma.payment.findMany({ where: { status: 'SUCCESS' }, select: { userId: true }, distinct: ['userId'] }),
     // Every successful payment's date, per user — not just distinct userIds (a renewing
     // subscriber has several) — so the users table below can offer a "purchase date" filter
     // the same way it already offers a registration-date one: pick a date, see who actually
-    // paid that day. Unbounded (not the capped 100-row `payments` list above), so it stays
-    // correct once there have been more than 100 payments total.
+    // paid that day.
     prisma.payment.findMany({ where: { status: 'SUCCESS' }, select: { userId: true, createdAt: true } }),
     // Lifetime revenue from EVERY promo-code buyer combined, across all codes — separate
     // from the single-code `promoRevenue` query below (which only runs once a specific code
-    // is selected in the filter dropdown) and not derived from the capped 100-row `payments`
-    // list above, so this stays accurate once there have been more than 100 payments total.
+    // is selected in the filter dropdown).
     prisma.payment.aggregate({
       where: { status: 'SUCCESS', user: { promoCodeId: { not: null } } },
       _sum: { grossAmount: true, netAmount: true },
       _count: true,
     }),
-    // Lifetime revenue, every SUCCESS payment ever — a dedicated, unbounded aggregate, not
-    // derived from the `payments` list above (capped at the 100 most recent), so this stays
-    // correct once there have been more than 100 payments total. Owner explicitly wants this
-    // as a running-since-day-one total, separate from the current-month figure below.
+    // Lifetime gross/net, every SUCCESS payment ever — used only for the real blended BOG
+    // commission rate (netRate below), which the net MRR/ARR cards apply. The full
+    // gross/commission/net revenue breakdown itself now lives on the Analytics page only,
+    // per the owner's request not to show the same money figures on two different pages.
     prisma.payment.aggregate({
       where: { status: 'SUCCESS' },
-      _sum: { grossAmount: true, commissionAmount: true, netAmount: true },
-      _count: true,
-    }),
-    // Current calendar month only (1st through the last day, Tbilisi time) — replaces the
-    // old rolling "last 30 days" window per the owner's request.
-    prisma.payment.aggregate({
-      where: { status: 'SUCCESS', createdAt: { gte: monthStart, lt: nextMonthStart } },
-      _sum: { grossAmount: true, commissionAmount: true, netAmount: true },
-      _count: true,
+      _sum: { grossAmount: true, netAmount: true },
     }),
   ]);
   const paidUserIds = new Set(successfulPayers.map((p) => p.userId));
@@ -147,10 +111,9 @@ export default async function AdminUsersPage({
     else purchaseDatesByUser.set(p.userId, [day]);
   }
 
-  // Total real revenue a specific promo code has brought in — a dedicated query, not
-  // derived from the `payments` list above, since that one is capped at the 100 most
-  // recent and would silently undercount an older/heavily-used code. Only queried when a
-  // promo filter is actually active, so this doesn't run on every normal page load.
+  // Total real revenue a specific promo code has brought in — a dedicated, unbounded query.
+  // Only queried when a promo filter is actually active, so this doesn't run on every
+  // normal page load.
   const promoRevenue = activePromo
     ? await prisma.payment.aggregate({
         where: { status: 'SUCCESS', user: { promoCodeId: activePromo } },
@@ -261,24 +224,13 @@ export default async function AdminUsersPage({
     )
     .reduce((sum, u) => sum + monthlyPriceFor(u), 0));
 
-  // BOG payment revenue (gross / commission / net) — separate from the MRR cards above,
-  // which are derived from subscriptionStatus (who's an active subscriber right now), not
-  // from actual charged amounts. Two windows, both from the unbounded aggregate queries
-  // above rather than the capped 100-row `payments` list, so neither undercounts once
-  // there have been more than 100 payments total:
-  //  - allTimeTotals: every SUCCESS payment ever, since day one.
-  //  - monthTotals: only this calendar month (1st–last day, Tbilisi time).
+  // All-time gross/net (unbounded, every SUCCESS payment ever) — used only to derive the
+  // real blended BOG commission rate below (netRate). The visible gross/commission/net
+  // revenue cards now live on the Analytics page only, per the owner's request not to show
+  // the same money figures on two different admin pages.
   const allTimeTotals = {
     gross: allTimeRevenueAgg._sum.grossAmount ?? 0,
-    commission: allTimeRevenueAgg._sum.commissionAmount ?? 0,
     net: allTimeRevenueAgg._sum.netAmount ?? 0,
-    count: allTimeRevenueAgg._count,
-  };
-  const monthTotals = {
-    gross: monthRevenueAgg._sum.grossAmount ?? 0,
-    commission: monthRevenueAgg._sum.commissionAmount ?? 0,
-    net: monthRevenueAgg._sum.netAmount ?? 0,
-    count: monthRevenueAgg._count,
   };
   // Net MRR/ARR — what actually lands on the card after BOG's commission, not just the
   // sticker-price recurring total. There's no way to know each individual subscriber's
@@ -289,13 +241,6 @@ export default async function AdminUsersPage({
   // Falls back to a flat 2% (the local-card rate) only before any real payment exists yet.
   const netRate = allTimeTotals.gross > 0 ? allTimeTotals.net / allTimeTotals.gross : 0.98;
   const netMrr = Math.round(mrr * netRate * 100) / 100;
-  // Payment-record plan label — uses the payment's OWN stored amount/interval rather than a
-  // static lookup, since every current-tier payment has plan='FULL_PLAN' regardless of which
-  // of the three real prices (17/39/59₾) was actually charged.
-  const planLabelFor = (p: { plan: string; grossAmount: number; billingIntervalMonths?: number | null }) =>
-    p.plan === 'FULL_PLAN' && p.billingIntervalMonths
-      ? `${p.grossAmount}₾ / ${p.billingIntervalMonths}${locale === 'ka' ? 'თვ' : 'mo'}`
-      : `${p.grossAmount}₾`;
   // Built from the real, currently-configured prices rather than lib/adminI18n's static
   // strings, which hardcode stale numbers (e.g. "30₾") that drift as soon as pricing changes.
   const recipePlanLabel = `${RECIPE_PRICE}₾ ${locale === 'ka' ? 'რეცეპტები' : 'Recipe'}`;
@@ -337,53 +282,35 @@ export default async function AdminUsersPage({
     gifted: giftedCount, paymentFailed: paymentFailedCount,
   };
 
-  // "Due today" — anyone whose next charge (a trial converting to its first real payment,
+  // "Due by date" — anyone whose next charge (a trial converting to its first real payment,
   // or an ordinary renewal — both live in the same subscriptionRenewsAt field, see the BOG
-  // webhook) falls on today's calendar date, so admin can see today's queue at a glance
-  // instead of waiting for the 4-hourly cron to work through it and reading results after
-  // the fact from the transactions table above. Gifted subscriptions never go through BOG
-  // (no real charge happens), so they're excluded here even though isGifted's own
-  // subscriptionRenewsAt is used elsewhere to auto-expire them.
-  // (todayStart/todayEnd are Tbilisi-local day boundaries, computed near the top of this
-  // function alongside the calendar-month boundaries the revenue cards above use.)
-  const dueTodayUsers = users
+  // webhook) is still ahead of them, on ANY date — not just today — so admin can pick a
+  // date (e.g. "the 3rd") from a dropdown of the actual upcoming dates and see who's due
+  // then, the same "select an actual date from the data" pattern as the registration/
+  // purchase date filters on the users table below (DueByDateList does the date-dropdown
+  // + filtering client-side; this just prepares the full list once). Gifted subscriptions
+  // never go through BOG (no real charge happens), so they're excluded here even though
+  // isGifted's own subscriptionRenewsAt is used elsewhere to auto-expire them.
+  const upcomingDueUsers = users
     .filter((u) =>
       !u.isGifted &&
       !u.subscriptionCanceledAt &&
       (u.subscriptionStatus === 'FULL_PLAN' || u.subscriptionStatus === 'RECIPE_PLAN') &&
-      u.subscriptionRenewsAt &&
-      new Date(u.subscriptionRenewsAt) >= todayStart &&
-      new Date(u.subscriptionRenewsAt) < todayEnd
+      u.subscriptionRenewsAt
     )
     .map((u) => ({
       ...u,
-      // Hasn't ever completed a real payment yet — today's charge is their trial
-      // converting to its first real one, not a routine renewal.
+      // Hasn't ever completed a real payment yet — this charge is their trial converting
+      // to its first real one, not a routine renewal.
       isFirstCharge: !paidUserIds.has(u.id),
       planLabel: subLabelFor(u),
       amount: priceFor(u),
     }))
     .sort((a, b) => new Date(a.subscriptionRenewsAt!).getTime() - new Date(b.subscriptionRenewsAt!).getTime());
-
-  // Pre-formatted rows for the transactions table (PaymentsTable, a client component so it
-  // can collapse to the most recent few and expand on click — see its own comment). Plain
-  // data only, no functions: planLabelFor/p.user access has to happen here, server-side,
-  // since functions can't cross into a client component as props.
-  const paymentRows = payments.map((p) => ({
-    id: p.id,
-    createdAt: p.createdAt.toISOString(),
-    name: p.user?.name ?? (p as any).deletedUserName ?? '—',
-    email: p.user?.email ?? (p as any).deletedUserEmail ?? '—',
-    isDeletedUser: !p.user,
-    planLabel: planLabelFor(p),
-    promoCode: (p as any).user?.promoCode?.code ?? null,
-    status: p.status,
-    failureReason: (p as any).failureReason ?? null,
-    cardType: p.cardType,
-    grossAmount: p.grossAmount,
-    commissionAmount: p.commissionAmount,
-    netAmount: p.netAmount,
-  }));
+  // Tbilisi-local YYYY-MM-DD for "today", so DueByDateList can default its dropdown to
+  // today's date (when someone actually has a charge due then) instead of always the
+  // earliest upcoming one.
+  const todayKey = todayStart.toLocaleDateString('en-CA', { timeZone: 'Asia/Tbilisi' });
 
   return (
     <div className="p-4 sm:p-6 lg:p-8">
@@ -472,116 +399,15 @@ export default async function AdminUsersPage({
         </div>
       </div>
 
-      {/* BOG payment revenue breakdown — two separate windows: a lifetime running total
-          since the very first payment ever, and the current calendar month (1st through
-          the last day, Tbilisi time). Replaces the old rolling "last 30 days" window, which
-          mixed days from two different calendar months and made a clean month-to-month
-          comparison impossible. */}
-      <div className="mb-6 lg:mb-8">
-        <h2 className="text-xl font-black text-[#465940] mb-1">გადახდების ანალიტიკა (BOG)</h2>
-        <p className="text-[#465940]/60 text-sm mb-4">მხოლოდ წარმატებული გადახდები, ტრიალის დაბრუნებადი თანხის გარეშე</p>
+      {/* The gross/commission/net BOG revenue breakdown and the payments transactions table
+          used to live here — removed per the owner's request: those money figures now live
+          only on the Analytics page, so the same numbers aren't shown twice across two
+          different admin pages. */}
 
-        <p className="text-xs font-bold text-[#465940]/70 mb-2 uppercase tracking-wide">მთლიანი შემოსავალი (დასაწყისიდან)</p>
-        <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 sm:gap-4 mb-5">
-          <div className="bg-[#465940] rounded-2xl p-5 shadow-sm">
-            <p className="text-xs font-semibold text-[#FDFBF0]/70 mb-3">ბრუტო შემოსავალი</p>
-            <p className="text-3xl font-black text-[#FDFBF0]">{allTimeTotals.gross.toFixed(2)}₾</p>
-            <p className="text-[10px] text-[#FDFBF0]/50 mt-1">{allTimeTotals.count} ტრანზაქცია სულ</p>
-          </div>
-          <div className="bg-[#FDFBF0] rounded-2xl p-5 border border-[#465940]/10 shadow-sm">
-            <p className="text-xs font-semibold text-[#465940] mb-3">BOG საკომისიო</p>
-            <p className="text-3xl font-black text-[#465940]">{allTimeTotals.commission.toFixed(2)}₾</p>
-            <p className="text-[10px] text-[#465940]/50 mt-1">2% ლოკ. / 3.5% Amex</p>
-          </div>
-          <div className="bg-[#FDFBF0] rounded-2xl p-5 border border-[#465940]/10 shadow-sm">
-            <p className="text-xs font-semibold text-[#465940] mb-3">წმინდა შემოსავალი</p>
-            <p className="text-3xl font-black text-[#465940]">{allTimeTotals.net.toFixed(2)}₾</p>
-            <p className="text-[10px] text-[#465940]/50 mt-1">ბრუტო − საკომისიო</p>
-          </div>
-        </div>
-
-        <p className="text-xs font-bold text-[#465940]/70 mb-2 uppercase tracking-wide">
-          ეს თვე ({monthStart.toLocaleDateString('ka-GE', { timeZone: 'Asia/Tbilisi', day: 'numeric', month: 'long' })} – {new Date(nextMonthStart.getTime() - 1).toLocaleDateString('ka-GE', { timeZone: 'Asia/Tbilisi', day: 'numeric', month: 'long' })})
-        </p>
-        <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 sm:gap-4 mb-4">
-          <div className="bg-[#465940] rounded-2xl p-5 shadow-sm">
-            <p className="text-xs font-semibold text-[#FDFBF0]/70 mb-3">ბრუტო შემოსავალი</p>
-            <p className="text-3xl font-black text-[#FDFBF0]">{monthTotals.gross.toFixed(2)}₾</p>
-            <p className="text-[10px] text-[#FDFBF0]/50 mt-1">{monthTotals.count} ტრანზაქცია</p>
-          </div>
-          <div className="bg-[#FDFBF0] rounded-2xl p-5 border border-[#465940]/10 shadow-sm">
-            <p className="text-xs font-semibold text-[#465940] mb-3">BOG საკომისიო</p>
-            <p className="text-3xl font-black text-[#465940]">{monthTotals.commission.toFixed(2)}₾</p>
-            <p className="text-[10px] text-[#465940]/50 mt-1">2% ლოკ. / 3.5% Amex</p>
-          </div>
-          <div className="bg-[#FDFBF0] rounded-2xl p-5 border border-[#465940]/10 shadow-sm">
-            <p className="text-xs font-semibold text-[#465940] mb-3">წმინდა შემოსავალი</p>
-            <p className="text-3xl font-black text-[#465940]">{monthTotals.net.toFixed(2)}₾</p>
-            <p className="text-[10px] text-[#465940]/50 mt-1">ბრუტო − საკომისიო</p>
-          </div>
-        </div>
-
-        <PaymentsTable payments={paymentRows} />
-      </div>
-
-      {/* Today's due list — trial conversions and renewals expected to charge today,
-          between the transactions table above and the full users list below. */}
-      <div className="mb-6 lg:mb-8">
-        <h2 className="text-xl font-black text-[#465940] mb-1">დღეს გადასახდელები</h2>
-        <p className="text-[#465940]/60 text-sm mb-4">
-          {dueTodayUsers.length} ადამიანს დღეს უწევს გადახდა (ტრიალის დასრულება ან გამოწერის განახლება) — {todayStart.toLocaleDateString('ka-GE', { timeZone: 'Asia/Tbilisi' })}
-        </p>
-
-        <div className="bg-[#FDFBF0] rounded-2xl border border-[#465940]/10 shadow-sm overflow-hidden">
-          {dueTodayUsers.length === 0 ? (
-            <p className="text-center py-12 text-[#465940]/60 text-sm">დღეს არავის უწევს გადახდა</p>
-          ) : (
-            <div className="overflow-x-auto">
-              <table className="w-full min-w-[720px]">
-                <thead className="bg-[#465940]">
-                  <tr>
-                    <th className="text-left px-6 py-3 text-xs font-semibold text-[#FDFBF0]/80 uppercase tracking-wide">დრო</th>
-                    <th className="text-left px-4 py-3 text-xs font-semibold text-[#FDFBF0]/80 uppercase tracking-wide">მომხმარებელი</th>
-                    <th className="text-left px-4 py-3 text-xs font-semibold text-[#FDFBF0]/80 uppercase tracking-wide">გეგმა</th>
-                    <th className="text-left px-4 py-3 text-xs font-semibold text-[#FDFBF0]/80 uppercase tracking-wide">ტიპი</th>
-                    <th className="text-left px-4 py-3 text-xs font-semibold text-[#FDFBF0]/80 uppercase tracking-wide">სტატუსი</th>
-                    <th className="text-right px-6 py-3 text-xs font-semibold text-[#FDFBF0]/80 uppercase tracking-wide">თანხა</th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-[#465940]/5">
-                  {dueTodayUsers.map((u) => (
-                    <tr key={u.id} className="hover:bg-[#465940]/5 transition">
-                      <td className="px-6 py-4 text-sm text-[#465940]/70">
-                        {new Date(u.subscriptionRenewsAt!).toLocaleTimeString('ka-GE', { hour: '2-digit', minute: '2-digit', timeZone: 'Asia/Tbilisi' })}
-                      </td>
-                      <td className="px-4 py-4">
-                        <p className="text-sm font-semibold text-[#465940]">{u.name}</p>
-                        <p className="text-xs text-[#465940]/50">{u.email}</p>
-                      </td>
-                      <td className="px-4 py-4 text-sm text-[#465940]/70">{u.planLabel}</td>
-                      <td className="px-4 py-4">
-                        <span className={`inline-block px-2.5 py-1 rounded-full text-xs font-bold ${
-                          u.isFirstCharge ? 'bg-amber-50 text-amber-700' : 'bg-[#465940]/10 text-[#465940]'
-                        }`}>
-                          {u.isFirstCharge ? 'ტრიალის დასრულება' : 'განახლება'}
-                        </span>
-                      </td>
-                      <td className="px-4 py-4">
-                        {u.paymentFailedAt ? (
-                          <span className="inline-block px-2.5 py-1 rounded-full text-xs font-bold bg-red-50 text-red-600">დაბლოკილი</span>
-                        ) : (
-                          <span className="inline-block px-2.5 py-1 rounded-full text-xs font-bold bg-emerald-50 text-emerald-700">აქტიური</span>
-                        )}
-                      </td>
-                      <td className="px-6 py-4 text-sm text-[#465940] font-semibold text-right">{u.amount.toFixed(2)}₾</td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          )}
-        </div>
-      </div>
+      {/* Due-by-date list — trial conversions and renewals expected to charge, with a date
+          dropdown so admin isn't limited to only seeing today's queue, between the
+          transactions table above and the full users list below. */}
+      <DueByDateList users={upcomingDueUsers as any} todayKey={todayKey} />
 
       <UsersFilterBar
         counts={counts}
