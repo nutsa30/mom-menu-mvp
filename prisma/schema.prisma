@@ -369,6 +369,21 @@ model Dish {
   // and nothing that depends on it shows up until a real value exists.
   prepTimeMinutes Int?
 
+  // Freeze-ahead guide ("გაყინვა" dashboard tab) — real, optional guidance for dishes that
+  // genuinely hold up well shaped and frozen ahead (like cutlets/patties), so a parent can
+  // batch-prep on a free day and pull a frozen portion straight into the pan when that dish
+  // comes up in the plan. isFreezable flags which dishes appear in that tab (false/null for
+  // everything by default — nothing shows until a dish is deliberately marked); the
+  // freezeInstructions fields spell out prep/shaping, packaging, and how long it keeps
+  // frozen. Purely optional guidance for parents who want to batch-prep — using it never
+  // changes the recipe's own prepTimeMinutes or descriptionKa/En steps, and a parent who'd
+  // rather just cook the recipe fresh can ignore this tab entirely. Distinct from the
+  // existing MAKE_AHEAD tag (a same-day/next-day prep filter on /recipes) — this is
+  // specifically about shaping and freezing for later, with real per-dish instructions.
+  isFreezable          Boolean @default(false)
+  freezeInstructionsKa String?
+  freezeInstructionsEn String?
+
   blwNoteKa     String?
   blwNoteEn     String?
   pureeNoteKa   String?

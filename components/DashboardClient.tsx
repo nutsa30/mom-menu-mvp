@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation';
 import FirstFoodsTab from './FirstFoodsTab';
 import BabyRecipesTab from './BabyRecipesTab';
 import AtHomeTab from './AtHomeTab';
+import FreezeTab from './FreezeTab';
 import RecipeModal from './RecipeModal';
 import TodayDigest from './TodayDigest';
 import FavoriteDishes from './FavoriteDishes';
@@ -31,7 +32,7 @@ function ageInMonths(birthDate: string | Date): number {
   return Math.max(0, months);
 }
 
-type Tab = 'today' | 'firstfoods' | 'recipes' | 'athome' | 'nutrition' | 'shopping' | 'child' | 'referral' | 'settings';
+type Tab = 'today' | 'firstfoods' | 'recipes' | 'athome' | 'nutrition' | 'shopping' | 'freeze' | 'child' | 'referral' | 'settings';
 
 const MEAL_ORDER = ['BREAKFAST', 'SNACK', 'LUNCH', 'DINNER'] as const;
 const MEAL_LABEL: Record<string, string> = { BREAKFAST: 'საუზმე', SNACK: 'სნექი', LUNCH: 'სადილი', DINNER: 'ვახშამი' };
@@ -2129,6 +2130,7 @@ export default function DashboardClient({ user }: { user: any }) {
         // ingredient-by-ingredient introduction — it becomes relevant once real meals start.
         ...(isYoungBaby ? [] : [{ key: 'nutrition' as Tab, label: 'კვება' }]),
         ...(isFullPlan && !isYoungBaby ? [{ key: 'shopping' as Tab, label: 'საყიდლები' }] : []),
+        ...(isFullPlan && !isYoungBaby ? [{ key: 'freeze' as Tab, label: 'გაყინვა' }] : []),
         { key: 'child', label: 'შვილი' },
         // Account-level, not child-level — visible to every registered user regardless of
         // subscription status or which child is active, same as "პარამეტრები".
@@ -2223,6 +2225,7 @@ export default function DashboardClient({ user }: { user: any }) {
         {tab === 'athome' && <AtHomeTab child={activeChild} allDishes={allDishes} />}
         {tab === 'nutrition' && <NutritionTab child={activeChild} />}
         {tab === 'shopping' && <ShoppingListTab child={activeChild} planStart={planStart} />}
+        {tab === 'freeze' && <FreezeTab child={activeChild} allDishes={allDishes} />}
         {tab === 'child' && (
           <ChildTab
             children={children} userId={user.id} onUpdate={onChildUpdate} onDelete={onChildDelete}
