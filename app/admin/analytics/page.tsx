@@ -211,33 +211,6 @@ export default async function AdminAnalyticsPage() {
     )
     .reduce((sum, u) => sum + monthlyPriceFor(u), 0));
 
-  // Monthly new-subscription revenue for last 6 months (full tier price at signup month,
-  // not normalized to MRR — this chart reads as "cash booked that month", not run-rate).
-  const monthlyRevenue: { label: string; revenue: number; newSubs: number }[] = [];
-  for (let i = 5; i >= 0; i--) {
-    const d = new Date();
-    d.setDate(1);
-    d.setMonth(d.getMonth() - i);
-    const year = d.getFullYear();
-    const month = d.getMonth();
-    const label = d.toLocaleDateString('ka-GE', { month: 'short' });
-    const monthUsers = users.filter((u) => {
-      if (u.isGifted) return false;
-      if (!u.subscriptionStartedAt) return false;
-      const s = new Date(u.subscriptionStartedAt);
-      return (
-        s.getFullYear() === year &&
-        s.getMonth() === month &&
-        (u.subscriptionStatus === 'RECIPE_PLAN' || u.subscriptionStatus === 'FULL_PLAN')
-      );
-    });
-    monthlyRevenue.push({
-      label,
-      revenue: monthUsers.reduce((sum, u) => sum + priceFor(u), 0),
-      newSubs: monthUsers.length,
-    });
-  }
-
   // Renewal forecast — which of the next 3 calendar months each active subscriber's next
   // charge (subscriptionRenewsAt) actually falls in. Rolls forward automatically since it's
   // computed from "today" on every load (this month, next month, the one after). Canceled
@@ -268,7 +241,6 @@ export default async function AdminAnalyticsPage() {
     });
   }
 
-  const maxMonthRevenue = Math.max(...monthlyRevenue.map((m) => m.revenue), 1);
 
   const stats = [
     { label: 'Total users', value: total, sub: `${newThisMonth} new this month`, color: 'text-[#465940]' },
@@ -432,86 +404,6 @@ export default async function AdminAnalyticsPage() {
       </div>
 
       <div className="grid gap-6 lg:grid-cols-2">
-
-        {/* ── Revenue by plan ── */}
-        <section className="rounded-[20px] bg-[#FDFBF0] p-6 shadow-sm">
-          <h2 className="mb-4 font-bold text-[#465940]">Revenue breakdown by plan</h2>
-          <div className="space-y-4">
-            {[
-              // Recipe Plan is no longer sold — only shown if a legacy subscriber still exists,
-              // so this section reflects the actual current packages otherwise.
-              ...(recipe > 0 ? (() => {
-                const realRecipeRows = users.filter((u) => !u.isGifted && !u.subscriptionCanceledAt && u.subscriptionStatus === 'RECIPE_PLAN' && paidUserIds.has(u.id));
-                return [{ label: `Recipe Plan (${PRICES.RECIPE_PLAN}₾) — legacy`, rev: realRecipeRows.length * PRICES.RECIPE_PLAN, count: realRecipeRows.length, color: 'bg-[#465940]/40' }];
-              })() : []),
-              // Same canceled- and trial-exclusion as full1/full3/full6 and payingUserRows
-              // above — someone who canceled hasn't paid for a next period, and someone
-              // still mid-trial hasn't paid for this one yet either, so neither should count
-              // toward this breakdown's revenue or account totals (this is what keeps these
-              // rows summing to the same "სულ MRR" shown at the bottom, instead of a lower
-              // number that leaves the admin wondering where the difference is coming from).
-              ...([1, 3, 6] as BillingInterval[]).map((interval) => {
-                const rows = users.filter((u) => !u.isGifted && !u.subscriptionCanceledAt && u.subscriptionStatus === 'FULL_PLAN' && u.billingIntervalMonths === interval && paidUserIds.has(u.id));
-                return {
-                  label: `${interval} Month (${INTERVAL_PRICE[interval]}₾)`,
-                  rev: Math.round(rows.reduce((sum, u) => sum + monthlyPriceFor(u), 0)),
-                  count: rows.length,
-                  color: interval === 1 ? 'bg-[#465940]/60' : interval === 3 ? 'bg-[#465940]/80' : 'bg-[#465940]',
-                };
-              }),
-            ].map((row) => {
-              const rev = row.rev;
-              const pct = mrr > 0 ? Math.round((rev / mrr) * 100) : 0;
-              return (
-                <div key={row.label}>
-                  <div className="flex items-center justify-between text-sm mb-1">
-                    <span className="font-semibold text-[#465940]">{row.label}</span>
-                    <span className="font-black text-[#465940]">{rev}₾ <span className="font-normal text-[#465940]/50">({row.count} acc)</span></span>
-                  </div>
-                  <div className="h-3 bg-[#465940]/10 rounded-full overflow-hidden">
-                    <div className={`h-3 rounded-full ${row.color}`} style={{ width: `${pct}%` }} />
-                  </div>
-                  <p className="text-[10px] text-[#465940]/50 mt-0.5">{pct}% of MRR</p>
-                </div>
-              );
-            })}
-            <div className="border-t border-[#465940]/10 pt-3 flex justify-between text-sm">
-              <span className="font-semibold text-[#465940]">სულ MRR</span>
-              <span className="font-black text-[#465940] text-lg">{mrr}₾</span>
-            </div>
-          </div>
-        </section>
-
-        {/* ── Monthly new revenue chart ── */}
-        <section className="rounded-[20px] bg-[#FDFBF0] p-6 shadow-sm">
-          <h2 className="mb-1 font-bold text-[#465940]">ახალი შემოსავალი (6 თვე)</h2>
-          <p className="text-[10px] text-[#465940]/50 mb-4">გამოწერები, რომლებიც თვეში დაიწყო</p>
-          <div className="flex items-end gap-2 h-32">
-            {monthlyRevenue.map((m) => {
-              const pct = maxMonthRevenue > 0 ? (m.revenue / maxMonthRevenue) * 100 : 0;
-              return (
-                <div key={m.label} className="flex-1 flex flex-col items-center gap-1">
-                  <span className="text-[10px] font-bold text-[#465940]">
-                    {m.revenue > 0 ? `${m.revenue}₾` : ''}
-                  </span>
-                  <div className="w-full flex items-end" style={{ height: 80 }}>
-                    <div
-                      className="w-full rounded-t-lg bg-[#465940] transition-all"
-                      style={{ height: `${Math.max(pct, m.revenue > 0 ? 4 : 0)}%` }}
-                    />
-                  </div>
-                  <span className="text-[10px] text-[#465940]/60">{m.label}</span>
-                  {m.newSubs > 0 && (
-                    <span className="text-[10px] text-[#465940]/40">{m.newSubs}×</span>
-                  )}
-                </div>
-              );
-            })}
-          </div>
-          {monthlyRevenue.every((m) => m.revenue === 0) && (
-            <p className="text-center text-sm text-[#465940]/40 mt-4">ჯერ გამოწერები არ არის</p>
-          )}
-        </section>
 
         {/* ── Renewal forecast (next 3 months) ── */}
         <section className="rounded-[20px] bg-[#FDFBF0] p-6 shadow-sm">
