@@ -414,6 +414,11 @@ export default function RecipesClient({ dishes, locale, canRead, isLoggedIn }: P
               <div>
                 <h2 className="text-xl font-black text-[#6F7A5C]">{title(selected)}</h2>
                 <div className="flex flex-wrap gap-1.5 mt-2">
+                  {selected.prepTimeMinutes != null && (
+                    <span className="px-2.5 py-0.5 bg-[#fff3ee] text-[#6F7A5C] text-xs font-bold rounded-full">
+                      ⏱ {selected.prepTimeMinutes} {t('წუთი', 'min')}
+                    </span>
+                  )}
                   {selected.ageGroups.map((ag) => {
                     const label = locale === 'ka'
                       ? { FROM_6: '6თვ+', FROM_9: '9თვ+', FROM_12: '12თვ+', FROM_24: '24თვ+' }[ag]

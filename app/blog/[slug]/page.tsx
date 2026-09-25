@@ -216,25 +216,6 @@ export default async function BlogPostPage({
                     </a>
                   </div>
 
-                  {/* Newsletter */}
-                  <div style={{ background: '#F5F1E4', borderRadius: '24px', padding: '1.75rem' }}>
-                    <h3 style={{ fontWeight: 900, color: '#6F7A5C', fontSize: '0.95rem', marginBottom: '0.4rem' }}>
-                      {ka ? 'სიახლეები' : 'Newsletter'}
-                    </h3>
-                    <p style={{ color: '#6F7A5C', fontSize: '0.78rem', lineHeight: 1.6, marginBottom: '1rem', opacity: 0.7 }}>
-                      {ka ? 'მიიღეთ სასარგებლო სტატიები პირდაპირ ელ. ფოსტაზე.' : 'Get useful articles directly to your inbox.'}
-                    </p>
-                    <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-                      <input type="email"
-                        placeholder={ka ? 'ელ. ფოსტა' : 'Email'}
-                        style={{ width: '100%', padding: '10px 14px', borderRadius: '12px', border: '1.5px solid rgba(111,122,92,0.2)', fontSize: '0.82rem', outline: 'none', background: '#fff', color: '#6F7A5C', boxSizing: 'border-box' }}
-                      />
-                      <button style={{ background: '#6F7A5C', color: '#F5F1E4', borderRadius: '12px', padding: '10px', border: 'none', cursor: 'pointer', fontWeight: 700, fontSize: '0.85rem' }}>
-                        {ka ? 'გამოწერა' : 'Subscribe'}
-                      </button>
-                    </div>
-                  </div>
-
                 </div>
               </div>
 
