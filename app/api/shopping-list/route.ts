@@ -113,8 +113,27 @@ function parseIng(raw: string): { key: string; display: string; qty: number; uni
   const s = raw.trim().replace(/\s*\([^)]*\)/g, '').trim();
 
   const dashIdx = s.indexOf(' - ');
-  const namePart = normalizeName(dashIdx === -1 ? s : s.slice(0, dashIdx));
-  const amountPart = dashIdx === -1 ? '' : s.slice(dashIdx + 3).trim();
+  let rawNamePart: string;
+  let amountPart: string;
+  if (dashIdx !== -1) {
+    rawNamePart = s.slice(0, dashIdx);
+    amountPart = s.slice(dashIdx + 3).trim();
+  } else {
+    // No " - " separator — some recipes write the quantity without it
+    // ("ბანანი 89 გ", "ბანანი: 118 გრამი"). Split at the first digit instead of
+    // treating the whole string as the name, so these still merge with the same
+    // ingredient written the usual way ("ბანანი - 89 გ") instead of showing up as
+    // a separate "different" item on the shopping list.
+    const digitIdx = s.search(/[\d½¼¾⅓⅔]/);
+    if (digitIdx === -1) {
+      rawNamePart = s;
+      amountPart = '';
+    } else {
+      rawNamePart = s.slice(0, digitIdx).replace(/[-:–—\s]+$/, '');
+      amountPart = s.slice(digitIdx).trim();
+    }
+  }
+  const namePart = normalizeName(rawNamePart);
 
   const key = namePart.toLowerCase();
   const display = namePart;
