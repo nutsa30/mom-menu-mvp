@@ -59,7 +59,7 @@ export default async function AdminUsersPage({
   );
   const todayEnd = new Date(todayStart.getTime() + 24 * 60 * 60 * 1000);
 
-  const [users, promoCodes, successfulPayers, allSuccessPaymentDates, promoRevenueTotal, successfulPayments] = await Promise.all([
+  const [users, promoCodes, successfulPayers, allSuccessPaymentDates, promoRevenueTotal] = await Promise.all([
     prisma.user.findMany({
       orderBy: { createdAt: 'desc' },
       select: {
@@ -88,18 +88,6 @@ export default async function AdminUsersPage({
       where: { status: 'SUCCESS', user: { promoCodeId: { not: null } } },
       _sum: { grossAmount: true, netAmount: true },
       _count: true,
-    }),
-    // Every real charge ever, with who paid and how much — feeds the "გადახდის დღე" (payment
-    // day) picker below: unlike subscriptionRenewsAt (a single upcoming date per user), this
-    // is actual completed, bank-deducted charges, grouped by day-of-month across every month,
-    // so picking "2" shows the real billing-day cohort, not a one-off future date.
-    prisma.payment.findMany({
-      where: { status: 'SUCCESS' },
-      orderBy: { createdAt: 'desc' },
-      select: {
-        id: true, createdAt: true, grossAmount: true, plan: true, billingIntervalMonths: true,
-        user: { select: { name: true, email: true } },
-      },
     }),
   ]);
   const paidUserIds = new Set(successfulPayers.map((p) => p.userId));
@@ -269,19 +257,22 @@ export default async function AdminUsersPage({
   // Today's day-of-month (Tbilisi) — so the payment-day picker below can default to today's
   // billing day when it actually has data, instead of always the first day that has any.
   const todayDay = new Date(todayStart.getTime() + TBILISI_OFFSET_MS).getUTCDate();
-  // Pre-formatted rows for the "გადახდის დღე" picker (DueByDateList, repurposed as a
-  // historical-payments-by-day-of-month view — see its own comment). Plain data only, no
-  // functions, since functions can't cross into a client component as props.
-  const paymentDayRows = successfulPayments.map((p) => ({
-    id: p.id,
-    createdAt: p.createdAt.toISOString(),
-    // Tbilisi day-of-month, same UTC-shift convention used for todayStart/todayEnd above.
-    day: new Date(p.createdAt.getTime() + TBILISI_OFFSET_MS).getUTCDate(),
-    name: p.user?.name ?? '—',
-    email: p.user?.email ?? '—',
-    planLabel: p.plan === 'FULL_PLAN' && p.billingIntervalMonths ? `${p.grossAmount}₾ / ${p.billingIntervalMonths}თვ` : `${p.grossAmount}₾`,
-    amount: p.grossAmount,
-  }));
+  // One row per upcoming charge; canceled and gifted subscriptions never renew.
+  const paymentDayRows = users
+    .filter((u) =>
+      !u.isGifted && !u.subscriptionCanceledAt &&
+      (u.subscriptionStatus === 'FULL_PLAN' || u.subscriptionStatus === 'RECIPE_PLAN') &&
+      u.subscriptionRenewsAt
+    )
+    .map((u) => ({
+      id: u.id,
+      renewsAt: u.subscriptionRenewsAt!.toISOString(),
+      day: new Date(u.subscriptionRenewsAt!.getTime() + TBILISI_OFFSET_MS).getUTCDate(),
+      name: u.name,
+      email: u.email,
+      planLabel: subLabelFor(u),
+      amount: priceFor(u),
+    }));
 
   return (
     <div className="p-4 sm:p-6 lg:p-8">
@@ -417,9 +408,7 @@ export default async function AdminUsersPage({
         )}
       </div>
 
-      {/* Payment-day picker — pick a day-of-month (not a specific calendar date) and see
-          every actual completed, bank-deducted payment that ever landed on that day, across
-          all months — a recurring billing-day view, separate from "due today" above. */}
+      {/* Upcoming charges grouped by day of month, once per subscriber. */}
       <DueByDateList payments={paymentDayRows} todayDay={todayDay} />
 
       <UsersFilterBar
