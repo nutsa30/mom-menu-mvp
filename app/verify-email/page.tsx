@@ -5,7 +5,7 @@ import { useRouter } from 'next/navigation';
 
 export default function VerifyEmailPage(
   props: {
-    searchParams: Promise<{ email?: string; lang?: string }>;
+    searchParams: Promise<{ email?: string; lang?: string; delivery?: string }>;
   }
 ) {
   const searchParams = use(props.searchParams);
@@ -16,7 +16,8 @@ export default function VerifyEmailPage(
   const [email, setEmail] = useState(searchParams.email ?? '');
   const [digits, setDigits] = useState(['', '', '', '', '', '']);
   const [loading, setLoading] = useState(false);
-  const [error, setError] = useState('');
+  const deliveryError = ka ? 'კოდის გაგზავნა ვერ მოხერხდა. სცადეთ ხელახლა გაგზავნა.' : 'We could not send your code. Please try resending it.';
+  const [error, setError] = useState(searchParams.delivery === 'failed' ? deliveryError : '');
   const [resent, setResent] = useState(false);
   const [resending, setResending] = useState(false);
   const inputRefs = useRef<(HTMLInputElement | null)[]>([]);
@@ -75,16 +76,23 @@ export default function VerifyEmailPage(
     if (!email) return;
     setResending(true);
     setError('');
+    setResent(false);
     try {
-      await fetch('/api/auth/resend-verification', {
+      const response = await fetch('/api/auth/resend-verification', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ email }),
       });
+      if (!response.ok) {
+        setError(deliveryError);
+        return;
+      }
       setDigits(['', '', '', '', '', '']);
       setResent(true);
       setTimeout(() => setResent(false), 4000);
       inputRefs.current[0]?.focus();
+    } catch {
+      setError(deliveryError);
     } finally {
       setResending(false);
     }

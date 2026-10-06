@@ -18,7 +18,18 @@ export async function POST(req: NextRequest) {
     data: { codeHash, expiresAt: new Date(Date.now() + 15 * 60 * 1000) },
   });
 
-  try { await sendVerificationEmail(pending.email, pending.name, code); } catch {}
+  try {
+    await sendVerificationEmail(pending.email, pending.name, code);
+  } catch (error) {
+    // A failed delivery must not invalidate a code from an earlier delivered email.
+    // Compare the new hash so a concurrent successful resend is not overwritten.
+    await prisma.pendingRegistration.updateMany({
+      where: { email, codeHash },
+      data: { codeHash: pending.codeHash, expiresAt: pending.expiresAt },
+    });
+    console.error('Verification email resend failed', error instanceof Error ? error.message : 'Unknown provider error');
+    return NextResponse.json({ error: 'email_send_failed' }, { status: 503 });
+  }
 
   return NextResponse.json({ ok: true });
 }

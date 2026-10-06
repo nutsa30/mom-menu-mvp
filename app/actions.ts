@@ -34,8 +34,14 @@ export async function registerAction(form: FormData) {
     update: { ...preferences, name, passwordHash, codeHash, expiresAt: new Date(Date.now() + 15 * 60 * 1000) },
   });
 
-  try { await sendVerificationEmail(email, name, code); } catch {}
-  redirect('/verify-email?email=' + encodeURIComponent(email));
+  let deliveryFailed = false;
+  try {
+    await sendVerificationEmail(email, name, code);
+  } catch (error) {
+    deliveryFailed = true;
+    console.error('Registration verification email failed', error instanceof Error ? error.message : 'Unknown provider error');
+  }
+  redirect('/verify-email?email=' + encodeURIComponent(email) + '&lang=' + experience.locale + (deliveryFailed ? '&delivery=failed' : ''));
 }
 
 export async function loginAction(form: FormData) {
