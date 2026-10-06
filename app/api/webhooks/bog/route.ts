@@ -385,7 +385,7 @@ export async function POST(req: Request) {
 
     // isPaid — renewal actually captured.
     const existing = await prisma.payment.findUnique({ where: { bogOrderId: orderId } });
-    if (existing) return NextResponse.json({ received: true }); // already processed (retried callback)
+    if (existing?.status === 'SUCCESS') return NextResponse.json({ received: true }); // already captured
 
     // Renewal orders don't carry the interval in external_order_id (unlike the
     // first-purchase order), since the user is already subscribed by this point —
@@ -401,20 +401,15 @@ export async function POST(req: Request) {
       : computeCommission(grossAmount, cardType);
 
     const payment = await prisma.$transaction(async tx => {
-      if (await tx.payment.findUnique({ where: { bogOrderId: orderId } })) return null;
-      const payment = await tx.payment.create({
-        data: {
-          userId: user.id,
-          plan: 'FULL_PLAN',
-          billingIntervalMonths: interval,
-          status: 'SUCCESS',
-          bogOrderId: orderId,
-          cardType: cardType ?? null,
-          grossAmount,
-          currency,
-          commissionAmount,
-          netAmount,
-        },
+      const previous = await tx.payment.findUnique({ where: { bogOrderId: orderId } });
+      if (previous?.status === 'SUCCESS') return null;
+      const paymentData = {
+        userId: user.id, plan: 'FULL_PLAN' as const, billingIntervalMonths: interval,
+        status: 'SUCCESS' as const, bogOrderId: orderId, cardType: cardType ?? null,
+        grossAmount, currency, commissionAmount, netAmount, failureReason: null,
+      };
+      const payment = await tx.payment.upsert({
+        where: { bogOrderId: orderId }, create: paymentData, update: paymentData,
       });
 
       await tx.user.update({

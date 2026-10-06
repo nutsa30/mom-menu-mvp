@@ -13,6 +13,10 @@ export async function POST(req: NextRequest) {
   const child = await prisma.child.findFirst({ where: { id: childId, userId: session.id } });
   if (!child) return NextResponse.json({ error: 'Not found' }, { status: 404 });
 
+  // Preference choices replace each other, including on repeated tastings.
+  const preference = liked === true ? { liked: true, disliked: false }
+    : disliked === true ? { liked: false, disliked: true } : {};
+
   const status = await prisma.babyIngredientStatus.upsert({
     where: { childId_ingredientId: { childId, ingredientId } },
     update: {
@@ -23,6 +27,7 @@ export async function POST(req: NextRequest) {
       ...(refused !== undefined && { refused }),
       ...(allergic !== undefined && { allergic }),
       ...(comment !== undefined && { comment }),
+      ...preference,
       ...(tried && !await prisma.babyIngredientStatus.findUnique({
         where: { childId_ingredientId: { childId, ingredientId } },
         select: { triedAt: true },
@@ -39,6 +44,7 @@ export async function POST(req: NextRequest) {
       allergic: allergic ?? false,
       comment: comment ?? null,
       triedAt: tried ? new Date() : null,
+      ...preference,
     },
   });
 

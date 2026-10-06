@@ -590,5 +590,14 @@
   "), და მას შემდეგ რაც ეს\r\n            პერიოდი ამოიწურება, თავისუფლად შეძლებთ ახალი პაკეტის შეძენას.": ". Once that period ends, you can purchase a new plan.",
   "მიმდინარე პაკეტის გაუქმება": "Cancel current plan",
   "მგ": "mg",
-  "მკგ": "mcg"
+  "მკგ": "mcg",
+  "ალერგია მისცა": "Allergic reaction",
+  "შენახვა ვერ მოხერხდა. სცადე ხელახლა.": "Could not save. Please try again.",
+  "ალერგია მისცა · რეაქციის მონიშვნა": "Allergic reaction · Edit reaction",
+  "✓ მოეწონა · შეცვლა": "✓ Liked · Edit",
+  "არ მოეწონა · შეცვლა": "Disliked · Edit",
+  "რეაქციის მონიშვნა": "Record reaction",
+  "✓ ალერგია მისცა": "✓ Allergic reaction",
+  "როგორი რეაქცია ჰქონდა?": "How did your child react?",
+  "არჩევანის შეცვლა ნებისმიერ დროს შეგიძლია, განმეორებითი გასინჯვის შემდეგაც.": "You can change your choice at any time, including after tasting again."
 }

@@ -77,7 +77,7 @@ export default async function AdminUsersPage(
         id: true, name: true, email: true, role: true, market: true, subscriptionAmount: true,
         isBlocked: true, isGifted: true, subscriptionStatus: true, billingIntervalMonths: true,
         subscriptionStartedAt: true, subscriptionCanceledAt: true, subscriptionRenewsAt: true, createdAt: true,
-        paymentFailedAt: true,
+        paymentFailedAt: true, bogParentOrderId: true,
         promoCode: { select: { id: true, code: true, planType: true, discountPercent: true } },
         _count: { select: { children: true } },
       },
@@ -243,7 +243,9 @@ export default async function AdminUsersPage(
 
   // "Due today" — anyone whose next charge (a trial converting to its first real payment, or
   // an ordinary renewal — both live in the same subscriptionRenewsAt field, see the BOG
-  // webhook) falls within today's Tbilisi window. Unfiltered, always today — the admin's
+  // webhook) is due by today's end, including unpaid overdue renewals. Failed accounts
+  // stay visible even when retry backoff moves their next attempt to tomorrow.
+  // Unfiltered, always today — the admin's
   // daily "who's getting charged today" glance. Gifted subscriptions never go through BOG
   // (no real charge happens), so they're excluded even though isGifted's own
   // subscriptionRenewsAt is used elsewhere to auto-expire them.
@@ -253,8 +255,7 @@ export default async function AdminUsersPage(
       !u.subscriptionCanceledAt &&
       (u.subscriptionStatus === 'FULL_PLAN' || u.subscriptionStatus === 'RECIPE_PLAN') &&
       u.subscriptionRenewsAt &&
-      new Date(u.subscriptionRenewsAt) >= todayStart &&
-      new Date(u.subscriptionRenewsAt) < todayEnd
+      (new Date(u.subscriptionRenewsAt) < todayEnd || !!u.paymentFailedAt)
     )
     .map((u) => ({
       ...u,
@@ -390,6 +391,9 @@ export default async function AdminUsersPage(
                   {dueTodayUsers.map((u) => (
                     <tr key={u.id} className="hover:bg-[#465940]/5 transition">
                       <td className="px-6 py-4 text-sm text-[#465940]/70">
+                        {new Date(u.subscriptionRenewsAt!) < todayStart && (
+                          <p className="text-xs text-red-600">{new Date(u.subscriptionRenewsAt!).toLocaleDateString('ka-GE', { timeZone: 'Asia/Tbilisi' })}</p>
+                        )}
                         {new Date(u.subscriptionRenewsAt!).toLocaleTimeString('ka-GE', { timeZone: 'Asia/Tbilisi', hour: '2-digit', minute: '2-digit' })}
                       </td>
                       <td className="px-4 py-4">
@@ -406,7 +410,10 @@ export default async function AdminUsersPage(
                       </td>
                       <td className="px-4 py-4">
                         {u.paymentFailedAt ? (
-                          <span className="text-[10px] font-bold text-red-600">⚠️ გადახდა ვერ ჩამოეჭრა</span>
+                          <div className="text-[10px] font-bold text-red-600">
+                            <p>⚠️ გადახდა ვერ ჩამოეჭრა · წვდომა დაბლოკილია</p>
+                            <p className="mt-1">{u.bogParentOrderId ? 'ჩამოჭრის ცდა გაგრძელდება' : 'ბარათი ვერ შეინახა — საჭიროა ხელახლა დამატება'}</p>
+                          </div>
                         ) : (
                           <span className="text-[#465940]/40 text-xs">—</span>
                         )}

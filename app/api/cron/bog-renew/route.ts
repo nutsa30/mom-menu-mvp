@@ -17,13 +17,14 @@ export async function GET(req: NextRequest) {
     where: {
       bogParentOrderId: { not: null },
       subscriptionCanceledAt: null,
+      isGifted: false,
       subscriptionStatus: { in: ['RECIPE_PLAN', 'FULL_PLAN'] },
       subscriptionRenewsAt: { lte: new Date() },
     },
     include: { promoCode: true },
   });
 
-  const results = { charged: 0, failed: 0, autoResetToFree: 0 };
+  const results = { charged: 0, failed: 0, cardNotSaved: 0 };
   for (const user of due) {
     if (!user.bogParentOrderId) continue;
     try {
@@ -79,34 +80,21 @@ export async function GET(req: NextRequest) {
       // update their card) at any point, so subscriptionRenewsAt stays untouched and the
       // normal retry-every-run behavior below applies.
       //
-      // "Card not saved" is different: it is a permanent, structural failure (see the
-      // comment above `cardNotSaved`) — if the bank has no tokenized card on file the
-      // first time, it will not have one the second time, or a week from now, either.
-      // Waiting doesn't change the outcome, it only piles up identical FAILED rows in
-      // admin. Per an explicit 2026-09-24 decision: reset straight to FREE the very first
-      // time this specific failure mode is seen — exactly what
-      // prisma/reset-broken-card-user.ts already did by hand for this same bug. A fresh
-      // checkout (re-entering a card) still works immediately afterwards, same as that
-      // script's reset.
-      const autoReset = cardNotSaved;
-
-      if (autoReset) {
+      // A confirmed missing saved card cannot be retried. Clear only its unusable
+      // processor reference; retain the failed subscription and due date in admin.
+      // This also permits a fresh checkout without granting another free trial.
+      if (cardNotSaved) {
         await prisma.user.update({
           where: { id: user.id },
           data: {
-            subscriptionStatus: 'FREE',
-            subscriptionCanceledAt: null,
-            subscriptionRenewsAt: null,
             bogParentOrderId: null,
-            billingIntervalMonths: null,
             trialEndsAt: null,
-            paymentFailedAt: null,
-            subscriptionStartedAt: null,
+            paymentFailedAt: user.paymentFailedAt ?? new Date(),
             // bogTrialUsed intentionally left unchanged (stays true) — a fresh checkout
             // charges immediately, no second free trial, same as the manual reset scripts.
           },
-        }).catch((writeErr) => console.error('Failed to auto-reset card-not-saved user to FREE:', user.id, writeErr));
-        results.autoResetToFree++;
+        }).catch((writeErr) => console.error('Failed to mark card-not-saved subscription:', user.id, writeErr));
+        results.cardNotSaved++;
       } else {
         // Access still needs to be cut, the same as a normal declined-card "rejected"
         // callback. subscriptionRenewsAt is left untouched so this user stays "due" and

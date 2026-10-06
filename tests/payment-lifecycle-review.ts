@@ -62,10 +62,12 @@ async function main() {
       assert.equal((await callback(renewal, `mm_renew_${user.id}_${Date.now()}`, 'rejected')).status, 200);
       assert((await prisma.user.findUniqueOrThrow({ where: { id: user.id } })).paymentFailedAt);
       assert.equal((await access()).status, 403);
-      const retry = `retry-${randomUUID()}`;
+      const retry = renewal; // capture succeeds after this order was recorded as FAILED
       assert.equal((await callback(retry, `mm_renew_${user.id}_${Date.now()}`)).status, 200);
       assert.equal((await prisma.user.findUniqueOrThrow({ where: { id: user.id } })).paymentFailedAt, null);
       assert.equal((await access()).status, 200);
+      assert.equal(await prisma.payment.count({ where: { bogOrderId: retry } }), 1);
+      assert.equal((await prisma.payment.findUniqueOrThrow({ where: { bogOrderId: retry } })).status, 'SUCCESS');
       const cancellation = await fetch('http://localhost:3001/subscription/cancel', { method: 'POST', headers, body: JSON.stringify({ reason: 'NOT_NEEDED' }) });
       assert.equal(cancellation.status, 200);
       assert.equal((await access()).status, 200);

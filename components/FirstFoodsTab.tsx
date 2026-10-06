@@ -5,7 +5,7 @@ import { localizedField } from '@/lib/content';
 import Copy, { useCopy } from '@/components/Copy';
 
 
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 
 type Ingredient = {
   id: string; nameKa: string; nameEn: string; category: string; minAgeMonths: number;
@@ -64,45 +64,64 @@ function pureePrep(category: string, nameKa?: string): string {
   }
 }
 
-function StatusBadge({ tried, allergic, liked, ateWell }: any) {
-  if (allergic) return <span className="text-[10px] bg-red-100 text-red-600 font-bold px-2 py-0.5 rounded-full"> <Copy>{"ალერგია"}</Copy> </span>;
-  if (!tried) return <span className="text-[10px] bg-[#465940]/10 text-[#465940]/50 font-bold px-2 py-0.5 rounded-full"> <Copy>{"არ გასინჯულა"}</Copy> </span>;
-  if (liked) return <span className="text-[10px] bg-green-100 text-green-700 font-bold px-2 py-0.5 rounded-full"> <Copy>{"✓ მოეწონა"}</Copy> </span>;
-  if (ateWell) return <span className="text-[10px] bg-blue-100 text-blue-700 font-bold px-2 py-0.5 rounded-full"> <Copy>{"✓ კარგად ჭამა"}</Copy> </span>;
-  return <span className="text-[10px] bg-[#465940]/10 text-[#465940] font-bold px-2 py-0.5 rounded-full"> <Copy>{"✓ გასინჯა"}</Copy> </span>;
+function StatusBadge({ tried, allergic, liked, disliked, ateWell }: any) {
+  if (allergic) return <span className="text-[10px] bg-red-100 text-red-600 font-bold px-2 py-0.5 rounded-full"><Copy>{"ალერგია მისცა"}</Copy></span>;
+  if (!tried) return <span className="text-[10px] bg-[#465940]/10 text-[#465940]/50 font-bold px-2 py-0.5 rounded-full"><Copy>{"არ გასინჯულა"}</Copy></span>;
+  if (liked) return <span className="text-[10px] bg-green-100 text-green-700 font-bold px-2 py-0.5 rounded-full"><Copy>{"✓ მოეწონა"}</Copy></span>;
+  if (disliked) return <span className="text-[10px] bg-orange-100 text-orange-700 font-bold px-2 py-0.5 rounded-full"><Copy>{"არ მოეწონა"}</Copy></span>;
+  if (ateWell) return <span className="text-[10px] bg-blue-100 text-blue-700 font-bold px-2 py-0.5 rounded-full"><Copy>{"✓ კარგად ჭამა"}</Copy></span>;
+  return <span className="text-[10px] bg-[#465940]/10 text-[#465940] font-bold px-2 py-0.5 rounded-full"><Copy>{"✓ გასინჯა"}</Copy></span>;
 }
 
 function IngredientCard({
   ing, childId, onUpdate, blwMode, ageMonths,
 }: {
-  ing: Ingredient; childId: string; onUpdate: () => void; blwMode: boolean; ageMonths: number;
+  ing: Ingredient; childId: string; onUpdate: (status: NonNullable<Ingredient['status']>) => void; blwMode: boolean; ageMonths: number;
 }) {
   const { locale: contentLocale } = useExperience();
   const copy = useCopy();
   const [open, setOpen] = useState(false);
   const [saving, setSaving] = useState(false);
   const [comment, setComment] = useState(ing.status?.comment ?? '');
+  const [error, setError] = useState('');
+  const [showPreference, setShowPreference] = useState(false);
+  const preferenceDialog = useRef<HTMLDialogElement>(null);
   const s = ing.status;
+
+  useEffect(() => {
+    if (showPreference) preferenceDialog.current?.showModal();
+    else preferenceDialog.current?.close();
+  }, [showPreference]);
 
   const update = async (fields: Record<string, any>) => {
     setSaving(true);
-    const body = { childId, ingredientId: ing.id, ...fields };
-    if (s?.id) {
-      await fetch(`/api/baby-ingredient-status/${s.id}`, {
-        method: 'PATCH', headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(fields),
+    setError('');
+    try {
+      const res = await fetch(s?.id ? `/api/baby-ingredient-status/${s.id}` : '/api/baby-ingredient-status', {
+        method: s?.id ? 'PATCH' : 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(s?.id ? fields : { childId, ingredientId: ing.id, ...fields }),
       });
-    } else {
-      await fetch('/api/baby-ingredient-status', {
-        method: 'POST', headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(body),
-      });
+      if (!res.ok) throw new Error('Save failed');
+      onUpdate(await res.json());
+      return true;
+    } catch {
+      setError(copy('შენახვა ვერ მოხერხდა. სცადე ხელახლა.'));
+      return false;
+    } finally {
+      setSaving(false);
     }
-    setSaving(false);
-    onUpdate();
   };
 
   const toggle = (field: string, current: boolean | null) => update({ [field]: !current, tried: true });
+  const markTried = async () => {
+    if (await update({ tried: true })) setShowPreference(true);
+  };
+  const choosePreference = async (liked: boolean) => {
+    if (await update({ tried: true, liked, disliked: !liked })) setShowPreference(false);
+  };
+  const markAllergic = async () => {
+    if (await update({ tried: true, allergic: true, liked: false, disliked: false })) setShowPreference(false);
+  };
 
   return (
     <div className={`rounded-xl border-2 transition ${s?.allergic ? 'border-red-200 bg-red-50' : s?.tried ? 'border-[#465940]/30 bg-[#465940]/5' : 'border-[#465940]/10'}`}>
@@ -118,7 +137,7 @@ function IngredientCard({
           <div className="min-w-0">
             <span className="font-semibold text-sm text-[#465940]">{localizedField(ing, 'name', contentLocale)}</span>
             {ing.isAllergen && (
-              <span className="ml-1.5 text-[9px] font-bold text-orange-600 align-middle"> <Copy>{"⚠ ალერგენი"}</Copy> </span>
+              <span className="ml-1.5 text-[9px] font-bold text-orange-600 align-middle"> <Copy><Copy>{"{\"⚠ ალერგენი\"}"}</Copy></Copy> </span>
             )}
             {/* Prep hint — always visible so parent knows how to prepare */}
             {!s?.allergic && (
@@ -131,7 +150,7 @@ function IngredientCard({
           </div>
         </div>
         <div className="flex items-center gap-2 flex-shrink-0">
-          <StatusBadge tried={s?.tried} allergic={s?.allergic} liked={s?.liked} ateWell={s?.ateWell} />
+          <StatusBadge tried={s?.tried} allergic={s?.allergic} liked={s?.liked} disliked={s?.disliked} ateWell={s?.ateWell} />
           <span className="text-[#465940]/40 text-xs">{open ? '▲' : '▼'}</span>
         </div>
       </button>
@@ -139,24 +158,23 @@ function IngredientCard({
       {open && (
         <div className="px-4 pb-4 space-y-3 border-t border-[#465940]/10 pt-3">
           {ing.isAllergen && !s?.tried && (
-            <p className="text-[11px] text-orange-700 bg-orange-50 rounded-lg px-3 py-2"> <Copy>{"ალერგენია — მიეცი ცალკე, სხვა ახალი პროდუქტების გარეშე, და დააკვირდი 2-3 დღე რეაქციაზე სანამ მომდევნო ახალ პროდუქტს გასინჯავ."}</Copy> </p>
+            <p className="text-[11px] text-orange-700 bg-orange-50 rounded-lg px-3 py-2"> <Copy><Copy>{"{\"ალერგენია — მიეცი ცალკე, სხვა ახალი პროდუქტების გარეშე, და დააკვირდი 2-3 დღე რეაქციაზე სანამ მომდევნო ახალ პროდუქტს გასინჯავ.\"}"}</Copy></Copy> </p>
           )}
           {!s?.tried ? (
-            <button onClick={() => update({ tried: true })} disabled={saving}
-              className="w-full py-2 rounded-xl bg-[#465940] text-[#FDFBF0] text-sm font-bold transition disabled:opacity-60"> <Copy>{"✓ გავასინჯე"}</Copy> </button>
+            <button onClick={markTried} disabled={saving}
+              className="w-full py-2 rounded-xl bg-[#465940] text-[#FDFBF0] text-sm font-bold transition disabled:opacity-60">
+              <Copy>✓ გავასინჯე</Copy>
+            </button>
           ) : s?.allergic ? (
             // Allergy markings are deliberately not casually clearable here — a real allergy
             // shouldn't be one accidental tap away from being erased. Un-marking it is only
             // possible from Settings → Allergies.
-            <p className="text-xs text-[#465940]/60 bg-[#465940]/5 rounded-xl px-3 py-2.5"> <Copy>{"ალერგია დაფიქსირებულია. მისი მოხსნა შესაძლებელია მხოლოდ"}</Copy> <strong> <Copy>{"პარამეტრები → ალერგიები"}</Copy> </strong> <Copy>{"-დან."}</Copy> </p>
+            <p className="text-xs text-[#465940]/60 bg-[#465940]/5 rounded-xl px-3 py-2.5"> <Copy><Copy>{"{\"ალერგია დაფიქსირებულია. მისი მოხსნა შესაძლებელია მხოლოდ\"}"}</Copy></Copy> <strong> <Copy><Copy>{"{\"პარამეტრები → ალერგიები\"}"}</Copy></Copy> </strong> <Copy><Copy>{"{\"-დან.\"}"}</Copy></Copy> </p>
           ) : (
             <div className="grid grid-cols-2 gap-2">
               {[
-                { field: 'liked',    val: s.liked,    label: 'მოეწონა',     active: 'bg-green-500 text-white' },
-                { field: 'disliked', val: s.disliked, label: 'არ მოეწონა',  active: 'bg-orange-400 text-white' },
                 { field: 'ateWell',  val: s.ateWell,  label: 'კარგად ჭამა', active: 'bg-blue-500 text-white' },
                 { field: 'refused',  val: s.refused,  label: 'არ ჭამა',     active: 'bg-gray-400 text-white' },
-                { field: 'allergic', val: s.allergic, label: 'ალერგია',     active: 'bg-red-500 text-white' },
               ].map(opt => (
                 <button key={opt.field}
                   onClick={() => toggle(opt.field, opt.val ?? false)}
@@ -168,8 +186,17 @@ function IngredientCard({
                 </button>
               ))}
               <button onClick={() => update({ tried: false, liked: null, disliked: null, ateWell: null, refused: null })}
-                className="py-2 px-3 rounded-xl text-xs font-bold border border-[#465940]/15 text-[#465940]/40 hover:text-[#465940]/60 transition col-span-1"> <Copy>{"გასუფთავება"}</Copy> </button>
+                disabled={saving}
+                className="py-2 px-3 rounded-xl text-xs font-bold border border-[#465940]/15 text-[#465940]/40 hover:text-[#465940]/60 transition col-span-1">
+                <Copy>გასუფთავება</Copy>
+              </button>
             </div>
+          )}
+          {s?.tried && (
+            <button onClick={() => { setError(''); setShowPreference(true); }} disabled={saving}
+              className="w-full py-2 px-3 rounded-xl border-2 border-[#465940]/20 text-[#465940] text-xs font-bold transition disabled:opacity-50">
+              {copy(s.allergic ? 'ალერგია მისცა · რეაქციის მონიშვნა' : s.liked ? '✓ მოეწონა · შეცვლა' : s.disliked ? 'არ მოეწონა · შეცვლა' : 'რეაქციის მონიშვნა')}
+            </button>
           )}
           {s?.tried && (
             <div className="flex gap-2">
@@ -177,11 +204,35 @@ function IngredientCard({
                 placeholder={copy("კომენტარი (სურვილისამებრ)")}
                 className="flex-1 px-3 py-1.5 rounded-xl border border-[#465940]/20 text-xs text-[#465940] bg-white focus:outline-none focus:border-[#465940]" />
               <button onClick={() => update({ comment })} disabled={saving || comment === (s?.comment ?? '')}
-                className="px-3 py-1.5 rounded-xl bg-[#465940] text-[#FDFBF0] text-xs font-bold disabled:opacity-40 transition"> <Copy>{"შენახვა"}</Copy> </button>
+                className="px-3 py-1.5 rounded-xl bg-[#465940] text-[#FDFBF0] text-xs font-bold disabled:opacity-40 transition"> <Copy><Copy>{"{\"შენახვა\"}"}</Copy></Copy> </button>
             </div>
           )}
         </div>
       )}
+      {error && !showPreference && <p role="alert" className="px-4 pb-3 text-xs text-red-600">{error}</p>}
+      <dialog ref={preferenceDialog} onClose={() => setShowPreference(false)}
+        aria-labelledby={`preference-title-${ing.id}`}
+        className="w-[calc(100%-2rem)] max-w-sm rounded-2xl bg-[#FDFBF0] p-6 shadow-xl backdrop:bg-black/40">
+        <h3 id={`preference-title-${ing.id}`} className="text-lg font-black text-[#465940]">{localizedField(ing, 'name', contentLocale)} — <Copy>როგორი რეაქცია ჰქონდა?</Copy></h3>
+        <p className="mt-2 text-xs text-[#465940]/70"><Copy>{"არჩევანის შეცვლა ნებისმიერ დროს შეგიძლია, განმეორებითი გასინჯვის შემდეგაც."}</Copy></p>
+        <div className="mt-5 grid grid-cols-2 gap-3">
+          <button onClick={() => choosePreference(true)} disabled={saving} aria-pressed={!!s?.liked}
+            className={`rounded-xl py-3 text-sm font-bold disabled:opacity-50 ${s?.liked ? 'bg-green-600 text-white' : 'bg-green-100 text-green-800'}`}>
+            {copy(s?.liked ? '✓ მოეწონა' : 'მოეწონა')}
+          </button>
+          <button onClick={() => choosePreference(false)} disabled={saving} aria-pressed={!!s?.disliked}
+            className={`rounded-xl py-3 text-sm font-bold disabled:opacity-50 ${s?.disliked ? 'bg-orange-500 text-white' : 'bg-orange-100 text-orange-800'}`}>
+            {copy(s?.disliked ? '✓ არ მოეწონა' : 'არ მოეწონა')}
+          </button>
+          <button onClick={markAllergic} disabled={saving} aria-pressed={!!s?.allergic}
+            className={`col-span-2 rounded-xl py-3 text-sm font-bold disabled:opacity-50 ${s?.allergic ? 'bg-red-600 text-white' : 'bg-red-100 text-red-700'}`}>
+            {copy(s?.allergic ? '✓ ალერგია მისცა' : 'ალერგია მისცა')}
+          </button>
+        </div>
+        {error && <p role="alert" className="mt-3 text-xs text-red-600">{error}</p>}
+        <button onClick={() => setShowPreference(false)} disabled={saving}
+          className="mt-4 w-full py-2 text-xs font-semibold text-[#465940]/70 disabled:opacity-50"><Copy>{"დახურვა"}</Copy></button>
+      </dialog>
     </div>
   );
 }
@@ -233,9 +284,9 @@ export default function FirstFoodsTab({ child, isFullPlan }: { child: any; isFul
   if (!isFullPlan) return (
     <div className="bg-[#FDFBF0] rounded-2xl border border-[#465940]/10 shadow-sm p-10 text-center">
       <div className="w-16 h-16 rounded-full bg-[#465940] flex items-center justify-center text-3xl mx-auto mb-5"></div>
-      <h2 className="text-xl font-black text-[#465940] mb-2"> <Copy>{"პირველი საკვები დაბლოკილია"}</Copy> </h2>
-      <p className="text-[#465940]/70 text-sm mb-6 max-w-sm mx-auto"> <Copy>{"ინგრედიენტების გასინჯვის ტრეკერი ხელმისაწვდომია მხოლოდ სრული პაკეტით."}</Copy> </p>
-      <a href="/subscription" className="inline-flex items-center justify-center rounded-full bg-[#465940] px-8 py-3 font-semibold text-[#FDFBF0] shadow-lg hover:scale-105 transition"> <Copy>{"პაკეტის განახლება"}</Copy> </a>
+      <h2 className="text-xl font-black text-[#465940] mb-2"> <Copy><Copy>{"{\"პირველი საკვები დაბლოკილია\"}"}</Copy></Copy> </h2>
+      <p className="text-[#465940]/70 text-sm mb-6 max-w-sm mx-auto"> <Copy><Copy>{"{\"ინგრედიენტების გასინჯვის ტრეკერი ხელმისაწვდომია მხოლოდ სრული პაკეტით.\"}"}</Copy></Copy> </p>
+      <a href="/subscription" className="inline-flex items-center justify-center rounded-full bg-[#465940] px-8 py-3 font-semibold text-[#FDFBF0] shadow-lg hover:scale-105 transition"> <Copy><Copy>{"{\"პაკეტის განახლება\"}"}</Copy></Copy> </a>
     </div>
   );
 
@@ -257,18 +308,18 @@ export default function FirstFoodsTab({ child, isFullPlan }: { child: any; isFul
       <div className="bg-[#FDFBF0] rounded-2xl border border-[#465940]/10 shadow-sm p-5">
         <div className="flex items-center justify-between mb-3">
           <div>
-            <h2 className="text-xl font-black text-[#465940]"> <Copy>{"პირველი საკვები"}</Copy> </h2>
-            <p className="text-xs text-[#465940]/60 mt-0.5">{child.name} · {ageMonths} <Copy>{"თვე"}</Copy> </p>
+            <h2 className="text-xl font-black text-[#465940]"> <Copy><Copy>{"{\"პირველი საკვები\"}"}</Copy></Copy> </h2>
+            <p className="text-xs text-[#465940]/60 mt-0.5">{child.name} · {ageMonths} <Copy><Copy>{"{\"თვე\"}"}</Copy></Copy> </p>
           </div>
           <div className="flex gap-3 text-center">
             <div className="bg-[#465940]/5 rounded-xl px-3 py-2">
               <p className="text-xl font-black text-[#465940]">{triedCount}</p>
-              <p className="text-[10px] text-[#465940]/60"> <Copy>{"გასინჯული"}</Copy> </p>
+              <p className="text-[10px] text-[#465940]/60"> <Copy><Copy>{"{\"გასინჯული\"}"}</Copy></Copy> </p>
             </div>
             {allergicCount > 0 && (
               <div className="bg-red-50 rounded-xl px-3 py-2">
                 <p className="text-xl font-black text-red-500">{allergicCount}</p>
-                <p className="text-[10px] text-red-400"> <Copy>{"ალერგია"}</Copy> </p>
+                <p className="text-[10px] text-red-400"> <Copy><Copy>{"{\"ალერგია\"}"}</Copy></Copy> </p>
               </div>
             )}
           </div>
@@ -279,14 +330,14 @@ export default function FirstFoodsTab({ child, isFullPlan }: { child: any; isFul
           <div className="h-2 bg-[#465940] rounded-full transition-all"
             style={{ width: ageAppropriate.length ? `${(triedCount / ageAppropriate.length) * 100}%` : '0%' }} />
         </div>
-        <p className="text-[10px] text-[#465940]/50 mt-1">{triedCount} / {ageAppropriate.length} <Copy>{"ინგრედიენტი გასინჯული ("}</Copy> {ageMonths} <Copy>{"თვის ასაკისთვის)"}</Copy> </p>
+        <p className="text-[10px] text-[#465940]/50 mt-1">{triedCount} / {ageAppropriate.length} <Copy><Copy>{"{\"ინგრედიენტი გასინჯული (\"}"}</Copy></Copy> {ageMonths} <Copy><Copy>{"{\"თვის ასაკისთვის)\"}"}</Copy></Copy> </p>
 
         {/* BLW toggle */}
         <div className="mt-3 pt-3 border-t border-[#465940]/10 flex items-center justify-between">
           <div>
-            <span className="text-xs font-bold text-[#465940]"> <Copy>{"BLW კვება"}</Copy> </span>
+            <span className="text-xs font-bold text-[#465940]"> <Copy><Copy>{"{\"BLW კვება\"}"}</Copy></Copy> </span>
             <span className="ml-2 text-[10px] text-[#465940]/50">
-              <Copy>{blwMode ? 'ჩართულია — ნაჭრებად, პიურეს გარეშე' : 'გამორთულია — პიურე რეჟიმი'}</Copy>
+              <Copy><Copy>{"{blwMode ? 'ჩართულია — ნაჭრებად, პიურეს გარეშე' : 'გამორთულია — პიურე რეჟიმი'}"}</Copy></Copy>
             </span>
           </div>
           <button onClick={toggleBlw}
@@ -301,7 +352,7 @@ export default function FirstFoodsTab({ child, isFullPlan }: { child: any; isFul
           {['all', ...presentCategories].map(cat => (
             <button key={cat} onClick={() => setCategoryFilter(cat)}
               className={`px-4 py-1.5 rounded-full text-xs font-bold transition ${categoryFilter === cat ? 'bg-[#465940] text-[#FDFBF0]' : 'bg-[#FDFBF0] border border-[#465940]/20 text-[#465940]/70'}`}>
-              <Copy>{cat === 'all' ? 'ყველა' : CATEGORY_LABELS[cat] ?? cat}</Copy>
+              <Copy><Copy>{"{cat === 'all' ? 'ყველა' : CATEGORY_LABELS[cat] ?? cat}"}</Copy></Copy>
             </button>
           ))}
         </div>
@@ -316,8 +367,8 @@ export default function FirstFoodsTab({ child, isFullPlan }: { child: any; isFul
                 <div key={cat} className="bg-[#FDFBF0] rounded-2xl border border-[#465940]/10 shadow-sm p-4 space-y-2">
                   <p className="text-xs font-black text-[#465940]/60 uppercase tracking-wide mb-3"><Copy>{CATEGORY_LABELS[cat] ?? cat}</Copy></p>
                   {items.map(ing => (
-                    <IngredientCard key={ing.id} ing={ing} childId={child.id} blwMode={blwMode} ageMonths={ageMonths}
-                      onUpdate={fetchIngredients} />
+                    <IngredientCard key={`${child.id}-${ing.id}`} ing={ing} childId={child.id} blwMode={blwMode} ageMonths={ageMonths}
+                      onUpdate={status => setIngredients(current => current.map(item => item.id === ing.id ? { ...item, status } : item))} />
                   ))}
                 </div>
               );
