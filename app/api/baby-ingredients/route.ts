@@ -1,3 +1,4 @@
+import { paidApiError } from '@/lib/api-access';
 import { NextRequest, NextResponse } from 'next/server';
 import { getSession } from '@/lib/auth';
 import { prisma } from '@/lib/prisma';
@@ -5,6 +6,8 @@ import { prisma } from '@/lib/prisma';
 // GET /api/baby-ingredients?childId=X
 // Returns all ingredients with this child's status for each
 export async function GET(req: NextRequest) {
+  const accessError = await paidApiError(true);
+  if (accessError) return accessError;
   const session = await getSession();
   if (!session) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
 

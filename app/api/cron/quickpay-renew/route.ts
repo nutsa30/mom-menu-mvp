@@ -20,6 +20,9 @@ export async function GET(req: NextRequest) {
 
   const due = await prisma.user.findMany({
     where: {
+      market: 'GE',
+      subscriptionCurrency: 'GEL',
+      isGifted: false,
       qpSubscriptionToken: { not: null },
       subscriptionCanceledAt: null,
       subscriptionStatus: { in: ['RECIPE_PLAN', 'FULL_PLAN'] },

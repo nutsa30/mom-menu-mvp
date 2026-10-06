@@ -22,7 +22,10 @@ class Client {
  const ingredient=ingredients.find(i=>i.nameEn==='Carrot'); assert(ingredient);
  assert.equal((await parent.req('/api/baby-ingredient-status',{childId:baby.id,ingredientId:ingredient.id,tried:true,liked:true})).status,200);
  const updated=JSON.parse((await parent.req('/api/baby-ingredients?childId='+baby.id)).text).find(i=>i.id===ingredient.id);assert.equal(updated.status.tried,true);
- assert.equal((await parent.req('/api/baby-ingredient-status',{childId:baby.id,ingredientId:ingredient.id,tried:false,liked:null})).status,200);
+ const reactionHeaders={origin,'content-type':'application/json',cookie:[...parent.cookies].map(([k,v])=>k+'='+v).join('; ')};
+ for(const [choice,other] of [['liked','disliked'],['disliked','liked']]){const r=await fetch(origin+'/api/baby-ingredient-status/'+updated.status.id,{method:'PATCH',headers:reactionHeaders,body:JSON.stringify({[choice]:true})});assert.equal(r.status,200);const status=await r.json();assert.equal(status[choice],true);assert.equal(status[other],false);}
+ console.log('PASS: first-food reactions can be changed after tasting; liked and disliked replace each other');
+ assert.equal((await parent.req('/api/baby-ingredient-status',{childId:baby.id,ingredientId:ingredient.id,tried:false,liked:null,disliked:null})).status,200);
  const shopping=await parent.req('/api/shopping-list?childId='+adult.id);assert.equal(shopping.status,200);const items=JSON.parse(shopping.text).ingredients;assert(items.length>0);assert(items.every(i=>!/[\u10a0-\u10ff]/i.test(i.display+i.amount)));assert(items.some(i=>/oz/.test(i.amount)));
  const ownDishes=JSON.parse((await parent.req('/api/baby-meal-suggestions/allowed-dishes?childId='+baby.id)).text);assert(Array.isArray(ownDishes.dishes));
  const invalidGoogle=await parent.req('/api/auth/google/callback?code=fake&state='+'x'.repeat(64));assert.equal(invalidGoogle.status,307);assert.match(invalidGoogle.headers.get('location'),/error=google/);

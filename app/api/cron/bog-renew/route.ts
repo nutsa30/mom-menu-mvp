@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
-import { chargeSavedCard, applyDiscount, PLAN_AMOUNTS_BY_INTERVAL, BillingInterval } from '@/lib/bog';
+import { normalizeMarket, planPrice } from '@/lib/market';
+import { chargeSavedCard, applyDiscount, BillingInterval } from '@/lib/bog';
 
 const SECRET = process.env.CRON_SECRET;
 
@@ -57,7 +58,7 @@ export async function GET(req: NextRequest) {
       // failure (and, critically, WHY it failed) would be invisible anywhere admin or
       // these diagnostic scripts can see, only in Vercel's function logs.
       const interval = (user.billingIntervalMonths ?? 1) as BillingInterval;
-      const grossAmount = applyDiscount(Number(PLAN_AMOUNTS_BY_INTERVAL[interval] ?? 0), user.promoCode?.discountPercent);
+      const grossAmount = user.subscriptionAmount ?? applyDiscount(planPrice(normalizeMarket(user.market), interval), user.promoCode?.discountPercent);
       const CARD_NOT_SAVED_TAG = '[ბარათი ვერ მოიძებნა]';
       await prisma.payment.create({
         data: {
@@ -67,6 +68,7 @@ export async function GET(req: NextRequest) {
           status: 'FAILED',
           bogOrderId: `cron-init-fail-${user.id}-${Date.now()}`,
           grossAmount,
+          currency: user.subscriptionCurrency,
           commissionAmount: null,
           netAmount: null,
           failureReason: cardNotSaved

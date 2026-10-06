@@ -1,3 +1,4 @@
+import { paidApiError } from '@/lib/api-access';
 import { NextRequest, NextResponse } from 'next/server';
 import { getSession } from '@/lib/auth';
 import { prisma } from '@/lib/prisma';
@@ -11,6 +12,8 @@ import { scoreCandidates, narrowToStage } from '@/lib/pickDish';
 // that it hard-excludes any dish this child has an explicit "არ მოეწონა" vote on, since a
 // replacement is very often triggered by exactly that vote.
 export async function GET(_req: NextRequest, props: { params: Promise<{ id: string }> }) {
+  const accessError = await paidApiError(true);
+  if (accessError) return accessError;
   const params = await props.params;
   const session = await getSession();
   if (!session) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });

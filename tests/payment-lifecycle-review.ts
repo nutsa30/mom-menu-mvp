@@ -39,6 +39,7 @@ async function main() {
       const headers = { origin: 'http://localhost:3001', cookie: `mom_menu_token=${token}`, 'content-type': 'application/json' };
       const access = () => fetch('http://localhost:3001/api/daily-log?childId=' + child.id, { headers });
       assert.equal((await access()).status, 403);
+      assert.equal((await fetch('http://localhost:3001/api/baby-meal-suggestions', { headers })).status, 403);
       const order = `lifecycle-${randomUUID()}`; orders.push(order);
       await prisma.checkoutOrder.create({ data: { id: order, userId: user.id, currency, amount, interval, trial: false } });
       const external = encodeOrderId(user.id, interval);
@@ -52,6 +53,7 @@ async function main() {
       assert.equal(paid.billingIntervalMonths, interval);
       assert.equal(paid.subscriptionAmount, amount);
       assert.equal((await access()).status, 200);
+      assert.equal((await fetch('http://localhost:3001/api/baby-meal-suggestions', { headers })).status, 200);
       const expected = interval * 30 * 86400000;
       assert(paid.subscriptionRenewsAt!.getTime() - before >= expected - 1000);
       assert(paid.subscriptionRenewsAt!.getTime() - before <= expected + 10000);
