@@ -1,4 +1,9 @@
 'use client';
+import { useExperience } from './ExperienceProvider';
+import { localizedField } from '@/lib/content';
+
+import Copy, { useCopy } from '@/components/Copy';
+
 
 import { useEffect, useState } from 'react';
 import RecipeModal from './RecipeModal';
@@ -32,6 +37,7 @@ const MODES = [
 ];
 
 export default function DayModeBanner({ child, date }: { child: any; date: string }) {
+  const { locale: contentLocale } = useExperience();
   const [status, setStatus] = useState<{ mode: string; reason: string | null } | null | undefined>(undefined);
   const [pickerMode, setPickerMode] = useState<string | null>(null);
   const [suggestions, setSuggestions] = useState<any[]>([]);
@@ -78,9 +84,7 @@ export default function DayModeBanner({ child, date }: { child: any; date: strin
       <button
         onClick={() => setPickerMode('')}
         className="text-xs font-bold text-[#465940]/60 hover:text-[#465940] transition px-1"
-      >
-        დღეს რა ხდება?
-      </button>
+      > <Copy>{"დღეს რა ხდება?"}</Copy> </button>
     );
   }
 
@@ -89,14 +93,14 @@ export default function DayModeBanner({ child, date }: { child: any; date: strin
     return (
       <div className={`${card} p-4`}>
         <div className="flex items-center justify-between mb-3">
-          <p className="text-sm font-bold text-[#465940]">დღეს რა ხდება?</p>
+          <p className="text-sm font-bold text-[#465940]"> <Copy>{"დღეს რა ხდება?"}</Copy> </p>
           <button onClick={() => setPickerMode(null)} className="text-[#465940]/50 hover:text-[#465940] text-sm">✕</button>
         </div>
         <div className="flex gap-2 flex-wrap">
           {MODES.map((m) => (
             <button key={m.key} onClick={() => setPickerMode(m.key)}
               className="px-3 py-1.5 rounded-full text-xs font-bold bg-[#465940]/10 text-[#465940] hover:bg-[#465940] hover:text-[#FDFBF0] transition">
-              {m.label}
+              <Copy>{m.label}</Copy>
             </button>
           ))}
         </div>
@@ -110,14 +114,14 @@ export default function DayModeBanner({ child, date }: { child: any; date: strin
     return (
       <div className={`${card} p-4`}>
         <div className="flex items-center justify-between mb-3">
-          <p className="text-sm font-bold text-[#465940]">{mode.label} — რატომ?</p>
-          <button onClick={() => setPickerMode('')} className="text-[#465940]/50 hover:text-[#465940] text-sm">← უკან</button>
+          <p className="text-sm font-bold text-[#465940]"><Copy>{mode.label}</Copy> <Copy>{"— რატომ?"}</Copy> </p>
+          <button onClick={() => setPickerMode('')} className="text-[#465940]/50 hover:text-[#465940] text-sm"> <Copy>{"← უკან"}</Copy> </button>
         </div>
         <div className="flex gap-2 flex-wrap">
           {Object.entries(mode.reasons).map(([key, r]) => (
             <button key={key} onClick={() => setMode(mode.key, key)}
               className="px-3 py-1.5 rounded-full text-xs font-bold bg-[#465940]/10 text-[#465940] hover:bg-[#465940] hover:text-[#FDFBF0] transition">
-              {r.label}
+              <Copy>{r.label}</Copy>
             </button>
           ))}
         </div>
@@ -133,28 +137,25 @@ export default function DayModeBanner({ child, date }: { child: any; date: strin
     <div className={`${card} p-4`}>
       <div className="flex items-start justify-between gap-2">
         <div className="flex-1">
-          <p className="text-sm font-bold text-[#465940]">
-            დღეს: {reasonInfo?.label ?? mode?.label}
+          <p className="text-sm font-bold text-[#465940]"> <Copy>{"დღეს:"}</Copy> <Copy>{reasonInfo?.label ?? mode?.label}</Copy>
           </p>
           {reasonInfo?.text && (
             <p className="text-xs text-[#465940]/70 mt-1.5 leading-relaxed">{reasonInfo.text}</p>
           )}
         </div>
-        <button onClick={clear} className="text-[10px] font-bold text-[#465940]/50 hover:text-[#465940] flex-shrink-0 px-2 py-1">
-          გაუქმება
-        </button>
+        <button onClick={clear} className="text-[10px] font-bold text-[#465940]/50 hover:text-[#465940] flex-shrink-0 px-2 py-1"> <Copy>{"გაუქმება"}</Copy> </button>
       </div>
 
       {status!.mode === 'NOT_EATING' && suggestions.length > 0 && (
         <div className="mt-3">
-          <p className="text-[11px] font-bold text-[#465940]/60 mb-2">დღეს იქნებ ეს მარტივი კერძები სცადო?</p>
+          <p className="text-[11px] font-bold text-[#465940]/60 mb-2"> <Copy>{"დღეს იქნებ ეს მარტივი კერძები სცადო?"}</Copy> </p>
           <div className="flex gap-3 overflow-x-auto pb-1 -mx-1 px-1">
             {suggestions.map((d: any) => (
               <button key={d.id} onClick={() => setRecipeModal(d)} className="flex-shrink-0 w-20 text-left group">
                 <div className="w-20 h-20 rounded-2xl overflow-hidden bg-[#f0f8ee] group-hover:ring-2 group-hover:ring-[#465940]/40 transition">
                   {d.imageUrl ? <img src={d.imageUrl} className="w-full h-full object-cover" alt="" /> : <div className="w-full h-full bg-[#465940]/10" />}
                 </div>
-                <p className="mt-1.5 text-[11px] font-bold text-[#465940] leading-snug line-clamp-2">{d.titleKa}</p>
+                <p className="mt-1.5 text-[11px] font-bold text-[#465940] leading-snug line-clamp-2">{localizedField(d, 'title', contentLocale)}</p>
               </button>
             ))}
           </div>

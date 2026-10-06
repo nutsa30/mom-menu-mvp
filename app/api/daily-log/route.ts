@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getSession } from '@/lib/auth';
 import { prisma } from '@/lib/prisma';
+import { hasPaidAccess } from '@/lib/paid-access';
 import { getMealTypesForAge } from '@/lib/meal';
 import { pickDish, narrowToStage } from '@/lib/pickDish';
 
@@ -20,8 +21,8 @@ export async function GET(req: NextRequest) {
   const child = await prisma.child.findFirst({ where: { id: childId, userId: session.id } });
   if (!child) return NextResponse.json({ error: 'Not found' }, { status: 404 });
 
-  const user = await prisma.user.findUnique({ where: { id: session.id }, select: { subscriptionStatus: true } });
-  if (user?.subscriptionStatus !== 'FULL_PLAN') {
+  const user = await prisma.user.findUnique({ where: { id: session.id }, select: { subscriptionStatus: true, role: true, isBlocked: true, paymentFailedAt: true, subscriptionRenewsAt: true } });
+  if (!hasPaidAccess(user, true)) {
     return NextResponse.json({ error: 'full_plan_required' }, { status: 403 });
   }
 

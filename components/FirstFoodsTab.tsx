@@ -1,4 +1,9 @@
 'use client';
+import { useExperience } from './ExperienceProvider';
+import { localizedField } from '@/lib/content';
+
+import Copy, { useCopy } from '@/components/Copy';
+
 
 import { useState, useEffect, useCallback } from 'react';
 
@@ -60,11 +65,11 @@ function pureePrep(category: string, nameKa?: string): string {
 }
 
 function StatusBadge({ tried, allergic, liked, ateWell }: any) {
-  if (allergic) return <span className="text-[10px] bg-red-100 text-red-600 font-bold px-2 py-0.5 rounded-full">ალერგია</span>;
-  if (!tried) return <span className="text-[10px] bg-[#465940]/10 text-[#465940]/50 font-bold px-2 py-0.5 rounded-full">არ გასინჯულა</span>;
-  if (liked) return <span className="text-[10px] bg-green-100 text-green-700 font-bold px-2 py-0.5 rounded-full">✓ მოეწონა</span>;
-  if (ateWell) return <span className="text-[10px] bg-blue-100 text-blue-700 font-bold px-2 py-0.5 rounded-full">✓ კარგად ჭამა</span>;
-  return <span className="text-[10px] bg-[#465940]/10 text-[#465940] font-bold px-2 py-0.5 rounded-full">✓ გასინჯა</span>;
+  if (allergic) return <span className="text-[10px] bg-red-100 text-red-600 font-bold px-2 py-0.5 rounded-full"> <Copy>{"ალერგია"}</Copy> </span>;
+  if (!tried) return <span className="text-[10px] bg-[#465940]/10 text-[#465940]/50 font-bold px-2 py-0.5 rounded-full"> <Copy>{"არ გასინჯულა"}</Copy> </span>;
+  if (liked) return <span className="text-[10px] bg-green-100 text-green-700 font-bold px-2 py-0.5 rounded-full"> <Copy>{"✓ მოეწონა"}</Copy> </span>;
+  if (ateWell) return <span className="text-[10px] bg-blue-100 text-blue-700 font-bold px-2 py-0.5 rounded-full"> <Copy>{"✓ კარგად ჭამა"}</Copy> </span>;
+  return <span className="text-[10px] bg-[#465940]/10 text-[#465940] font-bold px-2 py-0.5 rounded-full"> <Copy>{"✓ გასინჯა"}</Copy> </span>;
 }
 
 function IngredientCard({
@@ -72,6 +77,8 @@ function IngredientCard({
 }: {
   ing: Ingredient; childId: string; onUpdate: () => void; blwMode: boolean; ageMonths: number;
 }) {
+  const { locale: contentLocale } = useExperience();
+  const copy = useCopy();
   const [open, setOpen] = useState(false);
   const [saving, setSaving] = useState(false);
   const [comment, setComment] = useState(ing.status?.comment ?? '');
@@ -109,16 +116,16 @@ function IngredientCard({
             {s?.allergic && <span className="text-red-500 text-xs">✕</span>}
           </div>
           <div className="min-w-0">
-            <span className="font-semibold text-sm text-[#465940]">{ing.nameKa}</span>
+            <span className="font-semibold text-sm text-[#465940]">{localizedField(ing, 'name', contentLocale)}</span>
             {ing.isAllergen && (
-              <span className="ml-1.5 text-[9px] font-bold text-orange-600 align-middle">⚠ ალერგენი</span>
+              <span className="ml-1.5 text-[9px] font-bold text-orange-600 align-middle"> <Copy>{"⚠ ალერგენი"}</Copy> </span>
             )}
             {/* Prep hint — always visible so parent knows how to prepare */}
             {!s?.allergic && (
               <p className="text-[10px] text-[#465940]/50 mt-0.5">
-                {blwMode
+                <Copy>{blwMode
                   ? `${blwCutSize(ageMonths)} · ${blwPrep(ing.category, ing.nameKa)}`
-                  : `${pureePrep(ing.category, ing.nameKa)}`}
+                  : `${pureePrep(ing.category, ing.nameKa)}`}</Copy>
               </p>
             )}
           </div>
@@ -132,22 +139,16 @@ function IngredientCard({
       {open && (
         <div className="px-4 pb-4 space-y-3 border-t border-[#465940]/10 pt-3">
           {ing.isAllergen && !s?.tried && (
-            <p className="text-[11px] text-orange-700 bg-orange-50 rounded-lg px-3 py-2">
-              ალერგენია — მიეცი ცალკე, სხვა ახალი პროდუქტების გარეშე, და დააკვირდი 2-3 დღე რეაქციაზე სანამ მომდევნო ახალ პროდუქტს გასინჯავ.
-            </p>
+            <p className="text-[11px] text-orange-700 bg-orange-50 rounded-lg px-3 py-2"> <Copy>{"ალერგენია — მიეცი ცალკე, სხვა ახალი პროდუქტების გარეშე, და დააკვირდი 2-3 დღე რეაქციაზე სანამ მომდევნო ახალ პროდუქტს გასინჯავ."}</Copy> </p>
           )}
           {!s?.tried ? (
             <button onClick={() => update({ tried: true })} disabled={saving}
-              className="w-full py-2 rounded-xl bg-[#465940] text-[#FDFBF0] text-sm font-bold transition disabled:opacity-60">
-              ✓ გავასინჯე
-            </button>
+              className="w-full py-2 rounded-xl bg-[#465940] text-[#FDFBF0] text-sm font-bold transition disabled:opacity-60"> <Copy>{"✓ გავასინჯე"}</Copy> </button>
           ) : s?.allergic ? (
             // Allergy markings are deliberately not casually clearable here — a real allergy
             // shouldn't be one accidental tap away from being erased. Un-marking it is only
             // possible from Settings → Allergies.
-            <p className="text-xs text-[#465940]/60 bg-[#465940]/5 rounded-xl px-3 py-2.5">
-              ალერგია დაფიქსირებულია. მისი მოხსნა შესაძლებელია მხოლოდ <strong>პარამეტრები → ალერგიები</strong>-დან.
-            </p>
+            <p className="text-xs text-[#465940]/60 bg-[#465940]/5 rounded-xl px-3 py-2.5"> <Copy>{"ალერგია დაფიქსირებულია. მისი მოხსნა შესაძლებელია მხოლოდ"}</Copy> <strong> <Copy>{"პარამეტრები → ალერგიები"}</Copy> </strong> <Copy>{"-დან."}</Copy> </p>
           ) : (
             <div className="grid grid-cols-2 gap-2">
               {[
@@ -163,24 +164,20 @@ function IngredientCard({
                   className={`py-2 px-3 rounded-xl text-xs font-bold border-2 transition disabled:opacity-50 ${
                     opt.val ? opt.active : 'border-[#465940]/20 text-[#465940]/70 hover:border-[#465940]/30'
                   }`}>
-                  {opt.label}
+                  <Copy>{opt.label}</Copy>
                 </button>
               ))}
               <button onClick={() => update({ tried: false, liked: null, disliked: null, ateWell: null, refused: null })}
-                className="py-2 px-3 rounded-xl text-xs font-bold border border-[#465940]/15 text-[#465940]/40 hover:text-[#465940]/60 transition col-span-1">
-                გასუფთავება
-              </button>
+                className="py-2 px-3 rounded-xl text-xs font-bold border border-[#465940]/15 text-[#465940]/40 hover:text-[#465940]/60 transition col-span-1"> <Copy>{"გასუფთავება"}</Copy> </button>
             </div>
           )}
           {s?.tried && (
             <div className="flex gap-2">
               <input value={comment} onChange={e => setComment(e.target.value)}
-                placeholder="კომენტარი (სურვილისამებრ)"
+                placeholder={copy("კომენტარი (სურვილისამებრ)")}
                 className="flex-1 px-3 py-1.5 rounded-xl border border-[#465940]/20 text-xs text-[#465940] bg-white focus:outline-none focus:border-[#465940]" />
               <button onClick={() => update({ comment })} disabled={saving || comment === (s?.comment ?? '')}
-                className="px-3 py-1.5 rounded-xl bg-[#465940] text-[#FDFBF0] text-xs font-bold disabled:opacity-40 transition">
-                შენახვა
-              </button>
+                className="px-3 py-1.5 rounded-xl bg-[#465940] text-[#FDFBF0] text-xs font-bold disabled:opacity-40 transition"> <Copy>{"შენახვა"}</Copy> </button>
             </div>
           )}
         </div>
@@ -190,11 +187,12 @@ function IngredientCard({
 }
 
 function BlwIngCard({ ing, ageMonths }: { ing: Ingredient; ageMonths: number }) {
+  const { locale: contentLocale } = useExperience();
   return (
     <div className="rounded-xl border-2 border-[#465940]/20 bg-white px-4 py-3 flex items-start gap-3">
       <div className="flex-1 min-w-0">
-        <p className="font-bold text-[#465940] text-sm">{ing.nameKa}</p>
-        <p className="text-[11px] text-[#465940]/70 mt-0.5">{blwPrep(ing.category, ing.nameKa)}</p>
+        <p className="font-bold text-[#465940] text-sm">{localizedField(ing, 'name', contentLocale)}</p>
+        <p className="text-[11px] text-[#465940]/70 mt-0.5"><Copy>{blwPrep(ing.category, ing.nameKa)}</Copy></p>
         <div className="mt-1.5 inline-flex items-center gap-1 bg-[#465940]/10 rounded-lg px-2 py-0.5">
           <span className="text-[10px] font-semibold text-[#465940]">{blwCutSize(ageMonths)}</span>
         </div>
@@ -235,11 +233,9 @@ export default function FirstFoodsTab({ child, isFullPlan }: { child: any; isFul
   if (!isFullPlan) return (
     <div className="bg-[#FDFBF0] rounded-2xl border border-[#465940]/10 shadow-sm p-10 text-center">
       <div className="w-16 h-16 rounded-full bg-[#465940] flex items-center justify-center text-3xl mx-auto mb-5"></div>
-      <h2 className="text-xl font-black text-[#465940] mb-2">პირველი საკვები დაბლოკილია</h2>
-      <p className="text-[#465940]/70 text-sm mb-6 max-w-sm mx-auto">ინგრედიენტების გასინჯვის ტრეკერი ხელმისაწვდომია მხოლოდ სრული პაკეტით.</p>
-      <a href="/subscription" className="inline-flex items-center justify-center rounded-full bg-[#465940] px-8 py-3 font-semibold text-[#FDFBF0] shadow-lg hover:scale-105 transition">
-        პაკეტის განახლება
-      </a>
+      <h2 className="text-xl font-black text-[#465940] mb-2"> <Copy>{"პირველი საკვები დაბლოკილია"}</Copy> </h2>
+      <p className="text-[#465940]/70 text-sm mb-6 max-w-sm mx-auto"> <Copy>{"ინგრედიენტების გასინჯვის ტრეკერი ხელმისაწვდომია მხოლოდ სრული პაკეტით."}</Copy> </p>
+      <a href="/subscription" className="inline-flex items-center justify-center rounded-full bg-[#465940] px-8 py-3 font-semibold text-[#FDFBF0] shadow-lg hover:scale-105 transition"> <Copy>{"პაკეტის განახლება"}</Copy> </a>
     </div>
   );
 
@@ -261,18 +257,18 @@ export default function FirstFoodsTab({ child, isFullPlan }: { child: any; isFul
       <div className="bg-[#FDFBF0] rounded-2xl border border-[#465940]/10 shadow-sm p-5">
         <div className="flex items-center justify-between mb-3">
           <div>
-            <h2 className="text-xl font-black text-[#465940]">პირველი საკვები</h2>
-            <p className="text-xs text-[#465940]/60 mt-0.5">{child.name} · {ageMonths} თვე</p>
+            <h2 className="text-xl font-black text-[#465940]"> <Copy>{"პირველი საკვები"}</Copy> </h2>
+            <p className="text-xs text-[#465940]/60 mt-0.5">{child.name} · {ageMonths} <Copy>{"თვე"}</Copy> </p>
           </div>
           <div className="flex gap-3 text-center">
             <div className="bg-[#465940]/5 rounded-xl px-3 py-2">
               <p className="text-xl font-black text-[#465940]">{triedCount}</p>
-              <p className="text-[10px] text-[#465940]/60">გასინჯული</p>
+              <p className="text-[10px] text-[#465940]/60"> <Copy>{"გასინჯული"}</Copy> </p>
             </div>
             {allergicCount > 0 && (
               <div className="bg-red-50 rounded-xl px-3 py-2">
                 <p className="text-xl font-black text-red-500">{allergicCount}</p>
-                <p className="text-[10px] text-red-400">ალერგია</p>
+                <p className="text-[10px] text-red-400"> <Copy>{"ალერგია"}</Copy> </p>
               </div>
             )}
           </div>
@@ -283,14 +279,14 @@ export default function FirstFoodsTab({ child, isFullPlan }: { child: any; isFul
           <div className="h-2 bg-[#465940] rounded-full transition-all"
             style={{ width: ageAppropriate.length ? `${(triedCount / ageAppropriate.length) * 100}%` : '0%' }} />
         </div>
-        <p className="text-[10px] text-[#465940]/50 mt-1">{triedCount} / {ageAppropriate.length} ინგრედიენტი გასინჯული ({ageMonths} თვის ასაკისთვის)</p>
+        <p className="text-[10px] text-[#465940]/50 mt-1">{triedCount} / {ageAppropriate.length} <Copy>{"ინგრედიენტი გასინჯული ("}</Copy> {ageMonths} <Copy>{"თვის ასაკისთვის)"}</Copy> </p>
 
         {/* BLW toggle */}
         <div className="mt-3 pt-3 border-t border-[#465940]/10 flex items-center justify-between">
           <div>
-            <span className="text-xs font-bold text-[#465940]">BLW კვება</span>
+            <span className="text-xs font-bold text-[#465940]"> <Copy>{"BLW კვება"}</Copy> </span>
             <span className="ml-2 text-[10px] text-[#465940]/50">
-              {blwMode ? 'ჩართულია — ნაჭრებად, პიურეს გარეშე' : 'გამორთულია — პიურე რეჟიმი'}
+              <Copy>{blwMode ? 'ჩართულია — ნაჭრებად, პიურეს გარეშე' : 'გამორთულია — პიურე რეჟიმი'}</Copy>
             </span>
           </div>
           <button onClick={toggleBlw}
@@ -305,7 +301,7 @@ export default function FirstFoodsTab({ child, isFullPlan }: { child: any; isFul
           {['all', ...presentCategories].map(cat => (
             <button key={cat} onClick={() => setCategoryFilter(cat)}
               className={`px-4 py-1.5 rounded-full text-xs font-bold transition ${categoryFilter === cat ? 'bg-[#465940] text-[#FDFBF0]' : 'bg-[#FDFBF0] border border-[#465940]/20 text-[#465940]/70'}`}>
-              {cat === 'all' ? 'ყველა' : CATEGORY_LABELS[cat] ?? cat}
+              <Copy>{cat === 'all' ? 'ყველა' : CATEGORY_LABELS[cat] ?? cat}</Copy>
             </button>
           ))}
         </div>
@@ -318,7 +314,7 @@ export default function FirstFoodsTab({ child, isFullPlan }: { child: any; isFul
               if (items.length === 0) return null;
               return (
                 <div key={cat} className="bg-[#FDFBF0] rounded-2xl border border-[#465940]/10 shadow-sm p-4 space-y-2">
-                  <p className="text-xs font-black text-[#465940]/60 uppercase tracking-wide mb-3">{CATEGORY_LABELS[cat] ?? cat}</p>
+                  <p className="text-xs font-black text-[#465940]/60 uppercase tracking-wide mb-3"><Copy>{CATEGORY_LABELS[cat] ?? cat}</Copy></p>
                   {items.map(ing => (
                     <IngredientCard key={ing.id} ing={ing} childId={child.id} blwMode={blwMode} ageMonths={ageMonths}
                       onUpdate={fetchIngredients} />

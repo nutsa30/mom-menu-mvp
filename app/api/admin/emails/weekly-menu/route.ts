@@ -1,7 +1,7 @@
 import { prisma } from "@/lib/prisma";
 import { getSession } from "@/lib/auth";
 import { resend } from "@/lib/resend";
-import { layout } from "@/lib/email";
+import { layout, getTemplate } from "@/lib/email";
 import { NextResponse } from "next/server";
 
 const WEEKLY_MENU_SUBJECT = "🗓 თქვენი კვირის კვების გეგმა მზადაა!";
@@ -32,7 +32,7 @@ export async function POST() {
 
   const activeUsers = await prisma.user.findMany({
     where: { subscriptionStatus: { in: ["RECIPE_PLAN", "FULL_PLAN"] } },
-    select: { email: true },
+    select: { email: true, name: true, locale: true },
   });
 
   if (activeUsers.length === 0) {
@@ -40,7 +40,7 @@ export async function POST() {
   }
 
   const recipients = activeUsers.map((u) => u.email);
-  const wrappedHtml = layout(WEEKLY_MENU_BODY);
+  const englishTemplate = await getTemplate("weekly_menu", "en");
 
   const campaign = await prisma.emailCampaign.create({
     data: {
@@ -62,14 +62,17 @@ export async function POST() {
   });
 
   const results = await Promise.allSettled(
-    recipients.map((email) =>
-      resend.emails.send({
-        from: "MomMenu <info@mommenu.ge>",
-        to: email,
-        subject: WEEKLY_MENU_SUBJECT,
-        html: wrappedHtml,
-      }),
-    ),
+    activeUsers.map(async (user) => {
+      const english = user.locale === 'en';
+      const result = await resend.emails.send({
+        from: 'MomMenu <info@mommenu.ge>',
+        to: user.email,
+        subject: english ? englishTemplate.subject : WEEKLY_MENU_SUBJECT,
+        html: english ? layout(englishTemplate.body.replace(/\{\{name\}\}/g, user.name.replace(/[&<>"']/g, c => '\x26#' + c.charCodeAt(0) + ';')), 'en') : layout(WEEKLY_MENU_BODY),
+      });
+      if (result.error) throw new Error(result.error.message);
+      return result;
+    }),
   );
 
   let sentCount = 0;

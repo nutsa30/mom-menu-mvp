@@ -1,4 +1,6 @@
 'use client';
+import { useExperience } from '@/components/ExperienceProvider';
+
 
 import { useRouter, useSearchParams } from 'next/navigation';
 import { useState, useEffect, useRef } from 'react';
@@ -16,7 +18,7 @@ type RecentBlog = {
   contentKa: string;
   contentEn: string;
 };
-type Testimonial = { id: string; authorName: string; content: string };
+type Testimonial = { id: string; authorName: string; content: string; contentEn?: string | null };
 
 // ─── Visual tokens ───────────────────────────────────────────────────────
 // Kept identical to the tokens already used across this page, Nav and
@@ -495,6 +497,9 @@ export default function HomeClient({ s, dishes, dishCount, recentBlogs, planAmou
 }) {
   const router = useRouter();
   const searchParams = useSearchParams();
+  const experience = useExperience();
+  const symbol = experience.currency === 'USD' ? '$' : '₾';
+  const formatPrice = (value: string | number) => experience.currency === 'USD' ? new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD', minimumFractionDigits: 0, maximumFractionDigits: 2 }).format(Number(value)) : `${value}₾`;
   const locale = searchParams.get('lang') === 'en' ? 'en' : 'ka';
   const ka = locale === 'ka';
 
@@ -525,7 +530,8 @@ export default function HomeClient({ s, dishes, dishCount, recentBlogs, planAmou
   const [testimonialStatus, setTestimonialStatus] = useState<'idle' | 'sending' | 'sent' | 'error'>('idle');
   const [showAllTestimonials, setShowAllTestimonials] = useState(false);
   const TESTIMONIALS_PREVIEW_COUNT = 3;
-  const visibleTestimonials = showAllTestimonials ? testimonials : testimonials.slice(0, TESTIMONIALS_PREVIEW_COUNT);
+  const localizedTestimonials = testimonials.filter(t => ka || t.contentEn || !/[\u10A0-\u10FF]/.test(t.content));
+  const visibleTestimonials = showAllTestimonials ? localizedTestimonials : localizedTestimonials.slice(0, TESTIMONIALS_PREVIEW_COUNT);
   const submitTestimonial = async () => {
     if (!testimonialText.trim()) return;
     setTestimonialStatus('sending');
@@ -577,7 +583,7 @@ export default function HomeClient({ s, dishes, dishCount, recentBlogs, planAmou
   const handleSubscribeBog = async (interval: BillingInterval) => {
     setLoadingPlan(interval);
     const planLabel = interval === 1 ? '1 თვის გეგმა' : interval === 3 ? '3 თვის გეგმა' : '6 თვის გეგმა';
-    ga.subscribe(planLabel, planAmounts[interval]);
+    ga.subscribe(planLabel, planAmounts[interval], experience.currency);
     try {
       const appliedPromo = promoStatus[interval]?.valid ? promoInput[interval]?.trim() : undefined;
       const res = await fetch('/api/subscription/bog-checkout', {
@@ -848,7 +854,8 @@ export default function HomeClient({ s, dishes, dishCount, recentBlogs, planAmou
                 <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-5">
                   {visibleTestimonials.map((tst) => (
                     <div key={tst.id} className="rounded-2xl p-5" style={{ background: `${INK}06` }}>
-                      <p className="text-sm leading-relaxed mb-3" style={{ color: `${INK}D0` }}>&quot;{tst.content}&quot;</p>
+                      <p className="text-sm leading-relaxed mb-3" style={{ color: `${INK}D0` }}>&quot;{ka ? tst.content : tst.contentEn || tst.content}&quot;</p>
+                      {!ka && tst.contentEn && /[\u10A0-\u10FF]/.test(tst.content) && <p className="text-xs mb-2 opacity-60">Translated from Georgian</p>}
                       <p className="text-sm font-bold" style={{ color: INK }}>{tst.authorName}</p>
                     </div>
                   ))}
@@ -884,7 +891,7 @@ export default function HomeClient({ s, dishes, dishCount, recentBlogs, planAmou
               // 6-month plan is the visually recommended tier — the owner's explicit choice
               // for best value, not the previous default of 3.
               const isRecommended = interval === 6;
-              const perMonth = (price / interval).toFixed(interval === 6 ? 2 : 0);
+              const perMonth = (price / interval).toFixed(experience.market === 'INTL' ? 2 : interval === 6 ? 2 : 0);
               const cadenceKa = interval === 1 ? 'თვეში' : `ყოველ ${interval} თვეში`;
               const cadenceEn = interval === 1 ? 'month' : `${interval} months`;
               const isActive = currentPlan === 'FULL_PLAN' && currentInterval === interval && !loadingPlan;
@@ -912,16 +919,16 @@ export default function HomeClient({ s, dishes, dishCount, recentBlogs, planAmou
                   <div className="flex justify-center items-baseline gap-1.5 mt-5">
                     {disc ? (
                       <>
-                        <span className="text-base font-bold text-red-400 line-through">{price}₾</span>
-                        <span className="text-xl font-bold" style={{ color: INK }}>{disc}₾</span>
+                        <span className="text-base font-bold text-red-400 line-through">{formatPrice(price)}</span>
+                        <span className="text-xl font-bold" style={{ color: INK }}>{formatPrice(disc)}</span>
                       </>
                     ) : (
-                      <span className="text-xl font-bold" style={{ color: INK }}>{price}₾</span>
+                      <span className="text-xl font-bold" style={{ color: INK }}>{formatPrice(price)}</span>
                     )}
                     <span className="text-sm" style={{ color: `${INK}80` }}>{ka ? `/ ${cadenceKa}` : `/ ${cadenceEn}`}</span>
                   </div>
                   <p className="text-sm font-bold mt-1" style={{ color: ACCENT }}>
-                    {perMonth}₾{ka ? '/თვე' : '/mo'}
+                    {formatPrice(perMonth)}{ka ? '/თვე' : '/mo'}
                   </p>
 
                   {hasTrial && (
@@ -1062,17 +1069,17 @@ function IntervalSwitchBlockedModal({ ka, currentInterval, renewsAt, onClose, on
           ) : (
             <>
               <p className="text-sm text-[#6F7A5C]/80 leading-relaxed mb-3">
-                You currently have an active {INTERVAL_LABEL_EN[currentInterval]} plan that's already paid
+                You currently have an active {INTERVAL_LABEL_EN[currentInterval]} plan that&apos;s already paid
                 {renewsLabel ? <> and runs through <span className="font-bold">{renewsLabel}</span></> : ''}.
               </p>
               <p className="text-sm text-[#6F7A5C]/80 leading-relaxed mb-3">
                 Switching plans right now would charge you immediately for the new plan and discard whatever paid
-                days remain on the current one — that wouldn't be fair to you, so we don't allow it.
+                days remain on the current one — that wouldn&apos;t be fair to you, so we don&apos;t allow it.
               </p>
               <p className="text-sm text-[#6F7A5C]/80 leading-relaxed mb-5">
-                If you'd still like to switch: cancel your current plan (you won't lose access — it stays through
+                If you&apos;d still like to switch: cancel your current plan (you won&apos;t lose access — it stays through
                 {renewsLabel ? ` ${renewsLabel}` : ' the end of the paid period'}), and once that period ends
-                you'll be free to pick a new plan.
+                you&apos;ll be free to pick a new plan.
               </p>
             </>
           )}

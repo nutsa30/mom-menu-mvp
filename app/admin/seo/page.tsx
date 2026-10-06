@@ -157,7 +157,7 @@ export default function AdminSeoPage() {
                   Google Search Console Verification Code
                 </label>
                 <p className="text-xs text-[#465940]/50 mb-2">
-                  Search Console → Settings → Ownership verification → HTML tag → copy only the content="..." value
+                  Search Console → Settings → Ownership verification → HTML tag → copy only the content=&quot;...&quot; value
                 </p>
                 <input
                   type="text"

@@ -16,7 +16,8 @@ const mealTypeColor: Record<string, string> = {
   SNACK: 'bg-[#465940]/20 text-[#465940]',
 };
 
-export default async function AdminPlansPage({ searchParams }: { searchParams: { lang?: string } }) {
+export default async function AdminPlansPage(props: { searchParams: Promise<{ lang?: string }> }) {
+  const searchParams = await props.searchParams;
   const locale = getAdminLocale(searchParams.lang);
   const d = adminDict[locale];
   const withLang = (href: string) => locale === 'en' ? `${href}?lang=en` : href;

@@ -1,3 +1,4 @@
+import { getExperience } from '@/lib/experience';
 import { prisma } from '@/lib/prisma';
 import { hashPassword, setAuthCookie } from '@/lib/auth';
 import { ensureReferralCode } from '@/lib/referral';
@@ -18,7 +19,8 @@ export async function POST(req: Request) {
     }
 
     const passwordHash = await hashPassword(password);
-    const user = await prisma.user.create({ data: { email, passwordHash, name } });
+    const experience = await getExperience();
+    const user = await prisma.user.create({ data: { email, passwordHash, name, locale: experience.locale, market: experience.market, timeZone: experience.market === 'GE' ? 'Asia/Tbilisi' : 'UTC', subscriptionCurrency: experience.currency } });
     await ensureReferralCode(user.id);
 
     await setAuthCookie({ id: user.id, email: user.email, name: user.name, role: user.role });

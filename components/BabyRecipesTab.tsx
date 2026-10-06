@@ -1,4 +1,9 @@
 'use client';
+import { useExperience } from './ExperienceProvider';
+import { localizedField } from '@/lib/content';
+
+import Copy, { useCopy } from '@/components/Copy';
+
 
 import { useState, useEffect, useCallback } from 'react';
 import { isPureeStyle } from '@/lib/meal';
@@ -22,21 +27,22 @@ type Dish = {
 };
 
 function DishCard({ dish }: { dish: Dish }) {
+  const { locale: contentLocale } = useExperience();
   return (
     <a href={`/meals/${dish.id}`} className="flex items-center gap-3 rounded-xl border-2 border-[#465940]/10 bg-white p-3 hover:border-[#465940]/25 transition">
       <div className="w-16 h-16 rounded-xl overflow-hidden flex-shrink-0 bg-[#465940]/5">
         {dish.imageUrl
-          ? <img src={dish.imageUrl} alt={dish.titleKa} className="w-full h-full object-cover" />
+          ? <img src={dish.imageUrl} alt={localizedField(dish, 'title', contentLocale)} className="w-full h-full object-cover" />
           : <div className="w-full h-full flex items-center justify-center text-2xl"></div>
         }
       </div>
       <div className="min-w-0 flex-1">
         <span className="text-[10px] font-black uppercase tracking-widest px-2 py-0.5 rounded-full bg-[#465940]/10 text-[#465940]">
-          {MEAL_LABEL[dish.mealType] ?? dish.mealType}
+          <Copy>{MEAL_LABEL[dish.mealType] ?? dish.mealType}</Copy>
         </span>
-        <p className="font-bold text-[#465940] text-sm mt-1 leading-snug truncate">{dish.titleKa}</p>
+        <p className="font-bold text-[#465940] text-sm mt-1 leading-snug truncate">{localizedField(dish, 'title', contentLocale)}</p>
         <p className="text-[11px] text-[#465940]/50 mt-0.5 truncate">
-          {dish.ingredientsKa.map(i => i.split(' - ')[0]).join(', ')}
+          {localizedField(dish, 'ingredients', contentLocale).map((i: string) => i.split(' - ')[0]).join(', ')}
         </p>
       </div>
     </a>
@@ -44,6 +50,8 @@ function DishCard({ dish }: { dish: Dish }) {
 }
 
 export default function BabyRecipesTab({ child, isFullPlan }: { child: any; isFullPlan: boolean }) {
+  const { locale: contentLocale } = useExperience();
+  const copy = useCopy();
   const [dishes, setDishes] = useState<Dish[]>([]);
   const [safeCount, setSafeCount] = useState(0);
   const [loading, setLoading] = useState(true);
@@ -70,21 +78,18 @@ export default function BabyRecipesTab({ child, isFullPlan }: { child: any; isFu
   if (!isFullPlan) return (
     <div className="bg-[#FDFBF0] rounded-2xl border border-[#465940]/10 shadow-sm p-10 text-center">
       <div className="w-16 h-16 rounded-full bg-[#465940] flex items-center justify-center text-3xl mx-auto mb-5"></div>
-      <h2 className="text-xl font-black text-[#465940] mb-2">რეცეპტები დაბლოკილია</h2>
-      <p className="text-[#465940]/70 text-sm mb-6 max-w-sm mx-auto">გასინჯული ინგრედიენტების მიხედვით რეცეპტების შეთავაზება ხელმისაწვდომია მხოლოდ სრული პაკეტით.</p>
-      <a href="/subscription" className="inline-flex items-center justify-center rounded-full bg-[#465940] px-8 py-3 font-semibold text-[#FDFBF0] shadow-lg hover:scale-105 transition">
-        პაკეტის განახლება
-      </a>
+      <h2 className="text-xl font-black text-[#465940] mb-2"> <Copy>{"რეცეპტები დაბლოკილია"}</Copy> </h2>
+      <p className="text-[#465940]/70 text-sm mb-6 max-w-sm mx-auto"> <Copy>{"გასინჯული ინგრედიენტების მიხედვით რეცეპტების შეთავაზება ხელმისაწვდომია მხოლოდ სრული პაკეტით."}</Copy> </p>
+      <a href="/subscription" className="inline-flex items-center justify-center rounded-full bg-[#465940] px-8 py-3 font-semibold text-[#FDFBF0] shadow-lg hover:scale-105 transition"> <Copy>{"პაკეტის განახლება"}</Copy> </a>
     </div>
   );
 
   return (
     <div className="space-y-4">
       <div className="bg-[#FDFBF0] rounded-2xl border border-[#465940]/10 shadow-sm p-5">
-        <h2 className="text-xl font-black text-[#465940]">რეცეპტები</h2>
+        <h2 className="text-xl font-black text-[#465940]"> <Copy>{"რეცეპტები"}</Copy> </h2>
         <p className="text-xs text-[#465940]/60 mt-0.5">
-          {child.name} · {safeCount} გასინჯული ინგრედიენტიდან შედგენილი რეცეპტები
-        </p>
+          {child.name} · {safeCount} <Copy>{"გასინჯული ინგრედიენტიდან შედგენილი რეცეპტები"}</Copy> </p>
       </div>
 
       {loading ? (
@@ -92,16 +97,14 @@ export default function BabyRecipesTab({ child, isFullPlan }: { child: any; isFu
       ) : safeCount === 0 ? (
         <div className="bg-[#FDFBF0] rounded-2xl border border-[#465940]/10 shadow-sm p-10 text-center">
           <p className="text-4xl mb-3"></p>
-          <p className="font-bold text-[#465940] mb-1">ჯერ ცარიელია</p>
-          <p className="text-sm text-[#465940]/60 max-w-xs mx-auto">
-            რეცეპტი გამოჩნდება მხოლოდ მაშინ, როცა შემადგენელი ინგრედიენტები ცალ-ცალკე იქნება გასინჯული — დაიწყე "პირველი საკვები" ტაბიდან.
-          </p>
+          <p className="font-bold text-[#465940] mb-1"> <Copy>{"ჯერ ცარიელია"}</Copy> </p>
+          <p className="text-sm text-[#465940]/60 max-w-xs mx-auto"> <Copy>{"რეცეპტი გამოჩნდება მხოლოდ მაშინ, როცა შემადგენელი ინგრედიენტები ცალ-ცალკე იქნება გასინჯული — დაიწყე \"პირველი საკვები\" ტაბიდან."}</Copy> </p>
         </div>
       ) : dishes.length === 0 ? (
         <div className="bg-[#FDFBF0] rounded-2xl border border-[#465940]/10 shadow-sm p-10 text-center">
           <p className="text-4xl mb-3"></p>
-          <p className="font-bold text-[#465940] mb-1">ჯერ რეცეპტი არ არის</p>
-          <p className="text-sm text-[#465940]/60">გასინჯე მეტი ინგრედიენტი — რეცეპტები თანდათან გამოჩნდება</p>
+          <p className="font-bold text-[#465940] mb-1"> <Copy>{"ჯერ რეცეპტი არ არის"}</Copy> </p>
+          <p className="text-sm text-[#465940]/60"> <Copy>{"გასინჯე მეტი ინგრედიენტი — რეცეპტები თანდათან გამოჩნდება"}</Copy> </p>
         </div>
       ) : (() => {
         const byBlw = blwMode ? dishes.filter(d => !isPureeStyle(d.titleKa)) : dishes;
@@ -110,8 +113,8 @@ export default function BabyRecipesTab({ child, isFullPlan }: { child: any; isFu
           return (
             <div className="bg-[#FDFBF0] rounded-2xl border border-[#465940]/10 shadow-sm p-10 text-center">
               <p className="text-4xl mb-3"></p>
-              <p className="font-bold text-[#465940] mb-1">ჯერ BLW-ზე შესაფერისი რეცეპტი არ არის</p>
-              <p className="text-sm text-[#465940]/60">გასინჯული ინგრედიენტებით შედგენილი კერძები ჯერ პიურის ტიპისაა — ხელში დასაჭერი ვარიანტები თანდათან გამოჩნდება</p>
+              <p className="font-bold text-[#465940] mb-1"> <Copy>{"ჯერ BLW-ზე შესაფერისი რეცეპტი არ არის"}</Copy> </p>
+              <p className="text-sm text-[#465940]/60"> <Copy>{"გასინჯული ინგრედიენტებით შედგენილი კერძები ჯერ პიურის ტიპისაა — ხელში დასაჭერი ვარიანტები თანდათან გამოჩნდება"}</Copy> </p>
             </div>
           );
         }
@@ -119,7 +122,7 @@ export default function BabyRecipesTab({ child, isFullPlan }: { child: any; isFu
         const byMeal = mealFilter === 'ALL' ? byBlw : byBlw.filter(d => d.mealType === mealFilter);
         const q = search.trim().toLowerCase();
         const visible = q
-          ? byMeal.filter(d => d.titleKa.toLowerCase().includes(q) || d.ingredientsKa.some(i => i.toLowerCase().includes(q)))
+          ? byMeal.filter(d => localizedField(d, 'title', contentLocale).toLowerCase().includes(q) || localizedField(d, 'ingredients', contentLocale).some((i: string) => i.toLowerCase().includes(q)))
           : byMeal;
 
         return (
@@ -136,14 +139,14 @@ export default function BabyRecipesTab({ child, isFullPlan }: { child: any; isFu
                 <input
                   value={search}
                   onChange={(e) => setSearch(e.target.value)}
-                  placeholder="ძებნა რეცეპტის ან ინგრედიენტის სახელით..."
+                  placeholder={copy("ძებნა რეცეპტის ან ინგრედიენტის სახელით...")}
                   className="w-full pl-9 pr-9 py-2.5 rounded-full border border-[#465940]/15 text-sm text-[#465940] bg-white focus:outline-none focus:border-[#465940] transition"
                 />
                 {search && (
                   <button
                     onClick={() => setSearch('')}
                     className="absolute right-3 top-1/2 -translate-y-1/2 text-[#465940]/40 hover:text-[#465940] transition text-lg leading-none"
-                    aria-label="გასუფთავება"
+                    aria-label={copy("გასუფთავება")}
                   >
                     ×
                   </button>
@@ -158,7 +161,7 @@ export default function BabyRecipesTab({ child, isFullPlan }: { child: any; isFu
                       mealFilter === f.key ? 'bg-[#465940] text-[#FDFBF0]' : 'bg-[#465940]/10 text-[#465940]/70 hover:bg-[#465940]/20'
                     }`}
                   >
-                    {f.label}
+                    <Copy>{f.label}</Copy>
                   </button>
                 ))}
               </div>
@@ -167,8 +170,8 @@ export default function BabyRecipesTab({ child, isFullPlan }: { child: any; isFu
             {visible.length === 0 ? (
               <div className="bg-[#FDFBF0] rounded-2xl border border-[#465940]/10 shadow-sm p-10 text-center">
                 <p className="text-4xl mb-3">🔍</p>
-                <p className="font-bold text-[#465940] mb-1">ვერაფერი მოიძებნა</p>
-                <p className="text-sm text-[#465940]/60">სცადე სხვა საძიებო სიტყვა ან ფილტრი</p>
+                <p className="font-bold text-[#465940] mb-1"> <Copy>{"ვერაფერი მოიძებნა"}</Copy> </p>
+                <p className="text-sm text-[#465940]/60"> <Copy>{"სცადე სხვა საძიებო სიტყვა ან ფილტრი"}</Copy> </p>
               </div>
             ) : (
               <div className="bg-[#FDFBF0] rounded-2xl border border-[#465940]/10 shadow-sm p-4 space-y-2">

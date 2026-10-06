@@ -1,3 +1,5 @@
+import { planPrice, currencyFor, normalizeMarket, type Market, type Locale } from './market';
+import { prisma } from './prisma';
 import crypto from 'crypto';
 
 // ─── Bank of Georgia Payment Manager API client ────────────────────────────
@@ -68,6 +70,7 @@ async function getAccessToken(): Promise<string> {
     return cachedToken.value;
   }
 
+  if (process.env.MOMMENU_SANDBOX === '1') throw new Error('Real payments are disabled in the review environment');
   const clientId = process.env.BOG_CLIENT_ID;
   const clientSecret = process.env.BOG_CLIENT_SECRET;
   if (!clientId || !clientSecret) {
@@ -170,15 +173,19 @@ async function createOrder(opts: {
   name: string;
   capture: 'manual' | 'automatic';
   discountPercent?: number | null;
+  market?: Market;
+  locale?: Locale;
 }): Promise<{ url: string; orderId: string }> {
-  const amount = PLAN_AMOUNTS_BY_INTERVAL[opts.interval];
+  const market = normalizeMarket(opts.market);
+  const currency = currencyFor(market);
+  const amount = planPrice(market, opts.interval);
   if (!amount) {
     throw new Error(`No BOG GEL amount configured for ${opts.interval}-month plan`);
   }
   const appUrl = process.env.NEXT_PUBLIC_APP_URL;
   const planAmount = applyDiscount(Number(amount), opts.discountPercent);
 
-  const headers = await apiHeaders(crypto.randomUUID());
+  const headers = { ...await apiHeaders(crypto.randomUUID()), 'Accept-Language': opts.locale || 'ka' };
   const res = await fetch(`${API_BASE}/ecommerce/orders`, {
     method: 'POST',
     headers,
@@ -190,20 +197,20 @@ async function createOrder(opts: {
         masked_email: opts.email,
       },
       purchase_units: {
-        currency: 'GEL',
+        currency,
         total_amount: planAmount,
         basket: [
           {
             product_id: `plan_${opts.interval}m`,
-            description: PLAN_DESCRIPTIONS_BY_INTERVAL[opts.interval],
+            description: opts.locale === 'en' ? `Mommenu - ${opts.interval}-month plan` : PLAN_DESCRIPTIONS_BY_INTERVAL[opts.interval],
             quantity: 1,
             unit_price: planAmount,
           },
         ],
       },
       redirect_urls: {
-        success: `${appUrl}/dashboard?sub=success`,
-        fail: `${appUrl}/dashboard?sub=failed`,
+        success: `${appUrl}/dashboard?sub=success&lang=${opts.locale || 'ka'}`,
+        fail: `${appUrl}/dashboard?sub=failed&lang=${opts.locale || 'ka'}`,
       },
       capture: opts.capture,
       // CONFIRMED with BOG support directly: automatic/recurring renewal charges
@@ -233,6 +240,8 @@ async function createOrder(opts: {
     throw new Error('BOG order creation returned an unexpected response shape');
   }
 
+  await prisma.checkoutOrder.create({ data: { id: orderId, userId: opts.userId, currency, amount: planAmount, interval: opts.interval, trial: opts.capture === 'manual' } });
+
   // Enable card-saving on this order BEFORE redirecting the customer to pay.
   const subHeaders = await apiHeaders();
   const subRes = await fetch(`${API_BASE}/orders/${orderId}/subscriptions`, {
@@ -247,11 +256,11 @@ async function createOrder(opts: {
   return { url: redirectUrl, orderId };
 }
 
-export function createTrialOrder(opts: { interval: BillingInterval; userId: string; email: string; name: string; discountPercent?: number | null }) {
+export function createTrialOrder(opts: { interval: BillingInterval; userId: string; email: string; name: string; discountPercent?: number | null; market?: Market; locale?: Locale }) {
   return createOrder({ ...opts, capture: 'manual' });
 }
 
-export function createDirectOrder(opts: { interval: BillingInterval; userId: string; email: string; name: string; discountPercent?: number | null }) {
+export function createDirectOrder(opts: { interval: BillingInterval; userId: string; email: string; name: string; discountPercent?: number | null; market?: Market; locale?: Locale }) {
   return createOrder({ ...opts, capture: 'automatic' });
 }
 

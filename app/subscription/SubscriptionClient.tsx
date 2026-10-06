@@ -1,4 +1,8 @@
 'use client';
+import { useExperience } from '@/components/ExperienceProvider';
+
+import Copy, { useCopy } from '@/components/Copy';
+
 
 import { useRouter } from 'next/navigation';
 import { useEffect, useState } from 'react';
@@ -12,6 +16,10 @@ type BillingInterval = 1 | 3 | 6;
 const PROMO_TRIAL_DAYS = 3;
 
 export default function SubscriptionClient({ planAmounts }: { planAmounts: Record<BillingInterval, number> }) {
+  const copy = useCopy();
+  const experience = useExperience();
+  const symbol = experience.currency === 'USD' ? '$' : '₾';
+  const formatPrice = (value: string | number) => experience.currency === 'USD' ? new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD', minimumFractionDigits: 0, maximumFractionDigits: 2 }).format(Number(value)) : `${value}₾`;
   const router = useRouter();
   const [loadingPlan, setLoadingPlan] = useState<BillingInterval | null>(null);
   const [currentPlan, setCurrentPlan] = useState<string | null>(null);
@@ -69,7 +77,7 @@ export default function SubscriptionClient({ planAmounts }: { planAmounts: Recor
   const handleSubscribeBog = async (interval: BillingInterval) => {
     setLoadingPlan(interval);
     const planLabel = interval === 1 ? '1 თვის გეგმა' : interval === 3 ? '3 თვის გეგმა' : '6 თვის გეგმა';
-    ga.subscribe(planLabel, planAmounts[interval]);
+    ga.subscribe(planLabel, planAmounts[interval], experience.currency);
     try {
       const appliedPromo = promoStatus[interval]?.valid ? promoInput[interval]?.trim() : undefined;
       const res = await fetch('/api/subscription/bog-checkout', {
@@ -83,16 +91,16 @@ export default function SubscriptionClient({ planAmounts }: { planAmounts: Recor
         return;
       }
       if (data.error === 'already_subscribed') {
-        alert('ეს პაკეტი უკვე აქტიური გაქვთ');
+        alert(copy('ეს პაკეტი უკვე აქტიური გაქვთ'));
       } else if (data.error === 'interval_switch_blocked') {
         setIntervalBlocked({ currentInterval: data.currentInterval, renewsAt: data.renewsAt ?? null });
       } else if (data.error === 'child_too_young') {
         alert(data.message);
       } else {
-        alert('გადახდის სერვისი დროებით ტექნიკურ სამუშაოებზეა. გთხოვთ სცადოთ მოგვიანებით.');
+        alert(copy('გადახდის სერვისი დროებით ტექნიკურ სამუშაოებზეა. გთხოვთ სცადოთ მოგვიანებით.'));
       }
     } catch (e: any) {
-      alert('გადახდის სერვისი დროებით ტექნიკურ სამუშაოებზეა. გთხოვთ სცადოთ მოგვიანებით.');
+      alert(copy('გადახდის სერვისი დროებით ტექნიკურ სამუშაოებზეა. გთხოვთ სცადოთ მოგვიანებით.'));
     } finally {
       setLoadingPlan(null);
     }
@@ -110,8 +118,8 @@ export default function SubscriptionClient({ planAmounts }: { planAmounts: Recor
   return (
     <main className="min-h-screen bg-[#6F7A5C] px-6 py-16">
       <div className="mx-auto max-w-5xl text-center">
-        <h1 className="text-4xl font-black text-[#F5F1E4] mb-3">პაკეტის არჩევა</h1>
-        <p className="text-[#F5F1E4]/60 mb-12">გაუქმება ნებისმიერ დროს შეგიძლია</p>
+        <h1 className="text-4xl font-black text-[#F5F1E4] mb-3"> <Copy>{"პაკეტის არჩევა"}</Copy> </h1>
+        <p className="text-[#F5F1E4]/60 mb-12"> <Copy>{"გაუქმება ნებისმიერ დროს შეგიძლია"}</Copy> </p>
 
         <div className="grid gap-6 md:grid-cols-3">
           {([1, 3, 6] as BillingInterval[]).map((interval) => {
@@ -121,7 +129,7 @@ export default function SubscriptionClient({ planAmounts }: { planAmounts: Recor
             const monthlyBaseline = planAmounts[1] * interval;
             const savings = monthlyBaseline - price;
             const savingsPct = Math.round((savings / monthlyBaseline) * 100);
-            const perMonth = (price / interval).toFixed(interval === 6 ? 1 : 0);
+            const perMonth = (price / interval).toFixed(experience.market === 'INTL' ? 2 : interval === 6 ? 1 : 0);
             const cadence = interval === 1 ? 'თვეში' : `ყოველ ${interval} თვეში`;
             const isActive = currentPlan === 'FULL_PLAN' && currentInterval === interval && !loadingPlan;
             // Free trial retired for everyone except promo-code signups (2026-09-13
@@ -135,52 +143,50 @@ export default function SubscriptionClient({ planAmounts }: { planAmounts: Recor
                 style={isRecommended ? { borderColor: '#D9803B' } : undefined}>
                 {isRecommended && (
                   <div className="absolute -top-4 left-1/2 -translate-x-1/2">
-                    <span className="inline-flex items-center gap-2 text-white text-sm font-black px-6 py-2 rounded-full shadow-md whitespace-nowrap" style={{ background: '#D9803B' }}>
-                      მშობლების არჩევანი
-                    </span>
+                    <span className="inline-flex items-center gap-2 text-white text-sm font-black px-6 py-2 rounded-full shadow-md whitespace-nowrap" style={{ background: '#D9803B' }}> <Copy>{"მშობლების არჩევანი"}</Copy> </span>
                   </div>
                 )}
-                <h2 className="text-xl font-semibold text-[#6F7A5C] mb-1 mt-4">{interval} თვე</h2>
+                <h2 className="text-xl font-semibold text-[#6F7A5C] mb-1 mt-4">{interval} <Copy>{"თვე"}</Copy> </h2>
                 <p className="text-sm mb-4 h-5" style={{ color: savings > 0 ? '#D9803B' : 'transparent' }}>
-                  {savings > 0 ? `ზოგავთ ${savings}₾-ს (${savingsPct}%)` : '—'}
+                  <Copy>{savings > 0 ? (experience.locale === 'en' ? `You save ${savings}${symbol} (${savingsPct}%)` : `ზოგავთ ${savings}${symbol}-ს (${savingsPct}%)`) : '—'}</Copy>
                 </p>
 
                 {hasTrial ? (
                   <>
-                    <div className="text-4xl font-black text-[#6F7A5C]">0₾</div>
-                    <p className="text-[#6F7A5C]/60 text-sm font-medium mb-2">პირველი {PROMO_TRIAL_DAYS} დღე</p>
+                    <div className="text-4xl font-black text-[#6F7A5C]">{formatPrice(0)}</div>
+                    <p className="text-[#6F7A5C]/60 text-sm font-medium mb-2"> <Copy>{"პირველი"}</Copy> {PROMO_TRIAL_DAYS} <Copy>{"დღე"}</Copy> </p>
                   </>
                 ) : (
-                  <div className="text-4xl font-black text-[#6F7A5C]">{disc ?? price}₾</div>
+                  <div className="text-4xl font-black text-[#6F7A5C]">{formatPrice(disc ?? price)}</div>
                 )}
 
                 <div className="flex justify-center items-baseline gap-1.5 mb-1">
                   {disc ? (
                     <>
-                      <span className="text-base font-bold text-red-400 line-through">{price}₾</span>
-                      <span className="text-xl font-bold text-[#6F7A5C]">{disc}₾</span>
+                      <span className="text-base font-bold text-red-400 line-through">{formatPrice(price)}</span>
+                      <span className="text-xl font-bold text-[#6F7A5C]">{formatPrice(disc)}</span>
                     </>
                   ) : (
-                    <span className="text-xl font-bold text-[#6F7A5C]">{price}₾</span>
+                    <span className="text-xl font-bold text-[#6F7A5C]">{formatPrice(price)}</span>
                   )}
                   <span className="text-[#6F7A5C]/50 text-sm">/ {cadence}</span>
                 </div>
                 {interval > 1 && (
-                  <p className="text-[#6F7A5C]/45 text-xs mb-1">(გამოდის {perMonth}₾ თვეში)</p>
+                  <p className="text-[#6F7A5C]/45 text-xs mb-1"> <Copy>{"(გამოდის"}</Copy> {formatPrice(perMonth)} <Copy>{"თვეში"}</Copy>) </p>
                 )}
 
                 <p className="text-[#6F7A5C]/40 text-[11px] italic mt-2 mb-5">
-                  {hasTrial
+                  <Copy>{hasTrial
                     ? `თანხა ჩამოგეჭრებათ მე-${PROMO_TRIAL_DAYS + 1} დღეს. გაუქმება შესაძლებელია სატესტო პერიოდშივე, სრულიად უფასოდ.`
                     : bogTrialUsed
                       ? 'თანხა ჩამოგეჭრებათ დაუყოვნებლივ — სატესტო პერიოდი ერთხელ უკვე გამოყენებული გაქვთ.'
-                      : 'თანხა ჩამოგეჭრებათ დაუყოვნებლივ, გამოწერისთანავე.'}
+                      : 'თანხა ჩამოგეჭრებათ დაუყოვნებლივ, გამოწერისთანავე.'}</Copy>
                 </p>
 
                 <ul className="space-y-3 text-left flex-1 text-sm text-[#6F7A5C] mb-6">
-                  <li>ასობით რეცეპტი, სრული ინსტრუქციებით</li>
-                  <li>შვილის პირადი პროფილი — ასაკი, ალერგენები და გემოვნება</li>
-                  <li>კვირის კვების გეგმა და ავტომატური საყიდლების სია</li>
+                  <li> <Copy>{"ასობით რეცეპტი, სრული ინსტრუქციებით"}</Copy> </li>
+                  <li> <Copy>{"შვილის პირადი პროფილი — ასაკი, ალერგენები და გემოვნება"}</Copy> </li>
+                  <li> <Copy>{"კვირის კვების გეგმა და ავტომატური საყიდლების სია"}</Copy> </li>
                 </ul>
 
                 <div className="flex gap-2 mb-1">
@@ -188,7 +194,7 @@ export default function SubscriptionClient({ planAmounts }: { planAmounts: Recor
                     value={promoInput[interval]}
                     onChange={e => { setPromoInput(p => ({ ...p, [interval]: e.target.value })); setPromoStatus(p => ({ ...p, [interval]: { discount: 0, valid: false, msg: '' } })); }}
                     onKeyDown={e => e.key === 'Enter' && validatePromo(interval)}
-                    placeholder="პრომოკოდი"
+                    placeholder={copy("პრომოკოდი")}
                     className="flex-1 min-w-0 px-3 py-2 border border-[#6F7A5C]/20 rounded-xl text-sm font-mono uppercase focus:outline-none focus:border-[#6F7A5C] bg-[#F5F1E4] text-[#6F7A5C]"
                   />
                   <button
@@ -196,11 +202,11 @@ export default function SubscriptionClient({ planAmounts }: { planAmounts: Recor
                     disabled={promoLoading === interval || !promoInput[interval]}
                     className="px-4 py-2 border border-[#6F7A5C] text-[#6F7A5C] rounded-xl text-xs font-bold hover:bg-[#6F7A5C]/10 transition disabled:opacity-40"
                   >
-                    {promoLoading === interval ? '...' : 'გამოყენება'}
+                    <Copy>{promoLoading === interval ? '...' : 'გამოყენება'}</Copy>
                   </button>
                 </div>
                 {promoStatus[interval]?.msg && (
-                  <p className="text-[#6F7A5C] text-xs mb-2 font-semibold">{promoStatus[interval]!.msg}</p>
+                  <p className="text-[#6F7A5C] text-xs mb-2 font-semibold"><Copy>{promoStatus[interval]!.msg}</Copy></p>
                 )}
                 <button
                   onClick={() => handleSubscribeBog(interval)}
@@ -208,25 +214,21 @@ export default function SubscriptionClient({ planAmounts }: { planAmounts: Recor
                   className="w-full py-3.5 mt-3 rounded-full font-bold transition disabled:opacity-60"
                   style={isRecommended ? { background: '#D9803B', color: '#FFFFFF' } : { border: '1px solid #6F7A5C', color: '#6F7A5C' }}
                 >
-                  {isActive
+                  <Copy>{isActive
                     ? '✓ აქტიურია'
                     : loadingPlan === interval
                       ? 'მუშავდება...'
                       : hasTrial
                         ? `დაწყება — ${PROMO_TRIAL_DAYS} დღით უფასოდ`
-                        : 'შეიძინე ახლავე'}
+                        : 'შეიძინე ახლავე'}</Copy>
                 </button>
-                <p className="text-[#6F7A5C]/50 text-xs mt-2 text-center">
-                  ავტომატურად განახლდება {cadence}. გაუქმება ნებისმიერ დროს.
-                </p>
+                <p className="text-[#6F7A5C]/50 text-xs mt-2 text-center"> <Copy>{"ავტომატურად განახლდება"}</Copy> {cadence} <Copy>{". გაუქმება ნებისმიერ დროს."}</Copy> </p>
               </div>
             );
           })}
         </div>
 
-        <a href="/dashboard" className="mt-10 inline-block text-[#F5F1E4]/60 hover:text-[#F5F1E4] transition text-sm">
-          ← დაბრუნება
-        </a>
+        <a href="/dashboard" className="mt-10 inline-block text-[#F5F1E4]/60 hover:text-[#F5F1E4] transition text-sm"> <Copy>{"← დაბრუნება"}</Copy> </a>
       </div>
 
       {intervalBlocked && (
@@ -254,39 +256,26 @@ function IntervalSwitchBlockedModal({ currentInterval, renewsAt, onClose, onGoCa
   onClose: () => void;
   onGoCancel: () => void;
 }) {
-  const renewsLabel = renewsAt ? new Date(renewsAt).toLocaleDateString('ka-GE') : null;
+  const experience = useExperience();
+  const renewsLabel = renewsAt ? new Date(renewsAt).toLocaleDateString(experience.locale === 'en' ? 'en-US' : 'ka-GE', experience.locale === 'en' ? { timeZone: experience.timeZone, year: 'numeric', month: 'long', day: 'numeric' } : undefined) : null;
 
   return (
     <div className="fixed inset-0 bg-black/40 z-50 flex items-end sm:items-center justify-center p-4" onClick={onClose}>
       <div className="bg-[#FDFBF0] rounded-3xl w-full max-w-md overflow-hidden" onClick={e => e.stopPropagation()}>
         <div className="p-6">
-          <h3 className="font-black text-[#465940] text-lg mb-3">ვერ შეგიცვლით პაკეტს სანამ გაქვთ აქტიური გამოწერა</h3>
-          <p className="text-sm text-[#465940]/80 leading-relaxed mb-3">
-            თქვენ ამჟამად გაქვთ აქტიური {INTERVAL_LABEL_KA[currentInterval]} პაკეტი, რომელიც უკვე გადახდილია
-            {renewsLabel ? <> და მოქმედია <span className="font-bold">{renewsLabel}</span>-მდე</> : ''}.
-          </p>
-          <p className="text-sm text-[#465940]/80 leading-relaxed mb-3">
-            თუ ახლავე გადავრთავთ სხვა პაკეტზე, ახალი პაკეტის თანხა დაუყოვნებლივ ჩამოგეჭრებათ და დარჩენილი
-            გადახდილი დღეები დაიკარგება — ეს არასამართლიანი იქნებოდა თქვენთვის, ამიტომ არ ვუშვებთ.
-          </p>
-          <p className="text-sm text-[#465940]/80 leading-relaxed mb-5">
-            თუ ნამდვილად გსურთ სხვა პაკეტზე გადასვლა: გააუქმეთ მიმდინარე პაკეტი (წვდომას მაინც არ დაკარგავთ —
-            დარჩება {renewsLabel ? `${renewsLabel}-მდე` : 'გადახდილი პერიოდის ბოლომდე'}), და მას შემდეგ რაც ეს
-            პერიოდი ამოიწურება, თავისუფლად შეძლებთ ახალი პაკეტის შეძენას.
-          </p>
+          <h3 className="font-black text-[#465940] text-lg mb-3"> <Copy>{"ვერ შეგიცვლით პაკეტს სანამ გაქვთ აქტიური გამოწერა"}</Copy> </h3>
+          {experience.locale === 'en' ? <p className="text-sm text-[#465940]/80 leading-relaxed mb-3">Your current {currentInterval}-month plan has already been paid for{renewsLabel ? <> and stays active until <strong>{renewsLabel}</strong></> : ''}.</p> : <p className="text-sm text-[#465940]/80 leading-relaxed mb-3"> <Copy>{"თქვენ ამჟამად გაქვთ აქტიური"}</Copy> {INTERVAL_LABEL_KA[currentInterval]} <Copy>{"პაკეტი, რომელიც უკვე გადახდილია"}</Copy> {renewsLabel ? <> <Copy>{"და მოქმედია"}</Copy> <span className="font-bold">{renewsLabel}</span> <Copy>{"-მდე"}</Copy> </> : ''}.</p>}
+          <p className="text-sm text-[#465940]/80 leading-relaxed mb-3"> <Copy>{"თუ ახლავე გადავრთავთ სხვა პაკეტზე, ახალი პაკეტის თანხა დაუყოვნებლივ ჩამოგეჭრებათ და დარჩენილი გადახდილი დღეები დაიკარგება — ეს არასამართლიანი იქნებოდა თქვენთვის, ამიტომ არ ვუშვებთ."}</Copy> </p>
+          {experience.locale === 'en' ? <p className="text-sm text-[#465940]/80 leading-relaxed mb-5">To choose a different plan, cancel your current subscription first. You will keep access {renewsLabel ? `until ${renewsLabel}` : 'until the end of your paid period'}. When that period ends, you can subscribe to your new plan.</p> : <p className="text-sm text-[#465940]/80 leading-relaxed mb-5"> <Copy>{"თუ ნამდვილად გსურთ სხვა პაკეტზე გადასვლა: გააუქმეთ მიმდინარე პაკეტი (წვდომას მაინც არ დაკარგავთ — დარჩება"}</Copy> <Copy>{renewsLabel ? `${renewsLabel}-მდე` : 'გადახდილი პერიოდის ბოლომდე'}</Copy> <Copy>{"), და მას შემდეგ რაც ეს პერიოდი ამოიწურება, თავისუფლად შეძლებთ ახალი პაკეტის შეძენას."}</Copy> </p>}
           <div className="flex flex-col gap-2">
             <button
               onClick={onGoCancel}
               className="w-full bg-[#465940] hover:bg-[#465940]/90 text-[#FDFBF0] px-5 py-3 rounded-full text-sm font-bold transition"
-            >
-              მიმდინარე პაკეტის გაუქმება
-            </button>
+            > <Copy>{"მიმდინარე პაკეტის გაუქმება"}</Copy> </button>
             <button
               onClick={onClose}
               className="w-full text-[#465940]/60 hover:text-[#465940] px-5 py-2 rounded-full text-sm font-semibold transition"
-            >
-              დახურვა
-            </button>
+            > <Copy>{"დახურვა"}</Copy> </button>
           </div>
         </div>
       </div>

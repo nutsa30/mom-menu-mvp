@@ -1,7 +1,8 @@
 import { prisma } from "@/lib/prisma";
 import EditMealForm from "@/components/EditMealForm";
 
-export default async function EditPage({ params }: { params: { id: string } }) {
+export default async function EditPage(props: { params: Promise<{ id: string }> }) {
+  const params = await props.params;
   const dish = await prisma.dish.findUnique({
     where: { id: params.id },
   });

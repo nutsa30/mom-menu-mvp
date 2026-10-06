@@ -19,14 +19,16 @@ export async function POST(req: Request) {
   const blogTitle = blog.titleKa;
 
   const users = await prisma.user.findMany({
-    select: { email: true, name: true },
+    select: { email: true, name: true, locale: true },
   });
 
   let sent = 0;
   let failed = 0;
   for (const user of users) {
     try {
-      await sendNewBlogEmail(user.email, user.name, blogTitle, blogUrl);
+      const english = user.locale === 'en';
+      if (english && (!blog.titleEn?.trim() || /[\u10A0-\u10FF]/.test(blog.titleEn))) { failed++; continue; }
+      await sendNewBlogEmail(user.email, user.name, english ? blog.titleEn : blogTitle, blogUrl + (english ? '?lang=en' : '?lang=ka'));
       sent++;
     } catch {
       failed++;

@@ -1,4 +1,6 @@
 'use client';
+import Copy, { useCopy } from '@/components/Copy';
+
 
 import { useState } from 'react';
 
@@ -18,7 +20,7 @@ export default function CopyEmailButton({ email, label }: { email: string; label
       </a>
       <button onClick={copy}
         className="inline-flex items-center gap-1.5 text-xs px-3 py-1.5 rounded-full border border-[#F5F1E4]/30 text-[#F5F1E4]/70 hover:text-[#F5F1E4] hover:border-[#F5F1E4]/60 transition">
-        {copied ? '✓ კოპირებულია' : 'კოპირება'}
+        <Copy>{copied ? '✓ კოპირებულია' : 'კოპირება'}</Copy>
       </button>
     </div>
   );

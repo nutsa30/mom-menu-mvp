@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { getAgeGroup } from '@/lib/meal';
 
-const SECRET = process.env.CRON_SECRET || 'mm2026';
+const SECRET = process.env.CRON_SECRET;
 
 // Child.ageGroup is a stored field, computed once from birthDate at creation/edit time —
 // nothing ever recomputes it as the child actually ages, so a baby saved as FROM_6 would
@@ -10,7 +10,7 @@ const SECRET = process.env.CRON_SECRET || 'mm2026';
 // unless a parent happened to re-save the birthDate. This runs daily and brings every
 // child's stored ageGroup back in sync with their real current age.
 export async function GET(req: NextRequest) {
-  const secret = req.nextUrl.searchParams.get('secret');
+  const secret = req.headers.get('authorization')?.replace(/^Bearer /, '') || req.nextUrl.searchParams.get('secret');
   if (!SECRET || secret !== SECRET) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   }

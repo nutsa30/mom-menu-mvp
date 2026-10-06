@@ -7,9 +7,11 @@ import { revalidatePath } from 'next/cache';
 export async function addWithdrawal(formData: FormData) {
   await requireAdmin();
   const amount = Number(formData.get('amount'));
+  const currency = formData.get('currency') ?? 'GEL';
+  if (currency !== 'GEL' && currency !== 'USD') return;
   const noteRaw = String(formData.get('note') ?? '').trim();
   if (!Number.isFinite(amount) || amount <= 0) return;
-  await prisma.withdrawal.create({ data: { amount, note: noteRaw || null } });
+  await prisma.withdrawal.create({ data: { amount, currency, note: noteRaw || null } });
   revalidatePath('/admin/analytics');
 }
 

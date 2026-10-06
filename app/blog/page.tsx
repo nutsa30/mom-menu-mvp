@@ -1,8 +1,9 @@
+import { localizedMetadata } from '@/lib/metadata';
 import { prisma } from '@/lib/prisma';
 import type { Metadata } from 'next';
 import { Suspense } from 'react';
 
-export const metadata: Metadata = {
+const georgianMetadata: Metadata = {
   title: 'ბლოგი — იდეები და გამოცდილება ბავშვის კვებაზე',
   description: 'სტატიები ბავშვის კვების შესახებ, საჯარო წყაროებზე დაყრდნობით — დამატებითი კვება, რეცეპტები და იდეები მშობლებისთვის. ინფორმაციული ხასიათისაა და არ ცვლის ექიმის კონსულტაციას.',
   alternates: {
@@ -19,7 +20,10 @@ export const metadata: Metadata = {
 
 const POSTS_PER_PAGE = 6;
 
-export default async function BlogListPage({ searchParams }: { searchParams: { lang?: string; page?: string } }) {
+export async function generateMetadata(): Promise<Metadata> { return localizedMetadata(georgianMetadata, "MomMenu blog", "Articles about feeding children and planning family meals.", "/blog"); }
+
+export default async function BlogListPage(props: { searchParams: Promise<{ lang?: string; page?: string }> }) {
+  const searchParams = await props.searchParams;
   const locale = searchParams.lang === 'en' ? 'en' : 'ka';
   const ka = locale === 'ka';
   const page = Math.max(1, parseInt(searchParams.page ?? '1', 10));

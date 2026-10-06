@@ -20,7 +20,9 @@ export default function UsersSearchTable({
   users,
   locale,
   intervalPrices,
+  currency = "GEL",
 }: {
+  currency?: "GEL" | "USD";
   users: any[];
   locale: AdminLocale;
   intervalPrices: Record<number, number>;
@@ -178,7 +180,7 @@ export default function UsersSearchTable({
                         <span className="font-mono text-xs bg-[#465940]/10 text-[#465940] border border-[#465940]/30 px-2 py-0.5 rounded font-bold w-fit">
                           {user.promoCode.code}
                         </span>
-                        <span className="text-[10px] text-[#465940]/60">{user.promoPrice}₾</span>
+                        <span className="text-[10px] text-[#465940]/60">{user.promoPrice}{currency === "USD" ? "$" : "₾"}</span>
                       </div>
                     ) : (
                       <span className="text-[#465940]/40 text-xs">—</span>

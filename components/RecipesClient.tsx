@@ -1,4 +1,9 @@
 'use client';
+import Copy, { useCopy } from '@/components/Copy';
+import { useExperience } from './ExperienceProvider';
+import { ingredientQuantity } from '@/lib/measurements';
+import MeasurementSwitcher from './MeasurementSwitcher';
+
 
 import { useState, useEffect } from 'react';
 
@@ -127,6 +132,7 @@ function parseSteps(text: string): string[] {
 }
 
 export default function RecipesClient({ dishes, locale, canRead, isLoggedIn }: Props) {
+  const { units } = useExperience();
   const [mealFilter, setMealFilter] = useState('ALL');
   const [ageFilter, setAgeFilter] = useState('ALL');
   const [practicalFilters, setPracticalFilters] = useState<string[]>([]);
@@ -143,7 +149,7 @@ export default function RecipesClient({ dishes, locale, canRead, isLoggedIn }: P
   const t = (ka: string, en: string) => locale === 'ka' ? ka : en;
   const title = (d: Dish) => locale === 'ka' ? d.titleKa : d.titleEn;
   const desc = (d: Dish) => locale === 'ka' ? d.descriptionKa : d.descriptionEn;
-  const ingredients = (d: Dish) => locale === 'ka' ? d.ingredientsKa : d.ingredientsEn;
+  const ingredients = (d: Dish) => (locale === 'ka' ? d.ingredientsKa : d.ingredientsEn).map(text => ingredientQuantity(text, units));
 
   // Only offer a practical filter that at least one real dish currently matches — an
   // untagged catalog just doesn't show the tag-based ones yet, rather than showing an
@@ -184,10 +190,10 @@ export default function RecipesClient({ dishes, locale, canRead, isLoggedIn }: P
       <div className="border-b border-[#F5F1E4]/10">
         <div className="max-w-6xl mx-auto px-6 py-8">
           <h1 className="text-3xl font-black text-[#F5F1E4] mb-1">
-            {t('რეცეპტები', 'Recipes')}
+            <Copy>{t('რეცეპტები', 'Recipes')}</Copy>
           </h1>
           <p className="text-[#F5F1E4]/50 text-sm">
-            {dishes.length} {t('კერძი ბაზაში', 'recipes in our library')}
+            {dishes.length} <Copy>{t('კერძი ბაზაში', 'recipes in our library')}</Copy>
           </p>
         </div>
       </div>
@@ -222,7 +228,7 @@ export default function RecipesClient({ dishes, locale, canRead, isLoggedIn }: P
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
               <line x1="4" y1="6" x2="20" y2="6"/><line x1="8" y1="12" x2="20" y2="12"/><line x1="12" y1="18" x2="20" y2="18"/>
             </svg>
-            {t('ფილტრი', 'Filters')}
+            <Copy>{t('ფილტრი', 'Filters')}</Copy>
             {(mealFilter !== 'ALL' || ageFilter !== 'ALL' || practicalFilters.length > 0) && (
               <span className="w-2 h-2 rounded-full bg-[#6F7A5C] inline-block" />
             )}
@@ -237,7 +243,7 @@ export default function RecipesClient({ dishes, locale, canRead, isLoggedIn }: P
             <div className="flex gap-4 sm:block bg-[#F5F1E4]/5 rounded-2xl p-4">
               {/* Meal type filter */}
               <div className="flex flex-col sm:flex-row gap-2 sm:flex-wrap sm:mb-3 flex-1">
-                <p className="text-[10px] text-[#F5F1E4]/50 uppercase tracking-widest font-bold mb-1 sm:hidden">{t('ტიპი', 'Type')}</p>
+                <p className="text-[10px] text-[#F5F1E4]/50 uppercase tracking-widest font-bold mb-1 sm:hidden"><Copy>{t('ტიპი', 'Type')}</Copy></p>
                 {MEAL_TYPES.map((m) => (
                   <button
                     key={m.key}
@@ -255,7 +261,7 @@ export default function RecipesClient({ dishes, locale, canRead, isLoggedIn }: P
 
               {/* Age group filter */}
               <div className="flex flex-col sm:flex-row gap-2 sm:flex-wrap flex-1">
-                <p className="text-[10px] text-[#F5F1E4]/50 uppercase tracking-widest font-bold mb-1 sm:hidden">{t('ასაკი', 'Age')}</p>
+                <p className="text-[10px] text-[#F5F1E4]/50 uppercase tracking-widest font-bold mb-1 sm:hidden"><Copy>{t('ასაკი', 'Age')}</Copy></p>
                 {AGE_GROUPS.map((a) => (
                   <button
                     key={a.key}
@@ -274,7 +280,7 @@ export default function RecipesClient({ dishes, locale, canRead, isLoggedIn }: P
               {/* Feature 10 — practical filters, on the existing catalog only. */}
               {presentFilters.length > 0 && (
                 <div className="flex flex-col sm:flex-row gap-2 sm:flex-wrap flex-1 sm:basis-full sm:mt-3">
-                  <p className="text-[10px] text-[#F5F1E4]/50 uppercase tracking-widest font-bold mb-1 sm:hidden">{t('პრაქტიკული', 'Practical')}</p>
+                  <p className="text-[10px] text-[#F5F1E4]/50 uppercase tracking-widest font-bold mb-1 sm:hidden"><Copy>{t('პრაქტიკული', 'Practical')}</Copy></p>
                   {presentFilters.map((f) => {
                     const active = practicalFilters.includes(f.key);
                     return (
@@ -303,7 +309,7 @@ export default function RecipesClient({ dishes, locale, canRead, isLoggedIn }: P
         {filtered.length === 0 ? (
           <div className="text-center py-24 text-[#F5F1E4]/60">
             <div className="text-5xl mb-4"></div>
-            <p className="font-semibold">{t('კერძი ვერ მოიძებნა', 'No recipes found')}</p>
+            <p className="font-semibold"><Copy>{t('კერძი ვერ მოიძებნა', 'No recipes found')}</Copy></p>
           </div>
         ) : (
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
@@ -416,7 +422,7 @@ export default function RecipesClient({ dishes, locale, canRead, isLoggedIn }: P
                 <div className="flex flex-wrap gap-1.5 mt-2">
                   {selected.prepTimeMinutes != null && (
                     <span className="px-2.5 py-0.5 bg-[#fff3ee] text-[#6F7A5C] text-xs font-bold rounded-full">
-                      ⏱ {selected.prepTimeMinutes} {t('წუთი', 'min')}
+                      ⏱ {selected.prepTimeMinutes} <Copy>{t('წუთი', 'min')}</Copy>
                     </span>
                   )}
                   {selected.ageGroups.map((ag) => {
@@ -432,7 +438,7 @@ export default function RecipesClient({ dishes, locale, canRead, isLoggedIn }: P
                 <>
                   {desc(selected) && (
                     <div>
-                      <p className="text-sm font-bold text-[#6F7A5C] mb-2">{t('მომზადების წესი', 'Preparation')}</p>
+                      <p className="text-sm font-bold text-[#6F7A5C] mb-2"><Copy>{t('მომზადების წესი', 'Preparation')}</Copy></p>
                       <ol className="space-y-1.5">
                         {parseSteps(desc(selected)).map((step, i) => (
                           <li key={i} className="flex gap-2.5 text-sm text-[#6F7A5C] leading-snug">
@@ -446,7 +452,8 @@ export default function RecipesClient({ dishes, locale, canRead, isLoggedIn }: P
 
                   {ingredients(selected).length > 0 && (
                     <div>
-                      <p className="text-sm font-bold text-[#6F7A5C] mb-2">{t('ინგრედიენტები', 'Ingredients')}</p>
+                      <MeasurementSwitcher />
+                      <p className="text-sm font-bold text-[#6F7A5C] mb-2"><Copy>{t('ინგრედიენტები', 'Ingredients')}</Copy></p>
                       <ol className="space-y-1.5">
                         {ingredients(selected).map((ing, i) => (
                           <li key={i} className="flex gap-2.5 text-sm text-[#6F7A5C] leading-snug">
@@ -485,12 +492,12 @@ export default function RecipesClient({ dishes, locale, canRead, isLoggedIn }: P
                     if (!nutrients.length) return null;
                     return (
                       <div>
-                        <p className="text-sm font-bold text-[#6F7A5C] mb-2">{t('კვებითი ღირებულება', 'Nutrition')}</p>
+                        <p className="text-sm font-bold text-[#6F7A5C] mb-2"><Copy>{t('კვებითი ღირებულება', 'Nutrition')}</Copy></p>
                         <div className="grid grid-cols-2 gap-2">
                           {nutrients.map(({ v, label, unit, color }) => (
-                            <div key={label} className={`${color.split(' ')[0]} rounded-xl p-3 text-center`}>
-                              <p className={`text-base font-black ${color.split(' ')[1]}`}>{v}{unit}</p>
-                              <p className="text-xs text-[#6F7A5C]/70">{label}</p>
+                            <div key={label} className={`${color} rounded-xl p-3 text-center`}>
+                              <p className="text-base font-black">{v}{unit}</p>
+                              <p className="text-xs">{label}</p>
                             </div>
                           ))}
                         </div>
@@ -500,7 +507,7 @@ export default function RecipesClient({ dishes, locale, canRead, isLoggedIn }: P
 
                   {selected.allergens.length > 0 && (
                     <div>
-                      <p className="text-sm font-bold text-[#6F7A5C] mb-2">{t('შეიცავს ალერგენებს', 'Contains allergens')}</p>
+                      <p className="text-sm font-bold text-[#6F7A5C] mb-2"><Copy>{t('შეიცავს ალერგენებს', 'Contains allergens')}</Copy></p>
                       <div className="flex flex-wrap gap-1.5">
                         {selected.allergens.map((a) => (
                           <span key={a} className="px-2.5 py-1 bg-[#6F7A5C] text-[#F5F1E4] text-xs font-bold rounded-full border border-[#F5F1E4]/30">
@@ -518,13 +525,13 @@ export default function RecipesClient({ dishes, locale, canRead, isLoggedIn }: P
                       <rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/>
                     </svg>
                   </div>
-                  <p className="font-bold text-[#F5F1E4] mb-1">{t('სრული რეცეპტი დახურულია', 'Full recipe is locked')}</p>
+                  <p className="font-bold text-[#F5F1E4] mb-1"><Copy>{t('სრული რეცეპტი დახურულია', 'Full recipe is locked')}</Copy></p>
                   <p className="text-sm text-[#F5F1E4]/70 mb-4">
-                    {t('სრული ინგრედიენტებისა და კვებითი ღირებულების სანახავად გაიარე გამოწერა.', 'Subscribe to view full ingredients and nutritional info.')}
+                    <Copy>{t('სრული ინგრედიენტებისა და კვებითი ღირებულების სანახავად გაიარე გამოწერა.', 'Subscribe to view full ingredients and nutritional info.')}</Copy>
                   </p>
                   <a href={isLoggedIn ? '/#pricing' : '/signup'}
                     className="inline-block bg-[#F5F1E4] text-[#6F7A5C] font-bold text-sm px-6 py-3 rounded-full hover:opacity-90 transition">
-                    {isLoggedIn ? t('გამოწერის გააქტიურება', 'Activate subscription') : t('რეგისტრაცია', 'Sign up free')}
+                    <Copy>{isLoggedIn ? t('გამოწერის გააქტიურება', 'Activate subscription') : t('რეგისტრაცია', 'Sign up free')}</Copy>
                   </a>
                 </div>
               )}

@@ -3,7 +3,7 @@ import { prisma } from '@/lib/prisma';
 
 const APP_ID   = process.env.NEXT_PUBLIC_ONESIGNAL_APP_ID!;
 const REST_KEY = process.env.ONESIGNAL_REST_API_KEY!;
-const SECRET   = process.env.CRON_SECRET || 'mm2026';
+const SECRET   = process.env.CRON_SECRET;
 
 // Georgia Standard Time = UTC+4, no DST
 function geoHour() { return (new Date().getUTCHours() + 4) % 24; }
@@ -28,7 +28,7 @@ async function getScheduleAndMealType(hour: number, day: number) {
   return { schedule, mealType, paused: false };
 }
 
-async function sendNotification(title: string, body: string, url = 'https://mommenu.ge') {
+async function sendNotification(title: string, body: string, url = 'https://mommenu.ge', titleEn?: string | null, bodyEn?: string | null) {
   return fetch('https://onesignal.com/api/v1/notifications', {
     method: 'POST',
     headers: {
@@ -37,9 +37,9 @@ async function sendNotification(title: string, body: string, url = 'https://momm
     },
     body: JSON.stringify({
       app_id: APP_ID,
-      included_segments: ['All'],
-      headings: { ka: title, en: title },
-      contents: { ka: body,  en: body  },
+      filters: [{ field: 'tag', key: 'market', relation: '=', value: 'GE' }, { operator: 'OR' }, { field: 'tag', key: 'market', relation: 'not_exists' }],
+      headings: { ka: title, en: titleEn || 'Your Mommenu reminder' },
+      contents: { ka: body, en: bodyEn || 'Open Mommenu to see your child’s meal plan.' },
       url,
       chrome_web_icon: 'https://mommenu.ge/icon-192x192.png',
     }),
@@ -47,7 +47,7 @@ async function sendNotification(title: string, body: string, url = 'https://momm
 }
 
 export async function GET(req: NextRequest) {
-  const secret = req.nextUrl.searchParams.get('secret');
+  const secret = req.headers.get('authorization')?.replace(/^Bearer /, '') || req.nextUrl.searchParams.get('secret');
   if (!SECRET || secret !== SECRET) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   }
@@ -72,7 +72,7 @@ export async function GET(req: NextRequest) {
   const msg = templates[new Date().getDate() % templates.length];
   const url = mealType === 'weekly' ? 'https://mommenu.ge/dashboard' : 'https://mommenu.ge';
 
-  const res  = await sendNotification(msg.title, msg.body, url);
+  const res  = await sendNotification(msg.title, msg.body, url, msg.titleEn, msg.bodyEn);
   const data = await res.json().catch(() => ({}));
 
   return NextResponse.json({ ok: res.ok, hour, day, mealType, title: msg.title, onesignal: data });

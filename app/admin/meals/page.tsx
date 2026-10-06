@@ -2,7 +2,8 @@
 import { adminDict, getAdminLocale } from '@/lib/adminI18n';
 import DishesAdminList from '@/components/DishesAdminList';
 
-export default async function MealManager({ searchParams }: { searchParams: { lang?: string } }) {
+export default async function MealManager(props: { searchParams: Promise<{ lang?: string }> }) {
+  const searchParams = await props.searchParams;
   const locale = getAdminLocale(searchParams.lang);
   const d = adminDict[locale];
 

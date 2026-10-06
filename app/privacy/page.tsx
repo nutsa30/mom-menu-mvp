@@ -1,15 +1,19 @@
+import { localizedMetadata } from '@/lib/metadata';
 ﻿import type { Metadata } from 'next';
 import BackToRegisterButton from '@/components/BackToRegisterButton';
 import CopyEmailButton from '@/components/CopyEmailButton';
 
-export const metadata: Metadata = {
+const georgianMetadata: Metadata = {
   title: 'კონფიდენციალურობის პოლიტიკა — mom menu',
   description: 'mom menu-ის კონფიდენციალურობის პოლიტიკა. გაეცანი როგორ ვიყენებთ და ვიცავთ შენს პირად მონაცემებს.',
   openGraph: { title: 'კონფიდენციალურობის პოლიტიკა — mom menu', url: '/privacy' },
   robots: { index: false, follow: false },
 };
 
-export default function PrivacyPage({ searchParams }: { searchParams: { lang?: string; from?: string } }) {
+export async function generateMetadata(): Promise<Metadata> { return localizedMetadata(georgianMetadata, "Privacy policy", "How MomMenu handles your personal information.", "/privacy"); }
+
+export default async function PrivacyPage(props: { searchParams: Promise<{ lang?: string; from?: string }> }) {
+  const searchParams = await props.searchParams;
   const locale = searchParams.lang === 'en' ? 'en' : 'ka';
   const ka = locale === 'ka';
   const fromRegister = searchParams.from === 'register';

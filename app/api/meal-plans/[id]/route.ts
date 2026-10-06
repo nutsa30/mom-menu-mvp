@@ -9,7 +9,8 @@ async function adminGuard() {
   return null;
 }
 
-export async function PATCH(req: Request, { params }: { params: { id: string } }) {
+export async function PATCH(req: Request, props: { params: Promise<{ id: string }> }) {
+  const params = await props.params;
   const guard = await adminGuard();
   if (guard) return guard;
 
@@ -25,7 +26,8 @@ export async function PATCH(req: Request, { params }: { params: { id: string } }
   return NextResponse.json(plan);
 }
 
-export async function DELETE(_req: Request, { params }: { params: { id: string } }) {
+export async function DELETE(_req: Request, props: { params: Promise<{ id: string }> }) {
+  const params = await props.params;
   const guard = await adminGuard();
   if (guard) return guard;
 

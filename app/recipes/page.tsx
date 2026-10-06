@@ -1,10 +1,12 @@
+import { localizedMetadata } from '@/lib/metadata';
+import { hasPaidAccess } from '@/lib/paid-access';
 ﻿import { prisma } from '@/lib/prisma';
 import { getSession } from '@/lib/auth';
 import { dict } from '@/lib/i18n';
 import RecipesClient from '@/components/RecipesClient';
 import type { Metadata } from 'next';
 
-export const metadata: Metadata = {
+const georgianMetadata: Metadata = {
   title: 'რეცეპტები — ბავშვის კვება ასაკის მიხედვით',
   description: 'ასობით ჯანსაღი რეცეპტი ბავშვებისთვის — ჩვილებისთვის, მოზარდებისთვის და სკოლამდელი ასაკის ბავშვებისთვის. ყველა რეცეპტი ალერგენების გათვალისწინებით.',
   alternates: {
@@ -19,22 +21,25 @@ export const metadata: Metadata = {
   },
 };
 
-export default async function RecipesPage({
-  searchParams,
-}: {
-  searchParams: { lang?: string };
-}) {
+export async function generateMetadata(): Promise<Metadata> { return localizedMetadata(georgianMetadata, "Recipes for babies and children", "Explore age-appropriate recipes and ingredient guides for your child.", "/recipes"); }
+
+export default async function RecipesPage(
+  props: {
+    searchParams: Promise<{ lang?: string }>;
+  }
+) {
+  const searchParams = await props.searchParams;
   const locale = searchParams.lang === 'en' ? 'en' : 'ka';
   const d = dict[locale];
 
   const session = await getSession();
-  let subscriptionStatus = 'FREE';
+  let canRead = false;
   if (session) {
     const user = await prisma.user.findUnique({
       where: { id: session.id },
-      select: { subscriptionStatus: true },
+      select: { subscriptionStatus: true, role: true, isBlocked: true, paymentFailedAt: true, subscriptionRenewsAt: true },
     });
-    subscriptionStatus = user?.subscriptionStatus ?? 'FREE';
+    canRead = hasPaidAccess(user);
   }
 
   const dishes = await prisma.dish.findMany({
@@ -78,11 +83,13 @@ export default async function RecipesPage({
     },
   });
 
-  const canRead = subscriptionStatus === 'RECIPE_PLAN' || subscriptionStatus === 'FULL_PLAN';
 
   return (
     <RecipesClient
-      dishes={dishes}
+      dishes={canRead ? dishes : dishes.map(dish => ({ ...dish,
+        descriptionKa: dish.descriptionKa.slice(0, 160), descriptionEn: dish.descriptionEn.slice(0, 160),
+        ingredientsKa: [], ingredientsEn: [], blwNoteKa: null,
+      }))}
       locale={locale}
       canRead={canRead}
       isLoggedIn={!!session}

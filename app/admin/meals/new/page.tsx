@@ -1,4 +1,5 @@
 ﻿'use client';
+import Link from 'next/link';
 
 import { useState, useRef } from 'react';
 import { useRouter } from 'next/navigation';
@@ -184,7 +185,7 @@ export default function NewMealPage() {
     <div className="p-6 max-w-3xl">
       {/* Header */}
       <div className="mb-6 flex items-center gap-3">
-        <a href="/admin/meals" className="text-[#465940]/60 hover:text-[#465940]/80 text-sm transition">← უკან</a>
+        <Link href="/admin/meals" className="text-[#465940]/60 hover:text-[#465940]/80 text-sm transition">← უკან</Link>
         <span className="text-[#465940]/40">/</span>
         <h1 className="text-2xl font-black text-[#465940]">ახალი კერძი</h1>
       </div>
@@ -318,7 +319,7 @@ export default function NewMealPage() {
 
           <div>
             <label className={lbl}>მომზადების დაახლოებითი დრო (წუთი)</label>
-            <p className="text-[11px] text-[#465940]/50 mb-2">გამოიყენება /recipes გვერდის დროის ფილტრში და დეშბორდზე „რამდენი დრო მაქვს?" არჩევანში. ცარიელი დატოვე, თუ არ იცი ზუსტად.</p>
+            <p className="text-[11px] text-[#465940]/50 mb-2">გამოიყენება /recipes გვერდის დროის ფილტრში და დეშბორდზე „რამდენი დრო მაქვს?&quot; არჩევანში. ცარიელი დატოვე, თუ არ იცი ზუსტად.</p>
             <input type="number" min="0" step="5" value={prepTimeMinutes}
               onChange={(e) => setPrepTimeMinutes(e.target.value)}
               placeholder="მაგ. 20" className={`${inp} max-w-[160px]`} />
@@ -406,10 +407,10 @@ export default function NewMealPage() {
             {uploading && <span className="animate-spin text-base">⏳</span>}
             {uploading ? 'ფოტო იტვირთება...' : saving ? 'ინახება...' : 'კერძის შენახვა'}
           </button>
-          <a href="/admin/meals"
+          <Link href="/admin/meals"
             className="px-6 py-4 rounded-full border border-[#465940]/20 text-[#465940]/80 font-bold text-sm hover:bg-[#465940]/5 transition text-center">
             გაუქმება
-          </a>
+          </Link>
         </div>
       </form>
     </div>

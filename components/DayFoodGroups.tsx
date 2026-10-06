@@ -1,4 +1,9 @@
 'use client';
+import { useExperience } from './ExperienceProvider';
+import { localizedField } from '@/lib/content';
+
+import Copy, { useCopy } from '@/components/Copy';
+
 
 import { useEffect, useState } from 'react';
 import RecipeModal from './RecipeModal';
@@ -20,6 +25,7 @@ const GROUP_META: Record<string, { label: string }> = {
 const GROUP_ORDER = ['ENERGY', 'PROTEIN', 'VEGETABLE', 'FRUIT', 'GRAIN', 'FAT'];
 
 export default function DayFoodGroups({ child, date }: { child: any; date: string }) {
+  const { locale: contentLocale } = useExperience();
   const [data, setData] = useState<any | null>(null);
   const [recipeModal, setRecipeModal] = useState<any | null>(null);
 
@@ -36,10 +42,10 @@ export default function DayFoodGroups({ child, date }: { child: any; date: strin
 
   return (
     <div className={`${card} p-4`}>
-      <p className="text-sm font-bold text-[#465940] mb-3">დღეს რა გამომივიდა?</p>
+      <p className="text-sm font-bold text-[#465940] mb-3"> <Copy>{"დღეს რა გამომივიდა?"}</Copy> </p>
 
       {data.eatenCount === 0 ? (
-        <p className="text-xs text-[#465940]/60">ჯერ არაფერია დამატებული დღეს — როგორც კი დაემატება, აქ თბილად შეჯამდება.</p>
+        <p className="text-xs text-[#465940]/60"> <Copy>{"ჯერ არაფერია დამატებული დღეს — როგორც კი დაემატება, აქ თბილად შეჯამდება."}</Copy> </p>
       ) : (
         <>
           <div className="flex gap-2 flex-wrap">
@@ -51,7 +57,7 @@ export default function DayFoodGroups({ child, date }: { child: any; date: strin
                   className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-bold transition ${
                     present ? 'bg-[#465940] text-[#FDFBF0]' : 'bg-[#465940]/8 text-[#465940]/50'
                   }`}>
-                  {meta.label}
+                  <Copy>{meta.label}</Copy>
                   {present && <span className="text-[10px]">✓</span>}
                 </span>
               );
@@ -60,14 +66,14 @@ export default function DayFoodGroups({ child, date }: { child: any; date: strin
 
           {data.suggestions?.length > 0 && (
             <div className="mt-3">
-              <p className="text-[11px] font-bold text-[#465940]/60 mb-2">იქნებ დაამატო?</p>
+              <p className="text-[11px] font-bold text-[#465940]/60 mb-2"> <Copy>{"იქნებ დაამატო?"}</Copy> </p>
               <div className="flex gap-3 overflow-x-auto pb-1 -mx-1 px-1">
                 {data.suggestions.map((s: any) => (
                   <button key={s.dish.id} onClick={() => setRecipeModal(s.dish)} className="flex-shrink-0 w-20 text-left group">
                     <div className="w-20 h-20 rounded-2xl overflow-hidden bg-[#f0f8ee] group-hover:ring-2 group-hover:ring-[#465940]/40 transition">
                       {s.dish.imageUrl ? <img src={s.dish.imageUrl} className="w-full h-full object-cover" alt="" /> : <div className="w-full h-full bg-[#465940]/10" />}
                     </div>
-                    <p className="mt-1.5 text-[11px] font-bold text-[#465940] leading-snug line-clamp-2">{s.dish.titleKa}</p>
+                    <p className="mt-1.5 text-[11px] font-bold text-[#465940] leading-snug line-clamp-2">{localizedField(s.dish, 'title', contentLocale)}</p>
                   </button>
                 ))}
               </div>

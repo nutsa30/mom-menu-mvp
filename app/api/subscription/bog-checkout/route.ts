@@ -1,3 +1,4 @@
+import { accountMarket, getExperience } from '@/lib/experience';
 import { prisma } from '@/lib/prisma';
 import { getSession } from '@/lib/auth';
 import { createTrialOrder, createDirectOrder, isBillingInterval } from '@/lib/bog';
@@ -9,6 +10,7 @@ export async function POST(req: Request) {
     const session = await getSession();
     if (!session) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
 
+    if ((await getExperience()).preview) return NextResponse.json({ error: 'preview_checkout_disabled' }, { status: 409 });
     const { interval, promoCode } = await req.json();
     if (!isBillingInterval(interval)) {
       return NextResponse.json({ error: 'Invalid plan' }, { status: 400 });
@@ -94,6 +96,8 @@ export async function POST(req: Request) {
       email: user.email,
       name: user.name,
       discountPercent,
+      market: accountMarket(user),
+      locale: user.locale === 'en' ? 'en' : 'ka',
     });
     return NextResponse.json({ url });
   } catch (err: any) {

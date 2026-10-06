@@ -1,28 +1,29 @@
+import { adminWriteError } from '@/lib/api-access';
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 
-export async function DELETE(
-    req: Request,
-    { params }: { params: { id: string } }
-) {
-    try {
-        await prisma.dish.delete({
-            where: { id: params.id },
-        });
+export async function DELETE(req: Request, props: { params: Promise<{ id: string }> }) {
+  const accessError = await adminWriteError(req);
+  if (accessError) return accessError;
+  const params = await props.params;
+  try {
+      await prisma.dish.delete({
+          where: { id: params.id },
+      });
 
-        return NextResponse.json({ success: true });
-    } catch (error) {
-        console.error(error);
-        return NextResponse.json({ error: "Failed to delete" }, { status: 500 });
-    }
+      return NextResponse.json({ success: true });
+  } catch (error) {
+      console.error(error);
+      return NextResponse.json({ error: "Failed to delete" }, { status: 500 });
+  }
 }
 
 
 
-export async function PUT(
-  req: Request,
-  { params }: { params: { id: string } }
-) {
+export async function PUT(req: Request, props: { params: Promise<{ id: string }> }) {
+  const accessError = await adminWriteError(req);
+  if (accessError) return accessError;
+  const params = await props.params;
   try {
     const body = await req.json();
 

@@ -2,7 +2,8 @@
 import { prisma } from '@/lib/prisma';
 import BlogForm from '../../BlogForm';
 
-export default async function EditBlogPage({ params }: { params: { id: string } }) {
+export default async function EditBlogPage(props: { params: Promise<{ id: string }> }) {
+  const params = await props.params;
   const blog = await prisma.blog.findUnique({ where: { id: params.id } });
   if (!blog) notFound();
 

@@ -1,3 +1,4 @@
+import { currencyFor, normalizeMarket, planPrice } from '@/lib/market';
 import { prisma } from '@/lib/prisma';
 import {
   verifyWebhookSignature,
@@ -107,13 +108,18 @@ export async function POST(req: Request) {
       return NextResponse.json({ received: true });
     }
 
+    const checkout = await prisma.checkoutOrder.findUnique({ where: { id: orderId } });
+    if (user.market === 'INTL' && (!checkout || checkout.userId !== user.id || checkout.interval !== decoded.interval || checkout.currency !== 'USD')) {
+      return NextResponse.json({ error: 'Unknown international checkout' }, { status: 400 });
+    }
+    const currency = checkout?.currency || 'GEL';
     const existing = await prisma.payment.findUnique({ where: { bogOrderId: orderId } });
     if (existing) return NextResponse.json({ received: true }); // already processed (retried callback)
 
     // Reflects what BOG actually charges — the order itself was created at this same
     // discounted amount (see /api/subscription/bog-checkout), so this must match exactly
     // or our own Payment/MRR records would overstate what a promo-code user really pays.
-    const grossAmount = applyDiscount(Number(PLAN_AMOUNTS_BY_INTERVAL[decoded.interval] ?? 0), user.promoCode?.discountPercent);
+    const grossAmount = checkout?.amount ?? applyDiscount(Number(PLAN_AMOUNTS_BY_INTERVAL[decoded.interval] ?? 0), user.promoCode?.discountPercent);
 
     if (isFailed) {
       // Recorded (not just logged) so a declined card is visible in admin's payments
@@ -128,6 +134,7 @@ export async function POST(req: Request) {
           bogOrderId: orderId,
           cardType: cardType ?? null,
           grossAmount,
+          currency,
           commissionAmount: null,
           netAmount: null,
           failureReason: describeFailure(body),
@@ -149,19 +156,7 @@ export async function POST(req: Request) {
         console.error('BOG webhook: preauth release failed, needs manual follow-up', { orderId, userId: user.id, error: err.message });
       }
 
-      await prisma.payment.create({
-        data: {
-          userId: user.id,
-          plan: 'FULL_PLAN',
-          billingIntervalMonths: decoded.interval,
-          status: 'REFUNDED',
-          bogOrderId: orderId,
-          cardType: cardType ?? null,
-          grossAmount,
-          commissionAmount: null,
-          netAmount: null,
-        },
-      });
+
 
       // Free trial retired for everyone except promo-code signups (2026-09-13 decision) —
       // bog-checkout/route.ts's eligibleForTrial check is what actually decides whether a
@@ -174,13 +169,31 @@ export async function POST(req: Request) {
       // applyReferralAdjustments below) — that's independent of trial length entirely.
       const trialDays = PROMO_TRIAL_DAYS;
       const trialEndsAt = new Date(now.getTime() + trialDays * DAY_MS);
-      await prisma.user.update({
+      const activated = await prisma.$transaction(async tx => {
+        if (await tx.payment.findUnique({ where: { bogOrderId: orderId } })) return false;
+      await tx.payment.create({
+        data: {
+          userId: user.id,
+          plan: 'FULL_PLAN',
+          billingIntervalMonths: decoded.interval,
+          status: 'REFUNDED',
+          bogOrderId: orderId,
+          cardType: cardType ?? null,
+          grossAmount,
+          currency,
+          commissionAmount: null,
+          netAmount: null,
+        },
+      });
+      await tx.user.update({
         where: { id: user.id },
         data: {
           subscriptionStatus: 'FULL_PLAN',
           billingIntervalMonths: decoded.interval,
           subscriptionCanceledAt: null,
           bogParentOrderId: orderId,
+        subscriptionCurrency: currency,
+          subscriptionAmount: grossAmount,
           trialEndsAt,
           bogTrialUsed: true,
           isGifted: false,
@@ -189,6 +202,13 @@ export async function POST(req: Request) {
           subscriptionStartedAt: user.subscriptionStartedAt ?? now,
         },
       });
+        return true;
+      }).catch(error => {
+        if (error?.code === 'P2002') return false;
+        throw error;
+      });
+      if (!activated) return NextResponse.json({ received: true });
+
 
       if (!wasAlreadyOnThisTier) {
         const price = grossAmount;
@@ -198,42 +218,55 @@ export async function POST(req: Request) {
     }
 
     // isPaid — direct order (account already used its free trial): real, immediate charge.
-    const { commissionAmount, netAmount } = computeCommission(grossAmount, cardType);
-    const payment = await prisma.payment.create({
-      data: {
-        userId: user.id,
-        plan: 'FULL_PLAN',
-        billingIntervalMonths: decoded.interval,
-        status: 'SUCCESS',
-        bogOrderId: orderId,
-        cardType: cardType ?? null,
-        grossAmount,
-        commissionAmount,
-        netAmount,
-      },
+    const { commissionAmount, netAmount } = currency === 'USD'
+      ? { commissionAmount: null, netAmount: null }
+      : computeCommission(grossAmount, cardType);
+    const renewsAt = new Date(now.getTime() + INTERVAL_MS[decoded.interval]);
+    const payment = await prisma.$transaction(async tx => {
+      if (await tx.payment.findUnique({ where: { bogOrderId: orderId } })) return null;
+      const payment = await tx.payment.create({
+        data: {
+          userId: user.id,
+          plan: 'FULL_PLAN',
+          billingIntervalMonths: decoded.interval,
+          status: 'SUCCESS',
+          bogOrderId: orderId,
+          cardType: cardType ?? null,
+          grossAmount,
+          currency,
+          commissionAmount,
+          netAmount,
+        },
+      });
+      await tx.user.update({
+        where: { id: user.id },
+        data: {
+          subscriptionStatus: 'FULL_PLAN',
+          billingIntervalMonths: decoded.interval,
+          subscriptionCanceledAt: null,
+          bogParentOrderId: orderId,
+          subscriptionCurrency: currency,
+          subscriptionAmount: grossAmount,
+          trialEndsAt: null,
+          paymentFailedAt: null,
+          bogTrialUsed: true,
+          isGifted: false,
+          subscriptionRenewsAt: renewsAt,
+          subscriptionStartedAt: user.subscriptionStartedAt ?? now,
+        },
+      });
+      return payment;
+    }).catch(error => {
+      if (error?.code === 'P2002') return null; // concurrent retry already committed
+      throw error;
     });
+    if (!payment) return NextResponse.json({ received: true });
 
     try {
       await applyReferralAdjustments({ paymentId: payment.id, orderId, userId: user.id, grossAmount });
     } catch (err: any) {
       console.error('Referral adjustment failed (first-purchase direct charge)', { userId: user.id, orderId, error: err.message });
     }
-
-    const renewsAt = new Date(now.getTime() + INTERVAL_MS[decoded.interval]);
-    await prisma.user.update({
-      where: { id: user.id },
-      data: {
-        subscriptionStatus: 'FULL_PLAN',
-        billingIntervalMonths: decoded.interval,
-        subscriptionCanceledAt: null,
-        bogParentOrderId: orderId,
-        trialEndsAt: null,
-        bogTrialUsed: true,
-        isGifted: false,
-        subscriptionRenewsAt: renewsAt,
-        subscriptionStartedAt: user.subscriptionStartedAt ?? now,
-      },
-    });
 
     if (!wasAlreadyOnThisTier) {
       // No trial here (direct charge) — endDate is the first renewal date, not a trial end.
@@ -250,6 +283,9 @@ export async function POST(req: Request) {
       return NextResponse.json({ received: true });
     }
 
+    const currency = user.subscriptionCurrency;
+    if (currency !== currencyFor(normalizeMarket(user.market))) return NextResponse.json({ error: 'Subscription currency mismatch' }, { status: 400 });
+
     if (isFailed) {
       // A declined renewal now cuts dashboard access immediately (paymentFailedAt — see
       // DashboardClient's isFullPlan) rather than quietly leaving it active. Retries
@@ -260,7 +296,7 @@ export async function POST(req: Request) {
       const existingFailed = await prisma.payment.findUnique({ where: { bogOrderId: orderId } });
       if (existingFailed) return NextResponse.json({ received: true });
       const failedInterval = (user.billingIntervalMonths ?? 1) as BillingInterval;
-      const failedGrossAmount = applyDiscount(Number(PLAN_AMOUNTS_BY_INTERVAL[failedInterval] ?? 0), user.promoCode?.discountPercent);
+      const failedGrossAmount = user.subscriptionAmount ?? applyDiscount(planPrice(normalizeMarket(user.market), failedInterval), user.promoCode?.discountPercent);
       await prisma.payment.create({
         data: {
           userId: user.id,
@@ -270,6 +306,7 @@ export async function POST(req: Request) {
           bogOrderId: orderId,
           cardType: cardType ?? null,
           grossAmount: failedGrossAmount,
+          currency,
           commissionAmount: null,
           netAmount: null,
           failureReason: describeFailure(body),
@@ -324,7 +361,7 @@ export async function POST(req: Request) {
         const existingApproveFailed = await prisma.payment.findUnique({ where: { bogOrderId: orderId } });
         if (!existingApproveFailed) {
           const failInterval = (user.billingIntervalMonths ?? 1) as BillingInterval;
-          const failGrossAmount = applyDiscount(Number(PLAN_AMOUNTS_BY_INTERVAL[failInterval] ?? 0), user.promoCode?.discountPercent);
+          const failGrossAmount = user.subscriptionAmount ?? applyDiscount(planPrice(normalizeMarket(user.market), failInterval), user.promoCode?.discountPercent);
           await prisma.payment.create({
             data: {
               userId: user.id,
@@ -334,6 +371,7 @@ export async function POST(req: Request) {
               bogOrderId: orderId,
               cardType: cardType ?? null,
               grossAmount: failGrossAmount,
+              currency,
               commissionAmount: null,
               netAmount: null,
               failureReason: (err?.message ? String(err.message) : 'დამტკიცების მცდელობა ვერ შესრულდა').slice(0, 300),
@@ -357,40 +395,47 @@ export async function POST(req: Request) {
     // Same discounted amount as the original order — BOG's renewal API always inherits the
     // parent order's amount, so a promo-linked account is actually charged this reduced
     // figure again here, not the full price.
-    const grossAmount = applyDiscount(Number(PLAN_AMOUNTS_BY_INTERVAL[interval] ?? 0), user.promoCode?.discountPercent);
-    const { commissionAmount, netAmount } = computeCommission(grossAmount, cardType);
+    const grossAmount = user.subscriptionAmount ?? applyDiscount(planPrice(normalizeMarket(user.market), interval), user.promoCode?.discountPercent);
+    const { commissionAmount, netAmount } = currency === 'USD'
+      ? { commissionAmount: null, netAmount: null }
+      : computeCommission(grossAmount, cardType);
 
-    const payment = await prisma.payment.create({
-      data: {
-        userId: user.id,
-        plan: 'FULL_PLAN',
-        billingIntervalMonths: interval,
-        status: 'SUCCESS',
-        bogOrderId: orderId,
-        cardType: cardType ?? null,
-        grossAmount,
-        commissionAmount,
-        netAmount,
-      },
+    const payment = await prisma.$transaction(async tx => {
+      if (await tx.payment.findUnique({ where: { bogOrderId: orderId } })) return null;
+      const payment = await tx.payment.create({
+        data: {
+          userId: user.id,
+          plan: 'FULL_PLAN',
+          billingIntervalMonths: interval,
+          status: 'SUCCESS',
+          bogOrderId: orderId,
+          cardType: cardType ?? null,
+          grossAmount,
+          currency,
+          commissionAmount,
+          netAmount,
+        },
+      });
+
+      await tx.user.update({
+        where: { id: user.id },
+        // Clears paymentFailedAt (a no-op if it was never set) — the moment a retry actually
+        // captures, access restores automatically, whether this was the first attempt or the
+        // fifth after several declines.
+        data: { subscriptionRenewsAt: new Date(Date.now() + INTERVAL_MS[interval]), paymentFailedAt: null },
+      });
+      return payment;
+    }).catch(error => {
+      if (error?.code === 'P2002') return null; // concurrent retry already committed
+      throw error;
     });
+    if (!payment) return NextResponse.json({ received: true });
 
-    // Covers BOTH cases with the same call: a trial converting to its first real charge
-    // (first-ever SUCCESS payment — earns the referrer, discounts this user) and an
-    // ordinary later renewal (already past their first payment — this is then just where
-    // the user's own accumulated referral credit, if any, gets consumed/refunded).
     try {
       await applyReferralAdjustments({ paymentId: payment.id, orderId, userId: user.id, grossAmount });
     } catch (err: any) {
       console.error('Referral adjustment failed (renewal)', { userId: user.id, orderId, error: err.message });
     }
-
-    await prisma.user.update({
-      where: { id: user.id },
-      // Clears paymentFailedAt (a no-op if it was never set) — the moment a retry actually
-      // captures, access restores automatically, whether this was the first attempt or the
-      // fifth after several declines.
-      data: { subscriptionRenewsAt: new Date(Date.now() + INTERVAL_MS[interval]), paymentFailedAt: null },
-    });
     return NextResponse.json({ received: true });
   }
 

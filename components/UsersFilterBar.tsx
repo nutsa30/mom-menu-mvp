@@ -35,7 +35,7 @@ export default function UsersFilterBar({
   const searchParams = useSearchParams();
 
   const buildUrl = (tab: string, promo: string) => {
-    const p = new URLSearchParams();
+    const p = new URLSearchParams(searchParams.toString());
     if (locale === 'en') p.set('lang', 'en');
     p.set('tab', tab);
     if (promo) p.set('promo', promo);

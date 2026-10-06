@@ -1,4 +1,9 @@
 'use client';
+import { useExperience } from './ExperienceProvider';
+import { localizedField } from '@/lib/content';
+
+import Copy, { useCopy } from '@/components/Copy';
+
 
 import { useEffect, useState } from 'react';
 import RecipeModal from './RecipeModal';
@@ -11,6 +16,7 @@ const card = 'bg-[#FDFBF0] rounded-2xl border border-[#465940]/10 shadow-sm';
 // cook something right now"). Only ever shows time buttons a real, age-appropriate dish
 // actually satisfies — never a dead button.
 export default function QuickTimePick({ child }: { child: any }) {
+  const { locale: contentLocale } = useExperience();
   const [availableTimes, setAvailableTimes] = useState<number[]>([]);
   const [picked, setPicked] = useState<number | null>(null);
   const [dishes, setDishes] = useState<any[]>([]);
@@ -46,16 +52,14 @@ export default function QuickTimePick({ child }: { child: any }) {
       <button
         onClick={() => setOpen(true)}
         className="text-xs font-bold text-[#465940]/60 hover:text-[#465940] transition px-1"
-      >
-        რამდენი დრო მაქვს?
-      </button>
+      > <Copy>{"რამდენი დრო მაქვს?"}</Copy> </button>
     );
   }
 
   return (
     <div className={`${card} p-4`}>
       <div className="flex items-center justify-between mb-3">
-        <p className="text-sm font-bold text-[#465940]">რამდენი დრო მაქვს?</p>
+        <p className="text-sm font-bold text-[#465940]"> <Copy>{"რამდენი დრო მაქვს?"}</Copy> </p>
         <button onClick={() => { setOpen(false); setPicked(null); setDishes([]); }} className="text-[#465940]/50 hover:text-[#465940] text-sm">✕</button>
       </div>
       <div className="flex gap-2 flex-wrap">
@@ -64,17 +68,16 @@ export default function QuickTimePick({ child }: { child: any }) {
             className={`px-3 py-1.5 rounded-full text-xs font-bold transition ${
               picked === m ? 'bg-[#465940] text-[#FDFBF0]' : 'bg-[#465940]/10 text-[#465940] hover:bg-[#465940]/20'
             }`}>
-            {m} წუთამდე
-          </button>
+            {m} <Copy>{"წუთამდე"}</Copy> </button>
         ))}
       </div>
 
       {picked !== null && (
         <div className="mt-3">
           {loading ? (
-            <p className="text-xs text-[#465940]/50">იტვირთება...</p>
+            <p className="text-xs text-[#465940]/50"> <Copy>{"იტვირთება..."}</Copy> </p>
           ) : dishes.length === 0 ? (
-            <p className="text-xs text-[#465940]/60">ამ დროში შესაფერისი კერძი ვერ მოიძებნა.</p>
+            <p className="text-xs text-[#465940]/60"> <Copy>{"ამ დროში შესაფერისი კერძი ვერ მოიძებნა."}</Copy> </p>
           ) : (
             <div className="flex gap-3 overflow-x-auto pb-1 -mx-1 px-1">
               {dishes.map((d: any) => (
@@ -82,8 +85,8 @@ export default function QuickTimePick({ child }: { child: any }) {
                   <div className="w-24 h-24 rounded-2xl overflow-hidden bg-[#f0f8ee] group-hover:ring-2 group-hover:ring-[#465940]/40 transition">
                     {d.imageUrl ? <img src={d.imageUrl} className="w-full h-full object-cover" alt="" /> : <div className="w-full h-full bg-[#465940]/10" />}
                   </div>
-                  <p className="mt-1.5 text-[11px] font-bold text-[#465940] leading-snug line-clamp-2">{d.titleKa}</p>
-                  <p className="text-[10px] text-[#465940]/50">~{d.prepTimeMinutes} წუთი</p>
+                  <p className="mt-1.5 text-[11px] font-bold text-[#465940] leading-snug line-clamp-2">{localizedField(d, 'title', contentLocale)}</p>
+                  <p className="text-[10px] text-[#465940]/50">~{d.prepTimeMinutes} <Copy>{"წუთი"}</Copy> </p>
                 </button>
               ))}
             </div>

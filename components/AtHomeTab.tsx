@@ -1,4 +1,11 @@
 'use client';
+import { useExperience } from './ExperienceProvider';
+import { ingredientQuantity } from '@/lib/measurements';
+import MeasurementSwitcher from './MeasurementSwitcher';
+import { localizedField } from '@/lib/content';
+
+import Copy, { useCopy } from '@/components/Copy';
+
 
 import { useEffect, useMemo, useState } from 'react';
 import RecipeModal from './RecipeModal';
@@ -7,6 +14,7 @@ const MEAL_LABEL: Record<string, string> = { BREAKFAST: 'საუზმე', SN
 const card = 'bg-[#FDFBF0] rounded-2xl border border-[#465940]/10 shadow-sm';
 
 type Unit = 'g' | 'ml' | 'pcs';
+type InputUnit = Unit | 'oz' | 'us-fl-oz' | 'uk-fl-oz';
 const UNIT_LABEL: Record<Unit, string> = { g: 'გ', ml: 'მლ', pcs: 'ცალი' };
 const UNITS: Unit[] = ['g', 'ml', 'pcs'];
 
@@ -41,7 +49,7 @@ function normalizeUnit(raw: string): Unit | null {
 // "(60 გ)" in "1 მწიფე (60 გ)") since that's the precise figure; otherwise take the
 // leading "number unit". When neither parses cleanly, amount/unit come back null and
 // matching falls back to name-only for that ingredient rather than blocking on it.
-function parseIngredient(raw: string): ParsedIngredient {
+function parseIngredientKa(raw: string): ParsedIngredient {
   const dashIdx = raw.lastIndexOf(' - ');
   if (dashIdx === -1) return { name: raw.trim(), amount: null, unit: null };
   const name = raw.slice(0, dashIdx).trim();
@@ -66,14 +74,24 @@ function unitsComparable(a: Unit | null, b: Unit | null): boolean {
   return (a === 'g' && b === 'ml') || (a === 'ml' && b === 'g');
 }
 
+function parseIngredientEn(raw: string): ParsedIngredient {
+  const split = raw.match(/^(.*?)\s*[-–]\s*(.+)$/);
+  if (!split) return { name: raw.trim(), amount: null, unit: null };
+  const name = split[1].trim(), quantity = split[2];
+  const weight = quantity.match(/\(([\d.,]+)\s*(kg|ml|g|l)\)/i) || quantity.match(/^([\d.,]+)\s*(kg|ml|g|l|pcs|pieces?)(?![a-z])/i);
+  if (!weight) return { name, amount: null, unit: null };
+  const unit = weight[2].toLowerCase();
+  return { name, amount: Number(weight[1].replace(',', '.')) * (unit === 'kg' || unit === 'l' ? 1000 : 1), unit: unit === 'kg' || unit === 'g' ? 'g' : unit === 'l' || unit === 'ml' ? 'ml' : 'pcs' };
+}
+
 type IngredientCheck = ParsedIngredient & { have: number | null; haveUnit: Unit | null; status: 'ok' | 'not_enough' | 'missing' | 'unknown' };
 
-function checkCoverage(dish: any, pantry: PantryItem[]): { checks: IngredientCheck[]; fullyMakeable: boolean; matchedCount: number } {
-  const reqs = ((dish.ingredientsKa || []) as string[]).map(parseIngredient);
+function checkCoverage(dish: any, pantry: PantryItem[], locale: 'ka' | 'en'): { checks: IngredientCheck[]; fullyMakeable: boolean; matchedCount: number } {
+  const reqs = ((localizedField(dish, 'ingredients', locale) || []) as string[]).map(locale === 'en' ? parseIngredientEn : parseIngredientKa);
   const checks: IngredientCheck[] = reqs.map((req) => {
     const have = pantry.find((p) => nameMatches(p.name, req.name));
     if (!have) return { ...req, have: null, haveUnit: null, status: 'missing' };
-    if (req.amount == null || !unitsComparable(req.unit, have.unit)) {
+    if (req.amount == null || !(locale === 'en' ? req.unit === have.unit : unitsComparable(req.unit, have.unit))) {
       // Name matches but we can't compare quantities reliably — don't block the user
       // over messy source data, just flag it as unverified rather than confirmed.
       return { ...req, have: have.amount, haveUnit: have.unit, status: 'unknown' };
@@ -81,7 +99,7 @@ function checkCoverage(dish: any, pantry: PantryItem[]): { checks: IngredientChe
     return { ...req, have: have.amount, haveUnit: have.unit, status: have.amount >= req.amount ? 'ok' : 'not_enough' };
   });
   const matchedCount = checks.filter((c) => c.status !== 'missing').length;
-  const fullyMakeable = checks.length > 0 && checks.every((c) => c.status === 'ok' || c.status === 'unknown');
+  const fullyMakeable = checks.length > 0 && checks.every((c) => c.status === 'ok' || (locale === 'ka' && c.status === 'unknown'));
   return { checks, fullyMakeable, matchedCount };
 }
 
@@ -96,6 +114,10 @@ function checkCoverage(dish: any, pantry: PantryItem[]): { checks: IngredientChe
 // totals (/api/nutrition, which just sums wasEaten DailyLog rows) all update through
 // the one pathway that already exists, nothing parallel.
 export default function AtHomeTab({ child, allDishes }: { child: any; allDishes: any[] }) {
+  const { locale: contentLocale, units: preferredUnits } = useExperience();
+  const UNIT_LABEL: Record<InputUnit, string> = contentLocale === 'en' ? { g: 'g', ml: 'ml', pcs: 'pieces', oz: 'oz', 'us-fl-oz': 'US fl oz', 'uk-fl-oz': 'UK fl oz' } : { ...{ g: 'გ', ml: 'მლ', pcs: 'ცალი' }, oz: 'oz', 'us-fl-oz': 'US fl oz', 'uk-fl-oz': 'UK fl oz' };
+  const UNITS: InputUnit[] = contentLocale === 'en' || preferredUnits !== 'metric' ? ['g','ml','pcs','oz','us-fl-oz','uk-fl-oz'] : ['g','ml','pcs'];
+  const copy = useCopy();
   const todayStr = localToday();
 
   const [logs, setLogs] = useState<any[]>([]);
@@ -104,7 +126,7 @@ export default function AtHomeTab({ child, allDishes }: { child: any; allDishes:
   const [pantry, setPantry] = useState<PantryItem[]>([]);
   const [nameInput, setNameInput] = useState('');
   const [amountInput, setAmountInput] = useState('');
-  const [unitInput, setUnitInput] = useState<Unit>('g');
+  const [unitInput, setUnitInput] = useState<InputUnit>('g');
 
   const [recipeModal, setRecipeModal] = useState<any | null>(null);
   const [replacing, setReplacing] = useState<any | null>(null);
@@ -127,7 +149,7 @@ export default function AtHomeTab({ child, allDishes }: { child: any; allDishes:
     if (!name || !amount || amount <= 0) return;
     setPantry((prev) => [
       ...prev.filter((p) => norm(p.name) !== norm(name)),
-      { id: `${Date.now()}_${name}`, name, amount, unit: unitInput },
+      { id: `${Date.now()}_${name}`, name, amount: amount * (unitInput === 'oz' ? 28.349523125 : unitInput === 'us-fl-oz' ? 29.5735295625 : unitInput === 'uk-fl-oz' ? 28.4130625 : 1), unit: unitInput === 'oz' ? 'g' : unitInput === 'us-fl-oz' || unitInput === 'uk-fl-oz' ? 'ml' : unitInput },
     ]);
     setNameInput('');
     setAmountInput('');
@@ -146,11 +168,11 @@ export default function AtHomeTab({ child, allDishes }: { child: any; allDishes:
         !d.allergens?.some((a: string) => child.allergies?.includes(a))
       )
       .map((d: any) => {
-        const { checks, fullyMakeable, matchedCount } = checkCoverage(d, pantry);
+        const { checks, fullyMakeable, matchedCount } = checkCoverage(d, pantry, contentLocale);
         if (matchedCount === 0) return null;
 
         let bonus = 0;
-        const text = [d.titleKa, ...(d.ingredientsKa || [])].join(' ').toLowerCase();
+        const text = [localizedField(d, 'title', contentLocale), ...(localizedField(d, 'ingredients', contentLocale) || [])].join(' ').toLowerCase();
         if (child.likes?.length && child.likes.some((l: string) => text.includes(l.toLowerCase()))) bonus += 0.15;
         if (child.dislikes?.length && child.dislikes.some((l: string) => text.includes(l.toLowerCase()))) bonus -= 0.3;
 
@@ -161,7 +183,7 @@ export default function AtHomeTab({ child, allDishes }: { child: any; allDishes:
 
     scored.sort((a, b) => b.score - a.score);
     return scored.slice(0, 20);
-  }, [allDishes, pantry, child]);
+  }, [allDishes, pantry, child, contentLocale]);
 
   const makeable = results.filter((r) => r.fullyMakeable);
   const partial = results.filter((r) => !r.fullyMakeable);
@@ -181,7 +203,7 @@ export default function AtHomeTab({ child, allDishes }: { child: any; allDishes:
     // the new dish's ingredients too.
     localStorage.removeItem(`shopping_${child?.id}`);
     setReplacing(null);
-    setConfirmedMsg(`დღის გეგმა განახლდა — ${MEAL_LABEL[updated.mealType]} ახლა არის „${updated.dish?.titleKa}“`);
+    setConfirmedMsg(`დღის გეგმა განახლდა — ${MEAL_LABEL[updated.mealType]} ახლა არის „${localizedField(updated.dish, 'title', contentLocale)}“`);
     window.setTimeout(() => setConfirmedMsg(null), 4500);
   };
 
@@ -197,7 +219,7 @@ export default function AtHomeTab({ child, allDishes }: { child: any; allDishes:
   if (!child) {
     return (
       <div className={`${card} p-10 text-center`}>
-        <p className="text-[#465940]/60 text-sm">შვილის მიმატება „შვილი“ ჩანართში.</p>
+        <p className="text-[#465940]/60 text-sm"> <Copy>{"შვილის მიმატება „შვილი“ ჩანართში."}</Copy> </p>
       </div>
     );
   }
@@ -214,15 +236,15 @@ export default function AtHomeTab({ child, allDishes }: { child: any; allDishes:
           <div className="flex-1 min-w-0">
             <div className="flex items-center gap-2 mb-1">
               <span className="text-[10px] font-black uppercase tracking-widest px-2.5 py-0.5 rounded-full bg-[#465940]/10 text-[#465940]">
-                {MEAL_LABEL[dish.mealType]}
+                <Copy>{MEAL_LABEL[dish.mealType]}</Copy>
               </span>
               {fullyMakeable ? (
-                <span className="text-[10px] font-bold text-green-700">✓ სრულად შეგიძლია მოამზადო</span>
+                <span className="text-[10px] font-bold text-green-700"> <Copy>{"✓ სრულად შეგიძლია მოამზადო"}</Copy> </span>
               ) : (
-                <span className="text-[10px] font-bold text-[#465940]/60">ნაწილობრივ გაქვს</span>
+                <span className="text-[10px] font-bold text-[#465940]/60"> <Copy>{"ნაწილობრივ გაქვს"}</Copy> </span>
               )}
             </div>
-            <p className="font-bold text-[#465940] text-sm truncate">{dish.titleKa}</p>
+            <p className="font-bold text-[#465940] text-sm truncate">{localizedField(dish, 'title', contentLocale)}</p>
           </div>
         </div>
 
@@ -238,29 +260,23 @@ export default function AtHomeTab({ child, allDishes }: { child: any; allDishes:
               </span>
               <span className="text-[#465940]/80">
                 {c.name}
-                {c.amount != null && c.unit ? ` (საჭირო: ${c.amount}${UNIT_LABEL[c.unit]})` : ''}
+                <Copy>{c.amount != null && c.unit ? ` (საჭირო: ${c.amount}${UNIT_LABEL[c.unit]})` : ''}</Copy>
               </span>
               {c.status === 'not_enough' && (
-                <span className="text-amber-600 font-semibold">— გაქვს მხოლოდ {c.have}{c.haveUnit ? UNIT_LABEL[c.haveUnit] : ''}</span>
+                <span className="text-amber-600 font-semibold"> <Copy>{"— გაქვს მხოლოდ"}</Copy> {c.have}{c.haveUnit ? UNIT_LABEL[c.haveUnit] : ''}</span>
               )}
-              {c.status === 'missing' && <span className="text-[#465940]/40">— არ გაქვს</span>}
+              {c.status === 'missing' && <span className="text-[#465940]/40"> <Copy>{"— არ გაქვს"}</Copy> </span>}
             </li>
           ))}
         </ul>
 
         <div className="flex gap-2 mt-3">
           <button onClick={() => setReplacing(dish)}
-            className="px-3 py-1.5 rounded-full text-xs font-bold bg-[#465940] text-[#FDFBF0] hover:bg-[#465940]/80 transition">
-            ჭამა
-          </button>
+            className="px-3 py-1.5 rounded-full text-xs font-bold bg-[#465940] text-[#FDFBF0] hover:bg-[#465940]/80 transition"> <Copy>{"ჭამა"}</Copy> </button>
           <button onClick={() => toggleDislike(dish.id)}
-            className="px-3 py-1.5 rounded-full text-xs font-bold bg-[#465940]/10 text-[#465940] hover:bg-red-500 hover:text-white transition">
-            არ მოეწონა
-          </button>
+            className="px-3 py-1.5 rounded-full text-xs font-bold bg-[#465940]/10 text-[#465940] hover:bg-red-500 hover:text-white transition"> <Copy>{"არ მოეწონა"}</Copy> </button>
           <button onClick={() => setRecipeModal(dish)}
-            className="px-3 py-1.5 rounded-full text-xs font-bold bg-[#465940]/10 text-[#465940] hover:bg-[#465940] hover:text-[#FDFBF0] transition">
-            რეცეპტი
-          </button>
+            className="px-3 py-1.5 rounded-full text-xs font-bold bg-[#465940]/10 text-[#465940] hover:bg-[#465940] hover:text-[#FDFBF0] transition"> <Copy>{"რეცეპტი"}</Copy> </button>
         </div>
       </div>
     );
@@ -269,11 +285,10 @@ export default function AtHomeTab({ child, allDishes }: { child: any; allDishes:
   return (
     <div className="space-y-5">
       <div className={`${card} p-5`}>
-        <h2 className="font-black text-[#465940] text-lg mb-1">რა მაქვს სახლში?</h2>
-        <p className="text-sm text-[#465940]/60 mb-4">
-          ჩამოწერე რა პროდუქტები გაქვს და რამდენი — და {child.name}-სთვის შესაფერის, რეალურად მოსამზადებელ კერძებს გიპოვით.
-        </p>
+        <h2 className="font-black text-[#465940] text-lg mb-1"> <Copy>{"რა მაქვს სახლში?"}</Copy> </h2>
+        <p className="text-sm text-[#465940]/60 mb-4"> <Copy>{"ჩამოწერე რა პროდუქტები გაქვს და რამდენი — და"}</Copy> {child.name} <Copy>{"-სთვის შესაფერის, რეალურად მოსამზადებელ კერძებს გიპოვით."}</Copy> </p>
 
+        <MeasurementSwitcher />
         {/* Name + amount + unit, added together as one pantry entry — matching then checks
             actual quantity, not just whether the ingredient name appears somewhere. */}
         <div className="flex flex-wrap gap-2 items-start">
@@ -282,7 +297,7 @@ export default function AtHomeTab({ child, allDishes }: { child: any; allDishes:
               value={nameInput}
               onChange={(e) => setNameInput(e.target.value)}
               onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); addPantryItem(); } }}
-              placeholder="მაგ: ბრინჯი, ქათმის ფილე..."
+              placeholder={copy("მაგ: ბრინჯი, ქათმის ფილე...")}
               className="w-full border border-[#465940]/15 rounded-2xl px-3.5 py-2.5 text-sm text-[#465940] bg-white focus:outline-none focus:border-[#465940] transition"
             />
           </div>
@@ -290,28 +305,26 @@ export default function AtHomeTab({ child, allDishes }: { child: any; allDishes:
             value={amountInput}
             onChange={(e) => setAmountInput(e.target.value.replace(/[^\d.,]/g, ''))}
             onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); addPantryItem(); } }}
-            placeholder="რაოდენობა"
+            placeholder={copy("რაოდენობა")}
             inputMode="decimal"
             className="w-24 border border-[#465940]/15 rounded-2xl px-3.5 py-2.5 text-sm text-[#465940] bg-white focus:outline-none focus:border-[#465940] transition"
           />
           <select
             value={unitInput}
-            onChange={(e) => setUnitInput(e.target.value as Unit)}
+            onChange={(e) => setUnitInput(e.target.value as InputUnit)}
             className="border border-[#465940]/15 rounded-2xl px-3 py-2.5 text-sm text-[#465940] bg-white focus:outline-none focus:border-[#465940] transition"
           >
-            {UNITS.map((u) => <option key={u} value={u}>{UNIT_LABEL[u]}</option>)}
+            {UNITS.map((u) => <option key={u} value={u}><Copy>{UNIT_LABEL[u]}</Copy></option>)}
           </select>
           <button onClick={addPantryItem}
-            className="px-4 py-2.5 rounded-2xl text-sm font-bold bg-[#465940] text-[#FDFBF0] hover:bg-[#465940]/80 transition">
-            დამატება
-          </button>
+            className="px-4 py-2.5 rounded-2xl text-sm font-bold bg-[#465940] text-[#FDFBF0] hover:bg-[#465940]/80 transition"> <Copy>{"დამატება"}</Copy> </button>
         </div>
 
         {pantry.length > 0 && (
           <div className="flex flex-wrap gap-2 mt-3">
             {pantry.map((item) => (
               <span key={item.id} className="flex items-center gap-1.5 bg-[#465940]/10 text-[#465940] text-sm font-semibold px-3 py-1.5 rounded-full">
-                {item.name} — {item.amount}{UNIT_LABEL[item.unit]}
+                {item.name} — {ingredientQuantity(`${item.amount} ${UNIT_LABEL[item.unit]}`, preferredUnits)}
                 <button onClick={() => removePantryItem(item.id)} className="text-[#465940]/50 hover:text-[#465940] leading-none">×</button>
               </span>
             ))}
@@ -327,23 +340,23 @@ export default function AtHomeTab({ child, allDishes }: { child: any; allDishes:
 
       {pantry.length === 0 ? (
         <div className={`${card} p-10 text-center`}>
-          <p className="text-[#465940]/60 text-sm">დაამატე პროდუქტები და რაოდენობა, რომ დაგინახო რისი მომზადება შეგიძლია.</p>
+          <p className="text-[#465940]/60 text-sm"> <Copy>{"დაამატე პროდუქტები და რაოდენობა, რომ დაგინახო რისი მომზადება შეგიძლია."}</Copy> </p>
         </div>
       ) : results.length === 0 ? (
         <div className={`${card} p-10 text-center`}>
-          <p className="text-[#465940]/60 text-sm">ამ პროდუქტებით შესაფერისი კერძი ვერ მოიძებნა.</p>
+          <p className="text-[#465940]/60 text-sm"> <Copy>{"ამ პროდუქტებით შესაფერისი კერძი ვერ მოიძებნა."}</Copy> </p>
         </div>
       ) : (
         <div className="space-y-5">
           {makeable.length > 0 && (
             <div className="space-y-3">
-              <h3 className="text-xs font-black uppercase tracking-widest text-[#465940]/50">შეგიძლია ახლავე მოამზადო</h3>
+              <h3 className="text-xs font-black uppercase tracking-widest text-[#465940]/50"> <Copy>{"შეგიძლია ახლავე მოამზადო"}</Copy> </h3>
               {makeable.map((r) => renderDishCard(r))}
             </div>
           )}
           {partial.length > 0 && (
             <div className="space-y-3">
-              <h3 className="text-xs font-black uppercase tracking-widest text-[#465940]/50">ნაწილობრივ გაქვს — აკლია რაღაც</h3>
+              <h3 className="text-xs font-black uppercase tracking-widest text-[#465940]/50"> <Copy>{"ნაწილობრივ გაქვს — აკლია რაღაც"}</Copy> </h3>
               {partial.map((r) => renderDishCard(r))}
             </div>
           )}
@@ -358,31 +371,29 @@ export default function AtHomeTab({ child, allDishes }: { child: any; allDishes:
           <div className="bg-[#FDFBF0] rounded-3xl w-full max-w-lg overflow-hidden" onClick={(e) => e.stopPropagation()}>
             <div className="p-5 border-b border-[#465940]/10">
               <div className="flex items-center justify-between mb-1">
-                <h3 className="font-black text-[#465940]">„{replacing.titleKa}“ — რომელი მიღება ჩანაცვლდეს?</h3>
+                <h3 className="font-black text-[#465940]">„{localizedField(replacing, 'title', contentLocale)} <Copy>{"“ — რომელი მიღება ჩანაცვლდეს?"}</Copy> </h3>
                 <button onClick={() => setReplacing(null)} className="text-[#465940]/60 hover:text-[#465940]/80 text-2xl leading-none">×</button>
               </div>
-              <p className="text-[11px] text-[#465940]/60">დღევანდელი გეგმიდან ჩანაცვლდება არჩეული მიღება ამ კერძით</p>
+              <p className="text-[11px] text-[#465940]/60"> <Copy>{"დღევანდელი გეგმიდან ჩანაცვლდება არჩეული მიღება ამ კერძით"}</Copy> </p>
             </div>
             <div className="p-4 space-y-2">
               {loadingLogs ? (
-                <p className="text-center text-sm text-[#465940]/60 py-6">იტვირთება...</p>
+                <p className="text-center text-sm text-[#465940]/60 py-6"> <Copy>{"იტვირთება..."}</Copy> </p>
               ) : slotsForDish(replacing).length === 0 ? (
-                <p className="text-center text-sm text-[#465940]/60 py-6">
-                  დღეს {child.name}-ის გეგმაში {MEAL_LABEL[replacing.mealType]} არ გვხვდება.
-                </p>
+                <p className="text-center text-sm text-[#465940]/60 py-6"> <Copy>{"დღეს"}</Copy> {child.name} <Copy>{"-ის გეგმაში"}</Copy> <Copy>{MEAL_LABEL[replacing.mealType]}</Copy> <Copy>{"არ გვხვდება."}</Copy> </p>
               ) : (
                 slotsForDish(replacing).map((log) => (
                   <button key={log.id} onClick={() => markEatenInSlot(log.id, replacing.id)}
                     className="group w-full flex items-center justify-between gap-3 p-3 rounded-2xl hover:bg-[#465940] transition text-left border border-transparent hover:border-[#465940]">
                     <div>
                       <span className="text-[10px] font-black uppercase tracking-widest text-[#465940]/60 group-hover:text-[#FDFBF0]/70">
-                        {MEAL_LABEL[log.mealType]}
+                        <Copy>{MEAL_LABEL[log.mealType]}</Copy>
                       </span>
                       <p className="font-bold text-[#465940] group-hover:text-[#FDFBF0] text-sm transition-colors">
-                        {log.dish ? `ახლა: ${log.dish.titleKa}` : 'ჯერ არაფერია დაგეგმილი'}
+                        <Copy>{log.dish ? `ახლა: ${localizedField(log.dish, 'title', contentLocale)}` : 'ჯერ არაფერია დაგეგმილი'}</Copy>
                       </p>
                     </div>
-                    <span className="text-xs font-bold text-[#465940] group-hover:text-[#FDFBF0]">აირჩიე →</span>
+                    <span className="text-xs font-bold text-[#465940] group-hover:text-[#FDFBF0]"> <Copy>{"აირჩიე →"}</Copy> </span>
                   </button>
                 ))
               )}

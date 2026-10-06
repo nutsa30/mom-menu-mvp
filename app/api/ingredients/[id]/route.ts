@@ -1,3 +1,4 @@
+import { adminWriteError } from '@/lib/api-access';
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 
@@ -8,13 +9,17 @@ const NUTRIENT_KEYS = [
   'vitaminB6mg','vitaminB12mcg','folateMcg','omega3Mg',
 ] as const;
 
-export async function GET(_: NextRequest, { params }: { params: { id: string } }) {
+export async function GET(_: NextRequest, props: { params: Promise<{ id: string }> }) {
+  const params = await props.params;
   const ingredient = await prisma.ingredient.findUnique({ where: { id: params.id } });
   if (!ingredient) return NextResponse.json({ error: 'Not found' }, { status: 404 });
   return NextResponse.json(ingredient);
 }
 
-export async function PUT(req: NextRequest, { params }: { params: { id: string } }) {
+export async function PUT(req: NextRequest, props: { params: Promise<{ id: string }> }) {
+  const accessError = await adminWriteError(req);
+  if (accessError) return accessError;
+  const params = await props.params;
   try {
     const body = await req.json();
     const n = (v: any) => (v != null && v !== '' ? Number(v) : null);
@@ -59,7 +64,10 @@ export async function PUT(req: NextRequest, { params }: { params: { id: string }
   }
 }
 
-export async function DELETE(_: NextRequest, { params }: { params: { id: string } }) {
+export async function DELETE(req: NextRequest, props: { params: Promise<{ id: string }> }) {
+  const accessError = await adminWriteError(req);
+  if (accessError) return accessError;
+  const params = await props.params;
   try {
     await prisma.ingredient.delete({ where: { id: params.id } });
     return NextResponse.json({ success: true });

@@ -10,17 +10,17 @@ export async function GET() {
 
 export async function POST(req: NextRequest) {
   await requireAdmin();
-  const { mealType, title, body } = await req.json();
+  const { mealType, title, body, titleEn, bodyEn } = await req.json();
   if (!mealType || !title || !body) return NextResponse.json({ error: 'Missing fields' }, { status: 400 });
   const count = await prisma.pushTemplate.count({ where: { mealType } });
-  const t = await prisma.pushTemplate.create({ data: { mealType, title, body, sortOrder: count } });
+  const t = await prisma.pushTemplate.create({ data: { mealType, title, body, titleEn, bodyEn, sortOrder: count } });
   return NextResponse.json(t);
 }
 
 export async function PUT(req: NextRequest) {
   await requireAdmin();
-  const { id, title, body, active } = await req.json();
-  const t = await prisma.pushTemplate.update({ where: { id }, data: { title, body, active } });
+  const { id, title, body, active, titleEn, bodyEn } = await req.json();
+  const t = await prisma.pushTemplate.update({ where: { id }, data: { title, body, active, titleEn, bodyEn } });
   return NextResponse.json(t);
 }
 

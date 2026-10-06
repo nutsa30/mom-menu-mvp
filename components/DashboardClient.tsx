@@ -1,4 +1,12 @@
 'use client';
+import Link from 'next/link';
+import { hasPaidAccess } from '@/lib/paid-access';
+import MeasurementSwitcher from './MeasurementSwitcher';
+import { useExperience } from './ExperienceProvider';
+import { localizedField } from '@/lib/content';
+
+import Copy, { useCopy } from '@/components/Copy';
+
 
 import { useState, useEffect, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
@@ -16,6 +24,14 @@ import MealSOS from './MealSOS';
 import QuickTimePick from './QuickTimePick';
 import SameIngredientAlternatives from './SameIngredientAlternatives';
 import ReferralTab from './ReferralTab';
+import LangSwitcher from './LangSwitcher';
+
+function clearShoppingCache(childId?: string) {
+  if (!childId) return;
+  const prefix = `shopping_${childId}`;
+  Object.keys(localStorage).filter(key => key === prefix || key.startsWith(prefix + '_'))
+    .forEach(key => localStorage.removeItem(key));
+}
 
 // Use local date (not UTC) to avoid timezone issues (e.g. Georgia is UTC+4)
 function localToday(): string {
@@ -103,8 +119,8 @@ function IntroductionBanner({ childId, childName }: { childId: string; childName
       <div className="flex items-center gap-2 mb-3">
         <span className="text-xl"></span>
         <div>
-          <p className="font-black text-[#465940] text-sm">პირველი საკვების გაცნობა</p>
-          <p className="text-[10px] text-[#465940]/60">ყოველ ახალ პროდუქტს 3 დღე მიეცი — შემდეგ გადავიდე შემდეგზე</p>
+          <p className="font-black text-[#465940] text-sm"> <Copy>{"პირველი საკვების გაცნობა"}</Copy> </p>
+          <p className="text-[10px] text-[#465940]/60"> <Copy>{"ყოველ ახალ პროდუქტს 3 დღე მიეცი — შემდეგ გადავიდე შემდეგზე"}</Copy> </p>
         </div>
       </div>
 
@@ -112,9 +128,9 @@ function IntroductionBanner({ childId, childName }: { childId: string; childName
         <div className={`rounded-xl p-3 ${readyForNext ? 'bg-green-50 border border-green-200' : 'bg-[#465940]/5'}`}>
           <div className="flex items-center justify-between">
             <div>
-              <p className="font-bold text-[#465940] text-sm">ახლა: <span className="text-[#465940]">{intro.foodName}</span></p>
+              <p className="font-bold text-[#465940] text-sm"> <Copy>{"ახლა:"}</Copy> <span className="text-[#465940]">{intro.foodName}</span></p>
               <p className="text-xs text-[#465940]/60 mt-0.5">
-                {daysSince} დღე · {readyForNext ? 'მზადაა შემდეგ პროდუქტზე გადასასვლელად!' : `კიდევ ${3 - daysSince} დღე`}
+                {daysSince} <Copy>{"დღე ·"}</Copy> <Copy>{readyForNext ? 'მზადაა შემდეგ პროდუქტზე გადასასვლელად!' : `კიდევ ${3 - daysSince} დღე`}</Copy>
               </p>
             </div>
             <div className={`w-10 h-10 rounded-full flex items-center justify-center text-sm font-black ${
@@ -124,7 +140,7 @@ function IntroductionBanner({ childId, childName }: { childId: string; childName
         </div>
       ) : (
         <div>
-          <p className="text-xs text-[#465940]/70 mb-2">შემდეგი შეარჩიე და "შვილი" ჩანართში დაამატე:</p>
+          <p className="text-xs text-[#465940]/70 mb-2"> <Copy>{"შემდეგი შეარჩიე და \"შვილი\" ჩანართში დაამატე:"}</Copy> </p>
           <div className="flex flex-wrap gap-1.5">
             {FIRST_FOODS.map(f => (
               <span key={f} className="text-xs bg-[#465940]/10 text-[#465940] px-2.5 py-1 rounded-full font-semibold">{f}</span>
@@ -138,6 +154,7 @@ function IntroductionBanner({ childId, childName }: { childId: string; childName
 
 // ── Today Tab ────────────────────────────────────────────────────────────
 function TodayTab({ child, allDishes, planStart, isFullPlan, onWantsIntro }: { child: any; allDishes: any[]; planStart: string; isFullPlan: boolean; onWantsIntro: (childId: string) => void }) {
+  const { locale: contentLocale } = useExperience();
   const todayStr = localToday();
   const [logs, setLogs] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
@@ -244,7 +261,7 @@ function TodayTab({ child, allDishes, planStart, isFullPlan, onWantsIntro }: { c
     setLogs(prev => prev.map(l => l.id === logId ? updated : l));
     setSubstituteFor(null);
     // Invalidate shopping list cache so it refreshes with new dish's ingredients
-    localStorage.removeItem(`shopping_${child?.id}`);
+    clearShoppingCache(child?.id);
   };
 
   const subLog = substituteFor ? logs.find(l => l.id === substituteFor) : null;
@@ -273,18 +290,16 @@ function TodayTab({ child, allDishes, planStart, isFullPlan, onWantsIntro }: { c
 
   if (!child) return (
     <div className={`${card} p-10 text-center`}>
-      <p className="text-[#465940]/60 text-sm">შვილის მიმატება "შვილი" tab-ში.</p>
+      <p className="text-[#465940]/60 text-sm"> <Copy>{"შვილის მიმატება \"შვილი\" tab-ში."}</Copy> </p>
     </div>
   );
 
   if (!isFullPlan) return (
     <div className={`${card} p-10 text-center`}>
       <div className="w-16 h-16 rounded-full bg-[#465940] flex items-center justify-center text-3xl mx-auto mb-5"></div>
-      <h2 className="text-xl font-black text-[#465940] mb-2">დღის კვების გეგმა დაბლოკილია</h2>
-      <p className="text-[#465940]/70 text-sm mb-6 max-w-sm mx-auto">ყოველდღიური კვების გეგმის ავტომატური გენერაცია ხელმისაწვდომია მხოლოდ სრული პაკეტით.</p>
-      <a href="/subscription" className="inline-flex items-center justify-center rounded-full bg-[#465940] px-8 py-3 font-semibold text-[#FDFBF0] shadow-lg hover:scale-105 transition">
-        პაკეტის განახლება
-      </a>
+      <h2 className="text-xl font-black text-[#465940] mb-2"> <Copy>{"დღის კვების გეგმა დაბლოკილია"}</Copy> </h2>
+      <p className="text-[#465940]/70 text-sm mb-6 max-w-sm mx-auto"> <Copy>{"ყოველდღიური კვების გეგმის ავტომატური გენერაცია ხელმისაწვდომია მხოლოდ სრული პაკეტით."}</Copy> </p>
+      <a href="/subscription" className="inline-flex items-center justify-center rounded-full bg-[#465940] px-8 py-3 font-semibold text-[#FDFBF0] shadow-lg hover:scale-105 transition"> <Copy>{"პაკეტის განახლება"}</Copy> </a>
     </div>
   );
 
@@ -306,7 +321,7 @@ function TodayTab({ child, allDishes, planStart, isFullPlan, onWantsIntro }: { c
                   isPast ? 'bg-[#465940]/5 text-[#465940]/60' :
                   'bg-[#465940]/5 text-[#465940]/80 hover:bg-[#465940]/10'
                 }`}>
-                <span className="text-[10px] font-black uppercase tracking-wide">{KA_DAYS_SHORT[d.getDay()]}</span>
+                <span className="text-[10px] font-black uppercase tracking-wide"><Copy>{KA_DAYS_SHORT[d.getDay()]}</Copy></span>
                 <span className="text-lg font-black">{d.getDate()}</span>
                 {isCurrentDay && !isSelected && <span className="w-1.5 h-1.5 rounded-full bg-[#465940] mt-0.5" />}
               </button>
@@ -346,14 +361,14 @@ function TodayTab({ child, allDishes, planStart, isFullPlan, onWantsIntro }: { c
       <div className={`${card} p-4 flex items-center justify-between`}>
         <div>
           <p className="text-xs text-[#465940]/60 font-medium" suppressHydrationWarning>
-            {new Date(selectedDate + 'T12:00:00').toLocaleDateString('ka-GE', { weekday: 'long', day: 'numeric', month: 'long' })}
+            {new Date(selectedDate + 'T12:00:00').toLocaleDateString(contentLocale === 'en' ? 'en-US' : 'ka-GE', { weekday: 'long', day: 'numeric', month: 'long' })}
           </p>
-          <h2 className="text-lg font-black text-[#465940] mt-0.5">{child.name}-ს კვება</h2>
+          <h2 className="text-lg font-black text-[#465940] mt-0.5">{child.name}<Copy>{"-ს კვება"}</Copy></h2>
         </div>
         {total > 0 && (
           <div className="text-right">
             <p className="text-2xl font-black text-[#465940]">{eaten}/{total}</p>
-            <p className="text-[10px] text-[#465940]/60 uppercase tracking-wide">ჭამა</p>
+            <p className="text-[10px] text-[#465940]/60 uppercase tracking-wide"> <Copy>{"ჭამა"}</Copy> </p>
           </div>
         )}
       </div>
@@ -373,7 +388,7 @@ function TodayTab({ child, allDishes, planStart, isFullPlan, onWantsIntro }: { c
             const ingredient = log?.ingredient;
             const isIngredient = !dish && !!ingredient;
             const imageUrl = dish?.imageUrl ?? ingredient?.imageUrl;
-            const titleKa = dish?.titleKa ?? ingredient?.titleKa;
+            const titleKa = localizedField(dish, 'title', contentLocale) ?? localizedField(ingredient, 'title', contentLocale);
             const calories = dish?.calories ?? ingredient?.calories;
             const proteinGrams = dish?.proteinGrams ?? ingredient?.proteinGrams;
             const eaten = log?.wasEaten;
@@ -388,30 +403,28 @@ function TodayTab({ child, allDishes, planStart, isFullPlan, onWantsIntro }: { c
                   {/* Meal type badge */}
                   <div className="flex items-center gap-2 mb-1.5">
                     <span className="text-[10px] font-black uppercase tracking-widest px-2.5 py-0.5 rounded-full bg-[#465940]/10 text-[#465940]">
-                      {MEAL_LABEL[mealType]}
+                      <Copy>{MEAL_LABEL[mealType]}</Copy>
                     </span>
                     {eaten && (
                       <span className="flex items-center gap-1 text-[10px] font-bold text-[#465940]">
-                        <svg width="10" height="10" viewBox="0 0 12 12" fill="none"><polyline points="2,6 5,9 10,3" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"/></svg>
-                        ჭამა
-                      </span>
+                        <svg width="10" height="10" viewBox="0 0 12 12" fill="none"><polyline points="2,6 5,9 10,3" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"/></svg> <Copy>{"ჭამა"}</Copy> </span>
                     )}
                   </div>
 
                   {/* Dish name */}
                   {titleKa
                     ? <p className="font-bold text-[#465940] text-sm leading-snug mb-0.5 truncate">{titleKa}</p>
-                    : <p className="text-sm text-[#465940]/60 italic mb-0.5">კერძი ვერ მოიძებნა</p>
+                    : <p className="text-sm text-[#465940]/60 italic mb-0.5"> <Copy>{"კერძი ვერ მოიძებნა"}</Copy> </p>
                   }
                   {calories && (
                     <p className="text-[11px] text-[#465940]/60 mb-1">
-                      {calories} kcal{proteinGrams ? ` · ${proteinGrams}g ცილა` : ''}
+                      {calories} kcal<Copy>{proteinGrams ? ` · ${proteinGrams}g ცილა` : ''}</Copy>
                     </p>
                   )}
                   {/* When this slot's dish was swapped (via "სხვა" or "რა მაქვს სახლში?"),
                       show what was originally planned — the history the schema now keeps. */}
                   {log?.originalDish && (
-                    <p className="text-[10px] text-[#465940]/45 mb-2.5">თავდაპირველად: {log.originalDish.titleKa}</p>
+                    <p className="text-[10px] text-[#465940]/45 mb-2.5"> <Copy>{"თავდაპირველად:"}</Copy> {localizedField(log.originalDish, 'title', contentLocale)}</p>
                   )}
 
                   {/* Actions — "ჭამა" only ever shows through today: editable today, locked
@@ -429,7 +442,7 @@ function TodayTab({ child, allDishes, planStart, isFullPlan, onWantsIntro }: { c
                               : 'bg-[#465940]/10 text-[#465940] hover:bg-[#465940] hover:text-[#FDFBF0]'
                           }`}
                         >
-                          {eaten ? '✓ ჭამა' : 'ჭამა'}
+                          <Copy>{eaten ? '✓ ჭამა' : 'ჭამა'}</Copy>
                         </button>
                       )}
                       {dish && isToday && (
@@ -441,24 +454,20 @@ function TodayTab({ child, allDishes, planStart, isFullPlan, onWantsIntro }: { c
                               : 'bg-[#465940]/10 text-[#465940] hover:bg-red-500 hover:text-white'
                           }`}
                         >
-                          {log.voteLiked === false ? '✓ არ მოეწონა' : 'არ მოეწონა'}
+                          <Copy>{log.voteLiked === false ? '✓ არ მოეწონა' : 'არ მოეწონა'}</Copy>
                         </button>
                       )}
                       {!isIngredient && isToday && (
                         <button
                           onClick={() => setSubstituteFor(log.id)}
                           className="px-3 py-1.5 rounded-full text-xs font-bold bg-[#465940]/10 text-[#465940] hover:bg-[#465940] hover:text-[#FDFBF0] transition"
-                        >
-                          სხვა
-                        </button>
+                        > <Copy>{"სხვა"}</Copy> </button>
                       )}
                       {dish && (
                         <button
                           onClick={() => setRecipeModal(dish)}
                           className="px-3 py-1.5 rounded-full text-xs font-bold bg-[#465940]/10 text-[#465940] hover:bg-[#465940] hover:text-[#FDFBF0] transition"
-                        >
-                          რეცეპტი
-                        </button>
+                        > <Copy>{"რეცეპტი"}</Copy> </button>
                       )}
                     </div>
                   )}
@@ -469,13 +478,11 @@ function TodayTab({ child, allDishes, planStart, isFullPlan, onWantsIntro }: { c
                   {log && !isIngredient && isToday && log.voteLiked === false && (
                     <div className="mt-2 bg-amber-50 border border-amber-200 rounded-xl px-3 py-2">
                       <div className="flex items-center gap-2">
-                        <span className="text-xs text-amber-800 flex-1">გინდა სხვა კერძით ჩავანაცვლოთ?</span>
+                        <span className="text-xs text-amber-800 flex-1"> <Copy>{"გინდა სხვა კერძით ჩავანაცვლოთ?"}</Copy> </span>
                         <button
                           onClick={() => setSubstituteFor(log.id)}
                           className="px-3 py-1 rounded-full text-xs font-bold bg-[#465940] text-[#FDFBF0] hover:bg-[#465940]/80 transition flex-shrink-0"
-                        >
-                          შემიცვალე
-                        </button>
+                        > <Copy>{"შემიცვალე"}</Copy> </button>
                       </div>
                       {/* "იგივე პროდუქტი — სხვანაირად" — a disliked dish doesn't mean the
                           child dislikes every ingredient in it forever, often just this one
@@ -532,8 +539,8 @@ function TodayTab({ child, allDishes, planStart, isFullPlan, onWantsIntro }: { c
           <div className="flex items-center gap-2 mb-4">
             <span className="text-xl">{seasonalData.seasonIcon}</span>
             <div>
-              <h3 className="font-black text-[#465940] text-sm">{SEASON_GENITIVE_KA[seasonalData.seasonKa] ?? seasonalData.seasonKa} სეზონური ხილი</h3>
-              <p className="text-[10px] text-[#465940]/60">შეათავაზე ბავშვს დამატებით — ვიტამინებით მდიდარი</p>
+              <h3 className="font-black text-[#465940] text-sm"><Copy>{SEASON_GENITIVE_KA[seasonalData.seasonKa] ?? seasonalData.seasonKa}</Copy> <Copy>{"სეზონური ხილი"}</Copy> </h3>
+              <p className="text-[10px] text-[#465940]/60"> <Copy>{"შეათავაზე ბავშვს დამატებით — ვიტამინებით მდიდარი"}</Copy> </p>
             </div>
           </div>
           <div className="space-y-3">
@@ -541,22 +548,22 @@ function TodayTab({ child, allDishes, planStart, isFullPlan, onWantsIntro }: { c
               <div key={f.id} className="flex items-start gap-3">
                 <div className="w-10 h-10 rounded-xl overflow-hidden flex-shrink-0 bg-[#465940]/10">
                   {f.imageUrl
-                    ? <img src={f.imageUrl} alt={f.titleKa} className="w-full h-full object-cover" />
+                    ? <img src={f.imageUrl} alt={localizedField(f, 'title', contentLocale)} className="w-full h-full object-cover" />
                     : <div className="w-full h-full flex items-center justify-center text-lg"></div>}
                 </div>
                 <div className="flex-1 min-w-0">
-                  <p className="font-bold text-[#465940] text-sm">{f.titleKa}</p>
+                  <p className="font-bold text-[#465940] text-sm">{localizedField(f, 'title', contentLocale)}</p>
                   {f.vitamins.length > 0 && (
                     <div className="flex flex-wrap gap-1 mt-1">
                       {f.vitamins.slice(0, 4).map((v: any) => (
                         <span key={v.label} className="text-[10px] bg-[#465940]/10 text-[#465940]/70 px-2 py-0.5 rounded-full font-semibold">
-                          {v.label} {v.value}
+                          <Copy>{v.label}</Copy> {v.value}
                         </span>
                       ))}
                     </div>
                   )}
-                  {f.benefitsKa?.length > 0 && (
-                    <p className="text-[11px] text-[#465940]/60 mt-1">{f.benefitsKa.slice(0, 2).join(' · ')}</p>
+                  {localizedField(f, 'benefits', contentLocale)?.length > 0 && (
+                    <p className="text-[11px] text-[#465940]/60 mt-1">{localizedField(f, 'benefits', contentLocale).slice(0, 2).join(' · ')}</p>
                   )}
                 </div>
               </div>
@@ -571,17 +578,15 @@ function TodayTab({ child, allDishes, planStart, isFullPlan, onWantsIntro }: { c
           <div className="bg-[#FDFBF0] rounded-3xl w-full max-w-lg max-h-[80vh] overflow-hidden flex flex-col" onClick={e => e.stopPropagation()}>
             <div className="p-5 border-b border-[#465940]/10">
               <div className="flex items-center justify-between mb-1">
-                <h3 className="font-black text-[#465940]">სხვა კერძი — {MEAL_LABEL[subLog?.mealType ?? '']}</h3>
+                <h3 className="font-black text-[#465940]"> <Copy>{"სხვა კერძი —"}</Copy> <Copy>{MEAL_LABEL[subLog?.mealType ?? '']}</Copy></h3>
                 <button onClick={() => setSubstituteFor(null)} className="text-[#465940]/60 hover:text-[#465940]/80 text-2xl leading-none">×</button>
               </div>
               <p className="text-[11px] text-[#465940]/60">
-                {originalDish ? `ნაცვლად: ${originalDish.titleKa} — ` : ''}
-                გავითვალისწინეთ ასაკი, ალერგიები, არ მოწონებული და ბოლო დღეების კვება — არა უბრალოდ შემთხვევითობა
-              </p>
+                <Copy>{originalDish ? `ნაცვლად: ${localizedField(originalDish, 'title', contentLocale)} — ` : ''}</Copy> <Copy>{"გავითვალისწინეთ ასაკი, ალერგიები, არ მოწონებული და ბოლო დღეების კვება — არა უბრალოდ შემთხვევითობა"}</Copy> </p>
             </div>
             <div className="overflow-y-auto p-4 space-y-2">
-              {loadingSub && <p className="text-[#465940]/60 text-sm text-center py-8">ვეძებთ საუკეთესო ალტერნატივას...</p>}
-              {!loadingSub && displayDishes.length === 0 && <p className="text-[#465940]/60 text-sm text-center py-8">სხვა კერძი ვერ მოიძებნა</p>}
+              {loadingSub && <p className="text-[#465940]/60 text-sm text-center py-8"> <Copy>{"ვეძებთ საუკეთესო ალტერნატივას..."}</Copy> </p>}
+              {!loadingSub && displayDishes.length === 0 && <p className="text-[#465940]/60 text-sm text-center py-8"> <Copy>{"სხვა კერძი ვერ მოიძებნა"}</Copy> </p>}
               {displayDishes.map((d: any) => (
                 <button key={d.id} onClick={() => substitute(substituteFor, d.id)}
                   className="group w-full flex items-center gap-3 p-3 rounded-2xl hover:bg-[#465940] transition text-left border border-transparent hover:border-[#465940]">
@@ -589,8 +594,8 @@ function TodayTab({ child, allDishes, planStart, isFullPlan, onWantsIntro }: { c
                     {d.imageUrl ? <img src={d.imageUrl} className="w-full h-full object-cover" alt="" /> : <div className="w-full h-full flex items-center justify-center text-xl"></div>}
                   </div>
                   <div className="flex-1 min-w-0">
-                    <p className="font-bold text-[#465940] group-hover:text-[#FDFBF0] text-sm truncate transition-colors">{d.titleKa}</p>
-                    {d.calories && <p className="text-xs text-[#465940]/60 group-hover:text-[#FDFBF0]/70 transition-colors">{d.calories} kcal{d.proteinGrams ? ` · ${d.proteinGrams}g ცილა` : ''}</p>}
+                    <p className="font-bold text-[#465940] group-hover:text-[#FDFBF0] text-sm truncate transition-colors">{localizedField(d, 'title', contentLocale)}</p>
+                    {d.calories && <p className="text-xs text-[#465940]/60 group-hover:text-[#FDFBF0]/70 transition-colors">{d.calories} kcal<Copy>{d.proteinGrams ? ` · ${d.proteinGrams}g ცილა` : ''}</Copy></p>}
                   </div>
                 </button>
               ))}
@@ -609,7 +614,8 @@ function TodayTab({ child, allDishes, planStart, isFullPlan, onWantsIntro }: { c
 type IngItem = { display: string; amount: string };
 
 function ShoppingListTab({ child, planStart }: { child: any; planStart: string }) {
-  const STORE_KEY = child ? `shopping_${child.id}` : null;
+  const { locale, units } = useExperience();
+  const STORE_KEY = child ? `shopping_${child.id}_v2_${locale}_${units}` : null;
 
   const [ingredients, setIngredients] = useState<IngItem[]>([]);
   const [bought, setBought] = useState<Record<string, boolean>>({});
@@ -627,6 +633,11 @@ function ShoppingListTab({ child, planStart }: { child: any; planStart: string }
 
   useEffect(() => {
     if (!child || !STORE_KEY) return;
+    const controller = new AbortController();
+    setIngredients([]);
+    setBought({});
+    setGenerated(false);
+    setApiError('');
     const saved = localStorage.getItem(STORE_KEY);
     if (saved) {
       try {
@@ -642,7 +653,7 @@ function ShoppingListTab({ child, planStart }: { child: any; planStart: string }
         }
       } catch { localStorage.removeItem(STORE_KEY); }
     }
-    fetch(`/api/shopping-list?childId=${child.id}&planStart=${planStart}`)
+    fetch(`/api/shopping-list?childId=${child.id}&planStart=${planStart}`, { signal: controller.signal })
       .then(r => r.json())
       .then(data => {
         if (data.error) { setApiError(data.error); return; }
@@ -659,8 +670,9 @@ function ShoppingListTab({ child, planStart }: { child: any; planStart: string }
           });
         }
       })
-      .catch(() => setApiError('კავშირის შეცდომა'));
-  }, [child?.id, planStart]);
+      .catch(() => { if (!controller.signal.aborted) setApiError('კავშირის შეცდომა'); });
+    return () => controller.abort();
+  }, [child?.id, planStart, STORE_KEY]);
 
   const regenerate = async () => {
     if (!child || !STORE_KEY) return;
@@ -692,36 +704,37 @@ function ShoppingListTab({ child, planStart }: { child: any; planStart: string }
 
   if (!child) return (
     <div className={`${card} p-10 text-center`}>
-      <p className="text-[#465940]/60 text-sm">შვილის მიმატება "შვილი" tab-ში.</p>
+      <p className="text-[#465940]/60 text-sm"> <Copy>{"შვილის მიმატება \"შვილი\" tab-ში."}</Copy> </p>
     </div>
   );
 
   return (
     <div className="space-y-5">
+      <MeasurementSwitcher />
       <div className={`${card} p-5`}>
         <div className="flex items-center justify-between mb-1">
           <div>
-            <h2 className="text-xl font-black text-[#465940]">საყიდლების სია</h2>
-            <p className="text-xs text-[#465940]/60 mt-0.5">{child.name} · მომდევნო 7 დღის გეგმა</p>
+            <h2 className="text-xl font-black text-[#465940]"> <Copy>{"საყიდლების სია"}</Copy> </h2>
+            <p className="text-xs text-[#465940]/60 mt-0.5">{child.name} <Copy>{"· მომდევნო 7 დღის გეგმა"}</Copy> </p>
           </div>
           <button onClick={regenerate} disabled={loading}
             className={`${btn} bg-[#465940] text-[#FDFBF0] text-sm hover:bg-[#465940] disabled:opacity-60`}>
-            {loading ? '⏳ იტვირთება...' : 'განახლება'}
+            <Copy>{loading ? '⏳ იტვირთება...' : 'განახლება'}</Copy>
           </button>
         </div>
       </div>
 
       {apiError && (
         <div className="bg-[#465940] border border-[#FDFBF0]/30 rounded-2xl p-4 text-center">
-          <p className="text-sm text-[#FDFBF0] font-semibold">შეცდომა: {apiError}</p>
-          <p className="text-xs text-[#FDFBF0]/70 mt-1">სცადე "განახლება" ღილაკი</p>
+          <p className="text-sm text-[#FDFBF0] font-semibold"> <Copy>{"შეცდომა:"}</Copy> {apiError}</p>
+          <p className="text-xs text-[#FDFBF0]/70 mt-1"> <Copy>{"სცადე \"განახლება\" ღილაკი"}</Copy> </p>
         </div>
       )}
 
       {loading && (
         <div className={`${card} p-8 text-center`}>
           <div className="text-4xl mb-3 animate-bounce"></div>
-          <p className="text-sm text-[#465940]/70">7 დღის კვების გეგმა მზადდება...</p>
+          <p className="text-sm text-[#465940]/70"> <Copy>{"7 დღის კვების გეგმა მზადდება..."}</Copy> </p>
         </div>
       )}
 
@@ -729,9 +742,9 @@ function ShoppingListTab({ child, planStart }: { child: any; planStart: string }
         <>
           <div className={`${card} p-5`}>
             <div className="flex items-center justify-between mb-4">
-              <p className="text-sm font-bold text-[#465940]">{ingredients.length - doneCount} დარჩენილი / {ingredients.length} სულ</p>
+              <p className="text-sm font-bold text-[#465940]">{ingredients.length - doneCount} <Copy>{"დარჩენილი /"}</Copy> {ingredients.length} <Copy>{"სულ"}</Copy> </p>
               {doneCount > 0 && (
-                <button onClick={clearBought} className="text-xs text-[#465940]/60 hover:text-[#465940]/80 transition">გასუფთავება</button>
+                <button onClick={clearBought} className="text-xs text-[#465940]/60 hover:text-[#465940]/80 transition"> <Copy>{"გასუფთავება"}</Copy> </button>
               )}
             </div>
 
@@ -761,13 +774,14 @@ function ShoppingListTab({ child, planStart }: { child: any; planStart: string }
                       <span className={`text-sm font-medium truncate transition ${isDone ? 'line-through text-[#465940]/60' : 'text-[#FDFBF0]'}`}>
                         {item.display}
                       </span>
+                      {(locale === 'en' || units !== 'metric') && item.amount && <span className={`ml-auto text-xs ${isDone ? 'text-[#465940]/60' : 'text-[#FDFBF0]/80'}`}>{item.amount}</span>}
                     </button>
                   </div>
                 );
               })}
 
               {ingredients.length === 0 && (
-                <p className="text-center text-[#465940]/60 text-sm py-6">ინგრედიენტები ვერ მოიძებნა</p>
+                <p className="text-center text-[#465940]/60 text-sm py-6"> <Copy>{"ინგრედიენტები ვერ მოიძებნა"}</Copy> </p>
               )}
             </div>
           </div>
@@ -775,8 +789,8 @@ function ShoppingListTab({ child, planStart }: { child: any; planStart: string }
           {doneCount === ingredients.length && ingredients.length > 0 && (
             <div className={`${card} p-6 text-center bg-[#465940]/10 border border-[#465940]/30`}>
               <p className="text-2xl mb-2"></p>
-              <p className="font-bold text-[#465940]">ყველაფერი შეძენილი!</p>
-              <p className="text-sm text-[#465940] mt-1">კვირის კვების გეგმა მზადაა.</p>
+              <p className="font-bold text-[#465940]"> <Copy>{"ყველაფერი შეძენილი!"}</Copy> </p>
+              <p className="text-sm text-[#465940] mt-1"> <Copy>{"კვირის კვების გეგმა მზადაა."}</Copy> </p>
             </div>
           )}
         </>
@@ -860,7 +874,7 @@ function NutritionTab({ child }: { child: any }) {
 
   if (!child) return (
     <div className={`${card} p-10 text-center`}>
-      <p className="text-[#465940]/60 text-sm">შვილის მიმატება "შვილი" tab-ში.</p>
+      <p className="text-[#465940]/60 text-sm"> <Copy>{"შვილის მიმატება \"შვილი\" tab-ში."}</Copy> </p>
     </div>
   );
 
@@ -870,17 +884,16 @@ function NutritionTab({ child }: { child: any }) {
     <div className="space-y-5">
       <div className={`${card} p-5`}>
         <div className="flex items-center justify-between mb-3">
-          <h2 className="text-xl font-black text-[#465940]">კვებითი ბალანსი</h2>
+          <h2 className="text-xl font-black text-[#465940]"> <Copy>{"კვებითი ბალანსი"}</Copy> </h2>
           <div className="flex gap-2">
             {[7, 14, 30].map((d) => (
               <button key={d} onClick={() => setDays(d)}
                 className={`px-3 py-1.5 rounded-full text-xs font-bold transition ${days === d ? 'bg-[#465940] text-[#FDFBF0]' : 'bg-[#465940]/10 text-[#465940]/80 hover:bg-[#465940]/15'}`}>
-                {d} დღე
-              </button>
+                {d} <Copy>{"დღე"}</Copy> </button>
             ))}
           </div>
         </div>
-        <p className="text-xs text-[#465940]/60 mt-1">{child.name} · {uniqueDays} / {days} დღე შევსებული</p>
+        <p className="text-xs text-[#465940]/60 mt-1">{child.name} · {uniqueDays} / {days} <Copy>{"დღე შევსებული"}</Copy> </p>
       </div>
 
       {loading ? (
@@ -890,7 +903,7 @@ function NutritionTab({ child }: { child: any }) {
           {data.analysis.map((a: any) => (
             <div key={a.key}>
               <div className="flex items-center justify-between mb-1">
-                <span className="text-sm font-semibold text-[#465940]">{NUTRIENT_LABELS[a.key]}</span>
+                <span className="text-sm font-semibold text-[#465940]"><Copy>{NUTRIENT_LABELS[a.key]}</Copy></span>
                 <span className="text-xs text-[#465940]/70">{a.consumed} / {a.recommended} {NUTRIENT_UNIT[a.key]}</span>
               </div>
               <div className="h-2.5 bg-[#465940]/10 rounded-full overflow-hidden">
@@ -908,8 +921,8 @@ function NutritionTab({ child }: { child: any }) {
       {uniqueDays === 0 && !loading && (
         <div className={`${card} p-10 text-center`}>
           <p className="text-2xl mb-3"></p>
-          <p className="font-bold text-[#465940] mb-1">ჯერ ჩანაწერი არ არის</p>
-          <p className="text-sm text-[#465940]/60">მონიშნე "დღის გეგმა" tab-ში "ჭამა" ერთხელ მაინც რომ გამოჩნდეს კვებითი ბალანსი.</p>
+          <p className="font-bold text-[#465940] mb-1"> <Copy>{"ჯერ ჩანაწერი არ არის"}</Copy> </p>
+          <p className="text-sm text-[#465940]/60"> <Copy>{"მონიშნე \"დღის გეგმა\" tab-ში \"ჭამა\" ერთხელ მაინც რომ გამოჩნდეს კვებითი ბალანსი."}</Copy> </p>
         </div>
       )}
 
@@ -919,16 +932,16 @@ function NutritionTab({ child }: { child: any }) {
           <div className="flex items-center gap-2 mb-4">
             <span className="text-xl"></span>
             <div>
-              <h3 className="font-black text-[#465940] text-sm">დღიური ნორმა — {AGE_REQUIREMENTS[child.ageGroup].label}</h3>
-              <p className="text-[10px] text-[#465940]/60">WHO / AAP რეკომენდაციების მიხედვით</p>
+              <h3 className="font-black text-[#465940] text-sm"> <Copy>{"დღიური ნორმა —"}</Copy> <Copy>{AGE_REQUIREMENTS[child.ageGroup].label}</Copy></h3>
+              <p className="text-[10px] text-[#465940]/60"> <Copy>{"WHO / AAP რეკომენდაციების მიხედვით"}</Copy> </p>
             </div>
           </div>
           <div className="grid grid-cols-2 gap-2">
             {AGE_REQUIREMENTS[child.ageGroup].values.map(v => (
               <div key={v.nutrient} className="bg-[#465940]/5 rounded-xl p-3">
                 <p className="text-xs font-bold text-[#465940]">{v.nutrient}</p>
-                <p className="text-sm font-black text-[#465940] mt-0.5">{v.amount}</p>
-                {v.note && <p className="text-[10px] text-[#465940]/60 mt-0.5">{v.note}</p>}
+                <p className="text-sm font-black text-[#465940] mt-0.5"><Copy>{v.amount}</Copy></p>
+                {v.note && <p className="text-[10px] text-[#465940]/60 mt-0.5"><Copy>{v.note}</Copy></p>}
               </div>
             ))}
           </div>
@@ -936,8 +949,7 @@ function NutritionTab({ child }: { child: any }) {
             <div className="mt-3 p-3 rounded-xl bg-[#465940]/10 flex items-center gap-2">
               <span></span>
               <p className="text-xs text-[#465940]/80 font-medium">
-                {child.milkType === 'BREAST' ? 'დედის რძე' : child.milkType === 'FORMULA' ? 'ფორმულა' : 'დედის რძე + ფორმულა'} — ავსებს ვიტამინების ნაწილს
-              </p>
+                <Copy>{child.milkType === 'BREAST' ? 'დედის რძე' : child.milkType === 'FORMULA' ? 'ფორმულა' : 'დედის რძე + ფორმულა'}</Copy> <Copy>{"— ავსებს ვიტამინების ნაწილს"}</Copy> </p>
             </div>
           )}
         </div>
@@ -948,6 +960,7 @@ function NutritionTab({ child }: { child: any }) {
 
 // ── Tag Input component ──────────────────────────────────────────────────────
 function TagInput({ tags, onChange, color }: { tags: string[]; onChange: (t: string[]) => void; color: string }) {
+  const copy = useCopy();
   const [input, setInput] = useState('');
   const add = () => {
     const v = input.trim().toLowerCase();
@@ -968,7 +981,7 @@ function TagInput({ tags, onChange, color }: { tags: string[]; onChange: (t: str
       <div className="flex gap-2">
         <input value={input} onChange={(e) => setInput(e.target.value)}
           onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); add(); } }}
-          placeholder="დაამატე და Enter..."
+          placeholder={copy("დაამატე და Enter...")}
           className="flex-1 px-3 py-2 rounded-xl border border-[#465940]/20 focus:outline-none focus:border-[#465940] text-sm settings-input" />
         <button type="button" onClick={add} className="px-3 py-2 rounded-xl bg-[#465940]/10 hover:bg-[#465940]/15 text-sm font-bold text-[#465940]/80 transition">+</button>
       </div>
@@ -992,10 +1005,12 @@ const TEXTURE_OPTIONS = [
 ];
 
 // ── Child Tab ────────────────────────────────────────────────────────────────
-function ChildTab({ children: kids, userId, onUpdate, onDelete, autoOpenIntroChildId, onAutoOpenHandled }: {
-  children: any[]; userId: string; onUpdate: (c: any) => void; onDelete: (id: string) => void;
+function ChildTab({ kids, userId, onUpdate, onDelete, autoOpenIntroChildId, onAutoOpenHandled }: {
+  kids: any[]; userId: string; onUpdate: (c: any) => void; onDelete: (id: string) => void;
   autoOpenIntroChildId?: string | null; onAutoOpenHandled?: () => void;
 }) {
+  const { locale } = useExperience();
+  const copy = useCopy();
   const [viewModal, setViewModal] = useState<any | null>(null);
   const [selected, setSelected] = useState<any | null>(null);
   const [name, setName] = useState('');
@@ -1117,7 +1132,7 @@ function ChildTab({ children: kids, userId, onUpdate, onDelete, autoOpenIntroChi
       // Clear plan + shopping caches so a fresh plan generates with new preferences
       const today = new Date().toISOString().split('T')[0];
       localStorage.setItem(`planStart_${updated.id}`, today);
-      localStorage.removeItem(`shopping_${updated.id}`);
+      clearShoppingCache(updated.id);
       onUpdate(updated);
       setSelected(null);
     }
@@ -1153,7 +1168,7 @@ function ChildTab({ children: kids, userId, onUpdate, onDelete, autoOpenIntroChi
   };
 
   const fmtDate = (bd: any) => bd
-    ? new Date(bd).toLocaleDateString('ka-GE', { year: 'numeric', month: 'long', day: 'numeric' })
+    ? new Date(bd).toLocaleDateString(locale === 'en' ? 'en-US' : 'ka-GE', { year: 'numeric', month: 'long', day: 'numeric' })
     : '—';
 
   const getAge = (bd: any): string => {
@@ -1164,6 +1179,7 @@ function ChildTab({ children: kids, userId, onUpdate, onDelete, autoOpenIntroChi
     let months = now.getMonth() - birth.getMonth();
     if (now.getDate() < birth.getDate()) months--;
     if (months < 0) { years--; months += 12; }
+    if (locale === 'en') return [years ? `${years} ${years === 1 ? 'year' : 'years'}` : '', months ? `${months} ${months === 1 ? 'month' : 'months'}` : ''].filter(Boolean).join(' ') || '0 months';
     if (years === 0) return `${months} თვე`;
     if (months === 0) return `${years} წელი`;
     return `${years} წელი ${months} თვე`;
@@ -1174,9 +1190,9 @@ function ChildTab({ children: kids, userId, onUpdate, onDelete, autoOpenIntroChi
       {/* Child pills */}
       <div className={`${card} p-5`}>
         <div className="flex items-center justify-between mb-4">
-          <h2 className="text-xl font-black text-[#465940]">შვილები</h2>
+          <h2 className="text-xl font-black text-[#465940]"> <Copy>{"შვილები"}</Copy> </h2>
           <button onClick={() => setNewChildMode(true)}
-            className="bg-[#465940] hover:bg-[#465940] text-[#FDFBF0] px-4 py-2 rounded-full text-sm font-bold transition">+ მიმატება</button>
+            className="bg-[#465940] hover:bg-[#465940] text-[#FDFBF0] px-4 py-2 rounded-full text-sm font-bold transition"> <Copy>{"+ მიმატება"}</Copy> </button>
         </div>
         <div className="flex flex-wrap gap-2">
           {kids.map((c) => (
@@ -1185,22 +1201,22 @@ function ChildTab({ children: kids, userId, onUpdate, onDelete, autoOpenIntroChi
               {c.name}
             </button>
           ))}
-          {kids.length === 0 && <p className="text-[#465940]/60 text-sm">ჯერ შვილი არ გყავს დამატებული.</p>}
+          {kids.length === 0 && <p className="text-[#465940]/60 text-sm"> <Copy>{"ჯერ შვილი არ გყავს დამატებული."}</Copy> </p>}
         </div>
       </div>
 
       {/* Add new child */}
       {newChildMode && (
         <div className={`${card} p-5 space-y-4`}>
-          <h3 className="font-bold text-[#465940]">ახალი შვილის მიმატება</h3>
+          <h3 className="font-bold text-[#465940]"> <Copy>{"ახალი შვილის მიმატება"}</Copy> </h3>
           <div className="grid grid-cols-2 gap-4">
             <div>
-              <label className="block text-sm font-semibold text-[#465940] mb-1.5">სახელი</label>
+              <label className="block text-sm font-semibold text-[#465940] mb-1.5"> <Copy>{"სახელი"}</Copy> </label>
               <input value={newName} onChange={(e) => setNewName(e.target.value)}
                 className="w-full px-4 py-3 rounded-xl border border-[#465940]/20 focus:outline-none focus:border-[#465940] text-sm settings-input" />
             </div>
             <div>
-              <label className="block text-sm font-semibold text-[#465940] mb-1.5">დაბადების თარიღი</label>
+              <label className="block text-sm font-semibold text-[#465940] mb-1.5"> <Copy>{"დაბადების თარიღი"}</Copy> </label>
               <input type="date" value={newBirth} onChange={(e) => { setNewBirth(e.target.value); setNewBirthError(''); }}
                 className="w-full px-4 py-3 rounded-xl border border-[#465940]/20 focus:outline-none focus:border-[#465940] text-sm settings-input" />
             </div>
@@ -1209,24 +1225,24 @@ function ChildTab({ children: kids, userId, onUpdate, onDelete, autoOpenIntroChi
             <p className="text-sm text-red-600 bg-red-50 rounded-xl px-4 py-2.5">{newBirthError}</p>
           )}
           <div>
-            <label className="block text-sm font-semibold text-[#465940] mb-2">ალერგიები</label>
+            <label className="block text-sm font-semibold text-[#465940] mb-2"> <Copy>{"ალერგიები"}</Copy> </label>
             <TagInput tags={newAllergies} onChange={setNewAllergies} color="bg-red-100 text-red-700" />
           </div>
           <div>
-            <label className="block text-sm font-semibold text-[#465940] mb-2">არ უყვარს</label>
+            <label className="block text-sm font-semibold text-[#465940] mb-2"> <Copy>{"არ უყვარს"}</Copy> </label>
             <TagInput tags={newDislikes} onChange={setNewDislikes} color="bg-[#465940]/10 text-[#465940]" />
           </div>
           <div>
-            <label className="block text-sm font-semibold text-[#465940] mb-2">უყვარს</label>
+            <label className="block text-sm font-semibold text-[#465940] mb-2"> <Copy>{"უყვარს"}</Copy> </label>
             <TagInput tags={newLikes} onChange={setNewLikes} color="bg-[#465940]/20 text-[#465940]" />
           </div>
           <div className="flex gap-2">
             <button onClick={addChild} disabled={addingChild}
               className="bg-[#465940] hover:bg-[#465940] text-[#FDFBF0] px-5 py-2.5 rounded-full text-sm font-bold transition disabled:opacity-60">
-              {addingChild ? 'ემატება...' : 'დამატება'}
+              <Copy>{addingChild ? 'ემატება...' : 'დამატება'}</Copy>
             </button>
             <button onClick={() => { setNewChildMode(false); setNewName(''); setNewBirth(''); setNewAllergies([]); setNewDislikes([]); setNewLikes([]); }}
-              className="bg-[#465940]/10 hover:bg-[#465940]/15 text-[#465940] px-5 py-2.5 rounded-full text-sm font-bold transition">გაუქმება</button>
+              className="bg-[#465940]/10 hover:bg-[#465940]/15 text-[#465940] px-5 py-2.5 rounded-full text-sm font-bold transition"> <Copy>{"გაუქმება"}</Copy> </button>
           </div>
         </div>
       )}
@@ -1235,37 +1251,37 @@ function ChildTab({ children: kids, userId, onUpdate, onDelete, autoOpenIntroChi
       {selected && (
         <div className={`${card} p-5 space-y-5`}>
           <div className="flex items-center justify-between">
-            <h3 className="font-black text-[#465940]">{selected.name}-ს რედაქტირება</h3>
+            <h3 className="font-black text-[#465940]">{selected.name} <Copy>{"-ს რედაქტირება"}</Copy> </h3>
             <button onClick={() => setSelected(null)} className="text-[#465940]/60 hover:text-[#465940]/80 text-2xl leading-none">×</button>
           </div>
           <div className="grid grid-cols-2 gap-4">
             <div>
-              <label className="block text-sm font-semibold text-[#465940] mb-1.5">სახელი</label>
+              <label className="block text-sm font-semibold text-[#465940] mb-1.5"> <Copy>{"სახელი"}</Copy> </label>
               <input value={name} onChange={(e) => setName(e.target.value)}
                 className="w-full px-4 py-3 rounded-xl border border-[#465940]/20 focus:outline-none focus:border-[#465940] text-sm settings-input" />
             </div>
             <div>
-              <label className="block text-sm font-semibold text-[#465940] mb-1.5">დაბადების თარიღი</label>
+              <label className="block text-sm font-semibold text-[#465940] mb-1.5"> <Copy>{"დაბადების თარიღი"}</Copy> </label>
               <input type="date" value={birthDate} onChange={(e) => setBirthDate(e.target.value)}
                 className="w-full px-4 py-3 rounded-xl border border-[#465940]/20 focus:outline-none focus:border-[#465940] text-sm settings-input" />
             </div>
           </div>
           <div>
-            <label className="block text-sm font-semibold text-[#465940] mb-2">ალერგიები</label>
+            <label className="block text-sm font-semibold text-[#465940] mb-2"> <Copy>{"ალერგიები"}</Copy> </label>
             <TagInput tags={allergies} onChange={setAllergies} color="bg-[#FDFBF0]/10 text-[#465940]" />
           </div>
           <div>
-            <label className="block text-sm font-semibold text-[#465940] mb-2">არ უყვარს</label>
+            <label className="block text-sm font-semibold text-[#465940] mb-2"> <Copy>{"არ უყვარს"}</Copy> </label>
             <TagInput tags={dislikes} onChange={setDislikes} color="bg-[#FDFBF0]/10 text-[#465940]" />
           </div>
           <div>
-            <label className="block text-sm font-semibold text-[#465940] mb-2">უყვარს</label>
+            <label className="block text-sm font-semibold text-[#465940] mb-2"> <Copy>{"უყვარს"}</Copy> </label>
             <TagInput tags={likes} onChange={setLikes} color="bg-[#465940]/20 text-[#465940]" />
           </div>
 
           {/* Milk tracking */}
           <div className="border-t border-[#465940]/10 pt-4">
-            <label className="block text-sm font-semibold text-[#465940] mb-3">რძის კვება</label>
+            <label className="block text-sm font-semibold text-[#465940] mb-3"> <Copy>{"რძის კვება"}</Copy> </label>
             <div className="grid grid-cols-2 gap-2 mb-3">
               {MILK_OPTIONS.map(opt => (
                 <button key={opt.value} type="button"
@@ -1275,7 +1291,7 @@ function ChildTab({ children: kids, userId, onUpdate, onDelete, autoOpenIntroChi
                       ? 'border-[#465940] bg-[#465940] text-[#FDFBF0]'
                       : 'border-[#465940]/15 text-[#465940]/70 hover:border-[#465940]/30'
                   }`}>
-                  {opt.label}
+                  <Copy>{opt.label}</Copy>
                 </button>
               ))}
             </div>
@@ -1286,7 +1302,7 @@ function ChildTab({ children: kids, userId, onUpdate, onDelete, autoOpenIntroChi
                   className={`relative inline-flex h-5 w-9 items-center rounded-full transition ${milkStopped ? 'bg-[#465940]' : 'bg-[#465940]/20'}`}>
                   <span className={`inline-block h-3.5 w-3.5 transform rounded-full bg-[#FDFBF0] shadow transition ${milkStopped ? 'translate-x-4.5' : 'translate-x-1'}`} />
                 </button>
-                <span className="text-sm text-[#465940]/70">სრულად მყარ კვებაზე გადასვლა</span>
+                <span className="text-sm text-[#465940]/70"> <Copy>{"სრულად მყარ კვებაზე გადასვლა"}</Copy> </span>
               </label>
             )}
           </div>
@@ -1295,8 +1311,8 @@ function ChildTab({ children: kids, userId, onUpdate, onDelete, autoOpenIntroChi
               herself; matched to real per-dish prep notes wherever a recipe is opened.
               Optional (null by default) so nothing changes for a family that skips it. */}
           <div className="border-t border-[#465940]/10 pt-4">
-            <label className="block text-sm font-semibold text-[#465940] mb-1.5">საკვების ტექსტურის სტადია</label>
-            <p className="text-[11px] text-[#465940]/50 mb-3">ეს მხოლოდ ორიენტირია, არა დიაგნოზი — შენ საუკეთესოდ იცნობ შენს შვილს.</p>
+            <label className="block text-sm font-semibold text-[#465940] mb-1.5"> <Copy>{"საკვების ტექსტურის სტადია"}</Copy> </label>
+            <p className="text-[11px] text-[#465940]/50 mb-3"> <Copy>{"ეს მხოლოდ ორიენტირია, არა დიაგნოზი — შენ საუკეთესოდ იცნობ შენს შვილს."}</Copy> </p>
             <div className="grid grid-cols-2 gap-2">
               {TEXTURE_OPTIONS.map(opt => (
                 <button key={opt.value} type="button"
@@ -1306,7 +1322,7 @@ function ChildTab({ children: kids, userId, onUpdate, onDelete, autoOpenIntroChi
                       ? 'border-[#465940] bg-[#465940] text-[#FDFBF0]'
                       : 'border-[#465940]/15 text-[#465940]/70 hover:border-[#465940]/30'
                   }`}>
-                  {opt.label}
+                  <Copy>{opt.label}</Copy>
                 </button>
               ))}
             </div>
@@ -1314,7 +1330,7 @@ function ChildTab({ children: kids, userId, onUpdate, onDelete, autoOpenIntroChi
 
           <button onClick={save} disabled={saving}
             className="w-full bg-[#465940] hover:bg-[#465940] text-[#FDFBF0] py-3 rounded-full font-bold text-sm transition disabled:opacity-60">
-            {saving ? 'ინახება...' : 'შენახვა'}
+            <Copy>{saving ? 'ინახება...' : 'შენახვა'}</Copy>
           </button>
         </div>
       )}
@@ -1323,8 +1339,8 @@ function ChildTab({ children: kids, userId, onUpdate, onDelete, autoOpenIntroChi
       {selected && introChild?.id === selected.id && (
         <div className={`${card} p-5 space-y-4`}>
           <div>
-            <h3 className="font-black text-[#465940] mb-0.5">ახალი პროდუქტების გაცნობა</h3>
-            <p className="text-xs text-[#465940]/60">გასინჯეთ ახალი პროდუქტი? დაამატეთ — 3 დღე დააკვირდით, შემდეგ მომდევნოზე გადახვიდეთ</p>
+            <h3 className="font-black text-[#465940] mb-0.5"> <Copy>{"ახალი პროდუქტების გაცნობა"}</Copy> </h3>
+            <p className="text-xs text-[#465940]/60"> <Copy>{"გასინჯეთ ახალი პროდუქტი? დაამატეთ — 3 დღე დააკვირდით, შემდეგ მომდევნოზე გადახვიდეთ"}</Copy> </p>
           </div>
 
           {/* Active introduction */}
@@ -1336,7 +1352,7 @@ function ChildTab({ children: kids, userId, onUpdate, onDelete, autoOpenIntroChi
                 <div className="flex items-center justify-between mb-2">
                   <div>
                     <p className="font-black text-[#465940]">{item.foodName}</p>
-                    <p className="text-xs text-[#465940]/60">{days} დღე გავიდა · {safe ? '3 დღე შესრულდა' : `${3 - days} დღე დარჩა`}</p>
+                    <p className="text-xs text-[#465940]/60">{days} <Copy>{"დღე გავიდა ·"}</Copy> <Copy>{safe ? '3 დღე შესრულდა' : `${3 - days} დღე დარჩა`}</Copy></p>
                   </div>
                   <div className={`w-12 h-12 rounded-full flex items-center justify-center text-xl font-black ${safe ? 'bg-green-100 text-green-700' : 'bg-[#465940]/10 text-[#465940]'}`}>
                     {days}/3
@@ -1344,17 +1360,11 @@ function ChildTab({ children: kids, userId, onUpdate, onDelete, autoOpenIntroChi
                 </div>
                 <div className="flex gap-2 flex-wrap">
                   <button onClick={() => updateFoodStatus(item.id, 'SAFE')}
-                    className="px-3 py-1.5 rounded-full text-xs font-bold bg-green-500 text-white transition">
-                    ✓ ალერგია არ არის
-                  </button>
+                    className="px-3 py-1.5 rounded-full text-xs font-bold bg-green-500 text-white transition"> <Copy>{"✓ ალერგია არ არის"}</Copy> </button>
                   <button onClick={() => updateFoodStatus(item.id, 'ALLERGIC')}
-                    className="px-3 py-1.5 rounded-full text-xs font-bold bg-red-100 text-red-600 transition">
-                    ალერგია აქვს
-                  </button>
+                    className="px-3 py-1.5 rounded-full text-xs font-bold bg-red-100 text-red-600 transition"> <Copy>{"ალერგია აქვს"}</Copy> </button>
                   <button onClick={() => deleteFood(item.id)}
-                    className="px-3 py-1.5 rounded-full text-xs font-bold bg-[#465940]/10 text-[#465940]/60 transition">
-                    წაშლა
-                  </button>
+                    className="px-3 py-1.5 rounded-full text-xs font-bold bg-[#465940]/10 text-[#465940]/60 transition"> <Copy>{"წაშლა"}</Copy> </button>
                 </div>
               </div>
             );
@@ -1364,20 +1374,20 @@ function ChildTab({ children: kids, userId, onUpdate, onDelete, autoOpenIntroChi
           <div className="flex gap-2">
             <input value={newFood} onChange={e => setNewFood(e.target.value)}
               onKeyDown={e => e.key === 'Enter' && addFood()}
-              placeholder="ახალი პროდუქტი (მაგ. გოგრა)"
+              placeholder={copy("ახალი პროდუქტი (მაგ. გოგრა)")}
               className="flex-1 px-4 py-2.5 rounded-xl border border-[#465940]/20 text-sm bg-white focus:outline-none focus:border-[#465940] settings-input" />
             <button onClick={addFood} disabled={addingFood || !newFood.trim()}
               className="px-4 py-2.5 rounded-xl bg-[#465940] text-[#FDFBF0] text-sm font-bold disabled:opacity-50 transition">
-              {addingFood ? '...' : '+ დაწყება'}
+              <Copy>{addingFood ? '...' : '+ დაწყება'}</Copy>
             </button>
           </div>
 
           {/* History */}
           {introductions.filter(i => i.status !== 'INTRODUCING').length > 0 && (
             <div>
-              <p className="text-xs font-semibold text-[#465940]/60 mb-2 uppercase tracking-wide">ისტორია</p>
+              <p className="text-xs font-semibold text-[#465940]/60 mb-2 uppercase tracking-wide"> <Copy>{"ისტორია"}</Copy> </p>
               <div className="space-y-1.5">
-                {introLoading && <p className="text-xs text-[#465940]/50">იტვირთება...</p>}
+                {introLoading && <p className="text-xs text-[#465940]/50"> <Copy>{"იტვირთება..."}</Copy> </p>}
                 {introductions.filter(i => i.status !== 'INTRODUCING').map(item => (
                   <div key={item.id} className="flex items-center justify-between px-3 py-2 rounded-xl bg-[#465940]/5">
                     <div className="flex items-center gap-2">
@@ -1388,7 +1398,7 @@ function ChildTab({ children: kids, userId, onUpdate, onDelete, autoOpenIntroChi
                       <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${
                         item.status === 'SAFE' ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-600'
                       }`}>
-                        {item.status === 'SAFE' ? 'უსაფრთხო' : 'ალერგია'}
+                        <Copy>{item.status === 'SAFE' ? 'უსაფრთხო' : 'ალერგია'}</Copy>
                       </span>
                       <button onClick={() => deleteFood(item.id)} className="text-[#465940]/30 hover:text-[#465940]/60 text-xs">×</button>
                     </div>
@@ -1407,7 +1417,7 @@ function ChildTab({ children: kids, userId, onUpdate, onDelete, autoOpenIntroChi
             {/* Modal header */}
             <div className="bg-[#465940] px-6 py-5 flex items-center justify-between">
               <div>
-                <p className="text-xs text-[#FDFBF0]/70 font-bold uppercase tracking-wide mb-0.5">შვილის პროფილი</p>
+                <p className="text-xs text-[#FDFBF0]/70 font-bold uppercase tracking-wide mb-0.5"> <Copy>{"შვილის პროფილი"}</Copy> </p>
                 <h3 className="text-xl font-black text-[#FDFBF0]">{viewModal.name}</h3>
                 {viewModal.birthDate && (
                   <p className="text-sm text-[#FDFBF0]/80 font-semibold mt-0.5">{getAge(viewModal.birthDate)}</p>
@@ -1419,13 +1429,13 @@ function ChildTab({ children: kids, userId, onUpdate, onDelete, autoOpenIntroChi
             {/* Info rows */}
             <div className="px-6 py-5 space-y-4">
               <div>
-                <p className="text-xs text-[#465940]/60 font-semibold uppercase tracking-wide mb-1">დაბადების თარიღი</p>
+                <p className="text-xs text-[#465940]/60 font-semibold uppercase tracking-wide mb-1"> <Copy>{"დაბადების თარიღი"}</Copy> </p>
                 <p className="text-sm font-bold text-[#465940]">{fmtDate(viewModal.birthDate)}</p>
               </div>
 
               {viewModal.allergies?.length > 0 && (
                 <div>
-                  <p className="text-xs text-[#465940]/60 font-semibold uppercase tracking-wide mb-2">ალერგიები</p>
+                  <p className="text-xs text-[#465940]/60 font-semibold uppercase tracking-wide mb-2"> <Copy>{"ალერგიები"}</Copy> </p>
                   <div className="flex flex-wrap gap-1.5">
                     {viewModal.allergies.map((a: string) => (
                       <span key={a} className="px-3 py-1 rounded-full text-xs font-bold bg-[#465940]/10 text-[#465940]">{a}</span>
@@ -1436,7 +1446,7 @@ function ChildTab({ children: kids, userId, onUpdate, onDelete, autoOpenIntroChi
 
               {viewModal.dislikes?.length > 0 && (
                 <div>
-                  <p className="text-xs text-[#465940]/60 font-semibold uppercase tracking-wide mb-2">არ უყვარს</p>
+                  <p className="text-xs text-[#465940]/60 font-semibold uppercase tracking-wide mb-2"> <Copy>{"არ უყვარს"}</Copy> </p>
                   <div className="flex flex-wrap gap-1.5">
                     {viewModal.dislikes.map((d: string) => (
                       <span key={d} className="px-3 py-1 rounded-full text-xs font-bold bg-[#465940]/10 text-[#465940]">{d}</span>
@@ -1447,7 +1457,7 @@ function ChildTab({ children: kids, userId, onUpdate, onDelete, autoOpenIntroChi
 
               {viewModal.likes?.length > 0 && (
                 <div>
-                  <p className="text-xs text-[#465940]/60 font-semibold uppercase tracking-wide mb-2">უყვარს</p>
+                  <p className="text-xs text-[#465940]/60 font-semibold uppercase tracking-wide mb-2"> <Copy>{"უყვარს"}</Copy> </p>
                   <div className="flex flex-wrap gap-1.5">
                     {viewModal.likes.map((l: string) => (
                       <span key={l} className="px-3 py-1 rounded-full text-xs font-bold bg-[#465940]/20 text-[#465940]">{l}</span>
@@ -1457,19 +1467,17 @@ function ChildTab({ children: kids, userId, onUpdate, onDelete, autoOpenIntroChi
               )}
 
               {!viewModal.allergies?.length && !viewModal.dislikes?.length && !viewModal.likes?.length && (
-                <p className="text-sm text-[#465940]/60 italic">დამატებითი ინფორმაცია არ არის შეყვანილი</p>
+                <p className="text-sm text-[#465940]/60 italic"> <Copy>{"დამატებითი ინფორმაცია არ არის შეყვანილი"}</Copy> </p>
               )}
             </div>
 
             {/* Actions */}
             <div className="px-6 pb-6 flex gap-3">
               <button onClick={() => openEdit(viewModal)}
-                className="flex-1 bg-[#465940] hover:bg-[#465940]/80 text-[#FDFBF0] py-3 rounded-full font-bold text-sm transition">
-                რედაქტირება
-              </button>
+                className="flex-1 bg-[#465940] hover:bg-[#465940]/80 text-[#FDFBF0] py-3 rounded-full font-bold text-sm transition"> <Copy>{"რედაქტირება"}</Copy> </button>
               <button onClick={() => deleteChild(viewModal)} disabled={deleting}
                 className="flex-1 border border-[#465940]/30 text-[#465940] hover:bg-[#465940]/10 py-3 rounded-full font-bold text-sm transition disabled:opacity-60">
-                {deleting ? 'იშლება...' : 'წაშლა'}
+                <Copy>{deleting ? 'იშლება...' : 'წაშლა'}</Copy>
               </button>
             </div>
           </div>
@@ -1481,6 +1489,8 @@ function ChildTab({ children: kids, userId, onUpdate, onDelete, autoOpenIntroChi
 
 // ── Settings Tab ────────────────────────────────────────────────────────────
 function AllergiesSection({ child }: { child: any }) {
+  const { locale: contentLocale } = useExperience();
+  const copy = useCopy();
   const [allergic, setAllergic] = useState<{ id: string; ingredient: { nameKa: string } }[]>([]);
   const [loading, setLoading] = useState(true);
   const [clearingId, setClearingId] = useState<string | null>(null);
@@ -1490,7 +1500,7 @@ function AllergiesSection({ child }: { child: any }) {
     const res = await fetch(`/api/baby-ingredients?childId=${child.id}`);
     const data = await res.json();
     const items = Array.isArray(data)
-      ? data.filter((i: any) => i.status?.allergic).map((i: any) => ({ id: i.status.id, ingredient: { nameKa: i.nameKa } }))
+      ? data.filter((i: any) => i.status?.allergic).map((i: any) => ({ id: i.status.id, ingredient: { nameKa: i.nameKa, nameEn: i.nameEn } }))
       : [];
     setAllergic(items);
     setLoading(false);
@@ -1499,7 +1509,7 @@ function AllergiesSection({ child }: { child: any }) {
   useEffect(() => { fetchAllergic(); }, [fetchAllergic]);
 
   const clear = async (statusId: string) => {
-    if (!confirm('დარწმუნებული ხარ, რომ ალერგია მოეხსნას? ინგრედიენტი ისევ დაუსინჯავად ჩაითვლება.')) return;
+    if (!confirm(copy('დარწმუნებული ხარ, რომ ალერგია მოეხსნას? ინგრედიენტი ისევ დაუსინჯავად ჩაითვლება.'))) return;
     setClearingId(statusId);
     await fetch(`/api/baby-ingredient-status/${statusId}`, {
       method: 'PATCH', headers: { 'Content-Type': 'application/json' },
@@ -1511,20 +1521,20 @@ function AllergiesSection({ child }: { child: any }) {
 
   return (
     <div className={`${card} p-6`}>
-      <h2 className="font-black text-[#465940] mb-1">ალერგიები</h2>
-      <p className="text-sm text-[#465940]/60 mb-4">{child.name}-ზე მონიშნული ალერგიები. მოხსნა მხოლოდ აქედან შეიძლება.</p>
+      <h2 className="font-black text-[#465940] mb-1"> <Copy>{"ალერგიები"}</Copy> </h2>
+      <p className="text-sm text-[#465940]/60 mb-4">{child.name} <Copy>{"-ზე მონიშნული ალერგიები. მოხსნა მხოლოდ აქედან შეიძლება."}</Copy> </p>
       {loading ? (
-        <p className="text-sm text-[#465940]/50">იტვირთება...</p>
+        <p className="text-sm text-[#465940]/50"> <Copy>{"იტვირთება..."}</Copy> </p>
       ) : allergic.length === 0 ? (
-        <p className="text-sm text-[#465940]/50">მონიშნული ალერგია არ არის.</p>
+        <p className="text-sm text-[#465940]/50"> <Copy>{"მონიშნული ალერგია არ არის."}</Copy> </p>
       ) : (
         <div className="space-y-2">
           {allergic.map(a => (
             <div key={a.id} className="flex items-center justify-between rounded-xl bg-red-50 px-4 py-2.5">
-              <span className="text-sm font-semibold text-red-700">{a.ingredient.nameKa}</span>
+              <span className="text-sm font-semibold text-red-700">{localizedField(a.ingredient, 'name', contentLocale)}</span>
               <button onClick={() => clear(a.id)} disabled={clearingId === a.id}
                 className="text-xs font-bold text-red-600 hover:text-red-800 transition disabled:opacity-50">
-                {clearingId === a.id ? '...' : 'აღარ აქვს ალერგია'}
+                <Copy>{clearingId === a.id ? '...' : 'აღარ აქვს ალერგია'}</Copy>
               </button>
             </div>
           ))}
@@ -1535,6 +1545,7 @@ function AllergiesSection({ child }: { child: any }) {
 }
 
 function SettingsTab({ user, activeChild }: { user: any; activeChild?: any }) {
+  const copy = useCopy();
   const [name, setName] = useState(user.name);
   const [nameStatus, setNameStatus] = useState<'idle' | 'saving' | 'ok'>('idle');
   const [email, setEmail] = useState(user.email);
@@ -1617,8 +1628,8 @@ function SettingsTab({ user, activeChild }: { user: any; activeChild?: any }) {
   // and why, not just who canceled. The two window.confirm()s stay as a last-chance safety
   // net for an action that's genuinely irreversible, on top of the reason step.
   const deleteAccount = async (reason: string, reasonText: string) => {
-    if (!confirm('ანგარიშის წაშლა საბოლოოა და ვერ გაუქმდება — შვილების, კვების გეგმებისა და გამოწერის ჩათვლით ყველაფერი წაიშლება. იმავე ელფოსტით ხელახლა რეგისტრაცია შესაძლებელია, მაგრამ თუ უფასო ტესტ-პერიოდი უკვე გამოყენებულია, მეორედ აღარ მიეცემა. დარწმუნებული ხარ?')) return;
-    if (!confirm('ბოლო შეკითხვა — ნამდვილად გსურს ანგარიშის წაშლა?')) return;
+    if (!confirm(copy('ანგარიშის წაშლა საბოლოოა და ვერ გაუქმდება — შვილების, კვების გეგმებისა და გამოწერის ჩათვლით ყველაფერი წაიშლება. იმავე ელფოსტით ხელახლა რეგისტრაცია შესაძლებელია, მაგრამ თუ უფასო ტესტ-პერიოდი უკვე გამოყენებულია, მეორედ აღარ მიეცემა. დარწმუნებული ხარ?'))) return;
+    if (!confirm(copy('ბოლო შეკითხვა — ნამდვილად გსურს ანგარიშის წაშლა?'))) return;
     setDeleting(true);
     setDeleteError('');
     const res = await fetch('/api/account/delete', {
@@ -1638,47 +1649,48 @@ function SettingsTab({ user, activeChild }: { user: any; activeChild?: any }) {
 
   return (
     <div className="space-y-5 max-w-lg">
+      <div className={`${card} p-5`}><MeasurementSwitcher /></div>
       {/* Name */}
       <div className={`${card} p-6`}>
-        <h2 className="font-black text-[#465940] mb-4">სახელი</h2>
+        <h2 className="font-black text-[#465940] mb-4"> <Copy>{"სახელი"}</Copy> </h2>
         <input value={name} onChange={(e) => setName(e.target.value)} className={inp} />
         <button onClick={saveName} disabled={nameStatus === 'saving'}
           className="mt-3 bg-[#465940] hover:bg-[#465940] text-[#FDFBF0] px-6 py-2.5 rounded-full text-sm font-bold transition disabled:opacity-60">
-          {nameStatus === 'saving' ? 'ინახება...' : nameStatus === 'ok' ? '✓ შენახვა' : 'შენახვა'}
+          <Copy>{nameStatus === 'saving' ? 'ინახება...' : nameStatus === 'ok' ? '✓ შენახვა' : 'შენახვა'}</Copy>
         </button>
       </div>
 
       {/* Email */}
       <div className={`${card} p-6`}>
-        <h2 className="font-black text-[#465940] mb-4">ელფასტა</h2>
+        <h2 className="font-black text-[#465940] mb-4"> <Copy>{"ელფასტა"}</Copy> </h2>
         <input type="email" value={email} onChange={(e) => setEmail(e.target.value)} className={inp} />
         {emailStatus === 'error' && <p className="text-red-500 text-sm mt-1">{emailError}</p>}
         <button onClick={saveEmail} disabled={emailStatus === 'saving'}
           className="mt-3 bg-[#465940] hover:bg-[#465940] text-[#FDFBF0] px-6 py-2.5 rounded-full text-sm font-bold transition disabled:opacity-60">
-          {emailStatus === 'saving' ? 'ინახება...' : emailStatus === 'ok' ? '✓ შენახვა' : 'შენახვა'}
+          <Copy>{emailStatus === 'saving' ? 'ინახება...' : emailStatus === 'ok' ? '✓ შენახვა' : 'შენახვა'}</Copy>
         </button>
       </div>
 
       {/* Change password */}
       <div className={`${card} p-6`}>
-        <h2 className="font-black text-[#465940] mb-4">პაროლის შეცვლა</h2>
-        {pwStatus === 'ok' && <div className="mb-4 rounded-xl bg-[#465940]/10 px-4 py-3 text-sm font-semibold text-[#465940]">პაროლი შეიცვალა ✓</div>}
+        <h2 className="font-black text-[#465940] mb-4"> <Copy>{"პაროლის შეცვლა"}</Copy> </h2>
+        {pwStatus === 'ok' && <div className="mb-4 rounded-xl bg-[#465940]/10 px-4 py-3 text-sm font-semibold text-[#465940]"> <Copy>{"პაროლი შეიცვალა ✓"}</Copy> </div>}
         <form onSubmit={changePassword} className="space-y-3">
-          <input type="password" placeholder="მიმდინარე პაროლი" value={pwCur} onChange={(e) => setPwCur(e.target.value)} required className={inp} />
-          <input type="password" placeholder="ახალი პაროლი" value={pwNew} onChange={(e) => setPwNew(e.target.value)} required minLength={6} className={inp} />
-          <input type="password" placeholder="გაიმეორე ახალი პაროლი" value={pwConf} onChange={(e) => setPwConf(e.target.value)} required className={inp} />
+          <input type="password" placeholder={copy("მიმდინარე პაროლი")} value={pwCur} onChange={(e) => setPwCur(e.target.value)} required className={inp} />
+          <input type="password" placeholder={copy("ახალი პაროლი")} value={pwNew} onChange={(e) => setPwNew(e.target.value)} required minLength={6} className={inp} />
+          <input type="password" placeholder={copy("გაიმეორე ახალი პაროლი")} value={pwConf} onChange={(e) => setPwConf(e.target.value)} required className={inp} />
           {pwStatus === 'error' && <p className="text-red-500 text-sm">{pwError}</p>}
           <button type="submit" disabled={pwStatus === 'loading'}
             className="w-full bg-[#465940] hover:bg-[#465940] text-[#FDFBF0] py-3 rounded-full font-bold text-sm transition disabled:opacity-60">
-            {pwStatus === 'loading' ? 'იცვლება...' : 'პაროლის განახლება'}
+            <Copy>{pwStatus === 'loading' ? 'იცვლება...' : 'პაროლის განახლება'}</Copy>
           </button>
         </form>
       </div>
 
       {/* Account info */}
       <div id="cancel-subscription-section" className={`${card} p-6 transition-shadow ${highlightCancel ? 'ring-4 ring-[#D9803B]' : ''}`}>
-        <h2 className="font-black text-[#465940] mb-3">ანგარიში</h2>
-        <p className="text-sm text-[#465940]/70 mb-4"><span className="font-semibold text-[#465940]">სტატუსი:</span> {user.subscriptionStatus}</p>
+        <h2 className="font-black text-[#465940] mb-3"> <Copy>{"ანგარიში"}</Copy> </h2>
+        <p className="text-sm text-[#465940]/70 mb-4"><span className="font-semibold text-[#465940]"> <Copy>{"სტატუსი:"}</Copy> </span> {user.subscriptionStatus}</p>
         {user.bogParentOrderId ? (
           // A real, live BOG subscription always takes priority over a leftover
           // lsSubscriptionId from before the account ever moved to BOG — otherwise anyone
@@ -1703,13 +1715,11 @@ function SettingsTab({ user, activeChild }: { user: any; activeChild?: any }) {
 
       {/* Danger zone */}
       <div className={`${card} p-6 border-2 border-red-200`}>
-        <h2 className="font-black text-red-600 mb-2">ანგარიშის წაშლა</h2>
-        <p className="text-sm text-[#465940]/70 mb-4">
-          ანგარიშის წაშლა საბოლოოდ შლის შვილების პროფილებს, კვების გეგმებსა და ისტორიას. თუ აქტიური გამოწერა გაქვს, ისიც გაუქმდება — შემდგომი ჩამოჭრა აღარ მოხდება. იმავე ელფოსტით ხელახლა რეგისტრაცია შემდეგაც შესაძლებელია — პაკეტზე გამოწერისთანავე თანხა დაუყოვნებლივ ჩამოიჭრება (გარდა იმ შემთხვევისა, თუ სწორ პრომოკოდს გამოიყენებთ და ამ ელფოსტას მანამდე არასდროს გამოუყენებია უფასო ტესტ-პერიოდი — მაშინ 3 დღით უფასო იქნება).
-        </p>
+        <h2 className="font-black text-red-600 mb-2"> <Copy>{"ანგარიშის წაშლა"}</Copy> </h2>
+        <p className="text-sm text-[#465940]/70 mb-4"> <Copy>{"ანგარიშის წაშლა საბოლოოდ შლის შვილების პროფილებს, კვების გეგმებსა და ისტორიას. თუ აქტიური გამოწერა გაქვს, ისიც გაუქმდება — შემდგომი ჩამოჭრა აღარ მოხდება. იმავე ელფოსტით ხელახლა რეგისტრაცია შემდეგაც შესაძლებელია — პაკეტზე გამოწერისთანავე თანხა დაუყოვნებლივ ჩამოიჭრება (გარდა იმ შემთხვევისა, თუ სწორ პრომოკოდს გამოიყენებთ და ამ ელფოსტას მანამდე არასდროს გამოუყენებია უფასო ტესტ-პერიოდი — მაშინ 3 დღით უფასო იქნება)."}</Copy> </p>
         <button onClick={() => setShowDeleteReasonModal(true)} disabled={deleting}
           className="bg-red-50 hover:bg-red-100 text-red-600 px-6 py-2.5 rounded-full text-sm font-bold transition disabled:opacity-60">
-          {deleting ? 'იშლება...' : 'ანგარიშის წაშლა'}
+          <Copy>{deleting ? 'იშლება...' : 'ანგარიშის წაშლა'}</Copy>
         </button>
         {deleteError && <p className="text-red-500 text-xs mt-2">{deleteError}</p>}
         {showDeleteReasonModal && (
@@ -1755,9 +1765,9 @@ function ManageSubscriptionButton() {
     <div>
       <button onClick={openPortal} disabled={loading}
         className="bg-[#465940]/10 hover:bg-[#465940]/15 text-[#465940] px-5 py-2.5 rounded-full text-sm font-bold transition disabled:opacity-60">
-        {loading ? 'იხსნება...' : 'გამოწერის მართვა / გაუქმება'}
+        <Copy>{loading ? 'იხსნება...' : 'გამოწერის მართვა / გაუქმება'}</Copy>
       </button>
-      {error && <p className="text-red-500 text-xs mt-2">{error}</p>}
+      {error && <p className="text-red-500 text-xs mt-2"><Copy>{error}</Copy></p>}
     </div>
   );
 }
@@ -1783,6 +1793,7 @@ function CancelReasonModal({ onClose, onConfirm, loading }: {
   onConfirm: (reason: string, reasonText: string) => void;
   loading: boolean;
 }) {
+  const copy = useCopy();
   const [reason, setReason] = useState('');
   const [otherText, setOtherText] = useState('');
   const canConfirm = reason && (reason !== 'OTHER' || otherText.trim().length > 0);
@@ -1792,10 +1803,10 @@ function CancelReasonModal({ onClose, onConfirm, loading }: {
       <div className="bg-[#FDFBF0] rounded-3xl w-full max-w-md max-h-[85vh] overflow-hidden flex flex-col" onClick={e => e.stopPropagation()}>
         <div className="p-5 border-b border-[#465940]/10">
           <div className="flex items-center justify-between mb-1">
-            <h3 className="font-black text-[#465940]">რატომ აუქმებთ?</h3>
+            <h3 className="font-black text-[#465940]"> <Copy>{"რატომ აუქმებთ?"}</Copy> </h3>
             <button onClick={onClose} className="text-[#465940]/60 hover:text-[#465940]/80 text-2xl leading-none">×</button>
           </div>
-          <p className="text-[11px] text-[#465940]/60">დაგვეხმარებით სერვისის გაუმჯობესებაში — აირჩიეთ მიზეზი გაუქმების დასასრულებლად</p>
+          <p className="text-[11px] text-[#465940]/60"> <Copy>{"დაგვეხმარებით სერვისის გაუმჯობესებაში — აირჩიეთ მიზეზი გაუქმების დასასრულებლად"}</Copy> </p>
         </div>
         <div className="overflow-y-auto p-4 space-y-2">
           {CANCEL_REASONS.map(r => (
@@ -1805,27 +1816,27 @@ function CancelReasonModal({ onClose, onConfirm, loading }: {
               }`}>
               <input type="radio" name="cancelReason" value={r.value} checked={reason === r.value}
                 onChange={() => setReason(r.value)} className="accent-[#465940]" />
-              <span className="text-sm text-[#465940] font-medium">{r.label}</span>
+              <span className="text-sm text-[#465940] font-medium"><Copy>{r.label}</Copy></span>
             </label>
           ))}
           {reason === 'OTHER' && (
             <textarea
               value={otherText}
               onChange={e => setOtherText(e.target.value)}
-              placeholder="დაწერეთ მიზეზი..."
+              placeholder={copy("დაწერეთ მიზეზი...")}
               rows={3}
               className="w-full mt-1 px-3 py-2 rounded-xl border border-[#465940]/20 text-sm text-[#465940] bg-white focus:outline-none focus:border-[#465940]"
             />
           )}
         </div>
         <div className="p-4 border-t border-[#465940]/10">
-          <p className="text-[11px] text-[#465940]/50 mb-2">წვდომა დარჩება ბოლომდე გადახდილი პერიოდის ვადამდე, შემდეგ აღარ განახლდება.</p>
+          <p className="text-[11px] text-[#465940]/50 mb-2"> <Copy>{"წვდომა დარჩება ბოლომდე გადახდილი პერიოდის ვადამდე, შემდეგ აღარ განახლდება."}</Copy> </p>
           <button
             onClick={() => canConfirm && onConfirm(reason, otherText.trim())}
             disabled={!canConfirm || loading}
             className="w-full bg-[#465940] hover:bg-[#465940]/90 text-[#FDFBF0] px-5 py-2.5 rounded-full text-sm font-bold transition disabled:opacity-40"
           >
-            {loading ? 'უქმდება...' : 'გაუქმების დადასტურება'}
+            <Copy>{loading ? 'უქმდება...' : 'გაუქმების დადასტურება'}</Copy>
           </button>
         </div>
       </div>
@@ -1842,6 +1853,7 @@ function DeleteAccountReasonModal({ onClose, onConfirm, loading }: {
   onConfirm: (reason: string, reasonText: string) => void;
   loading: boolean;
 }) {
+  const copy = useCopy();
   const [reason, setReason] = useState('');
   const [otherText, setOtherText] = useState('');
   const canConfirm = reason && (reason !== 'OTHER' || otherText.trim().length > 0);
@@ -1851,10 +1863,10 @@ function DeleteAccountReasonModal({ onClose, onConfirm, loading }: {
       <div className="bg-[#FDFBF0] rounded-3xl w-full max-w-md max-h-[85vh] overflow-hidden flex flex-col" onClick={e => e.stopPropagation()}>
         <div className="p-5 border-b border-[#465940]/10">
           <div className="flex items-center justify-between mb-1">
-            <h3 className="font-black text-red-600">რატომ შლით ანგარიშს?</h3>
+            <h3 className="font-black text-red-600"> <Copy>{"რატომ შლით ანგარიშს?"}</Copy> </h3>
             <button onClick={onClose} className="text-[#465940]/60 hover:text-[#465940]/80 text-2xl leading-none">×</button>
           </div>
-          <p className="text-[11px] text-[#465940]/60">დაგვეხმარებით სერვისის გაუმჯობესებაში — აირჩიეთ მიზეზი ანგარიშის წაშლის დასასრულებლად</p>
+          <p className="text-[11px] text-[#465940]/60"> <Copy>{"დაგვეხმარებით სერვისის გაუმჯობესებაში — აირჩიეთ მიზეზი ანგარიშის წაშლის დასასრულებლად"}</Copy> </p>
         </div>
         <div className="overflow-y-auto p-4 space-y-2">
           {CANCEL_REASONS.map(r => (
@@ -1864,28 +1876,26 @@ function DeleteAccountReasonModal({ onClose, onConfirm, loading }: {
               }`}>
               <input type="radio" name="deleteReason" value={r.value} checked={reason === r.value}
                 onChange={() => setReason(r.value)} className="accent-red-600" />
-              <span className="text-sm text-[#465940] font-medium">{r.label}</span>
+              <span className="text-sm text-[#465940] font-medium"><Copy>{r.label}</Copy></span>
             </label>
           ))}
           {reason === 'OTHER' && (
             <textarea
               value={otherText}
               onChange={e => setOtherText(e.target.value)}
-              placeholder="დაწერეთ მიზეზი..."
+              placeholder={copy("დაწერეთ მიზეზი...")}
               rows={3}
               className="w-full mt-1 px-3 py-2 rounded-xl border border-[#465940]/20 text-sm text-[#465940] bg-white focus:outline-none focus:border-[#465940]"
             />
           )}
         </div>
         <div className="p-4 border-t border-[#465940]/10">
-          <p className="text-[11px] text-[#465940]/50 mb-2">შემდეგ საფეხურზე კიდევ დაგადასტურებინებთ — ეს ჯერ საბოლოო ნაბიჯი არ არის.</p>
+          <p className="text-[11px] text-[#465940]/50 mb-2"> <Copy>{"შემდეგ საფეხურზე კიდევ დაგადასტურებინებთ — ეს ჯერ საბოლოო ნაბიჯი არ არის."}</Copy> </p>
           <button
             onClick={() => canConfirm && onConfirm(reason, otherText.trim())}
             disabled={!canConfirm || loading}
             className="w-full bg-red-600 hover:bg-red-700 text-white px-5 py-2.5 rounded-full text-sm font-bold transition disabled:opacity-40"
-          >
-            გაგრძელება
-          </button>
+          > <Copy>{"გაგრძელება"}</Copy> </button>
         </div>
       </div>
     </div>
@@ -1899,6 +1909,7 @@ function CancelBogSubscriptionButton({ subscriptionCanceledAt, subscriptionRenew
   subscriptionCanceledAt: string | Date | null;
   subscriptionRenewsAt: string | Date | null;
 }) {
+  const { locale, timeZone } = useExperience();
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [canceledAt, setCanceledAt] = useState(subscriptionCanceledAt);
@@ -1930,9 +1941,7 @@ function CancelBogSubscriptionButton({ subscriptionCanceledAt, subscriptionRenew
 
   if (canceledAt) {
     return (
-      <div className="rounded-xl bg-[#465940]/10 px-4 py-3 text-sm text-[#465940]">
-        გამოწერა გაუქმებულია — წვდომა გექნებათ {accessUntil ? new Date(accessUntil).toLocaleDateString('ka-GE') : 'მიმდინარე პერიოდის ბოლომდე'}, შემდეგ აღარ განახლდება და აღარ ჩამოგეჭრებათ თანხა.
-      </div>
+      <div className="rounded-xl bg-[#465940]/10 px-4 py-3 text-sm text-[#465940]"> <Copy>{"გამოწერა გაუქმებულია — წვდომა გექნებათ"}</Copy> <Copy>{accessUntil ? new Date(accessUntil).toLocaleDateString(locale === 'en' ? 'en-US' : 'ka-GE', locale === 'en' ? { timeZone, year: 'numeric', month: 'long', day: 'numeric' } : undefined) : 'მიმდინარე პერიოდის ბოლომდე'}</Copy> <Copy>{", შემდეგ აღარ განახლდება და აღარ ჩამოგეჭრებათ თანხა."}</Copy> </div>
     );
   }
 
@@ -1940,9 +1949,9 @@ function CancelBogSubscriptionButton({ subscriptionCanceledAt, subscriptionRenew
     <div>
       <button onClick={() => setShowReasonModal(true)} disabled={loading}
         className="bg-[#465940]/10 hover:bg-[#465940]/15 text-[#465940] px-5 py-2.5 rounded-full text-sm font-bold transition disabled:opacity-60">
-        {loading ? 'უქმდება...' : 'გამოწერის გაუქმება'}
+        <Copy>{loading ? 'უქმდება...' : 'გამოწერის გაუქმება'}</Copy>
       </button>
-      {error && <p className="text-red-500 text-xs mt-2">{error}</p>}
+      {error && <p className="text-red-500 text-xs mt-2"><Copy>{error}</Copy></p>}
       {showReasonModal && (
         <CancelReasonModal
           onClose={() => setShowReasonModal(false)}
@@ -1970,6 +1979,7 @@ const MONTHS_KA = [
 ];
 
 function TrialBanner({ trialEndsAt }: { trialEndsAt: string | Date | null | undefined }) {
+  const { locale, timeZone } = useExperience();
   if (!trialEndsAt) return null;
   const end = new Date(trialEndsAt);
   const daysLeft = Math.ceil((end.getTime() - Date.now()) / (24 * 60 * 60 * 1000));
@@ -1977,14 +1987,12 @@ function TrialBanner({ trialEndsAt }: { trialEndsAt: string | Date | null | unde
 
   // Intl.toLocaleDateString('ka-GE', ...) silently falls back to English month
   // names in this Node/ICU build — format manually instead (mirrors lib/email.ts).
-  const dateLabel = `${end.getDate()} ${MONTHS_KA[end.getMonth()]}`;
+  const dateLabel = locale === 'en' ? end.toLocaleDateString('en-US', { timeZone, month: 'long', day: 'numeric' }) : `${end.getDate()} ${MONTHS_KA[end.getMonth()]}`;
 
   return (
     <div className="mb-4 rounded-2xl bg-[#FDFBF0] border border-[#FDFBF0]/40 px-4 py-3 flex items-center gap-2 text-sm text-[#465940] shadow-sm">
       <span className="text-lg">🎁</span>
-      <span>
-        <span className="font-bold">უფასო ტესტ-პერიოდში ხართ</span> — დარჩენილია {daysLeft} დღე. პირველი ჩამოჭრა მოხდება {dateLabel}-ს, თუ ამ დრომდე არ გააუქმებთ გამოწერას.
-      </span>
+      {locale === 'en' ? <span><strong>You are in your free trial</strong> — {daysLeft} {daysLeft === 1 ? 'day' : 'days'} left. Your first charge is on {dateLabel}, unless you cancel before then.</span> : <span><span className="font-bold"> <Copy>{"უფასო ტესტ-პერიოდში ხართ"}</Copy> </span> <Copy>{"— დარჩენილია"}</Copy> {daysLeft} <Copy>{"დღე. პირველი ჩამოჭრა მოხდება"}</Copy> {dateLabel} <Copy>{"-ს, თუ ამ დრომდე არ გააუქმებთ გამოწერას."}</Copy></span>}
     </div>
   );
 }
@@ -1998,13 +2006,14 @@ function PaymentFailedBanner({ paymentFailedAt }: { paymentFailedAt: string | Da
   return (
     <div className="mb-4 rounded-2xl bg-red-50 border border-red-200 px-4 py-3 flex items-start gap-2 text-sm text-red-700 shadow-sm">
       <span className="text-lg">⚠️</span>
-      <span className="font-bold">გადახდა ვერ მოხერხდა</span>
+      <span className="font-bold"> <Copy>{"გადახდა ვერ მოხერხდა"}</Copy> </span>
     </div>
   );
 }
 
 // ── Main Dashboard ────────────────────────────────────────────────────────────
 export default function DashboardClient({ user }: { user: any }) {
+  const { locale } = useExperience();
   const router = useRouter();
   const firstChild = user.children?.[0];
   const defaultTab: Tab = !firstChild
@@ -2062,7 +2071,7 @@ export default function DashboardClient({ user }: { user: any }) {
     if (end.toISOString().split('T')[0] <= today) {
       // Plan expired – start fresh
       localStorage.setItem(key, today);
-      localStorage.removeItem(`shopping_${activeChild.id}`);
+      clearShoppingCache(activeChild.id);
       setPlanStart(today);
     } else {
       setPlanStart(stored);
@@ -2109,7 +2118,7 @@ export default function DashboardClient({ user }: { user: any }) {
   // having subscribed at all — subscriptionStatus itself deliberately stays 'FULL_PLAN' the
   // whole time so bog-renew's daily cron keeps retrying the same saved card (see the BOG
   // webhook's isFailed branch); this is what actually enforces "no access until it's paid".
-  const isFullPlan = user.subscriptionStatus === 'FULL_PLAN' && !user.paymentFailedAt;
+  const isFullPlan = hasPaidAccess(user, true);
   const isYoungBaby = activeChild?.ageGroup === 'FROM_6' || activeChild?.ageGroup === 'FROM_9';
 
   // Site content (first-foods, recipes, meal plans, everything) starts at 6 months — a
@@ -2151,9 +2160,9 @@ export default function DashboardClient({ user }: { user: any }) {
       {/* Header */}
       <header className="bg-gradient-to-r from-[#465940] to-[#465940] px-5 py-4 flex items-center justify-between sticky top-0 z-30 shadow-sm" style={{ paddingTop: 'calc(1rem + env(safe-area-inset-top))' }}>
         <div className="flex items-center gap-3">
-          <a href="/" className="inline-flex rounded-xl p-1" style={{ background: '#FDFBF0' }}>
+          <Link href="/" className="inline-flex rounded-xl p-1" style={{ background: '#FDFBF0' }}>
             <img src="/mommenu-logo.png" alt="mom menu" className="h-9 w-auto" />
-          </a>
+          </Link>
           {children.length > 1 && (
             <select
               value={activeChild?.id ?? ''}
@@ -2172,12 +2181,11 @@ export default function DashboardClient({ user }: { user: any }) {
             <p className="text-sm font-bold text-[#FDFBF0]">{user.name}</p>
             <p className="text-xs text-[#FDFBF0]/60">{user.subscriptionStatus}</p>
           </div>
+          <LangSwitcher locale={locale} />
           <div className="w-9 h-9 rounded-full bg-[#FDFBF0]/25 flex items-center justify-center text-[#FDFBF0] font-bold text-sm flex-shrink-0 ring-2 ring-[#FDFBF0]/30">
             {user.name[0].toUpperCase()}
           </div>
-          <button onClick={logout} className="text-xs text-[#FDFBF0]/70 hover:text-[#FDFBF0] transition hidden sm:block">
-            გამოსვლა
-          </button>
+          <button onClick={logout} className="text-xs text-[#FDFBF0]/70 hover:text-[#FDFBF0] transition hidden sm:block"> <Copy>{"გამოსვლა"}</Copy> </button>
         </div>
       </header>
 
@@ -2188,7 +2196,7 @@ export default function DashboardClient({ user }: { user: any }) {
           {tabs.map((t) => (
             <button key={t.key} onClick={() => setTab(t.key)}
               className={`flex flex-col items-center justify-center gap-0.5 py-2.5 px-0.5 transition-colors ${tab === t.key ? 'text-[#465940]' : 'text-[#465940]/60 hover:text-[#465940]/80'}`}>
-              <span className="text-[10px] font-bold tracking-wide text-center leading-tight">{t.label}</span>
+              <span className="text-[10px] font-bold tracking-wide text-center leading-tight"><Copy>{t.label}</Copy></span>
             </button>
           ))}
           <button onClick={logout}
@@ -2196,7 +2204,7 @@ export default function DashboardClient({ user }: { user: any }) {
             <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
               <path d="M9 21H5a2 2 0 01-2-2V5a2 2 0 012-2h4M16 17l5-5-5-5M21 12H9"/>
             </svg>
-            <span className="text-[10px] font-bold">გასვლა</span>
+            <span className="text-[10px] font-bold"> <Copy>{"გასვლა"}</Copy> </span>
           </button>
         </div>
       </nav>
@@ -2208,10 +2216,8 @@ export default function DashboardClient({ user }: { user: any }) {
         {isTooYoung && (
           <div className="mb-4 rounded-2xl bg-[#FDFBF0] border border-[#465940]/10 p-5 text-center">
             <p className="text-3xl mb-2"></p>
-            <p className="font-bold text-[#465940] mb-1">{activeChild.name} ჯერ 6 თვის არ არის</p>
-            <p className="text-sm text-[#465940]/60">
-              საიტის კონტენტი (პირველი საკვები, რეცეპტები, კვების გეგმა) გაიხსნება, როცა {activeChild.name} 6 თვის გახდება. მანამდე შვილის პროფილი და ანგარიშის პარამეტრები ხელმისაწვდომია.
-            </p>
+            <p className="font-bold text-[#465940] mb-1">{activeChild.name} <Copy>{"ჯერ 6 თვის არ არის"}</Copy> </p>
+            <p className="text-sm text-[#465940]/60"> <Copy>{"საიტის კონტენტი (პირველი საკვები, რეცეპტები, კვების გეგმა) გაიხსნება, როცა"}</Copy> {activeChild.name} <Copy>{"6 თვის გახდება. მანამდე შვილის პროფილი და ანგარიშის პარამეტრები ხელმისაწვდომია."}</Copy> </p>
           </div>
         )}
         {tab === 'firstfoods' && activeChild && <FirstFoodsTab child={activeChild} isFullPlan={isFullPlan} />}
@@ -2228,7 +2234,7 @@ export default function DashboardClient({ user }: { user: any }) {
         {tab === 'freeze' && <FreezeTab child={activeChild} allDishes={allDishes} />}
         {tab === 'child' && (
           <ChildTab
-            children={children} userId={user.id} onUpdate={onChildUpdate} onDelete={onChildDelete}
+            kids={children} userId={user.id} onUpdate={onChildUpdate} onDelete={onChildDelete}
             autoOpenIntroChildId={autoOpenIntroChildId}
             onAutoOpenHandled={() => setAutoOpenIntroChildId(null)}
           />

@@ -1,3 +1,6 @@
+import { getExperience } from '@/lib/experience';
+import ExperienceProvider from '@/components/ExperienceProvider';
+import OwnerPreview from '@/components/OwnerPreview';
 import './globals.css';
 import type { Metadata, Viewport } from 'next';
 import NavWrapper from '@/components/NavWrapper';
@@ -11,6 +14,7 @@ import OneSignalProvider from '@/components/OneSignalProvider';
 import { Suspense } from 'react';
 import { getSession } from '@/lib/auth';
 import { prisma } from '@/lib/prisma';
+import { localizedMetadata } from '@/lib/metadata';
 
 export const viewport: Viewport = {
   themeColor: '#6F7A5C',
@@ -23,7 +27,7 @@ export const viewport: Viewport = {
 const SITE_URL = process.env.NEXT_PUBLIC_APP_URL || 'https://mommenu.ge';
 const OG_IMAGE = '/og-image.png';
 
-export const metadata: Metadata = {
+const georgianMetadata: Metadata = {
   metadataBase: new URL(SITE_URL),
   title: {
     default: 'MomMenu - ჯანსაღი მენიუები ბავშვებისთვის',
@@ -120,7 +124,10 @@ const websiteJsonLd = {
   },
 };
 
+export async function generateMetadata() { return localizedMetadata(georgianMetadata, 'Mommenu — meal plans and recipes for little ones', 'Age-appropriate recipes and meal plans for babies and toddlers. Less meal planning, more family time.'); }
+
 export default async function RootLayout({ children }: { children: React.ReactNode }) {
+  const experience = await getExperience();
   const [session, seo] = await Promise.all([
     getSession(),
     prisma.seoSettings.findUnique({ where: { id: 'singleton' } }).catch(() => null),
@@ -131,7 +138,7 @@ export default async function RootLayout({ children }: { children: React.ReactNo
   const googleVerification = seo?.googleVerification;
 
   return (
-    <html lang="ka">
+    <html lang={experience.locale}>
       <head>
         {/* Google Search Console verification */}
         {googleVerification && (
@@ -153,6 +160,8 @@ export default async function RootLayout({ children }: { children: React.ReactNo
       </head>
 
       <body className="min-h-screen">
+        <ExperienceProvider value={experience}>
+        <OwnerPreview />
         {/* overflow-x-hidden on body breaks iOS fixed element touch events — use wrapper instead */}
         <div style={{ overflowX: 'hidden', minHeight: '100vh' }}>
         {/* GTM noscript fallback */}
@@ -196,7 +205,8 @@ export default async function RootLayout({ children }: { children: React.ReactNo
         </div>{/* end overflow-x-hidden wrapper */}
 
         {/* OneSignal SDK — registers OneSignalSDKWorker.js (handles both push + caching) */}
-        <OneSignalProvider />
+        <OneSignalProvider userId={session?.id} />
+        </ExperienceProvider>
       </body>
     </html>
   );

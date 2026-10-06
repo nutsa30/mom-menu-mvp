@@ -32,7 +32,7 @@ export async function GET(req: NextRequest) {
     prisma.babyIngredient.findMany(),
     prisma.dish.findMany({
       where: { ageGroups: { hasSome: getSuitableAgeGroups(child.ageGroup) } },
-      select: { id: true, titleKa: true, titleEn: true, imageUrl: true, ingredientsKa: true, mealType: true, ageGroups: true },
+      select: { id: true, titleKa: true, titleEn: true, imageUrl: true, ingredientsKa: true, ingredientsEn: true, mealType: true, ageGroups: true },
       orderBy: { titleKa: 'asc' },
     }),
   ]);

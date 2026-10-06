@@ -1,9 +1,10 @@
 ﻿'use client';
 
-import { useState } from 'react';
+import { useState, use } from 'react';
 import { Locale } from '@/lib/i18n';
 
-export default function ChangePassword({ searchParams }: { searchParams: { lang?: Locale } }) {
+export default function ChangePassword(props: { searchParams: Promise<{ lang?: Locale }> }) {
+  const searchParams = use(props.searchParams);
   const locale = searchParams.lang === 'en' ? 'en' : 'ka';
   const [current, setCurrent] = useState('');
   const [next, setNext] = useState('');

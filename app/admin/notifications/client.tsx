@@ -2,7 +2,7 @@
 
 import { useState } from 'react';
 
-type Template = { id: number; mealType: string; title: string; body: string; active: boolean };
+type Template = { id: number; mealType: string; title: string; body: string; titleEn?: string | null; bodyEn?: string | null; active: boolean };
 type Schedule = { paused: boolean; breakfastHour: number; lunchHour: number; snackHour: number; dinnerHour: number; weeklyHour: number };
 
 const MEAL_TYPES = [
@@ -28,6 +28,8 @@ export default function NotificationsClient({
   const [adding, setAdding] = useState<string | null>(null);
   const [newTitle, setNewTitle] = useState('');
   const [newBody, setNewBody] = useState('');
+  const [newTitleEn, setNewTitleEn] = useState('');
+  const [newBodyEn, setNewBodyEn] = useState('');
   const [saving, setSaving] = useState(false);
 
   const [schedule, setSchedule] = useState<Schedule>(initialSchedule);
@@ -62,13 +64,13 @@ export default function NotificationsClient({
       await fetch('/api/admin/push-templates', {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ id: editing.id, title: newTitle, body: newBody, active: editing.active }),
+        body: JSON.stringify({ id: editing.id, title: newTitle, body: newBody, titleEn: newTitleEn, bodyEn: newBodyEn, active: editing.active }),
       });
     } else if (adding) {
       await fetch('/api/admin/push-templates', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ mealType: adding, title: newTitle, body: newBody }),
+        body: JSON.stringify({ mealType: adding, title: newTitle, body: newBody, titleEn: newTitleEn, bodyEn: newBodyEn }),
       });
     }
     await reload();
@@ -76,6 +78,7 @@ export default function NotificationsClient({
     setAdding(null);
     setNewTitle('');
     setNewBody('');
+    setNewTitleEn(''); setNewBodyEn('');
     setSaving(false);
   };
 
@@ -103,6 +106,7 @@ export default function NotificationsClient({
     setAdding(null);
     setNewTitle(t.title);
     setNewBody(t.body);
+    setNewTitleEn(t.titleEn ?? ""); setNewBodyEn(t.bodyEn ?? "");
   };
 
   const startAdd = (type: string) => {
@@ -158,7 +162,7 @@ export default function NotificationsClient({
       </p>
 
       {MEAL_TYPES.map(mt => {
-        const currentHour = schedule[mt.scheduleKey];
+        const currentHour = Number(schedule[mt.scheduleKey]);
         const isEditingTime = scheduleEditing === mt.key;
 
         return (
@@ -224,7 +228,10 @@ export default function NotificationsClient({
                         rows={2}
                         className="settings-input"
                         style={{ padding: '0.5rem 0.75rem', borderRadius: 8, border: '1.5px solid rgba(70,89,64,.3)', fontSize: '0.82rem', resize: 'vertical', outline: 'none' }} />
-                      <div style={{ display: 'flex', gap: '0.5rem' }}>
+                      <input aria-label="English push title" value={newTitleEn} onChange={e => setNewTitleEn(e.target.value)} placeholder="English title" className="settings-input" />
+                      <textarea aria-label="English push text" value={newBodyEn} onChange={e => setNewBodyEn(e.target.value)} placeholder="English text" rows={2} className="settings-input" />
+                      <p className="text-xs text-amber-700">ინგლისური ველების გარეშე შეტყობინება ინგლისურენოვან მომხმარებლებს არ გაეგზავნება.</p>
+<div style={{ display: 'flex', gap: '0.5rem' }}>
                         <button onClick={save} disabled={saving}
                           style={{ padding: '6px 16px', background: '#465940', color: '#FDFBF0', border: 'none', borderRadius: 8, fontWeight: 700, fontSize: '0.8rem', cursor: 'pointer' }}>
                           {saving ? '...' : 'შენახვა'}
@@ -273,7 +280,10 @@ export default function NotificationsClient({
                     rows={2}
                     className="settings-input"
                     style={{ padding: '0.5rem 0.75rem', borderRadius: 8, border: '1.5px solid #465940', fontSize: '0.82rem', resize: 'vertical', outline: 'none' }} />
-                  <div style={{ display: 'flex', gap: '0.5rem' }}>
+                  <input aria-label="English push title" value={newTitleEn} onChange={e => setNewTitleEn(e.target.value)} placeholder="English title" className="settings-input" />
+                      <textarea aria-label="English push text" value={newBodyEn} onChange={e => setNewBodyEn(e.target.value)} placeholder="English text" rows={2} className="settings-input" />
+                      <p className="text-xs text-amber-700">ინგლისური ველების გარეშე შეტყობინება ინგლისურენოვან მომხმარებლებს არ გაეგზავნება.</p>
+<div style={{ display: 'flex', gap: '0.5rem' }}>
                     <button onClick={save} disabled={saving}
                       style={{ padding: '6px 16px', background: '#465940', color: '#FDFBF0', border: 'none', borderRadius: 8, fontWeight: 700, fontSize: '0.8rem', cursor: 'pointer' }}>
                       {saving ? '...' : 'დამატება'}

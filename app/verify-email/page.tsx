@@ -1,13 +1,14 @@
 'use client';
 
-import { useState, useRef } from 'react';
+import { useState, useRef, use } from 'react';
 import { useRouter } from 'next/navigation';
 
-export default function VerifyEmailPage({
-  searchParams,
-}: {
-  searchParams: { email?: string; lang?: string };
-}) {
+export default function VerifyEmailPage(
+  props: {
+    searchParams: Promise<{ email?: string; lang?: string }>;
+  }
+) {
+  const searchParams = use(props.searchParams);
   const router = useRouter();
   const locale = searchParams.lang === 'en' ? 'en' : 'ka';
   const ka = locale === 'ka';

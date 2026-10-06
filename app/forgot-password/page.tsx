@@ -1,13 +1,14 @@
 'use client';
 
-import { useState, useRef } from 'react';
+import { useState, useRef, use } from 'react';
 import Image from 'next/image';
 import { useRouter } from 'next/navigation';
 import { Locale } from '@/lib/i18n';
 
 type Step = 'email' | 'code' | 'password' | 'success';
 
-export default function ForgotPassword({ searchParams }: { searchParams: { lang?: Locale } }) {
+export default function ForgotPassword(props: { searchParams: Promise<{ lang?: Locale }> }) {
+  const searchParams = use(props.searchParams);
   const locale = searchParams.lang === 'en' ? 'en' : 'ka';
   const router = useRouter();
 

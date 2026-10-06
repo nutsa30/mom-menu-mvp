@@ -1,3 +1,4 @@
+import { currencyFor, normalizeMarket, INTERNATIONAL_PRICES } from '@/lib/market';
 import { prisma } from '@/lib/prisma';
 import { PLAN_AMOUNTS, PLAN_AMOUNTS_BY_INTERVAL, BillingInterval, applyDiscount } from '@/lib/bog';
 import { addWithdrawal } from './actions';
@@ -14,6 +15,8 @@ const INTERVAL_PRICE: Record<BillingInterval, number> = {
 };
 type PriceableUser = {
   subscriptionStatus: string;
+  market?: string;
+  subscriptionAmount?: number | null;
   billingIntervalMonths?: number | null;
   promoCode?: { discountPercent: number } | null;
 };
@@ -23,6 +26,8 @@ type PriceableUser = {
 // applyDiscount in lib/bog.ts) — without this, a discounted subscriber would inflate
 // revenue totals by whatever their promo knocked off.
 const priceFor = (u: PriceableUser) => {
+  if (u.subscriptionAmount != null) return u.subscriptionAmount;
+  if (u.market === 'INTL') return applyDiscount(INTERNATIONAL_PRICES[(u.billingIntervalMonths || 1) as BillingInterval], u.promoCode?.discountPercent);
   const base = u.subscriptionStatus === 'FULL_PLAN' && u.billingIntervalMonths
     ? INTERVAL_PRICE[u.billingIntervalMonths as BillingInterval] ?? PRICES.FULL_PLAN
     : PRICES[u.subscriptionStatus] ?? 0;
@@ -32,7 +37,12 @@ const priceFor = (u: PriceableUser) => {
 const monthlyPriceFor = (u: PriceableUser) =>
   priceFor(u) / (u.billingIntervalMonths || 1);
 
-export default async function AdminAnalyticsPage() {
+export default async function AdminAnalyticsPage(props: { searchParams: Promise<{ market?: string }> }) {
+  const market = normalizeMarket((await props.searchParams).market);
+  const currency = currencyFor(market);
+  const currencySymbol = currency === "USD" ? "$" : "₾";
+  const unsettledUSD = currency === 'USD';
+  const INTERVAL_PRICE = market === "INTL" ? INTERNATIONAL_PRICES : Object.fromEntries(Object.entries(PLAN_AMOUNTS_BY_INTERVAL).map(([k,v]) => [k, Number(v)])) as Record<BillingInterval, number>;
   // Tbilisi "now" (Georgia has used a fixed UTC+4 offset, no DST, since 2017) — used only to
   // find the current calendar month's boundaries (1st through the last day) for
   // monthNetRevenue below, so "ეს თვე" agrees with what a Tbilisi-based owner means by "this
@@ -45,8 +55,11 @@ export default async function AdminAnalyticsPage() {
 
   const [users, planItems, recentUsers, successfulPayers, revenuePayments, withdrawals] = await Promise.all([
     prisma.user.findMany({
+      where: { market },
       select: {
         id: true,
+        market: true,
+        subscriptionAmount: true,
         subscriptionStatus: true,
         billingIntervalMonths: true,
         subscriptionStartedAt: true,
@@ -66,25 +79,26 @@ export default async function AdminAnalyticsPage() {
       take: 10,
     }),
     prisma.user.findMany({
+      where: { market },
       orderBy: { createdAt: 'desc' },
       take: 8,
-      select: { name: true, email: true, subscriptionStatus: true, billingIntervalMonths: true, createdAt: true, isGifted: true },
+      select: { market: true, subscriptionAmount: true, name: true, email: true, subscriptionStatus: true, billingIntervalMonths: true, createdAt: true, isGifted: true },
     }),
     // Who has ever actually been charged — the BOG webhook flips subscriptionStatus to
     // FULL_PLAN the moment a trial's card-verification hold clears, well before any real
     // money moves, so subscriptionStatus alone can't tell "committed, paying subscriber"
     // apart from "still in their free trial, might cancel before ever paying a lari".
-    prisma.payment.findMany({ where: { status: 'SUCCESS' }, select: { userId: true }, distinct: ['userId'] }),
+    prisma.payment.findMany({ where: { status: 'SUCCESS', currency }, select: { userId: true }, distinct: ['userId'] }),
     // All-time actual money collected — one row per real SUCCESS charge, with what BOG's
     // commission and any referral refund actually left in the account, used for both the
     // "სრული შემოსავალი" (all-time) and "ამ თვის შემოსავალი" (this month) balance cards
     // below (see totalNetRevenue/monthNetRevenue) — one unbounded query, filtered by
     // createdAt in JS for the month figure, rather than a second DB round-trip.
     prisma.payment.findMany({
-      where: { status: 'SUCCESS' },
-      select: { createdAt: true, netAmount: true, commissionAmount: true, discountAmount: true, discountRefundFailed: true, creditAppliedAmount: true, creditRefundFailed: true },
+      where: { status: 'SUCCESS', currency },
+      select: { createdAt: true, grossAmount: true, netAmount: true, commissionAmount: true, discountAmount: true, discountRefundFailed: true, creditAppliedAmount: true, creditRefundFailed: true },
     }),
-    prisma.withdrawal.findMany({ orderBy: { createdAt: 'desc' } }),
+    prisma.withdrawal.findMany({ where: { currency }, orderBy: { createdAt: 'desc' } }),
   ]);
   const paidUserIds = new Set(successfulPayers.map((p) => p.userId));
 
@@ -97,7 +111,7 @@ export default async function AdminAnalyticsPage() {
   const netOf = (p: (typeof revenuePayments)[number]) => {
     const discount = p.discountRefundFailed ? 0 : (p.discountAmount ?? 0);
     const credit = p.creditRefundFailed ? 0 : (p.creditAppliedAmount ?? 0);
-    return (p.netAmount ?? 0) - discount - credit;
+    return (unsettledUSD ? p.grossAmount : (p.netAmount ?? 0)) - discount - credit;
   };
   const totalNetRevenue = revenuePayments.reduce((sum, p) => sum + netOf(p), 0);
   // This calendar month only (1st through today, Tbilisi time) — what should actually match
@@ -245,9 +259,9 @@ export default async function AdminAnalyticsPage() {
   const stats = [
     { label: 'Total users', value: total, sub: `${newThisMonth} new this month`, color: 'text-[#465940]' },
     { label: 'Free', value: free, sub: `${((free / Math.max(total, 1)) * 100).toFixed(0)}% of users`, color: 'text-[#465940]/70' },
-    { label: `1 month (${INTERVAL_PRICE[1]}₾)`, value: full1, sub: 'active', color: 'text-[#465940]' },
-    { label: `3 months (${INTERVAL_PRICE[3]}₾)`, value: full3, sub: 'active', color: 'text-[#465940]' },
-    { label: `6 months (${INTERVAL_PRICE[6]}₾)`, value: full6, sub: 'active', color: 'text-[#465940]' },
+    { label: `1 month (${INTERVAL_PRICE[1]}${currencySymbol})`, value: full1, sub: 'active', color: 'text-[#465940]' },
+    { label: `3 months (${INTERVAL_PRICE[3]}${currencySymbol})`, value: full3, sub: 'active', color: 'text-[#465940]' },
+    { label: `6 months (${INTERVAL_PRICE[6]}${currencySymbol})`, value: full6, sub: 'active', color: 'text-[#465940]' },
     { label: 'ტრიალზე', value: trialingCount, sub: `${trialInterval1}×1თვე · ${trialInterval3}×3თვე · ${trialInterval6}×6თვე`, color: 'text-amber-600' },
     { label: 'Canceled', value: canceled, sub: 'churned', color: 'text-amber-600' },
     { label: 'Blocked', value: blocked, sub: 'accounts', color: 'text-[#465940]' },
@@ -257,6 +271,7 @@ export default async function AdminAnalyticsPage() {
 
   return (
     <div>
+      <nav className="flex gap-4 mb-6"><a href="?market=GE">საქართველო · GEL</a><a href="?market=INTL">საერთაშორისო · USD</a><strong>{currency}</strong></nav>
       <div className="mb-8">
         <h1 className="text-3xl font-bold text-[#465940]">Analytics</h1>
         <p className="mt-1 text-sm text-[#465940]">Overview of users, subscriptions and revenue</p>
@@ -266,7 +281,7 @@ export default async function AdminAnalyticsPage() {
       <div className="mb-4">
         <h2 className="text-xs font-black uppercase tracking-widest text-[#465940]/50 mb-3">რეალური აქტივობა</h2>
         <p className="text-[11px] text-[#465940]/50 -mt-2 mb-3">
-          ეყრდნობა დეშბორდის ფაქტობრივ გახსნას (ბრაუზერშიც და ჰოუმ-სქრინიდან გახსნილ PWA-შიც) — არა გამოწერის თარიღს და არა "ჭამა" ხმებს, რომლებსაც ბევრი მშობელი უბრალოდ ტოვებს.
+          ეყრდნობა დეშბორდის ფაქტობრივ გახსნას (ბრაუზერშიც და ჰოუმ-სქრინიდან გახსნილ PWA-შიც) — არა გამოწერის თარიღს და არა &quot;ჭამა&quot; ხმებს, რომლებსაც ბევრი მშობელი უბრალოდ ტოვებს.
         </p>
         <div className="grid gap-4 sm:grid-cols-3 mb-6">
           <div className="rounded-[20px] bg-[#465940] p-5 shadow-sm">
@@ -293,24 +308,24 @@ export default async function AdminAnalyticsPage() {
         <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4 mb-6">
           <div className="rounded-[20px] bg-[#465940] p-5 shadow-sm">
             <p className="text-xs font-bold uppercase tracking-wider text-[#FDFBF0]/70">MRR (ყოველთვიური)</p>
-            <p className="mt-2 text-3xl font-black text-[#FDFBF0]">{mrr}₾</p>
+            <p className="mt-2 text-3xl font-black text-[#FDFBF0]">{mrr}{currencySymbol}</p>
             <p className="mt-1 text-xs text-[#FDFBF0]/50">
               {payingUsers} მომხმარებელი{promoPayingCount > 0 ? ` · ${promoPayingCount} მათგან პრომოკოდით (ფასდაკლებული)` : ''}
             </p>
           </div>
           <div className="rounded-[20px] bg-[#FDFBF0] p-5 shadow-sm">
             <p className="text-xs font-bold uppercase tracking-wider text-[#465940]">ახალი MRR (30 დღე)</p>
-            <p className="mt-2 text-3xl font-black text-[#465940]">{newMrrThisMonth}₾</p>
+            <p className="mt-2 text-3xl font-black text-[#465940]">{newMrrThisMonth}{currencySymbol}</p>
             <p className="mt-1 text-xs text-[#465940]/50">{activeThisMonth} ახალი გამოწერა</p>
           </div>
           <div className="rounded-[20px] bg-[#FDFBF0] p-5 shadow-sm">
             <p className="text-xs font-bold uppercase tracking-wider text-[#465940]">ARR (წლიური)</p>
-            <p className="mt-2 text-3xl font-black text-[#465940]">{mrr * 12}₾</p>
+            <p className="mt-2 text-3xl font-black text-[#465940]">{mrr * 12}{currencySymbol}</p>
             <p className="mt-1 text-xs text-[#465940]/50">MRR × 12</p>
           </div>
           <div className="rounded-[20px] bg-[#FDFBF0] p-5 shadow-sm">
             <p className="text-xs font-bold uppercase tracking-wider text-[#465940]">ARPU (საშ. / მომხ.)</p>
-            <p className="mt-2 text-3xl font-black text-[#465940]">{arpu}₾</p>
+            <p className="mt-2 text-3xl font-black text-[#465940]">{arpu}{currencySymbol}</p>
             <p className="mt-1 text-xs text-[#465940]/50">paying users only</p>
           </div>
         </div>
@@ -320,40 +335,41 @@ export default async function AdminAnalyticsPage() {
       <div className="mb-4">
         <h2 className="text-xs font-black uppercase tracking-widest text-[#465940]/50 mb-3">ბალანსი</h2>
         <p className="text-[11px] text-[#465940]/50 -mt-2 mb-3">
-          წმინდა, ანუ BOG-ის საკომისიოს (და გატანილი რეფერალის ფასდაკლების/კრედიტის) გამოკლებით — ზუსტად ის თანხა, რაც რეალურად ჩამოგერიცხა ბარათზე. ეს არ არის ზემოთ MRR/ARR-ის შეფასება.
+          {unsettledUSD ? 'მიღებული დოლარის გადახდები, წარმატებული რეფერალური დაბრუნებების გამოკლებით. ბანკის საკომისიო და ანგარიშზე წმინდა ჩარიცხვა დაუზუსტებელია.' : 'წმინდა, ანუ BOG-ის საკომისიოს (და გატანილი რეფერალის ფასდაკლების/კრედიტის) გამოკლებით — ზუსტად ის თანხა, რაც რეალურად ჩამოგერიცხა ბარათზე. ეს არ არის ზემოთ MRR/ARR-ის შეფასება.'}
         </p>
         <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-5 mb-4">
           <div className="rounded-[20px] bg-[#FDFBF0] p-5 shadow-sm">
             <p className="text-xs font-bold uppercase tracking-wider text-[#465940]">სრული შემოსავალი</p>
-            <p className="mt-2 text-3xl font-black text-[#465940]">{totalNetRevenue.toFixed(2)}₾</p>
-            <p className="mt-1 text-xs text-[#465940]/50">წმინდა, დღემდე სულ</p>
+            <p className="mt-2 text-3xl font-black text-[#465940]">{totalNetRevenue.toFixed(2)}{currencySymbol}</p>
+            <p className="mt-1 text-xs text-[#465940]/50">{unsettledUSD ? 'მიღებული, საკომისიოს გამოკლებამდე' : 'წმინდა, დღემდე სულ'}</p>
           </div>
           <div className="rounded-[20px] bg-[#FDFBF0] p-5 shadow-sm">
             <p className="text-xs font-bold uppercase tracking-wider text-[#465940]">ამ თვის შემოსავალი</p>
-            <p className="mt-2 text-3xl font-black text-[#465940]">{monthNetRevenue.toFixed(2)}₾</p>
-            <p className="mt-1 text-xs text-[#465940]/50">წმინდა, ამ თვეში ჩამორიცხული</p>
+            <p className="mt-2 text-3xl font-black text-[#465940]">{monthNetRevenue.toFixed(2)}{currencySymbol}</p>
+            <p className="mt-1 text-xs text-[#465940]/50">{unsettledUSD ? 'მიღებული ამ თვეში, საკომისიოს გამოკლებამდე' : 'წმინდა, ამ თვეში ჩამორიცხული'}</p>
           </div>
           <div className="rounded-[20px] bg-[#FDFBF0] p-5 shadow-sm">
             <p className="text-xs font-bold uppercase tracking-wider text-[#465940]">ბანკის საკომისიო</p>
-            <p className="mt-2 text-3xl font-black text-[#465940]">{totalCommission.toFixed(2)}₾</p>
-            <p className="mt-1 text-xs text-[#465940]/50">დღემდე სულ · ამ თვე: {monthCommission.toFixed(2)}₾</p>
+            <p className="mt-2 text-3xl font-black text-[#465940]">{unsettledUSD ? 'დაუზუსტებელი' : `${totalCommission.toFixed(2)}${currencySymbol}`}</p>
+            <p className="mt-1 text-xs text-[#465940]/50">{unsettledUSD ? 'ბანკის USD ტარიფი დასადასტურებელია' : `დღემდე სულ · ამ თვე: ${monthCommission.toFixed(2)}${currencySymbol}`}</p>
           </div>
           <div className="rounded-[20px] bg-[#FDFBF0] p-5 shadow-sm">
             <p className="text-xs font-bold uppercase tracking-wider text-[#465940]">სულ გატანილი</p>
-            <p className="mt-2 text-3xl font-black text-[#465940]">{totalWithdrawn.toFixed(2)}₾</p>
+            <p className="mt-2 text-3xl font-black text-[#465940]">{totalWithdrawn.toFixed(2)}{currencySymbol}</p>
             <p className="mt-1 text-xs text-[#465940]/50">{withdrawals.length} ჩანაწერი</p>
           </div>
           <div className="rounded-[20px] bg-[#465940] p-5 shadow-sm">
             <p className="text-xs font-bold uppercase tracking-wider text-[#FDFBF0]/70">დარჩენილი ბალანსი</p>
-            <p className="mt-2 text-3xl font-black text-[#FDFBF0]">{remainingBalance.toFixed(2)}₾</p>
-            <p className="mt-1 text-xs text-[#FDFBF0]/50">სრული შემოსავალი − გატანილი</p>
+            <p className="mt-2 text-3xl font-black text-[#FDFBF0]">{unsettledUSD ? 'დაუზუსტებელი' : `${remainingBalance.toFixed(2)}${currencySymbol}`}</p>
+            <p className="mt-1 text-xs text-[#FDFBF0]/50">{unsettledUSD ? 'წმინდა ჩარიცხვა დასადასტურებელია' : 'სრული შემოსავალი − გატანილი'}</p>
           </div>
         </div>
 
         <div className="rounded-[20px] bg-[#FDFBF0] p-5 shadow-sm mb-6">
           <form action={addWithdrawal} className="flex flex-wrap items-end gap-3 mb-4">
+            <input type="hidden" name="currency" value={currency} />
             <div>
-              <label className="block text-xs font-semibold text-[#465940]/70 mb-1">გატანილი თანხა (₾)</label>
+              <label className="block text-xs font-semibold text-[#465940]/70 mb-1">გატანილი თანხა ({currency})</label>
               <input name="amount" type="number" min="0.01" step="0.01" required placeholder="0.00"
                 className="w-32 px-3 py-2 rounded-xl border border-[#465940]/20 focus:outline-none focus:border-[#465940] text-sm text-[#465940] bg-white" />
             </div>
@@ -373,7 +389,7 @@ export default async function AdminAnalyticsPage() {
               {withdrawals.map((w) => (
                 <div key={w.id} className="flex items-center justify-between gap-3 text-sm py-1.5 border-t border-[#465940]/10 first:border-t-0">
                   <div className="min-w-0">
-                    <span className="font-bold text-[#465940]">{w.amount.toFixed(2)}₾</span>
+                    <span className="font-bold text-[#465940]">{w.amount.toFixed(2)}{currencySymbol}</span>
                     {w.note && <span className="text-[#465940]/60 ml-2 truncate">{w.note}</span>}
                   </div>
                   <div className="flex items-center gap-3 flex-shrink-0">
@@ -417,7 +433,7 @@ export default async function AdminAnalyticsPage() {
                     {m.label} {i === 0 && <span className="text-[10px] font-normal text-[#465940]/40">(მიმდინარე)</span>}
                   </span>
                   <span className="font-black text-[#465940]">
-                    {m.revenue}₾ <span className="font-normal text-[#465940]/50">({m.count} გამომწერი)</span>
+                    {m.revenue}{currencySymbol} <span className="font-normal text-[#465940]/50">({m.count} გამომწერი)</span>
                   </span>
                 </div>
                 <div className="h-3 bg-[#465940]/10 rounded-full overflow-hidden">
@@ -479,7 +495,7 @@ export default async function AdminAnalyticsPage() {
                     <span className={`rounded-full px-2 py-0.5 text-xs font-bold ${
                       price ? 'bg-[#465940] text-[#FDFBF0]' : 'bg-[#465940]/10 text-[#465940]/70'
                     }`}>
-                      {u.isGifted ? 'GIFTED' : price ? `${price}₾` : u.subscriptionStatus}
+                      {u.isGifted ? 'GIFTED' : price ? `${price}${currencySymbol}` : u.subscriptionStatus}
                     </span>
                     <p className="mt-1 text-xs text-[#bbb]">{new Date(u.createdAt).toLocaleDateString('ka-GE')}</p>
                   </div>
@@ -495,10 +511,10 @@ export default async function AdminAnalyticsPage() {
           <div className="flex items-center gap-4 flex-wrap mb-4">
             {[
               { label: 'Free', count: free, color: 'bg-[#465940]/15' },
-              ...(recipe > 0 ? [{ label: `Recipe ${PRICES.RECIPE_PLAN}₾ — legacy`, count: recipe, color: 'bg-[#465940]/35' }] : []),
-              { label: `1 თვე (${INTERVAL_PRICE[1]}₾)`, count: full1, color: 'bg-[#465940]/55' },
-              { label: `3 თვე (${INTERVAL_PRICE[3]}₾)`, count: full3, color: 'bg-[#465940]/75' },
-              { label: `6 თვე (${INTERVAL_PRICE[6]}₾)`, count: full6, color: 'bg-[#465940]' },
+              ...(recipe > 0 ? [{ label: `Recipe ${PRICES.RECIPE_PLAN}${currencySymbol} — legacy`, count: recipe, color: 'bg-[#465940]/35' }] : []),
+              { label: `1 თვე (${INTERVAL_PRICE[1]}${currencySymbol})`, count: full1, color: 'bg-[#465940]/55' },
+              { label: `3 თვე (${INTERVAL_PRICE[3]}${currencySymbol})`, count: full3, color: 'bg-[#465940]/75' },
+              { label: `6 თვე (${INTERVAL_PRICE[6]}${currencySymbol})`, count: full6, color: 'bg-[#465940]' },
               { label: 'ტრიალზე', count: trialingCount, color: 'bg-amber-300' },
               { label: 'Canceled', count: canceled, color: 'bg-red-300' },
             ].map((seg) => (

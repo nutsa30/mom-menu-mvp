@@ -9,7 +9,8 @@ async function adminGuard() {
   return null;
 }
 
-export async function POST(req: Request, { params }: { params: { id: string } }) {
+export async function POST(req: Request, props: { params: Promise<{ id: string }> }) {
+  const params = await props.params;
   const guard = await adminGuard();
   if (guard) return guard;
 
@@ -31,7 +32,7 @@ export async function POST(req: Request, { params }: { params: { id: string } })
   return NextResponse.json(item);
 }
 
-export async function DELETE(req: Request, { params }: { params: { id: string } }) {
+export async function DELETE(req: Request, { params }: { params: Promise<{ id: string }> }) {
   const guard = await adminGuard();
   if (guard) return guard;
 
@@ -43,7 +44,8 @@ export async function DELETE(req: Request, { params }: { params: { id: string } 
   return NextResponse.json({ success: true });
 }
 
-export async function PATCH(req: Request, { params }: { params: { id: string } }) {
+export async function PATCH(req: Request, props: { params: Promise<{ id: string }> }) {
+  const params = await props.params;
   const guard = await adminGuard();
   if (guard) return guard;
 

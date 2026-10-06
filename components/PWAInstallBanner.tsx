@@ -1,4 +1,6 @@
 'use client';
+import Copy, { useCopy } from '@/components/Copy';
+
 
 import { useState, useEffect, useCallback } from 'react';
 
@@ -26,6 +28,7 @@ function markDismissed() {
 // ─────────────────────────────────────────────────────────────────────────────
 
 export default function PWAInstallBanner() {
+  const copy = useCopy();
   const [prompt, setPrompt]     = useState<BeforeInstallPromptEvent | null>(null);
   const [isIOS, setIsIOS]       = useState(false);
   const [visible, setVisible]   = useState(false);
@@ -135,9 +138,7 @@ export default function PWAInstallBanner() {
               overflow: 'hidden',
               textOverflow: 'ellipsis',
             }}
-          >
-            MomMenu-ს აპლიკაცია
-          </div>
+          > <Copy>{"MomMenu-ს აპლიკაცია"}</Copy> </div>
           <div
             style={{
               color: 'rgba(245,241,228,0.65)',
@@ -147,9 +148,7 @@ export default function PWAInstallBanner() {
               overflow: 'hidden',
               textOverflow: 'ellipsis',
             }}
-          >
-            სწრაფი წვდომა · ოფლაინ · შეტყობინებები
-          </div>
+          > <Copy>{"სწრაფი წვდომა · ოფლაინ · შეტყობინებები"}</Copy> </div>
         </div>
 
         {/* Install button */}
@@ -169,13 +168,13 @@ export default function PWAInstallBanner() {
             lineHeight: 1.4,
           }}
         >
-          {isIOS && !prompt ? 'ინსტრუქცია' : 'დაყენება'}
+          <Copy>{isIOS && !prompt ? 'ინსტრუქცია' : 'დაყენება'}</Copy>
         </button>
 
         {/* Dismiss */}
         <button
           onClick={dismiss}
-          aria-label="დახურვა"
+          aria-label={copy("დახურვა")}
           style={{
             background: 'none',
             border: 'none',
@@ -241,7 +240,7 @@ export default function PWAInstallBanner() {
               </div>
               <button
                 onClick={dismiss}
-                aria-label="დახურვა"
+                aria-label={copy("დახურვა")}
                 style={{
                   background: 'rgba(111,122,92,0.08)',
                   border: 'none',
@@ -267,9 +266,7 @@ export default function PWAInstallBanner() {
                 margin: '0 0 1.25rem',
                 fontSize: '1.1rem',
               }}
-            >
-              Home Screen-ზე დასამატებლად:
-            </h2>
+            > <Copy>{"Home Screen-ზე დასამატებლად:"}</Copy> </h2>
 
             {/* Steps */}
             <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem', marginBottom: '1.5rem' }}>
@@ -316,9 +313,7 @@ export default function PWAInstallBanner() {
                 fontSize: '0.95rem',
                 cursor: 'pointer',
               }}
-            >
-              გასაგებია!
-            </button>
+            > <Copy>{"გასაგებია!"}</Copy> </button>
           </div>
         </div>
       )}

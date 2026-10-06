@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, use } from 'react';
 import { useFormStatus } from 'react-dom';
 import Image from 'next/image';
 import { registerAction } from '@/app/actions';
@@ -27,7 +27,8 @@ function SubmitButton({ label }: { label: string }) {
   );
 }
 
-export default function Register({ searchParams }: { searchParams: { lang?: Locale; error?: string } }) {
+export default function Register(props: { searchParams: Promise<{ lang?: Locale; error?: string }> }) {
+  const searchParams = use(props.searchParams);
   const locale = searchParams.lang === 'en' ? 'en' : 'ka';
   const d = dict[locale];
   const [showPwd, setShowPwd] = useState(false);

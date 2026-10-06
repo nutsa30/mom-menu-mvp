@@ -12,10 +12,11 @@ export const maxDuration = 60;
 async function adminGuard() {
   const session = await getSession();
   if (!session || session.role !== "ADMIN") return null;
-  return session;
+  const account = await prisma.user.findUnique({ where: { id: session.id }, select: { role: true } });
+  return account?.role === "ADMIN" ? session : null;
 }
 
-type Recipient = { email: string; name: string };
+type Recipient = { email: string; name: string; locale: string };
 
 function fallbackName(email: string) {
   return email.split("@")[0];
@@ -27,39 +28,39 @@ async function resolveRecipients(
 ): Promise<Recipient[]> {
   switch (audienceType) {
     case "all": {
-      const users = await prisma.user.findMany({ select: { email: true, name: true } });
-      return users.map((u) => ({ email: u.email, name: u.name ?? fallbackName(u.email) }));
+      const users = await prisma.user.findMany({ select: { email: true, name: true, locale: true } });
+      return users.map((u) => ({ locale: u.locale, email: u.email, name: u.name ?? fallbackName(u.email) }));
     }
     case "active": {
       const users = await prisma.user.findMany({
         where: { subscriptionStatus: { in: ["RECIPE_PLAN", "FULL_PLAN"] } },
-        select: { email: true, name: true },
+        select: { email: true, name: true, locale: true },
       });
-      return users.map((u) => ({ email: u.email, name: u.name ?? fallbackName(u.email) }));
+      return users.map((u) => ({ locale: u.locale, email: u.email, name: u.name ?? fallbackName(u.email) }));
     }
     case "inactive": {
       const users = await prisma.user.findMany({
         where: { subscriptionStatus: "FREE" },
-        select: { email: true, name: true },
+        select: { email: true, name: true, locale: true },
       });
-      return users.map((u) => ({ email: u.email, name: u.name ?? fallbackName(u.email) }));
+      return users.map((u) => ({ locale: u.locale, email: u.email, name: u.name ?? fallbackName(u.email) }));
     }
     case "age_group": {
       const users = await prisma.user.findMany({
         where: { children: { some: { ageGroup: audienceFilter as any } } },
-        select: { email: true, name: true },
+        select: { email: true, name: true, locale: true },
       });
-      return users.map((u) => ({ email: u.email, name: u.name ?? fallbackName(u.email) }));
+      return users.map((u) => ({ locale: u.locale, email: u.email, name: u.name ?? fallbackName(u.email) }));
     }
     default: {
       if (!audienceFilter) return [];
       const emails = audienceFilter.split(",").map((e) => e.trim()).filter(Boolean);
       const dbUsers = await prisma.user.findMany({
         where: { email: { in: emails } },
-        select: { email: true, name: true },
+        select: { email: true, name: true, locale: true },
       });
       const nameMap = Object.fromEntries(dbUsers.map((u) => [u.email, u.name ?? fallbackName(u.email)]));
-      return emails.map((email) => ({ email, name: nameMap[email] ?? fallbackName(email) }));
+      return emails.map((email) => ({ locale: dbUsers.find(u => u.email === email)?.locale ?? "ka", email, name: nameMap[email] ?? fallbackName(email) }));
     }
   }
 }
@@ -93,6 +94,8 @@ export async function POST(req: Request) {
   const {
     subject,
     htmlContent,
+    subjectEn,
+    htmlContentEn,
     senderEmail = "info@mommenu.ge",
     action = "send",
     audienceType = "specific",
@@ -104,9 +107,16 @@ export async function POST(req: Request) {
     return NextResponse.json({ error: "Subject and content are required" }, { status: 400 });
   }
 
+  if (action !== 'draft') {
+    const targets = await resolveRecipients(audienceType, audienceFilter);
+    if (targets.some(u => u.locale === 'en') && (!subjectEn?.trim() || !htmlContentEn?.trim() || /[\u10A0-\u10FF]/.test(subjectEn + htmlContentEn))) {
+      return NextResponse.json({ error: 'ინგლისურენოვანი მიმღებებისთვის შეავსეთ ინგლისური სათაური და შინაარსი.' }, { status: 400 });
+    }
+  }
+
   if (action === "draft") {
     const campaign = await prisma.emailCampaign.create({
-      data: { subject, htmlContent, senderEmail, status: "DRAFT", audienceType, audienceFilter },
+      data: { subject, htmlContent, subjectEn, htmlContentEn, senderEmail, status: "DRAFT", audienceType, audienceFilter },
     });
     return NextResponse.json({ success: true, campaign });
   }
@@ -119,6 +129,8 @@ export async function POST(req: Request) {
       data: {
         subject,
         htmlContent,
+        subjectEn,
+        htmlContentEn,
         senderEmail,
         status: "SCHEDULED",
         audienceType,
@@ -139,6 +151,8 @@ export async function POST(req: Request) {
     data: {
       subject,
       htmlContent,
+      subjectEn,
+      htmlContentEn,
       senderEmail,
       status: "SENDING",
       audienceType,
@@ -181,8 +195,12 @@ export async function POST(req: Request) {
   const failedEmails: string[] = [];
 
   for (let i = 0; i < recipients.length; i++) {
-    const { email, name } = recipients[i];
-    const html = layout(htmlContent.replace(/\{\{name\}\}/g, name));
+    const { email, name, locale } = recipients[i];
+    const english = locale === 'en';
+    const recipientSubject = english ? subjectEn : subject;
+    const recipientBody = english ? htmlContentEn : htmlContent;
+    const escapedName = name.replace(/[&<>"']/g, c => '&#' + c.charCodeAt(0) + ';');
+    const html = layout(recipientBody.replace(/\{\{name\}\}/g, escapedName), english ? 'en' : 'ka');
     let outcome: { ok: boolean; messageId: string | null; error: string | null } | null = null;
 
     for (let attempt = 0; outcome === null; attempt++) {
@@ -190,7 +208,7 @@ export async function POST(req: Request) {
         const { data, error } = await resend.emails.send({
           from: `${fromLabel} <${senderEmail}>`,
           to: email,
-          subject,
+          subject: recipientSubject,
           html,
         });
         if (!error) {

@@ -1,8 +1,9 @@
+import { localizedMetadata } from '@/lib/metadata';
 import type { Metadata } from 'next';
 import { prisma } from '@/lib/prisma';
 import ContactClient from './client';
 
-export const metadata: Metadata = {
+const georgianMetadata: Metadata = {
   title: 'კონტაქტი — MomMenu',
   description: 'დაგვიკავშირდი! კითხვა, წინადადება ან უბრალოდ გინდა ისაუბრო — ჩაგვწერე.',
   openGraph: { title: 'კონტაქტი — MomMenu', url: '/contact' },
@@ -19,7 +20,10 @@ const DEFAULTS = {
   workingHoursKa: 'ორშ — პარ, 10:00 – 18:00', workingHoursEn: 'Mon – Fri, 10:00 – 18:00',
 };
 
-export default async function ContactPage({ searchParams }: { searchParams: { lang?: string } }) {
+export async function generateMetadata(): Promise<Metadata> { return localizedMetadata(georgianMetadata, "Contact MomMenu", "Get in touch with the MomMenu team.", "/contact"); }
+
+export default async function ContactPage(props: { searchParams: Promise<{ lang?: string }> }) {
+  const searchParams = await props.searchParams;
   const locale = searchParams.lang === 'en' ? 'en' : 'ka';
 
   const s = await prisma.contactSettings.upsert({

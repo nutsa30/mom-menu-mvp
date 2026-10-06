@@ -10,6 +10,10 @@ export async function GET(req: NextRequest) {
 
   const childId = req.nextUrl.searchParams.get('childId');
 
+  if (childId && !await prisma.child.findFirst({ where: { id: childId, userId: session.id }, select: { id: true } })) {
+    return NextResponse.json({ error: 'Not found' }, { status: 404 });
+  }
+
   const ingredients = await prisma.babyIngredient.findMany({
     orderBy: [{ category: 'asc' }, { minAgeMonths: 'asc' }, { nameKa: 'asc' }],
   });

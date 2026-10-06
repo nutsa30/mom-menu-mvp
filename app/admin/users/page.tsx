@@ -1,3 +1,4 @@
+import { currencyFor, normalizeMarket, INTERNATIONAL_PRICES } from '@/lib/market';
 ﻿import { prisma } from '@/lib/prisma';
 import { adminDict, getAdminLocale } from '@/lib/adminI18n';
 import UsersFilterBar from '@/components/UsersFilterBar';
@@ -16,6 +17,8 @@ const INTERVAL_PRICE: Record<BillingInterval, number> = {
 };
 type PriceableUser = {
   subscriptionStatus: string;
+  market?: string;
+  subscriptionAmount?: number | null;
   billingIntervalMonths?: number | null;
   promoCode?: { discountPercent: number } | null;
 };
@@ -26,6 +29,8 @@ type PriceableUser = {
 // applyDiscount in lib/bog.ts) — without this, a discounted subscriber would inflate MRR by
 // whatever their promo knocked off.
 const priceFor = (user: PriceableUser) => {
+  if (user.subscriptionAmount != null) return user.subscriptionAmount;
+  if (user.market === 'INTL') return applyDiscount(INTERNATIONAL_PRICES[(user.billingIntervalMonths || 1) as BillingInterval], user.promoCode?.discountPercent);
   const base = user.subscriptionStatus === 'FULL_PLAN' && user.billingIntervalMonths
     ? INTERVAL_PRICE[user.billingIntervalMonths as BillingInterval] ?? FULL_PRICE
     : (user.subscriptionStatus === 'RECIPE_PLAN' ? RECIPE_PRICE : FULL_PRICE);
@@ -36,11 +41,16 @@ const priceFor = (user: PriceableUser) => {
 const monthlyPriceFor = (user: PriceableUser) =>
   priceFor(user) / (user.billingIntervalMonths || 1);
 
-export default async function AdminUsersPage({
-  searchParams,
-}: {
-  searchParams: { lang?: string; tab?: string; promo?: string };
-}) {
+export default async function AdminUsersPage(
+  props: {
+    searchParams: Promise<{ lang?: string; tab?: string; promo?: string; market?: string }>;
+  }
+) {
+  const searchParams = await props.searchParams;
+  const market = normalizeMarket(searchParams.market);
+  const currency = currencyFor(market);
+  const currencySymbol = currency === "USD" ? "$" : "₾";
+  const INTERVAL_PRICE = market === "INTL" ? INTERNATIONAL_PRICES : Object.fromEntries(Object.entries(PLAN_AMOUNTS_BY_INTERVAL).map(([k,v]) => [k, Number(v)])) as Record<BillingInterval, number>;
   const locale = getAdminLocale(searchParams.lang);
   const d = adminDict[locale];
   const activeTab = searchParams.tab ?? 'all';
@@ -61,9 +71,10 @@ export default async function AdminUsersPage({
 
   const [users, promoCodes, successfulPayers, allSuccessPaymentDates, promoRevenueTotal] = await Promise.all([
     prisma.user.findMany({
+      where: { market },
       orderBy: { createdAt: 'desc' },
       select: {
-        id: true, name: true, email: true, role: true,
+        id: true, name: true, email: true, role: true, market: true, subscriptionAmount: true,
         isBlocked: true, isGifted: true, subscriptionStatus: true, billingIntervalMonths: true,
         subscriptionStartedAt: true, subscriptionCanceledAt: true, subscriptionRenewsAt: true, createdAt: true,
         paymentFailedAt: true,
@@ -75,17 +86,17 @@ export default async function AdminUsersPage({
     // Who has ever actually been charged. The BOG webhook flips subscriptionStatus to
     // FULL_PLAN the moment a trial's card-verification hold clears — well before any real
     // charge — so subscriptionStatus alone can't tell "paying" apart from "still in free trial".
-    prisma.payment.findMany({ where: { status: 'SUCCESS' }, select: { userId: true }, distinct: ['userId'] }),
+    prisma.payment.findMany({ where: { status: 'SUCCESS', currency }, select: { userId: true }, distinct: ['userId'] }),
     // Every successful payment's date, per user — not just distinct userIds (a renewing
     // subscriber has several) — so the users table below can offer a "purchase date" filter
     // the same way it already offers a registration-date one: pick a date, see who actually
     // paid that day.
-    prisma.payment.findMany({ where: { status: 'SUCCESS' }, select: { userId: true, createdAt: true } }),
+    prisma.payment.findMany({ where: { status: 'SUCCESS', currency }, select: { userId: true, createdAt: true } }),
     // Lifetime revenue from EVERY promo-code buyer combined, across all codes — separate
     // from the single-code `promoRevenue` query below (which only runs once a specific code
     // is selected in the filter dropdown).
     prisma.payment.aggregate({
-      where: { status: 'SUCCESS', user: { promoCodeId: { not: null } } },
+      where: { status: 'SUCCESS', currency, user: { promoCodeId: { not: null } } },
       _sum: { grossAmount: true, netAmount: true },
       _count: true,
     }),
@@ -97,6 +108,7 @@ export default async function AdminUsersPage({
   // few times has several. Feeds the users table's "purchase date" filter/column.
   const purchaseDatesByUser = new Map<string, string[]>();
   for (const p of allSuccessPaymentDates) {
+    if (!p.userId) continue;
     const day = p.createdAt.toISOString().slice(0, 10);
     const existing = purchaseDatesByUser.get(p.userId);
     if (existing) { if (!existing.includes(day)) existing.push(day); }
@@ -108,7 +120,7 @@ export default async function AdminUsersPage({
   // normal page load.
   const promoRevenue = activePromo
     ? await prisma.payment.aggregate({
-        where: { status: 'SUCCESS', user: { promoCodeId: activePromo } },
+        where: { status: 'SUCCESS', currency, user: { promoCodeId: activePromo } },
         _sum: { grossAmount: true },
         _count: true,
       })
@@ -190,7 +202,7 @@ export default async function AdminUsersPage({
 
   // Built from the real, currently-configured prices rather than lib/adminI18n's static
   // strings, which hardcode stale numbers (e.g. "30₾") that drift as soon as pricing changes.
-  const recipePlanLabel = `${RECIPE_PRICE}₾ ${locale === 'ka' ? 'რეცეპტები' : 'Recipe'}`;
+  const recipePlanLabel = `${RECIPE_PRICE}${currencySymbol} ${locale === 'ka' ? 'რეცეპტები' : 'Recipe'}`;
   // No single price anymore — a FULL_PLAN user might be on any of the three tiers
   // (17/39/59₾), so this stat-card header can't quote one number the way it used to.
   const fullPlanLabel = locale === 'ka' ? 'სრული პაკეტი (ყველა ვადა)' : 'Full Package (any tier)';
@@ -204,7 +216,7 @@ export default async function AdminUsersPage({
     if (u.subscriptionStatus === 'FULL_PLAN') {
       const interval = u.billingIntervalMonths as BillingInterval | undefined;
       const price = interval ? INTERVAL_PRICE[interval] : FULL_PRICE;
-      return interval ? `${price}₾ / ${interval}${locale === 'ka' ? 'თვ' : 'mo'}` : fullPlanLabel;
+      return interval ? `${price}${currencySymbol} / ${interval}${locale === 'ka' ? 'თვ' : 'mo'}` : fullPlanLabel;
     }
     return u.subscriptionStatus;
   };
@@ -276,6 +288,7 @@ export default async function AdminUsersPage({
 
   return (
     <div className="p-4 sm:p-6 lg:p-8">
+      <nav className="flex gap-4 mb-6"><a href="?market=GE">საქართველო · GEL</a><a href="?market=INTL">საერთაშორისო · USD</a><strong>{currency}</strong></nav>
       <div className="mb-6 lg:mb-8">
         <h1 className="text-3xl font-black text-[#465940]">{d.userStatsTitle}</h1>
         <p className="text-[#465940]/60 text-sm mt-1">{total} {d.totalRegistered}</p>
@@ -287,15 +300,15 @@ export default async function AdminUsersPage({
         {[
           { label: d.totalUsers, value: total, color: 'text-[#465940]', bg: 'bg-[#465940]/5' },
           {
-            label: `1 თვე (${INTERVAL_PRICE[1]}₾)`, value: byInterval1, color: 'text-[#465940]', bg: 'bg-[#FDFBF0]/10',
+            label: `1 თვე (${INTERVAL_PRICE[1]}${currencySymbol})`, value: byInterval1, color: 'text-[#465940]', bg: 'bg-[#FDFBF0]/10',
             sub: byInterval1Promo > 0 ? `მათგან ${byInterval1Promo} პრომოკოდით` : undefined,
           },
           {
-            label: `3 თვე (${INTERVAL_PRICE[3]}₾)`, value: byInterval3, color: 'text-[#465940]', bg: 'bg-[#FDFBF0]/10',
+            label: `3 თვე (${INTERVAL_PRICE[3]}${currencySymbol})`, value: byInterval3, color: 'text-[#465940]', bg: 'bg-[#FDFBF0]/10',
             sub: byInterval3Promo > 0 ? `მათგან ${byInterval3Promo} პრომოკოდით` : undefined,
           },
           {
-            label: `6 თვე (${INTERVAL_PRICE[6]}₾)`, value: byInterval6, color: 'text-[#465940]', bg: 'bg-[#FDFBF0]/10',
+            label: `6 თვე (${INTERVAL_PRICE[6]}${currencySymbol})`, value: byInterval6, color: 'text-[#465940]', bg: 'bg-[#FDFBF0]/10',
             sub: byInterval6Promo > 0 ? `მათგან ${byInterval6Promo} პრომოკოდით` : undefined,
           },
           {
@@ -317,7 +330,7 @@ export default async function AdminUsersPage({
             label: '🏷 სულ პრომოკოდით (გადამხდელი)', value: promoPayingTotal, color: 'text-[#465940]', bg: 'bg-[#FDFBF0]/10',
             sub: [
               `${byInterval1Promo}×1თვე · ${byInterval3Promo}×3თვე · ${byInterval6Promo}×6თვე`,
-              `ჩარიცხული: ${(promoRevenueTotal._sum.grossAmount ?? 0).toFixed(2)}₾ (${promoRevenueTotal._count} გადახდა)`,
+              `ჩარიცხული: ${(promoRevenueTotal._sum.grossAmount ?? 0).toFixed(2)}${currencySymbol} (${promoRevenueTotal._count} გადახდა)`,
             ],
           },
         ].map((s) => (
@@ -342,7 +355,7 @@ export default async function AdminUsersPage({
         <div className="bg-amber-50 rounded-2xl p-5 border border-amber-200 shadow-sm">
           <p className="text-xs font-semibold text-amber-700 mb-3">🎁 გაჩუქებული</p>
           <p className="text-3xl font-black text-amber-600">{giftedCount}</p>
-          <p className="text-[10px] text-amber-500 mt-1">{giftedValue}₾/თვე · MRR-ში არ ითვლება</p>
+          <p className="text-[10px] text-amber-500 mt-1">{giftedValue}{currencySymbol}/თვე · MRR-ში არ ითვლება</p>
         </div>
       </div>
 
@@ -398,7 +411,7 @@ export default async function AdminUsersPage({
                           <span className="text-[#465940]/40 text-xs">—</span>
                         )}
                       </td>
-                      <td className="px-6 py-4 text-sm font-semibold text-[#465940] text-right">{u.amount}₾</td>
+                      <td className="px-6 py-4 text-sm font-semibold text-[#465940] text-right">{u.amount}{currencySymbol}</td>
                     </tr>
                   ))}
                 </tbody>
@@ -409,7 +422,7 @@ export default async function AdminUsersPage({
       </div>
 
       {/* Upcoming charges grouped by day of month, once per subscriber. */}
-      <DueByDateList payments={paymentDayRows} todayDay={todayDay} />
+      <DueByDateList currency={currency} payments={paymentDayRows} todayDay={todayDay} />
 
       <UsersFilterBar
         counts={counts}
@@ -423,9 +436,9 @@ export default async function AdminUsersPage({
         <div className="mb-6 -mt-2 bg-[#465940] rounded-2xl p-5 shadow-sm flex flex-wrap items-center gap-x-8 gap-y-2">
           <div>
             <p className="text-xs font-semibold text-[#FDFBF0]/70 mb-1">
-              "{promoCodes.find((p) => p.id === activePromo)?.code ?? ''}" კოდით — შემოსავალი
+              &quot;{promoCodes.find((p) => p.id === activePromo)?.code ?? ''}&quot; კოდით — შემოსავალი
             </p>
-            <p className="text-2xl font-black text-[#FDFBF0]">{(promoRevenue._sum.grossAmount ?? 0).toFixed(2)}₾</p>
+            <p className="text-2xl font-black text-[#FDFBF0]">{(promoRevenue._sum.grossAmount ?? 0).toFixed(2)}{currencySymbol}</p>
           </div>
           <p className="text-xs text-[#FDFBF0]/60">{promoRevenue._count} წარმატებული გადახდა (ტრიალის დაბრუნებადი თანხის გარეშე)</p>
         </div>
@@ -443,6 +456,7 @@ export default async function AdminUsersPage({
             purchaseDates: purchaseDatesByUser.get(u.id) ?? [],
           }))}
           locale={locale}
+          currency={currency}
           intervalPrices={INTERVAL_PRICE}
         />
       </div>

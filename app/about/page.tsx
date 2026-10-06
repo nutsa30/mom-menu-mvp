@@ -1,6 +1,7 @@
+import { localizedMetadata } from '@/lib/metadata';
 import type { Metadata } from 'next';
 
-export const metadata: Metadata = {
+const georgianMetadata: Metadata = {
   title: 'ჩვენ შესახებ — mom menu',
   description: 'mom menu — ქართული სტარტაპი, რომელიც მშობლებს სთავაზობს მოსახერხებელ, ასაკის მიხედვით მორგებულ მენიუს იდეებს ყოველდღიური დაგეგმვისთვის.',
   alternates: {
@@ -14,7 +15,10 @@ export const metadata: Metadata = {
   },
 };
 
-export default function AboutPage({ searchParams }: { searchParams: { lang?: string } }) {
+export async function generateMetadata(): Promise<Metadata> { return localizedMetadata(georgianMetadata, "About MomMenu", "Helping parents plan balanced meals for their children.", "/about"); }
+
+export default async function AboutPage(props: { searchParams: Promise<{ lang?: string }> }) {
+  const searchParams = await props.searchParams;
   const locale = searchParams.lang === 'en' ? 'en' : 'ka';
   const ka = locale === 'ka';
 

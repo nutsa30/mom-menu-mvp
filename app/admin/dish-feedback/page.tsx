@@ -68,7 +68,7 @@ export default async function AdminDishFeedbackPage() {
     <div className="p-4 sm:p-6 lg:p-8">
       <div className="mb-6 lg:mb-8">
         <h1 className="text-3xl font-black text-[#465940]">კერძების შეფასება</h1>
-        <p className="text-[#465940]/60 text-sm mt-1">"ჭამა" ავტომატურად ითვლება მოწონებად, "არ მოეწონა" — დაწუნებად. დაკლიკებით კერძის რედაქტირება/წაშლაზე გადახვალთ.</p>
+        <p className="text-[#465940]/60 text-sm mt-1">&quot;ჭამა&quot; ავტომატურად ითვლება მოწონებად, &quot;არ მოეწონა&quot; — დაწუნებად. დაკლიკებით კერძის რედაქტირება/წაშლაზე გადახვალთ.</p>
       </div>
 
       <div className="grid lg:grid-cols-2 gap-6">

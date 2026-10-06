@@ -1,5 +1,9 @@
+import { ENGLISH_EMAILS, englishEmailLayout } from './email-en';
+import { currencyFor, normalizeMarket, money, type Locale } from './market';
 import { resend } from "@/lib/resend";
 import { prisma } from "@/lib/prisma";
+
+function escapeHtml(value: string): string { return value.replace(/[&<>"']/g, c => '&#' + c.charCodeAt(0) + ';'); }
 
 const FROM = process.env.EMAIL_FROM ?? "MomMenu <info@mommenu.ge>";
 
@@ -12,7 +16,7 @@ function formatDateKa(date: Date): string {
   return `${date.getDate()} ${MONTHS_KA[date.getMonth()]}, ${date.getFullYear()}`;
 }
 
-export function layout(body: string): string {
+function layoutKa(body: string): string {
   return `<!DOCTYPE html>
 <html lang="ka">
 <head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"></head>
@@ -147,14 +151,15 @@ export const TEMPLATE_DEFAULTS: Record<string, { subject: string; body: string }
 
 // ─── DB template fetcher with hardcoded fallback ──────────────────────────────
 
-async function getTemplate(key: string): Promise<{ subject: string; body: string; enabled: boolean }> {
-  const fallback = TEMPLATE_DEFAULTS[key] ?? { subject: key, body: "" };
+export async function getTemplate(key: string, locale: Locale = 'ka'): Promise<{ subject: string; body: string; enabled: boolean }> {
+  const fallback = (locale === 'en' ? ENGLISH_EMAILS : TEMPLATE_DEFAULTS)[key];
+  if (!fallback) throw new Error(`Missing ${locale} email template: ${key}`);
   try {
     const t = await prisma.emailTemplate.findUnique({ where: { key } });
     if (t) {
       return {
-        subject: t.subjectKa || fallback.subject,
-        body: t.bodyKa || fallback.body,
+        subject: locale === 'en' ? (t.subjectEn && !/[\u10A0-\u10FF]/.test(t.subjectEn) ? t.subjectEn : fallback.subject) : t.subjectKa || fallback.subject,
+        body: locale === 'en' ? (t.bodyEn && !/[\u10A0-\u10FF]/.test(t.bodyEn) ? t.bodyEn : fallback.body) : t.bodyKa || fallback.body,
         enabled: t.enabled,
       };
     }
@@ -162,29 +167,39 @@ async function getTemplate(key: string): Promise<{ subject: string; body: string
   return { ...fallback, enabled: true };
 }
 
+async function sendEmail(message: Parameters<typeof resend.emails.send>[0]) {
+  const result = await resend.emails.send(message);
+  if (result.error) throw new Error(result.error.message);
+  return result;
+}
+
 // ─── Email Verification ───────────────────────────────────────────────────────
 
 export async function sendVerificationEmail(to: string, name: string, code: string) {
-  const { subject, body } = await getTemplate('email_verify');
-  const html = layout(body.replace(/\{\{name\}\}/g, name).replace(/\{\{code\}\}/g, code));
-  await resend.emails.send({ from: FROM, to, subject, html });
+  const locale = await communicationLocale(to);
+  const { subject, body } = await getTemplate('email_verify', locale);
+  const html = layout(body.replace(/\{\{name\}\}/g, escapeHtml(name)).replace(/\{\{code\}\}/g, code), locale);
+  await sendEmail({ from: FROM, to, subject, html });
 }
 
 // ─── Email Change Confirmation ────────────────────────────────────────────────
 
 export async function sendEmailChangeConfirmation(to: string, name: string, token: string) {
   const link = `${process.env.NEXT_PUBLIC_APP_URL}/api/auth/confirm-email-change?token=${token}`;
-  const { subject, body } = await getTemplate('email_change');
-  const html = layout(body.replace(/\{\{name\}\}/g, name).replace(/\{\{link\}\}/g, link));
-  await resend.emails.send({ from: FROM, to, subject, html });
+  const account = await prisma.user.findFirst({ where: { pendingEmail: to, pendingEmailToken: token }, select: { locale: true } });
+  const locale: Locale = account?.locale === 'en' ? 'en' : 'ka';
+  const { subject, body } = await getTemplate('email_change', locale);
+  const html = layout(body.replace(/\{\{name\}\}/g, escapeHtml(name)).replace(/\{\{link\}\}/g, link), locale);
+  await sendEmail({ from: FROM, to, subject, html });
 }
 
 // ─── Welcome Email ────────────────────────────────────────────────────────────
 
 export async function sendWelcomeEmail(to: string, name: string) {
-  const { subject, body } = await getTemplate("welcome");
-  const html = layout(body.replace(/\{\{name\}\}/g, name));
-  await resend.emails.send({ from: FROM, to, subject, html });
+  const locale = await communicationLocale(to);
+  const { subject, body } = await getTemplate("welcome", locale);
+  const html = layout(body.replace(/\{\{name\}\}/g, escapeHtml(name)), locale);
+  await sendEmail({ from: FROM, to, subject, html });
 }
 
 // ─── Subscription Confirmation ────────────────────────────────────────────────
@@ -197,70 +212,79 @@ export async function sendSubscriptionConfirmationEmail(
   startDate: Date,
   endDate: Date,
 ) {
-  const { subject, body } = await getTemplate("subscription_confirmed");
+  const locale = await communicationLocale(to);
+  const { subject, body } = await getTemplate("subscription_confirmed", locale);
+  const account = await prisma.user.findUnique({ where: { email: to }, select: { market: true, timeZone: true, billingIntervalMonths: true } });
   const html = layout(
     body
-      .replace(/\{\{name\}\}/g, name)
-      .replace(/\{\{planName\}\}/g, planName)
-      .replace(/\{\{amount\}\}/g, `${amount}₾`)
-      .replace(/\{\{startDate\}\}/g, formatDateKa(startDate))
-      .replace(/\{\{endDate\}\}/g, formatDateKa(endDate)),
+      .replace(/\{\{name\}\}/g, escapeHtml(name))
+      .replace(/\{\{planName\}\}/g, locale === 'en' ? `${account?.billingIntervalMonths || 1}-month plan` : planName)
+      .replace(/\{\{amount\}\}/g, money(amount, currencyFor(normalizeMarket(account?.market)), locale))
+      .replace(/\{\{startDate\}\}/g, locale === 'ka' ? formatDateKa(startDate) : startDate.toLocaleDateString('en-US', { timeZone: account?.timeZone || 'UTC' }))
+      .replace(/\{\{endDate\}\}/g, locale === 'ka' ? formatDateKa(endDate) : endDate.toLocaleDateString('en-US', { timeZone: account?.timeZone || 'UTC' })),
+    locale,
   );
-  await resend.emails.send({ from: FROM, to, subject, html });
+  await sendEmail({ from: FROM, to, subject, html });
 }
 
 // ─── Password Reset ───────────────────────────────────────────────────────────
 
 export async function sendPasswordResetEmail(to: string, code: string) {
-  const { subject, body } = await getTemplate("password_reset");
-  const html = layout(body.replace(/\{\{code\}\}/g, code));
-  await resend.emails.send({ from: FROM, to, subject, html });
+  const locale = await communicationLocale(to);
+  const { subject, body } = await getTemplate("password_reset", locale);
+  const html = layout(body.replace(/\{\{code\}\}/g, code), locale);
+  await sendEmail({ from: FROM, to, subject, html });
 }
 
 // ─── Password Changed Notification ───────────────────────────────────────────
 
 export async function sendPasswordChangedEmail(to: string, name: string) {
-  const { subject, body } = await getTemplate("password_changed");
-  const html = layout(body.replace(/\{\{name\}\}/g, name));
-  await resend.emails.send({ from: FROM, to, subject, html });
+  const locale = await communicationLocale(to);
+  const { subject, body } = await getTemplate("password_changed", locale);
+  const html = layout(body.replace(/\{\{name\}\}/g, escapeHtml(name)), locale);
+  await sendEmail({ from: FROM, to, subject, html });
 }
 
 // ─── Subscription Expiring ────────────────────────────────────────────────────
 
 export async function sendSubscriptionExpiringEmail(to: string, name: string) {
-  const { subject, body, enabled } = await getTemplate("subscription_expiring");
+  const locale = await communicationLocale(to);
+  const { subject, body, enabled } = await getTemplate("subscription_expiring", locale);
   if (!enabled) return;
-  const html = layout(body.replace(/\{\{name\}\}/g, name));
-  await resend.emails.send({ from: FROM, to, subject, html });
+  const html = layout(body.replace(/\{\{name\}\}/g, escapeHtml(name)), locale);
+  await sendEmail({ from: FROM, to, subject, html });
 }
 
 // ─── Weekly Menu ──────────────────────────────────────────────────────────────
 
 export async function sendWeeklyMenuEmail(to: string, name: string) {
-  const { subject, body, enabled } = await getTemplate("weekly_menu");
+  const locale = await communicationLocale(to);
+  const { subject, body, enabled } = await getTemplate("weekly_menu", locale);
   if (!enabled) return;
-  const html = layout(body.replace(/\{\{name\}\}/g, name));
-  await resend.emails.send({ from: FROM, to, subject, html });
+  const html = layout(body.replace(/\{\{name\}\}/g, escapeHtml(name)), locale);
+  await sendEmail({ from: FROM, to, subject, html });
 }
 
 // ─── Birthday Wish ──────────────────────────────────────────────────────────────
 
 export async function sendBirthdayEmail(to: string) {
-  const { subject, body, enabled } = await getTemplate("birthday_wish");
+  const locale = await communicationLocale(to);
+  const { subject, body, enabled } = await getTemplate("birthday_wish", locale);
   if (!enabled) return;
-  const html = layout(body);
-  await resend.emails.send({ from: FROM, to, subject, html });
+  const html = layout(body, locale);
+  await sendEmail({ from: FROM, to, subject, html });
 }
 
 // ─── Admin: new user registered ────────────────────────────────────────────────
 // Internal ops ping, not admin-editable content — no DB template, just a fixed layout.
 
 export async function sendAdminNewUserNotification(name: string, email: string) {
+  const locale: Locale = 'ka';
   const to = process.env.ADMIN_NOTIFICATION_EMAIL ?? "nutsarogava30@gmail.com";
   const html = layout(`<h2 style="margin:0 0 16px;font-size:20px;font-weight:800;">🆕 ახალი მომხმარებელი დარეგისტრირდა</h2>
-<p style="margin:0 0 6px;font-size:15px;"><strong>სახელი:</strong> ${name}</p>
-<p style="margin:0;font-size:15px;"><strong>ელფოსტა:</strong> ${email}</p>`);
-  await resend.emails.send({ from: FROM, to, subject: `MomMenu — ახალი რეგისტრაცია: ${name}`, html }).catch(() => {});
+<p style="margin:0 0 6px;font-size:15px;"><strong>სახელი:</strong> ${escapeHtml(name)}</p>
+<p style="margin:0;font-size:15px;"><strong>ელფოსტა:</strong> ${escapeHtml(email)}</p>`, locale);
+  await sendEmail({ from: FROM, to, subject: `MomMenu — ახალი რეგისტრაცია: ${name}`, html }).catch(() => {});
 }
 
 // ─── New Blog ─────────────────────────────────────────────────────────────────
@@ -271,13 +295,26 @@ export async function sendNewBlogEmail(
   blogTitle: string,
   blogUrl: string,
 ) {
-  const { subject, body, enabled } = await getTemplate("new_blog");
+  const locale = await communicationLocale(to);
+  const { subject, body, enabled } = await getTemplate("new_blog", locale);
   if (!enabled) return;
   const html = layout(
     body
-      .replace(/\{\{name\}\}/g, name)
-      .replace(/\{\{blogTitle\}\}/g, blogTitle)
+      .replace(/\{\{name\}\}/g, escapeHtml(name))
+      .replace(/\{\{blogTitle\}\}/g, escapeHtml(blogTitle))
       .replace(/\{\{blogUrl\}\}/g, blogUrl),
+    locale,
   );
-  await resend.emails.send({ from: FROM, to, subject, html });
+  await sendEmail({ from: FROM, to, subject, html });
+}
+
+export function layout(body: string, locale: Locale = 'ka'): string {
+  const rendered = body.replace(/\{\{appUrl\}\}/g, process.env.NEXT_PUBLIC_APP_URL || 'https://www.mommenu.ge');
+  return locale === 'en' ? englishEmailLayout(rendered) : layoutKa(rendered);
+}
+async function communicationLocale(to: string): Promise<Locale> {
+  const user = await prisma.user.findUnique({ where: { email: to }, select: { locale: true } });
+  if (user) return user.locale === 'en' ? 'en' : 'ka';
+  const pending = await prisma.pendingRegistration.findUnique({ where: { email: to }, select: { locale: true } });
+  return pending?.locale === 'en' ? 'en' : 'ka';
 }

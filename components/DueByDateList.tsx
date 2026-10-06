@@ -13,7 +13,8 @@ type PaymentDayRow = {
 };
 
 // Upcoming charges grouped by day of month, once per subscriber.
-export default function DueByDateList({ payments, todayDay }: { payments: PaymentDayRow[]; todayDay: number }) {
+export default function DueByDateList({ payments, todayDay, currency = "GEL" }: { currency?: "GEL" | "USD"; payments: PaymentDayRow[]; todayDay: number }) {
+  const currencySymbol = currency === "USD" ? "$" : "₾";
   const [selectedDay, setSelectedDay] = useState(todayDay);
 
   const paymentsOnDay = useMemo(
@@ -70,7 +71,7 @@ export default function DueByDateList({ payments, todayDay }: { payments: Paymen
                       <p className="text-xs text-[#465940]/50">{p.email}</p>
                     </td>
                     <td className="px-4 py-4 text-sm text-[#465940]/70">{p.planLabel}</td>
-                    <td className="px-6 py-4 text-sm font-semibold text-[#465940] text-right">{p.amount}₾</td>
+                    <td className="px-6 py-4 text-sm font-semibold text-[#465940] text-right">{p.amount}{currencySymbol}</td>
                   </tr>
                 ))}
               </tbody>
@@ -78,7 +79,7 @@ export default function DueByDateList({ payments, todayDay }: { payments: Paymen
           </div>
           <div className="flex justify-end px-6 py-3 border-t border-[#465940]/10">
             <p className="text-sm text-[#465940]">
-              სულ {selectedDay} რიცხვში: <span className="font-black">{totalOnDay}₾</span> ({paymentsOnDay.length} მომხმარებელი)
+              სულ {selectedDay} რიცხვში: <span className="font-black">{totalOnDay}{currencySymbol}</span> ({paymentsOnDay.length} მომხმარებელი)
             </p>
           </div>
         </div>

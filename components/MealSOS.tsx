@@ -1,4 +1,6 @@
 'use client';
+import Copy, { useCopy } from '@/components/Copy';
+
 
 import { useState } from 'react';
 
@@ -49,8 +51,8 @@ export default function MealSOS({
 
   return (
     <div className={`${card} p-4`}>
-      <p className="text-sm font-bold text-[#465940] mb-1">კვების SOS</p>
-      <p className="text-xs text-[#465940]/60 mb-3">რა ხდება დღეს?</p>
+      <p className="text-sm font-bold text-[#465940] mb-1"> <Copy>{"კვების SOS"}</Copy> </p>
+      <p className="text-xs text-[#465940]/60 mb-3"> <Copy>{"რა ხდება დღეს?"}</Copy> </p>
       <div className="flex gap-2 flex-wrap">
         {OPTIONS.map((o) => (
           <button
@@ -59,12 +61,12 @@ export default function MealSOS({
             disabled={saving === o.key}
             className="px-3 py-2 rounded-full text-xs font-bold bg-[#465940]/10 text-[#465940] hover:bg-[#465940] hover:text-[#FDFBF0] transition disabled:opacity-60"
           >
-            {o.label}
+            <Copy>{o.label}</Copy>
           </button>
         ))}
       </div>
       {message && (
-        <p className="text-xs text-[#465940]/70 mt-3 bg-[#465940]/5 rounded-xl px-3 py-2 leading-relaxed">{message}</p>
+        <p className="text-xs text-[#465940]/70 mt-3 bg-[#465940]/5 rounded-xl px-3 py-2 leading-relaxed"><Copy>{message}</Copy></p>
       )}
     </div>
   );

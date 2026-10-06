@@ -58,6 +58,12 @@ enum CancellationReason {
 model User {
   id                     String             @id @default(cuid())
   name                   String
+  locale                 String @default("ka")
+  market                 String @default("GE")
+  timeZone               String @default("Asia/Tbilisi")
+  units                  String @default("metric")
+  subscriptionCurrency   String @default("GEL")
+  subscriptionAmount     Float?
   email                  String             @unique
   passwordHash           String?
   googleId               String?            @unique
@@ -173,6 +179,7 @@ enum PaymentStatus {
 }
 
 model Payment {
+  currency         String @default("GEL")
   id               String             @id @default(cuid())
   // Optional + SetNull (not Cascade) on purpose: a customer's payment/revenue history is
   // financial record-keeping and must survive them deleting their account (see
@@ -232,6 +239,7 @@ enum CreditLedgerType {
 //   REVERSED — a referral canceled their subscription after having earned the owner
 //              credit, so that specific 1.70₾ is backed out of the owner's balance.
 model CreditLedgerEntry {
+  currency         String @default("GEL")
   id               String            @id @default(cuid())
   ownerId          String
   owner            User              @relation("CreditLedgerOwner", fields: [ownerId], references: [id], onDelete: Cascade)
@@ -800,6 +808,7 @@ model Testimonial {
   user       User?    @relation(fields: [userId], references: [id], onDelete: SetNull)
   authorName String
   content    String
+  contentEn  String?
   approved   Boolean  @default(false)
   createdAt  DateTime @default(now())
 }
@@ -816,6 +825,9 @@ model UsedTrialEmail {
 // Holds a registration in progress — no User row is created until the emailed code is
 // confirmed, so an unconfirmed signup never occupies the email address at all.
 model PendingRegistration {
+  locale       String @default("ka")
+  market       String @default("GE")
+  timeZone     String @default("Asia/Tbilisi")
   id           String   @id @default(cuid())
   email        String   @unique
   name         String
@@ -843,6 +855,8 @@ enum RecipientStatus {
 }
 
 model EmailCampaign {
+  subjectEn      String?
+  htmlContentEn  String?
   id             String           @id @default(cuid())
   subject        String
   htmlContent    String
@@ -922,6 +936,8 @@ model ContactSettings {
 }
 
 model PushTemplate {
+  titleEn   String?
+  bodyEn    String?
   id        Int      @id @default(autoincrement())
   mealType  String   // breakfast | lunch | snack | dinner | weekly
   title     String
@@ -950,8 +966,30 @@ model PushSchedule {
 // model on purpose, since it isn't tied to a specific payment or user, just a running log of
 // withdrawals against the business's overall balance.
 model Withdrawal {
+  currency  String   @default("GEL")
   id        String   @id @default(cuid())
   amount    Float
   note      String?
   createdAt DateTime @default(now())
+}
+// Immutable server-side checkout snapshot; never accepts frontend currency/amount.
+model CheckoutOrder {
+  id         String @id
+  userId     String
+  currency   String
+  amount     Float
+  interval   Int
+  trial      Boolean
+  createdAt  DateTime @default(now())
+  @@index([userId])
+}
+
+// Deduplicates scheduled communications by account, local date and message type.
+model CommunicationDelivery {
+  id        String @id @default(cuid())
+  userId    String
+  kind      String
+  localDate String
+  createdAt DateTime @default(now())
+  @@unique([userId, kind, localDate])
 }

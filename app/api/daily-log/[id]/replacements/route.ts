@@ -10,7 +10,8 @@ import { scoreCandidates, narrowToStage } from '@/lib/pickDish';
 // replacement is never weaker reasoning than what put the original dish there. On top of
 // that it hard-excludes any dish this child has an explicit "არ მოეწონა" vote on, since a
 // replacement is very often triggered by exactly that vote.
-export async function GET(_req: NextRequest, { params }: { params: { id: string } }) {
+export async function GET(_req: NextRequest, props: { params: Promise<{ id: string }> }) {
+  const params = await props.params;
   const session = await getSession();
   if (!session) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
 

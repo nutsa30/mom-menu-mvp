@@ -1,4 +1,9 @@
 'use client';
+import { useExperience } from './ExperienceProvider';
+import { localizedField } from '@/lib/content';
+
+import Copy, { useCopy } from '@/components/Copy';
+
 
 import { useMemo, useState } from 'react';
 import RecipeModal from './RecipeModal';
@@ -13,6 +18,7 @@ const card = 'bg-[#FDFBF0] rounded-2xl border border-[#465940]/10 shadow-sm';
 // prepTimeMinutes or description; freezing is purely optional extra guidance for parents who
 // want to batch-prep ahead.
 export default function FreezeTab({ child, allDishes }: { child: any; allDishes: any[] }) {
+  const { locale: contentLocale } = useExperience();
   const [recipeModal, setRecipeModal] = useState<any | null>(null);
   const [openId, setOpenId] = useState<string | null>(null);
 
@@ -21,17 +27,17 @@ export default function FreezeTab({ child, allDishes }: { child: any; allDishes:
     return allDishes
       .filter((d: any) =>
         d.isFreezable &&
-        d.freezeInstructionsKa &&
+        localizedField(d, 'freezeInstructions', contentLocale) &&
         d.ageGroups?.includes(child.ageGroup) &&
         !d.allergens?.some((a: string) => child.allergies?.includes(a))
       )
-      .sort((a: any, b: any) => a.titleKa.localeCompare(b.titleKa, 'ka'));
+      .sort((a: any, b: any) => localizedField(a, 'title', contentLocale).localeCompare(localizedField(b, 'title', contentLocale), 'ka'));
   }, [allDishes, child]);
 
   if (!child) {
     return (
       <div className={`${card} p-10 text-center`}>
-        <p className="text-[#465940]/60 text-sm">შვილის მიმატება „შვილი“ ჩანართში.</p>
+        <p className="text-[#465940]/60 text-sm"> <Copy>{"შვილის მიმატება „შვილი“ ჩანართში."}</Copy> </p>
       </div>
     );
   }
@@ -39,15 +45,13 @@ export default function FreezeTab({ child, allDishes }: { child: any; allDishes:
   return (
     <div className="space-y-5">
       <div className={`${card} p-5`}>
-        <h2 className="font-black text-[#465940] text-lg mb-1">გაყინვა — წინასწარ მოამზადე</h2>
-        <p className="text-sm text-[#465940]/60">
-          ეს კერძები შეგიძლია ნედლად ჩამოაყალიბო და საყინულეში შეინახო — მერე, როცა {child.name}-ის კვების გეგმაში მოვა, პირდაპირ გაყინულიდან მოამზადო. სურვილისამებრ — არავითარი ვალდებულება არ არის, ჩვეულებრივადაც შეგიძლია მოამზადო.
-        </p>
+        <h2 className="font-black text-[#465940] text-lg mb-1"> <Copy>{"გაყინვა — წინასწარ მოამზადე"}</Copy> </h2>
+        <p className="text-sm text-[#465940]/60">{contentLocale === 'en' ? <>Shape these dishes before cooking and freeze them. When they appear in {child.name}&apos;s meal plan, you can cook them from frozen. You can also prepare them fresh.</> : <>ეს კერძები შეგიძლია ნედლად ჩამოაყალიბო და საყინულეში შეინახო — მერე, როცა {child.name}-ის კვების გეგმაში მოვა, პირდაპირ გაყინულიდან მოამზადო. სურვილისამებრ — არავითარი ვალდებულება არ არის, ჩვეულებრივადაც შეგიძლია მოამზადო.</>}</p>
       </div>
 
       {freezableDishes.length === 0 ? (
         <div className={`${card} p-10 text-center`}>
-          <p className="text-[#465940]/60 text-sm">{child.name}-ის ასაკისთვის ამ ტიპის კერძი ჯერ არ გვაქვს.</p>
+          <p className="text-[#465940]/60 text-sm">{child.name} <Copy>{"-ის ასაკისთვის ამ ტიპის კერძი ჯერ არ გვაქვს."}</Copy> </p>
         </div>
       ) : (
         <div className="space-y-3">
@@ -62,9 +66,9 @@ export default function FreezeTab({ child, allDishes }: { child: any; allDishes:
                   </button>
                   <div className="flex-1 min-w-0">
                     <span className="text-[10px] font-black uppercase tracking-widest px-2.5 py-0.5 rounded-full bg-[#465940]/10 text-[#465940]">
-                      {MEAL_LABEL[dish.mealType]}
+                      <Copy>{MEAL_LABEL[dish.mealType]}</Copy>
                     </span>
-                    <p className="font-bold text-[#465940] text-sm mt-1 truncate">{dish.titleKa}</p>
+                    <p className="font-bold text-[#465940] text-sm mt-1 truncate">{localizedField(dish, 'title', contentLocale)}</p>
                   </div>
                 </div>
 
@@ -73,17 +77,15 @@ export default function FreezeTab({ child, allDishes }: { child: any; allDishes:
                     className={`px-3 py-1.5 rounded-full text-xs font-bold transition ${
                       isOpen ? 'bg-[#465940] text-[#FDFBF0]' : 'bg-[#465940]/10 text-[#465940] hover:bg-[#465940] hover:text-[#FDFBF0]'
                     }`}>
-                    {isOpen ? '✓ გაყინვის ინსტრუქცია' : 'გაყინვის ინსტრუქცია'}
+                    <Copy>{isOpen ? '✓ გაყინვის ინსტრუქცია' : 'გაყინვის ინსტრუქცია'}</Copy>
                   </button>
                   <button onClick={() => setRecipeModal(dish)}
-                    className="px-3 py-1.5 rounded-full text-xs font-bold bg-[#465940]/10 text-[#465940] hover:bg-[#465940] hover:text-[#FDFBF0] transition">
-                    რეცეპტი
-                  </button>
+                    className="px-3 py-1.5 rounded-full text-xs font-bold bg-[#465940]/10 text-[#465940] hover:bg-[#465940] hover:text-[#FDFBF0] transition"> <Copy>{"რეცეპტი"}</Copy> </button>
                 </div>
 
                 {isOpen && (
                   <div className="mt-3 bg-[#465940]/5 rounded-xl p-3.5">
-                    <p className="text-sm text-[#465940]/80 leading-relaxed">{dish.freezeInstructionsKa}</p>
+                    <p className="text-sm text-[#465940]/80 leading-relaxed">{localizedField(dish, 'freezeInstructions', contentLocale)}</p>
                   </div>
                 )}
               </div>

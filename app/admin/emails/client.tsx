@@ -7,6 +7,8 @@ import { useState, useRef, useCallback, useEffect } from 'react';
 interface Campaign {
   id: string;
   subject: string;
+  subjectEn?: string | null;
+  htmlContentEn?: string | null;
   senderEmail: string;
   status: 'DRAFT' | 'SCHEDULED' | 'SENDING' | 'SENT' | 'FAILED';
   recipientCount: number;
@@ -93,6 +95,8 @@ interface EmailTemplate {
   key: string;
   subjectKa: string;
   bodyKa: string;
+  subjectEn: string;
+  bodyEn: string;
   enabled: boolean;
   updatedAt: string;
 }
@@ -133,6 +137,8 @@ export default function EmailCenterClient({
 
   // Compose state
   const [subject, setSubject] = useState('');
+  const [subjectEn, setSubjectEn] = useState('');
+  const [htmlContentEn, setHtmlContentEn] = useState('');
   const [senderEmail, setSenderEmail] = useState('info@mommenu.ge');
   const [audienceType, setAudienceType] = useState<AudienceType>('specific');
   // "specific" audience — a checkable list of every registered user, instead of pasting
@@ -159,6 +165,8 @@ export default function EmailCenterClient({
   const [templatesLoading, setTemplatesLoading] = useState(false);
   const [editingTemplate, setEditingTemplate] = useState<EmailTemplate | null>(null);
   const [editSubject, setEditSubject] = useState('');
+  const [editSubjectEn, setEditSubjectEn] = useState('');
+  const [editBodyEn, setEditBodyEn] = useState('');
   const [savingTemplate, setSavingTemplate] = useState(false);
   const [templateSaveResult, setTemplateSaveResult] = useState<{ type: 'success' | 'error'; msg: string } | null>(null);
   const [togglingKey, setTogglingKey] = useState<string | null>(null);
@@ -212,8 +220,12 @@ export default function EmailCenterClient({
     const dbT = dbKey ? templates.find(t => t.key === dbKey) : null;
     if (dbT) {
       setSubject(dbT.subjectKa);
+      setSubjectEn(dbT.subjectEn);
+      setHtmlContentEn(dbT.bodyEn.replaceAll('{{appUrl}}', window.location.origin));
       if (editorRef.current) editorRef.current.innerHTML = dbT.bodyKa;
     } else {
+      setSubjectEn('');
+      setHtmlContentEn('');
       const t = TEMPLATES[key];
       setSubject(t.subject);
       if (editorRef.current) editorRef.current.innerHTML = t.body;
@@ -315,7 +327,7 @@ export default function EmailCenterClient({
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          subject, htmlContent, senderEmail,
+          subject, htmlContent, subjectEn, htmlContentEn, senderEmail,
           action: sendAction, audienceType,
           audienceFilter,
           scheduledAt: sendAction === 'schedule' ? scheduledAt : undefined,
@@ -408,6 +420,8 @@ export default function EmailCenterClient({
   const openEditTemplate = (t: EmailTemplate) => {
     setEditingTemplate(t);
     setEditSubject(t.subjectKa);
+    setEditSubjectEn(t.subjectEn);
+    setEditBodyEn(t.bodyEn);
     setTemplateSaveResult(null);
     setTimeout(() => {
       if (templateEditorRef.current) templateEditorRef.current.innerHTML = t.bodyKa;
@@ -428,7 +442,7 @@ export default function EmailCenterClient({
       const res = await fetch('/api/admin/emails/templates', {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ key: editingTemplate.key, subjectKa: editSubject, bodyKa }),
+        body: JSON.stringify({ key: editingTemplate.key, subjectKa: editSubject, bodyKa, subjectEn: editSubjectEn, bodyEn: editBodyEn }),
       });
       if (res.ok) {
         setTemplateSaveResult({ type: 'success', msg: 'შაბლონი წარმატებით შენახულია.' });
@@ -481,6 +495,8 @@ export default function EmailCenterClient({
   const useAsTemplate = () => {
     if (!selectedCampaign) return;
     setSubject(selectedCampaign.subject);
+    setSubjectEn(selectedCampaign.subjectEn ?? "");
+    setHtmlContentEn(selectedCampaign.htmlContentEn ?? "");
     setSenderEmail(selectedCampaign.senderEmail);
     setSendResult(null);
     setSelectedCampaign(null);
@@ -599,6 +615,12 @@ export default function EmailCenterClient({
                 />
               </div>
 
+              <div className="space-y-2 rounded-xl border border-gray-200 p-3">
+                <label className="block text-sm font-bold text-[#465940]">ინგლისური ვერსია</label>
+                <p className="text-xs text-[#465940]/70">ინგლისურენოვანი მიმღებებისთვის ორივე ველი აუცილებელია. ქართული მიმღებები ქართულ ვერსიას მიიღებენ.</p>
+                <input aria-label="English subject" value={subjectEn} onChange={e => setSubjectEn(e.target.value)} placeholder="English subject" className="w-full border rounded-lg p-2 text-sm bg-white text-[#465940]" />
+                <textarea aria-label="English email HTML" value={htmlContentEn} onChange={e => setHtmlContentEn(e.target.value)} placeholder="English email content (HTML); use {{name}} for the recipient's name" rows={6} className="w-full border rounded-lg p-2 text-sm bg-white text-[#465940]" />
+              </div>
               {/* Rich Text Editor */}
               <div>
                 <label className="block text-xs font-bold text-[#465940]/60 uppercase tracking-wider mb-1.5">შინაარსი</label>
@@ -787,7 +809,7 @@ export default function EmailCenterClient({
                     </div>
                     {subject.trim() !== '' && (
                       <p className="text-[11px] text-[#465940]/50 italic mt-1.5">
-                        „✓ გაეგზავნა" — ამ ზუსტი სათაურის მეილი უკვე წარმატებით გაეგზავნა ამ მისამართს (ვერ მონიშნავთ, რომ ორჯერ არ გაეგზავნოს). დიდი სიის რამდენიმე დღეზე გასანაწილებლად, დარჩენილებს ხვალ იმავე სათაურით გამოგზავნეთ.
+                        „✓ გაეგზავნა&quot; — ამ ზუსტი სათაურის მეილი უკვე წარმატებით გაეგზავნა ამ მისამართს (ვერ მონიშნავთ, რომ ორჯერ არ გაეგზავნოს). დიდი სიის რამდენიმე დღეზე გასანაწილებლად, დარჩენილებს ხვალ იმავე სათაურით გამოგზავნეთ.
                       </p>
                     )}
                   </div>
@@ -1075,6 +1097,15 @@ export default function EmailCenterClient({
                 />
               </div>
 
+              <div className="space-y-3">
+                <label className="block text-sm font-bold">ინგლისური სათაური
+                  <input className="input settings-input mt-2" value={editSubjectEn} onChange={e => setEditSubjectEn(e.target.value)} />
+                </label>
+                <label className="block text-sm font-bold">ინგლისური წერილი (HTML)
+                  <textarea className="input settings-input mt-2 min-h-[220px] font-mono text-xs" value={editBodyEn} onChange={e => setEditBodyEn(e.target.value)} />
+                </label>
+                <iframe title="English email preview" sandbox="" className="w-full h-64 rounded-xl border" srcDoc={editBodyEn.replaceAll('{{appUrl}}', window.location.origin)} />
+              </div>
               {/* Save result */}
               {templateSaveResult && (
                 <div className={`rounded-xl px-4 py-3 text-sm font-medium ${templateSaveResult.type === 'success' ? 'bg-green-50 text-green-700' : 'bg-red-50 text-red-700'}`}>

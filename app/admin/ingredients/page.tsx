@@ -12,7 +12,8 @@ const SEASON_ICON: Record<string, string> = {
   SPRING: '🌸', SUMMER: '☀️', AUTUMN: '🍂', WINTER: '❄️',
 };
 
-export default async function IngredientsPage({ searchParams }: { searchParams: { lang?: string } }) {
+export default async function IngredientsPage(props: { searchParams: Promise<{ lang?: string }> }) {
+  const searchParams = await props.searchParams;
   const locale = getAdminLocale(searchParams.lang);
   const d = adminDict[locale];
   const withLang = (href: string) => locale === 'en' ? `${href}?lang=en` : href;

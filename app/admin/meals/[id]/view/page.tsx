@@ -11,11 +11,12 @@ const nutrients = [
   { key: "carbsGrams", label: "Carbs / ნახშირწყლები", unit: "g" },
 ];
 
-export default async function ViewMealPage({
-  params,
-}: {
-  params: { id: string };
-}) {
+export default async function ViewMealPage(
+  props: {
+    params: Promise<{ id: string }>;
+  }
+) {
+  const params = await props.params;
   const dish = await prisma.dish.findUnique({
     where: { id: params.id },
   });

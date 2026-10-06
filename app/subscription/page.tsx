@@ -1,11 +1,14 @@
+import { getExperience } from '@/lib/experience';
+import { planPrice } from '@/lib/market';
 import { PLAN_AMOUNTS_BY_INTERVAL } from '@/lib/bog';
 import SubscriptionClient from './SubscriptionClient';
 
-export default function SubscriptionPage() {
+export default async function SubscriptionPage() {
+  const experience = await getExperience();
   const planAmounts = {
-    1: Number(PLAN_AMOUNTS_BY_INTERVAL[1] ?? 17),
-    3: Number(PLAN_AMOUNTS_BY_INTERVAL[3] ?? 39),
-    6: Number(PLAN_AMOUNTS_BY_INTERVAL[6] ?? 59),
+    1: planPrice(experience.market, 1),
+    3: planPrice(experience.market, 3),
+    6: planPrice(experience.market, 6),
   };
   return <SubscriptionClient planAmounts={planAmounts} />;
 }

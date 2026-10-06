@@ -2,12 +2,12 @@ import { prisma } from "@/lib/prisma";
 import { sendSubscriptionExpiringEmail } from "@/lib/email";
 import { NextRequest, NextResponse } from "next/server";
 
-const SECRET = process.env.CRON_SECRET || "mm2026";
+const SECRET = process.env.CRON_SECRET;
 const DAY_MS = 24 * 3600_000;
 
 export async function GET(req: NextRequest) {
-  const secret = req.nextUrl.searchParams.get("secret");
-  if (secret !== SECRET) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  const secret = req.headers.get('authorization')?.replace(/^Bearer /, '') || req.nextUrl.searchParams.get('secret');
+  if (!SECRET || secret !== SECRET) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
   // Warn 3 days before the actual next charge (subscriptionRenewsAt is the source of
   // truth the renewal cron itself uses — whether that charge is the end of a 7-day

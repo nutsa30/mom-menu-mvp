@@ -1,7 +1,10 @@
+import { paidApiError } from '@/lib/api-access';
 import { prisma } from '@/lib/prisma';
 import { NextResponse } from 'next/server';
 
 export async function GET() {
+  const accessError = await paidApiError();
+  if (accessError) return accessError;
   try {
     const dishes = await prisma.dish.findMany({
       orderBy: {

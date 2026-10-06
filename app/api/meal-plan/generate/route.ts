@@ -1,3 +1,5 @@
+import { paidApiError } from '@/lib/api-access';
+import { getSession } from '@/lib/auth';
 import { prisma } from '@/lib/prisma';
 import { NextResponse } from 'next/server';
 import { getSuitableAgeGroups } from '@/lib/meal';
@@ -111,6 +113,8 @@ function calculateScore(totals: any, targets: any) {
 }
 
 export async function POST(req: Request) {
+  const accessError = await paidApiError(true);
+  if (accessError) return accessError;
   try {
     const body = await req.json();
     const { childId } = body;
@@ -122,8 +126,9 @@ export async function POST(req: Request) {
       );
     }
 
-    const child = await prisma.child.findUnique({
-      where: { id: childId },
+    const session = await getSession();
+    const child = await prisma.child.findFirst({
+      where: { id: childId, userId: session!.id },
     });
 
     if (!child) {

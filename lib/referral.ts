@@ -1,3 +1,4 @@
+import { currencyFor, normalizeMarket, referralReward } from './market';
 import crypto from 'crypto';
 import { prisma } from './prisma';
 import { refundOrder } from './bog';
@@ -60,8 +61,9 @@ export async function ensureReferralCode(userId: string): Promise<string> {
 // the ledger rather than cached on User, so it can never drift out of sync with the audit
 // trail (EARNED entries positive, USED/REVERSED entries negative).
 export async function getAvailableCredit(ownerId: string): Promise<number> {
+  const owner = await prisma.user.findUnique({ where: { id: ownerId }, select: { market: true } });
   const agg = await prisma.creditLedgerEntry.aggregate({
-    where: { ownerId },
+    where: { ownerId, currency: currencyFor(normalizeMarket(owner?.market)) },
     _sum: { amount: true },
   });
   return Math.round((agg._sum.amount ?? 0) * 100) / 100;
@@ -159,6 +161,8 @@ export async function applyReferralAdjustments(opts: {
   // Credit consumption stays retry-safe: the USED entry is only written on refund success,
   // so a failed refund leaves the balance untouched for the next payment cycle to retry.
   if (isFirstPayment) {
+    const owner = await prisma.user.findUniqueOrThrow({ where: { id: user.referredByUserId! }, select: { market: true } });
+    const ownerMarket = normalizeMarket(owner.market);
     await prisma.$transaction([
       prisma.user.update({ where: { id: user.id }, data: { referralFirstPaymentAt: new Date() } }),
       prisma.creditLedgerEntry.create({
@@ -166,7 +170,8 @@ export async function applyReferralAdjustments(opts: {
           ownerId: user.referredByUserId!,
           referredUserId: user.id,
           type: 'EARNED',
-          amount: REFERRAL_CREDIT_AMOUNT,
+          amount: referralReward(ownerMarket),
+          currency: currencyFor(ownerMarket),
           sourcePaymentId: opts.paymentId,
           note: `${user.name} — პირველი წარმატებული გადახდა`,
         },
@@ -179,6 +184,7 @@ export async function applyReferralAdjustments(opts: {
       data: {
         ownerId: user.id,
         type: 'USED',
+        currency: currencyFor(normalizeMarket(user.market)),
         amount: -creditToApply,
         appliedPaymentId: opts.paymentId,
         note: 'გამოყენებულია საკუთარ გადახდაზე',
@@ -220,6 +226,7 @@ export async function reverseReferralCreditOnCancel(referredUserId: string): Pro
       referredUserId,
       type: 'REVERSED',
       amount: -earned.amount,
+      currency: earned.currency,
       sourcePaymentId: earned.sourcePaymentId,
       note: `${user.name} გააუქმა გამოწერა — კრედიტი გაუქმდა`,
     },

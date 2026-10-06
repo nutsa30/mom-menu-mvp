@@ -6,7 +6,14 @@ export default function LangSwitcher({ locale, variant = 'dark' }: { locale: str
   const router = useRouter();
   const pathname = usePathname();
 
-  const switchTo = (lang: string) => router.push(`${pathname}?lang=${lang}`);
+  const switchTo = async (lang: string) => {
+    const response = await fetch('/api/preferences', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ locale: lang }) });
+    if (!response.ok) return;
+    const url = new URL(window.location.href);
+    url.searchParams.set('lang', lang);
+    router.push(`${pathname}${url.search}${url.hash}`);
+    router.refresh();
+  };
 
   const activeClass = variant === 'dark'
     ? 'bg-[#F5F1E4] text-[#6F7A5C]'

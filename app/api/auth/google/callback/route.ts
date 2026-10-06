@@ -1,11 +1,22 @@
+import { getExperience } from '@/lib/experience';
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { setAuthCookie } from '@/lib/auth';
 import { ensureReferralCode } from '@/lib/referral';
+import { cookies } from 'next/headers';
+import { timingSafeEqual } from 'crypto';
 
 const BASE = process.env.NEXT_PUBLIC_APP_URL!;
 
 export async function GET(req: NextRequest) {
+  const cookieStore = await cookies();
+  const expectedState = cookieStore.get('google_oauth_state')?.value;
+  const state = req.nextUrl.searchParams.get('state');
+  cookieStore.delete('google_oauth_state');
+  if (!state || !expectedState || !/^[a-f0-9]{64}$/.test(state) || !/^[a-f0-9]{64}$/.test(expectedState) ||
+      !timingSafeEqual(Buffer.from(state), Buffer.from(expectedState))) {
+    return NextResponse.redirect(`${BASE}/login?error=google`);
+  }
   const code = req.nextUrl.searchParams.get('code');
   if (!code) {
     console.error('[google/callback] no code in request');
@@ -46,8 +57,8 @@ export async function GET(req: NextRequest) {
     return NextResponse.redirect(`${BASE}/login?error=google`);
   }
 
-  const { id: googleId, email, name } = await profileRes.json();
-  if (!email) {
+  const { id: googleId, email, name, verified_email } = await profileRes.json();
+  if (!googleId || !email || verified_email !== true) {
     console.error('[google/callback] no email in profile');
     return NextResponse.redirect(`${BASE}/login?error=google`);
   }
@@ -58,10 +69,13 @@ export async function GET(req: NextRequest) {
   });
 
   if (!user) {
+    const experience = await getExperience();
     user = await prisma.user.create({
+
       data: {
         email,
-        name: name || email.split('@')[0],
+        locale: experience.locale, market: experience.market, subscriptionCurrency: experience.currency,
+        timeZone: experience.market === 'GE' ? 'Asia/Tbilisi' : 'UTC',        name: name || email.split('@')[0],
         googleId,
         emailVerified: true,
       },

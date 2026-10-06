@@ -1,15 +1,19 @@
+import { localizedMetadata } from '@/lib/metadata';
 ﻿import type { Metadata } from 'next';
 import BackToRegisterButton from '@/components/BackToRegisterButton';
 import CopyEmailButton from '@/components/CopyEmailButton';
 
-export const metadata: Metadata = {
+const georgianMetadata: Metadata = {
   title: 'მომსახურების პირობები — mom menu',
   description: 'mom menu-ის გამოყენების პირობები და სერვისის პოლიტიკა.',
   openGraph: { title: 'მომსახურების პირობები — mom menu', url: '/terms' },
   robots: { index: false, follow: false },
 };
 
-export default function TermsPage({ searchParams }: { searchParams: { lang?: string; from?: string } }) {
+export async function generateMetadata(): Promise<Metadata> { return localizedMetadata(georgianMetadata, "Terms of service", "Terms for using MomMenu subscriptions and services.", "/terms"); }
+
+export default async function TermsPage(props: { searchParams: Promise<{ lang?: string; from?: string }> }) {
+  const searchParams = await props.searchParams;
   const locale = searchParams.lang === 'en' ? 'en' : 'ka';
   const ka = locale === 'ka';
   const fromRegister = searchParams.from === 'register';

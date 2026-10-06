@@ -1,7 +1,7 @@
 // ─────────────────────────────────────────────────────────────────────────────
 // Cache names — bump CACHE_VER to invalidate everything
 // ─────────────────────────────────────────────────────────────────────────────
-const CACHE_VER    = 'v5';
+const CACHE_VER    = 'v7-international';
 const STATIC_CACHE = `mommenu-static-${CACHE_VER}`;
 const PAGE_CACHE   = `mommenu-pages-${CACHE_VER}`;
 const IMG_CACHE    = `mommenu-img-${CACHE_VER}`;
@@ -35,7 +35,7 @@ self.addEventListener('activate', (event) => {
       .keys()
       .then((keys) =>
         Promise.all(
-          keys.filter((k) => !ALL_CACHES.includes(k)).map((k) => caches.delete(k))
+          keys.filter((k) => !ALL_CACHES.includes(k) && !k.startsWith(`${PAGE_CACHE}-`)).map((k) => caches.delete(k))
         )
       )
       .then(() => self.clients.claim())
@@ -48,6 +48,12 @@ self.addEventListener('activate', (event) => {
 self.addEventListener('fetch', (event) => {
   const { request } = event;
   const url = new URL(request.url);
+  // Clear personal page snapshots at authentication boundaries, including failed
+  // login attempts. Static assets and images remain available offline.
+  if (url.origin === self.location.origin && request.method === 'POST' && /^(?:\/api\/auth\/(?:login|logout)|\/login|\/register|\/verify-email)$/.test(url.pathname)) {
+    event.waitUntil(caches.keys().then(keys => Promise.all(keys.filter(key => key.startsWith(PAGE_CACHE)).map(key => caches.delete(key)))));
+    return;
+  }
 
   // Only intercept GET
   if (request.method !== 'GET') return;
@@ -117,23 +123,36 @@ async function networkFirst(request, cacheName) {
   try {
     const response = await fetch(request);
     if (response.ok) {
-      const cache = await caches.open(cacheName);
-      cache.put(request, response.clone());
+      const partition = response.headers.get('X-Mommenu-Cache-Key');
+      if (partition && /^[a-zA-Z0-9_-]+$/.test(partition)) {
+        const cache = await caches.open(`${cacheName}-${partition}`);
+        await cache.put(request, response.clone());
+        const state = await caches.open(cacheName);
+        await state.put('/__mommenu_offline_context', new Response(partition));
+      }
     }
     return response;
   } catch {
-    const cached = await caches.match(request);
+    const state = await caches.open(cacheName);
+    const context = await state.match('/__mommenu_offline_context');
+    const lastPartition = context ? await context.text() : null;
+    const requestedLocale = new URL(request.url).searchParams.get('lang');
+    const partition = lastPartition && (requestedLocale === 'ka' || requestedLocale === 'en')
+      ? lastPartition.replace(/-(?:ka|en)$/, `-${requestedLocale}`) : lastPartition;
+    const cache = partition ? await caches.open(`${cacheName}-${partition}`) : null;
+    const cached = cache ? await cache.match(request) : null;
     if (cached) return cached;
-    const shell = await caches.match('/');
+    const english = requestedLocale === 'en' || (requestedLocale !== 'ka' && partition?.endsWith('-en'));
+    const shell = cache ? await cache.match(`/?lang=${english ? 'en' : 'ka'}`) || await cache.match('/') : null;
     return (
       shell ||
       new Response(
         `<!DOCTYPE html>
-<html lang="ka">
+<html lang="${english ? 'en' : 'ka'}">
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width,initial-scale=1">
-  <title>MomMenu — ოფლაინი</title>
+  <title>MomMenu — ${english ? 'Offline' : 'ოფლაინი'}</title>
   <style>
     body { font-family: sans-serif; display: flex; align-items: center; justify-content: center;
            min-height: 100vh; margin: 0; background: #F5F1E8; color: #465940; text-align: center; }
@@ -144,9 +163,9 @@ async function networkFirst(request, cacheName) {
 </head>
 <body>
   <div>
-    <h1>🌐 ოფლაინი</h1>
-    <p>MomMenu ვერ დაუკავშირდა ინტერნეტს.<br>გთხოვ, კავშირი შეამოწმე.</p>
-    <button onclick="location.reload()">ხელახლა ცდა</button>
+    <h1>🌐 ${english ? 'You’re offline' : 'ოფლაინი'}</h1>
+    <p>${english ? 'MomMenu could not connect to the internet.<br>Please check your connection.' : 'MomMenu ვერ დაუკავშირდა ინტერნეტს.<br>გთხოვ, კავშირი შეამოწმე.'}</p>
+    <button onclick="location.reload()">${english ? 'Try again' : 'ხელახლა ცდა'}</button>
   </div>
 </body>
 </html>`,

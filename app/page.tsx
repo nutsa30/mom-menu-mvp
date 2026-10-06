@@ -1,12 +1,15 @@
+import { getExperience } from '@/lib/experience';
+import { planPrice } from '@/lib/market';
 import { prisma } from '@/lib/prisma';
 import HomeClient from './HomeClient';
 import { PLAN_AMOUNTS_BY_INTERVAL } from '@/lib/bog';
 import { getSession } from '@/lib/auth';
 import type { Metadata } from 'next';
+import { localizedMetadata } from '@/lib/metadata';
 
 const SITE_URL = process.env.NEXT_PUBLIC_APP_URL || 'https://mommenu.ge';
 
-export const metadata: Metadata = {
+const georgianMetadata: Metadata = {
   title: 'MomMenu - ჯანსაღი მენიუები ბავშვებისთვის',
   description: 'ასაკზე მორგებული მენიუები, რეცეპტები და კვების გეგმები ბავშვებისთვის. მარტივი დაგეგმვა მშობლებისთვის და დაბალანსებული კვება პატარებისთვის.',
   alternates: {
@@ -29,7 +32,10 @@ export const metadata: Metadata = {
   },
 };
 
+export async function generateMetadata() { return localizedMetadata(georgianMetadata, 'Mommenu — meal plans and recipes for little ones', 'Age-appropriate recipes, meal plans and shopping lists for babies and toddlers. Make feeding your child easier with Mommenu.'); }
+
 export default async function Home() {
+  const experience = await getExperience();
   const session = await getSession();
 
   const [raw, breakfast, lunch, snack, dinner, dishCount, recentBlogs, testimonials, ownTestimonial] = await Promise.all([
@@ -53,7 +59,7 @@ export default async function Home() {
       where: { approved: true },
       orderBy: { createdAt: 'desc' },
       take: 200,
-      select: { id: true, authorName: true, content: true },
+      select: { id: true, authorName: true, content: true, contentEn: true },
     }),
     session ? prisma.testimonial.findFirst({ where: { userId: session.id }, select: { id: true } }) : null,
   ]);
@@ -61,9 +67,9 @@ export default async function Home() {
   const { updatedAt, id, ...s } = raw;
 
   const planAmounts = {
-    1: Number(PLAN_AMOUNTS_BY_INTERVAL[1] ?? 17),
-    3: Number(PLAN_AMOUNTS_BY_INTERVAL[3] ?? 39),
-    6: Number(PLAN_AMOUNTS_BY_INTERVAL[6] ?? 59),
+    1: planPrice(experience.market, 1),
+    3: planPrice(experience.market, 3),
+    6: planPrice(experience.market, 6),
   };
 
   const websiteJsonLd = {
@@ -71,7 +77,7 @@ export default async function Home() {
     '@type': 'WebSite',
     name: 'mom menu',
     url: SITE_URL,
-    description: 'პერსონალური ყოველდღიური კვების გეგმა ბავშვებისთვის',
+    description: experience.locale === 'en' ? 'Personalised daily meal plans for children' : 'პერსონალური ყოველდღიური კვების გეგმა ბავშვებისთვის',
     inLanguage: ['ka', 'en'],
     potentialAction: {
       '@type': 'SearchAction',

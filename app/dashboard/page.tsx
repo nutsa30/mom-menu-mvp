@@ -4,11 +4,14 @@ import DashboardClient from '@/components/DashboardClient';
 import GaPageEvents from '@/components/GaPageEvents';
 import { Suspense } from 'react';
 import type { Metadata } from 'next';
+import { localizedMetadata } from '@/lib/metadata';
 
-export const metadata: Metadata = {
+const georgianMetadata: Metadata = {
   title: 'დეშბორდი — mom menu',
   robots: { index: false, follow: false },
 };
+
+export async function generateMetadata() { return localizedMetadata(georgianMetadata, 'Your dashboard — Mommenu', 'Your child’s recipes, meal plan and feeding history.', '/dashboard'); }
 
 export default async function DashboardPage() {
   const session = await requireUser();

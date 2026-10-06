@@ -4,7 +4,7 @@ import { useState, useRef } from 'react';
 import { updateHomePage } from './actions';
 import { uploadImage } from '@/lib/uploadImage';
 
-type S = Record<string, string | number>;
+type S = Record<string, string | number | null>;
 
 const TABS = ['hero', 'features', 'samples', 'pricing'] as const;
 type Tab = typeof TABS[number];
@@ -216,7 +216,7 @@ export default function HomepageAdminClient({ settings }: { settings: S }) {
                       className="w-28 border border-[#465940]/20 rounded-xl px-3 py-2 text-sm text-[#465940] bg-white focus:outline-none focus:border-[#465940]" />
                     {s[`plan${i}SalePrice`] ? (
                       <span className="text-xs bg-[#465940] text-[#FDFBF0] px-2 py-1 rounded-full font-bold">
-                        -{Math.round((1 - s[`plan${i}SalePrice`] / s[`plan${i}Price`]) * 100)}%
+                        -{Math.round((1 - Number(s[`plan${i}SalePrice`]) / Number(s[`plan${i}Price`])) * 100)}%
                       </span>
                     ) : null}
                     {s[`plan${i}SalePrice`] ? (

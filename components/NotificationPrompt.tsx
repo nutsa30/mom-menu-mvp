@@ -1,4 +1,6 @@
 'use client';
+import Copy, { useCopy } from '@/components/Copy';
+
 
 import { useState, useEffect, useCallback } from 'react';
 
@@ -47,6 +49,7 @@ function snooze() {
 const DISABLED = true;
 
 export default function NotificationPrompt() {
+  const copy = useCopy();
   const [show, setShow] = useState(false);
 
   useEffect(() => {
@@ -84,7 +87,7 @@ export default function NotificationPrompt() {
     <div
       role="dialog"
       aria-modal="true"
-      aria-label="შეტყობინებების ნებართვა"
+      aria-label={copy("შეტყობინებების ნებართვა")}
       style={{
         position: 'fixed',
         top: '50%',
@@ -103,7 +106,7 @@ export default function NotificationPrompt() {
 
       <button
         onClick={dismiss}
-        aria-label="დახურვა"
+        aria-label={copy("დახურვა")}
         style={{
           position: 'absolute',
           top: '0.75rem',
@@ -122,17 +125,11 @@ export default function NotificationPrompt() {
 
       {/* Header */}
       <div style={{ marginBottom: '1rem' }}>
-        <div style={{ fontWeight: 900, color: '#6F7A5C', fontSize: '0.95rem', lineHeight: 1.2 }}>
-          ყოველდღიური შეხსენება
-        </div>
-        <div style={{ fontSize: '0.73rem', color: '#6F7A5C', opacity: 0.55, marginTop: '0.15rem' }}>
-          MomMenu — კვების გეგმა
-        </div>
+        <div style={{ fontWeight: 900, color: '#6F7A5C', fontSize: '0.95rem', lineHeight: 1.2 }}> <Copy>{"ყოველდღიური შეხსენება"}</Copy> </div>
+        <div style={{ fontSize: '0.73rem', color: '#6F7A5C', opacity: 0.55, marginTop: '0.15rem' }}> <Copy>{"MomMenu — კვების გეგმა"}</Copy> </div>
       </div>
 
-      <p style={{ margin: '0 0 0.75rem', color: '#6F7A5C', fontSize: '0.85rem', lineHeight: 1.6, opacity: 0.85 }}>
-        ჩართე შეტყობინება და ყოველდღე დროულად ჩაფიქრდი, რა გააჭამო პატარას.
-      </p>
+      <p style={{ margin: '0 0 0.75rem', color: '#6F7A5C', fontSize: '0.85rem', lineHeight: 1.6, opacity: 0.85 }}> <Copy>{"ჩართე შეტყობინება და ყოველდღე დროულად ჩაფიქრდი, რა გააჭამო პატარას."}</Copy> </p>
 
       {/* Benefit list */}
       <ul style={{ listStyle: 'none', padding: 0, margin: '0 0 1.2rem', display: 'flex', flexDirection: 'column', gap: '0.3rem' }}>
@@ -162,9 +159,7 @@ export default function NotificationPrompt() {
             fontSize: '0.82rem',
             cursor: 'pointer',
           }}
-        >
-          გვიანდელ
-        </button>
+        > <Copy>{"გვიანდელ"}</Copy> </button>
         <button
           onClick={enable}
           style={{
@@ -178,9 +173,7 @@ export default function NotificationPrompt() {
             fontSize: '0.82rem',
             cursor: 'pointer',
           }}
-        >
-          ✓ ჩართე შეტყობინება
-        </button>
+        > <Copy>{"✓ ჩართე შეტყობინება"}</Copy> </button>
       </div>
     </div>
   );

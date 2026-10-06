@@ -1,7 +1,10 @@
+import { adminWriteError } from '@/lib/api-access';
 import { NextResponse } from "next/server";
 import { prisma, withRetry } from "@/lib/prisma";
 
 export async function POST(req: Request) {
+  const accessError = await adminWriteError(req);
+  if (accessError) return accessError;
   try {
     const body = await req.json();
 

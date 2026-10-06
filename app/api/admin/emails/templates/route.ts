@@ -2,6 +2,7 @@ import { prisma } from "@/lib/prisma";
 import { getSession } from "@/lib/auth";
 import { TEMPLATE_DEFAULTS } from "@/lib/email";
 import { NextResponse } from "next/server";
+import { ENGLISH_EMAILS } from '@/lib/email-en';
 
 const TEMPLATE_KEYS = [
   "welcome",
@@ -24,6 +25,7 @@ const DISABLEABLE_KEYS = ["subscription_expiring", "weekly_menu", "new_blog", "b
 async function adminGuard() {
   const session = await getSession();
   if (!session || session.role !== "ADMIN") return null;
+  if (!await prisma.user.findFirst({ where: { id: session.id, role: 'ADMIN' }, select: { id: true } })) return null;
   return session;
 }
 
@@ -42,11 +44,14 @@ export async function GET() {
           data: {
             key,
             subjectKa: defaults.subject,
-            subjectEn: defaults.subject,
+            subjectEn: ENGLISH_EMAILS[key].subject,
             bodyKa: defaults.body,
-            bodyEn: defaults.body,
+            bodyEn: ENGLISH_EMAILS[key].body,
           },
         });
+      }
+      if (!existing.subjectEn.trim() || !existing.bodyEn.trim() || /[\u10A0-\u10FF]/.test(existing.subjectEn + existing.bodyEn)) {
+        await prisma.emailTemplate.update({ where: { key }, data: { subjectEn: ENGLISH_EMAILS[key].subject, bodyEn: ENGLISH_EMAILS[key].body } });
       }
       // Reset if stale/short OR if body contains old resetUrl pattern
       const isStale = existing.bodyKa.length < defaults.body.length * 0.5
@@ -72,16 +77,24 @@ export async function GET() {
 // Content edits (subjectKa+bodyKa together) and the on/off toggle (enabled alone) both go
 // through this one PUT — pass whichever of the two you're changing.
 export async function PUT(req: Request) {
+  if (req.headers.get('origin') !== new URL(req.url).origin) return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
   const session = await adminGuard();
   if (!session) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
-  const { key, subjectKa, bodyKa, enabled } = await req.json();
+  const { key, subjectKa, bodyKa, subjectEn, bodyEn, enabled } = await req.json();
 
   if (!key || !TEMPLATE_KEYS.includes(key)) {
     return NextResponse.json({ error: "Invalid template key" }, { status: 400 });
   }
 
-  const data: { subjectKa?: string; bodyKa?: string; enabled?: boolean } = {};
+  const data: { subjectKa?: string; bodyKa?: string; subjectEn?: string; bodyEn?: string; enabled?: boolean } = {};
+  if (subjectEn !== undefined || bodyEn !== undefined) {
+    if (typeof subjectEn !== 'string' || typeof bodyEn !== 'string' || !subjectEn.trim() || !bodyEn.trim() || /[\u10A0-\u10FF]/.test(subjectEn + bodyEn)) {
+      return NextResponse.json({ error: 'Complete English subject and body are required' }, { status: 400 });
+    }
+    data.subjectEn = subjectEn;
+    data.bodyEn = bodyEn;
+  }
 
   if (subjectKa !== undefined || bodyKa !== undefined) {
     if (!subjectKa?.trim() || !bodyKa?.trim()) {

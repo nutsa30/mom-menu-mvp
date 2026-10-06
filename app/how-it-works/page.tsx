@@ -1,9 +1,10 @@
+import { localizedMetadata } from '@/lib/metadata';
 import { getAdminLocale } from '@/lib/adminI18n';
 import { prisma } from '@/lib/prisma';
 import { getSession } from '@/lib/auth';
 import type { Metadata } from 'next';
 
-export const metadata: Metadata = {
+const georgianMetadata: Metadata = {
   title: 'როგორ მუშაობს — mom menu',
   description: 'სამი მარტივი ნაბიჯი: დაარეგისტრირე ბავშვი, მიუთითე ალერგენები და გემოვნება — და მიიღე პერსონალური კვების გეგმა. გაეცანი როგორ მუშაობს mom menu.',
   alternates: {
@@ -18,7 +19,10 @@ export const metadata: Metadata = {
   },
 };
 
-export default async function HowItWorksPage({ searchParams }: { searchParams: { lang?: string } }) {
+export async function generateMetadata(): Promise<Metadata> { return localizedMetadata(georgianMetadata, "How MomMenu works", "Plan age-appropriate meals, discover recipes and prepare your shopping list.", "/how-it-works"); }
+
+export default async function HowItWorksPage(props: { searchParams: Promise<{ lang?: string }> }) {
+  const searchParams = await props.searchParams;
   const locale = getAdminLocale(searchParams.lang) as 'ka' | 'en';
   const session = await getSession();
 

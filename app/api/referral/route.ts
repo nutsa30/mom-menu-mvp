@@ -3,6 +3,7 @@ import { getSession } from '@/lib/auth';
 import { ensureReferralCode, getAvailableCredit, hasPendingReferralDiscount, REFERRAL_CREDIT_AMOUNT, REFERRAL_DISCOUNT_PERCENT } from '@/lib/referral';
 import { PLAN_AMOUNTS_BY_INTERVAL, BillingInterval } from '@/lib/bog';
 import { NextResponse } from 'next/server';
+import { currencyFor, normalizeMarket, planPrice, referralReward } from '@/lib/market';
 
 // GET /api/referral — everything the "პრომოკოდი" dashboard tab needs: the user's own
 // code, invite stats, and their current credit balance/next-charge estimate. All numbers
@@ -24,7 +25,7 @@ export async function GET() {
   const [invitedCount, paidCount, ledgerAgg, referredByOwner] = await Promise.all([
     prisma.user.count({ where: { referredByUserId: user!.id } }),
     prisma.user.count({ where: { referredByUserId: user!.id, referralFirstPaymentAt: { not: null } } }),
-    prisma.creditLedgerEntry.groupBy({ by: ['type'], where: { ownerId: user!.id }, _sum: { amount: true } }),
+    prisma.creditLedgerEntry.groupBy({ by: ['type'], where: { ownerId: user!.id, currency: currencyFor(normalizeMarket(user!.market)) }, _sum: { amount: true } }),
     user!.referredByUserId
       ? prisma.user.findUnique({ where: { id: user!.referredByUserId }, select: { referralCode: true, name: true } })
       : null,
@@ -38,7 +39,7 @@ export async function GET() {
   const availableCredit = await getAvailableCredit(user!.id);
 
   const interval = user!.billingIntervalMonths as BillingInterval | null;
-  const packagePrice = interval ? Number(PLAN_AMOUNTS_BY_INTERVAL[interval] ?? 0) : null;
+  const packagePrice = interval ? user!.subscriptionAmount ?? planPrice(normalizeMarket(user!.market), interval) : null;
   const isActiveSubscriber = user!.subscriptionStatus === 'FULL_PLAN' && !!user!.bogParentOrderId;
   // A referred user still awaiting their first real charge (e.g. currently in the 3-day
   // trial) is guaranteed 10% off that charge — factor it in here too, or this "next
@@ -53,7 +54,8 @@ export async function GET() {
   return NextResponse.json({
     code: user!.referralCode,
     discountPercent: REFERRAL_DISCOUNT_PERCENT,
-    creditPerReferral: REFERRAL_CREDIT_AMOUNT,
+    creditPerReferral: referralReward(normalizeMarket(user!.market)),
+    currency: currencyFor(normalizeMarket(user!.market)),
     invitedCount,
     paidCount,
     availableCredit,

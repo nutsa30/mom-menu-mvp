@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { chargeSubscriptionToken, PLAN_AMOUNTS } from '@/lib/quickpay';
 
-const SECRET = process.env.CRON_SECRET || 'mm2026';
+const SECRET = process.env.CRON_SECRET;
 
 const PLAN_LABELS: Record<string, string> = {
   RECIPE_PLAN: 'MomMenu — რეცეპტების წვდომა (განახლება)',
@@ -13,7 +13,7 @@ const PLAN_LABELS: Record<string, string> = {
 // The actual result (paid/failed) comes back asynchronously via the webhook —
 // this endpoint only triggers the charge.
 export async function GET(req: NextRequest) {
-  const secret = req.nextUrl.searchParams.get('secret');
+  const secret = req.headers.get('authorization')?.replace(/^Bearer /, '') || req.nextUrl.searchParams.get('secret');
   if (!SECRET || secret !== SECRET) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   }

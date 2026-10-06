@@ -1,218 +1,14 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getSession } from '@/lib/auth';
 import { prisma } from '@/lib/prisma';
+import { hasPaidAccess } from '@/lib/paid-access';
 import { getSuitableAgeGroups } from '@/lib/meal';
+import { getExperience } from '@/lib/experience';
+import { localizedField } from '@/lib/content';
+import { ingredientQuantity } from '@/lib/measurements';
+import { aggregateIngredients, expandParenthetical, normalizeName } from '@/lib/shopping-list';
 
 const MEAL_TYPES = ['BREAKFAST', 'SNACK', 'LUNCH', 'DINNER'] as const;
-
-// ── Ingredient aggregation ─────────────────────────────────────────────────
-const GEO_NUMS: [string, number][] = [
-  ['ნახევარი', 0.5], ['მეოთხედი', 0.25], ['ერთი', 1], ['ორი', 2],
-  ['სამი', 3], ['ოთხი', 4], ['ხუთი', 5], ['ექვსი', 6], ['შვიდი', 7],
-  ['რვა', 8], ['ცხრა', 9], ['ათი', 10],
-];
-const FRAC: Record<string, number> = { '½': 0.5, '¼': 0.25, '¾': 0.75, '⅓': 1/3, '⅔': 2/3 };
-
-// Maps raw unit strings → canonical key
-const UNIT_CANON: Record<string, string> = {
-  'გ': 'გ', 'გრ': 'გ', 'გრამი': 'გ', 'გ.': 'გ',
-  'კგ': 'კგ', 'კილოგრამი': 'კგ', 'კილო': 'კგ',
-  'მლ': 'მლ', 'მილილიტრი': 'მლ',
-  'ლ': 'ლ', 'ლიტრი': 'ლ',
-  'ჭიქა': 'ჭ', 'ჭ': 'ჭ',
-  'სუფ.კ': 'სკ', 'სუფ/კ': 'სკ', 'სტბ': 'სკ', 'ს/კ': 'სკ', 'ს.კ': 'სკ',
-  'ჩ.კ': 'ჩკ', 'ჩ/კ': 'ჩკ', 'ჩ': 'ჩკ',
-  'ცალი': 'ც', 'ც': 'ც', 'ც.': 'ც',
-  'ნაჭერი': 'ნაჭ', 'ნაჭ': 'ნაჭ',
-};
-const UNIT_DISPLAY: Record<string, string> = {
-  'გ': 'გ', 'კგ': 'კგ', 'მლ': 'მლ', 'ლ': 'ლ',
-  'ჭ': 'ჭიქა', 'სკ': 'სუფ.კ', 'ჩკ': 'ჩ.კ', 'ც': 'ც', 'ნაჭ': 'ნაჭერი',
-};
-
-// Descriptive words that precede an ingredient name but aren't part of its identity
-// e.g. "მწიფე ბანანი" (ripe banana) should still be grouped with plain "ბანანი".
-// Prep-state words (boiled/lean/peeled) don't change what you'd buy at the store
-// either, so they're stripped the same way for shopping-list purposes — the
-// recipe's own ingredient display keeps them, only this aggregation drops them.
-const LEADING_DESCRIPTORS = ['მწიფე', 'რბილი', 'მოხარშული', 'მჭლე', 'გაფცქვნილი'];
-
-// Ground flour is made from the whole grain you'd buy anyway — don't list it separately
-const FLOUR_MERGE: Record<string, string> = {
-  'შვრიის ფქვილი': 'შვრია',
-  'წიწიბურას ფქვილი': 'წიწიბურა',
-};
-
-// Same ingredient named differently across recipes (different cut/spelling/case) —
-// merge to one canonical shopping-list item
-const SYNONYM_MERGE: Record<string, string> = {
-  'ქათამი': 'ქათმის ფილე',
-  'ქათმის ხორცი': 'ქათმის ფილე',
-  'პომიდვრი': 'პომიდორი',
-  'ტომატი': 'პომიდორი',
-  'ლაზანიას ფირფიტები': 'ლაზანიის ფირფიტები',
-};
-
-function fmtNum(n: number): string {
-  if (Number.isInteger(n)) return `${n}`;
-  const whole = Math.floor(n);
-  const frac = n - whole;
-  const fracStr = frac === 0.5 ? '½' : frac === 0.25 ? '¼' : frac === 0.75 ? '¾' : frac.toFixed(1).slice(1);
-  return whole > 0 ? `${whole}${fracStr}` : fracStr;
-}
-
-function parseNum(token: string): number {
-  if (FRAC[token] !== undefined) return FRAC[token];
-  if (token.includes('/')) {
-    const [n, d] = token.split('/').map((t) => parseFloat(t));
-    return d ? n / d : (n || 0);
-  }
-  return parseFloat(token) || 0;
-}
-
-const NUM_TOKEN = '[\\d.\\/½¼¾⅓⅔]+';
-
-function normalizeName(name: string): string {
-  // Drop trailing clarifications like "ვაშლი, გაფცქვნილი"
-  let n = name.split(',')[0].trim();
-  // Strip ALL leading descriptors, not just one — some ingredients stack two
-  // (e.g. "გაფცქვნილი მწიფე მსხალი" / peeled ripe pear)
-  let strippedAny = true;
-  while (strippedAny) {
-    strippedAny = false;
-    for (const d of LEADING_DESCRIPTORS) {
-      if (n.startsWith(d + ' ')) { n = n.slice(d.length + 1).trim(); strippedAny = true; break; }
-    }
-  }
-  // "წყალი ან რძე" (water or milk) — water is free, list the actual thing to buy
-  if (n.startsWith('წყალი ან ')) n = n.slice('წყალი ან '.length).trim();
-  if (FLOUR_MERGE[n]) n = FLOUR_MERGE[n];
-  if (SYNONYM_MERGE[n]) n = SYNONYM_MERGE[n];
-  return n;
-}
-
-// A generic label with a comma-separated list of the actual items in parens
-// (e.g. "ბოსტნეული (ყაბაყი, სტაფილო) - 60 გ" / "vegetables (zucchini, carrot)")
-// isn't itself something you can buy — expand it into the specific items instead.
-// Guarded on "," specifically so this doesn't fire on the other parenthetical
-// uses in this data: a weight clarification like "1 მწიფე (60 გ)" (no comma),
-// or "/"-separated alternatives like "თესლები (სეზამი/ჩია/სელი)" (pick one,
-// not "buy all three") — both fall through unchanged.
-function expandParenthetical(raw: string): string[] {
-  const m = raw.match(/^(.+?)\s*\(([^)]+)\)\s*(?:-.*)?$/);
-  if (!m) return [raw];
-  const items = m[2].split(',').map((s) => s.trim()).filter(Boolean);
-  if (items.length < 2) return [raw];
-  return items; // bare — no per-item quantity to split, just need it on the list
-}
-
-// Data format is consistently "სახელი - რაოდენობა", e.g. "ბანანი - 1/2 ცალი",
-// "ბროკოლი - 80-100 გ", "ბანანი - 1 მწიფე". Quantity comes AFTER the name, not before.
-function parseIng(raw: string): { key: string; display: string; qty: number; unit: string } {
-  // Strip parenthetical notes  e.g. "(სურვილისამებრ)"
-  const s = raw.trim().replace(/\s*\([^)]*\)/g, '').trim();
-
-  const dashIdx = s.indexOf(' - ');
-  let rawNamePart: string;
-  let amountPart: string;
-  if (dashIdx !== -1) {
-    rawNamePart = s.slice(0, dashIdx);
-    amountPart = s.slice(dashIdx + 3).trim();
-  } else {
-    // No " - " separator — some recipes write the quantity without it
-    // ("ბანანი 89 გ", "ბანანი: 118 გრამი"). Split at the first digit instead of
-    // treating the whole string as the name, so these still merge with the same
-    // ingredient written the usual way ("ბანანი - 89 გ") instead of showing up as
-    // a separate "different" item on the shopping list.
-    const digitIdx = s.search(/[\d½¼¾⅓⅔]/);
-    if (digitIdx === -1) {
-      rawNamePart = s;
-      amountPart = '';
-    } else {
-      rawNamePart = s.slice(0, digitIdx).replace(/[-:–—\s]+$/, '');
-      amountPart = s.slice(digitIdx).trim();
-    }
-  }
-  const namePart = normalizeName(rawNamePart);
-
-  const key = namePart.toLowerCase();
-  const display = namePart;
-
-  if (!amountPart) return { key, display, qty: 0, unit: '' };
-
-  const rangeRe = new RegExp(`^(${NUM_TOKEN})\\s*-\\s*(${NUM_TOKEN})\\s*(\\S*)$`);
-  const singleRe = new RegExp(`^(${NUM_TOKEN})\\s*(\\S*)$`);
-
-  let m = amountPart.match(rangeRe);
-  if (m) {
-    const qty = (parseNum(m[1]) + parseNum(m[2])) / 2;
-    const unitTok = m[3].toLowerCase().replace(/\.+$/, '');
-    const unit = unitTok ? (UNIT_CANON[unitTok] ?? 'ც') : 'ც';
-    return { key, display, qty, unit };
-  }
-
-  m = amountPart.match(singleRe);
-  if (m) {
-    const qty = parseNum(m[1]);
-    const unitTok = m[2].toLowerCase().replace(/\.+$/, '');
-    const unit = unitTok ? (UNIT_CANON[unitTok] ?? 'ც') : 'ც';
-    return { key, display, qty, unit };
-  }
-
-  if (amountPart.toLowerCase().startsWith('ნახევარი')) return { key, display, qty: 0.5, unit: 'ც' };
-
-  // Try Georgian number words at start (legacy free-text ingredients)
-  const lc = amountPart.toLowerCase();
-  for (const [word, val] of GEO_NUMS) {
-    if (lc === word || lc.startsWith(word + ' ')) return { key, display, qty: val, unit: 'ც' };
-  }
-
-  // No parseable quantity (e.g. "საჭიროებისამებრ" / "სურვილისამებრ")
-  return { key, display, qty: 0, unit: '' };
-}
-
-interface IngredientItem {
-  display: string;  // ingredient name
-  amount: string;   // e.g. "3 ც", "150 გ", "×3", ""
-}
-
-function aggregateIngredients(
-  all: string[],
-  seasonalFruits: Map<string, Set<string>>,
-  currentSeason: string,
-): IngredientItem[] {
-  const groups = new Map<string, { display: string; sums: Map<string, number>; bare: number }>();
-
-  for (const raw of all) {
-    const p = parseIng(raw);
-    // Only known fruits get season-gated — vegetables and everything else always show
-    const fruitSeasons = seasonalFruits.get(p.key);
-    if (fruitSeasons && !fruitSeasons.has(currentSeason)) continue;
-    if (!groups.has(p.key)) groups.set(p.key, { display: p.display, sums: new Map(), bare: 0 });
-    const g = groups.get(p.key)!;
-    if (p.qty > 0) {
-      g.sums.set(p.unit, (g.sums.get(p.unit) || 0) + p.qty);
-    } else {
-      g.bare++;
-    }
-  }
-
-  const result: IngredientItem[] = [];
-  Array.from(groups.values()).forEach((g) => {
-    if (g.sums.size === 0) {
-      result.push({ display: g.display, amount: g.bare > 1 ? `×${g.bare}` : '' });
-    } else {
-      const parts: string[] = Array.from(g.sums.entries()).map(([unitKey, total]) => {
-        const n = fmtNum(total);
-        const u = unitKey ? (UNIT_DISPLAY[unitKey] || unitKey) : 'ც';
-        return `${n} ${u}`;
-      });
-      result.push({ display: g.display, amount: parts.join(' + ') });
-    }
-  });
-
-  return result.sort((a, b) => a.display.localeCompare(b.display, 'ka'));
-}
 
 function planDays(startDate: string): string[] {
   return Array.from({ length: 7 }, (_, i) => {
@@ -239,11 +35,12 @@ function pickDish(dishes: any[], likes: string[], dislikes: string[]) {
 // GET /api/shopping-list?childId=X
 // Generates 7 days of meal plans and returns deduplicated ingredient list
 export async function GET(req: NextRequest) {
+  const { locale, units } = await getExperience();
   const session = await getSession();
   if (!session) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
 
-  const dbUser = await prisma.user.findUnique({ where: { id: session.id }, select: { subscriptionStatus: true } });
-  if (dbUser?.subscriptionStatus !== 'FULL_PLAN') {
+  const dbUser = await prisma.user.findUnique({ where: { id: session.id }, select: { subscriptionStatus: true, role: true, isBlocked: true, paymentFailedAt: true, subscriptionRenewsAt: true } });
+  if (!hasPaidAccess(dbUser, true)) {
     return NextResponse.json({ error: 'FULL_PLAN required' }, { status: 403 });
   }
 
@@ -263,8 +60,8 @@ export async function GET(req: NextRequest) {
     : month <= 7 ? 'SUMMER'
     : 'AUTUMN';
 
-  const fruitRows = await prisma.ingredient.findMany({ where: { type: 'FRUIT' }, select: { titleKa: true, seasons: true } });
-  const seasonalFruits = new Map(fruitRows.map((f) => [f.titleKa.toLowerCase(), new Set(f.seasons)]));
+  const fruitRows = await prisma.ingredient.findMany({ where: { type: 'FRUIT' }, select: { titleKa: true, titleEn: true, seasons: true } });
+  const seasonalFruits = new Map<string, Set<string>>(fruitRows.map((f) => [normalizeName(localizedField(f, 'title', locale)).toLowerCase(), new Set(f.seasons)]));
 
   const allIngredients: string[] = [];
   const days: { date: string; dishes: string[] }[] = [];
@@ -320,17 +117,26 @@ export async function GET(req: NextRequest) {
     const dayDishes: string[] = [];
     for (const log of logs) {
       if (log.dish?.ingredientsKa?.length) {
-        for (const ing of log.dish.ingredientsKa) allIngredients.push(...expandParenthetical(ing));
-        dayDishes.push(log.dish.titleKa);
+        for (const ing of localizedField(log.dish, 'ingredients', locale)) allIngredients.push(...expandParenthetical(ing));
+        dayDishes.push(localizedField(log.dish, 'title', locale));
       }
       if (log.ingredient?.titleKa) {
-        allIngredients.push(log.ingredient.titleKa);
-        dayDishes.push(log.ingredient.titleKa);
+        allIngredients.push(localizedField(log.ingredient, 'title', locale));
+        dayDishes.push(localizedField(log.ingredient, 'title', locale));
       }
     }
     days.push({ date, dishes: dayDishes });
   }
 
   const ingredients = aggregateIngredients(allIngredients, seasonalFruits, currentSeason);
+  if (locale === 'en') {
+    const unitNames: Record<string, string> = { 'კგ': 'kg', 'მლ': 'ml', 'გ': 'g', 'ლ': 'l', 'ჭიქა': 'cups', 'სუფ.კ': 'tbsp', 'ჩ.კ': 'tsp', 'ც': 'pcs', 'ნაჭერი': 'slices', 'მწიკვი': 'pinches' };
+    for (const item of ingredients) {
+      item.amount = ingredientQuantity(item.amount.replace(/კგ|მლ|გ|ლ|ჭიქა|სუფ\.კ|ჩ\.კ|ც|ნაჭერი|მწიკვი/g, unit => unitNames[unit]), units);
+    }
+    ingredients.sort((a, b) => a.display.localeCompare(b.display, 'en'));
+  } else if (units !== 'metric') {
+    for (const item of ingredients) item.amount = ingredientQuantity(item.amount, units);
+  }
   return NextResponse.json({ ingredients, days });
 }

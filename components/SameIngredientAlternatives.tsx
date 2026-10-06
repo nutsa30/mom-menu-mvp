@@ -1,4 +1,9 @@
 'use client';
+import { useExperience } from './ExperienceProvider';
+import { localizedField } from '@/lib/content';
+
+import Copy, { useCopy } from '@/components/Copy';
+
 
 import { useEffect, useState } from 'react';
 
@@ -18,6 +23,7 @@ export default function SameIngredientAlternatives({
   dishId: string;
   onPick: (dish: any) => void;
 }) {
+  const { locale: contentLocale } = useExperience();
   const [alternatives, setAlternatives] = useState<any[] | null>(null);
 
   useEffect(() => {
@@ -34,7 +40,7 @@ export default function SameIngredientAlternatives({
 
   return (
     <div className="mt-2">
-      <p className="text-[11px] font-bold text-[#465940]/60 mb-1.5">იგივე პროდუქტი — სხვანაირად?</p>
+      <p className="text-[11px] font-bold text-[#465940]/60 mb-1.5"> <Copy>{"იგივე პროდუქტი — სხვანაირად?"}</Copy> </p>
       <div className="flex gap-2 overflow-x-auto pb-1 -mx-1 px-1">
         {alternatives.map((d) => (
           <button
@@ -45,7 +51,7 @@ export default function SameIngredientAlternatives({
             <div className="w-20 h-20 rounded-2xl overflow-hidden bg-[#f0f8ee] group-hover:ring-2 group-hover:ring-[#465940]/40 transition">
               {d.imageUrl ? <img src={d.imageUrl} className="w-full h-full object-cover" alt="" /> : <div className="w-full h-full bg-[#465940]/10" />}
             </div>
-            <p className="mt-1 text-[11px] font-bold text-[#465940] leading-snug line-clamp-2">{d.titleKa}</p>
+            <p className="mt-1 text-[11px] font-bold text-[#465940] leading-snug line-clamp-2">{localizedField(d, 'title', contentLocale)}</p>
           </button>
         ))}
       </div>

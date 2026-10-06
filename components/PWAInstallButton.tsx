@@ -1,4 +1,6 @@
 'use client';
+import Copy, { useCopy } from '@/components/Copy';
+
 
 import { useState, useEffect } from 'react';
 
@@ -71,7 +73,7 @@ export default function PWAInstallButton({ ka }: { ka: boolean }) {
         }}
       >
         <span style={{ fontWeight: 700, fontSize: '0.85rem', color: '#F5F1E4' }}>
-          {ka ? 'დაამატე MomMenu აპლიკაციად' : 'Install MomMenu App'}
+          <Copy>{ka ? 'დაამატე MomMenu აპლიკაციად' : 'Install MomMenu App'}</Copy>
         </span>
 
         <span style={{
@@ -79,7 +81,7 @@ export default function PWAInstallButton({ ka }: { ka: boolean }) {
           borderRadius: '999px', padding: '3px 13px',
           fontSize: '0.73rem', fontWeight: 800, flexShrink: 0,
         }}>
-          {ka ? 'დაამატე' : 'Install'}
+          <Copy>{ka ? 'დაამატე' : 'Install'}</Copy>
         </span>
 
         <button
@@ -112,19 +114,19 @@ export default function PWAInstallButton({ ka }: { ka: boolean }) {
             </div>
 
             <p style={{ fontWeight: 800, color: '#6F7A5C', fontSize: '1rem', margin: '0 0 0.35rem' }}>
-              {ka ? 'Home Screen-ზე დასამატებლად:' : 'To add to Home Screen:'}
+              <Copy>{ka ? 'Home Screen-ზე დასამატებლად:' : 'To add to Home Screen:'}</Copy>
             </p>
             <p style={{ color: '#6F7A5C', opacity: 0.65, fontSize: '0.9rem', lineHeight: 1.7, margin: 0 }}>
-              {ka
+              <Copy>{ka
                 ? '1. ქვემოთ Share ღილაკზე დააჭირე\n2. "Add to Home Screen" აირჩიე'
-                : '1. Tap Share at the bottom\n2. Select "Add to Home Screen"'}
+                : '1. Tap Share at the bottom\n2. Select "Add to Home Screen"'}</Copy>
             </p>
 
             <button
               onClick={() => setIosModal(false)}
               style={{ marginTop: '1.4rem', width: '100%', background: '#6F7A5C', color: '#F5F1E4', border: 'none', borderRadius: '999px', padding: '13px', fontWeight: 800, fontSize: '0.9rem', cursor: 'pointer' }}
             >
-              {ka ? 'გასაგებია' : 'Got it'}
+              <Copy>{ka ? 'გასაგებია' : 'Got it'}</Copy>
             </button>
           </div>
         </div>

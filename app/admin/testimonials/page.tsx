@@ -1,3 +1,4 @@
+import TestimonialTranslation from '@/components/TestimonialTranslation';
 import { prisma } from '@/lib/prisma';
 import { ApproveTestimonialButton, DeleteTestimonialButton } from '@/components/AdminTestimonialActions';
 
@@ -36,6 +37,7 @@ export default async function AdminTestimonialsPage() {
                 </div>
               </div>
               <p className="text-sm text-[#465940]/80 leading-relaxed">{t.content}</p>
+              <TestimonialTranslation id={t.id} initial={t.contentEn} />
             </div>
           ))}
         </div>

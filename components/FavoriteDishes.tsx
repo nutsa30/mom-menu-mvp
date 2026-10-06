@@ -1,4 +1,9 @@
 'use client';
+import { useExperience } from './ExperienceProvider';
+import { localizedField } from '@/lib/content';
+
+import Copy, { useCopy } from '@/components/Copy';
+
 
 import { useEffect, useState } from 'react';
 import RecipeModal from './RecipeModal';
@@ -10,6 +15,7 @@ const card = 'bg-[#FDFBF0] rounded-2xl border border-[#465940]/10 shadow-sm';
 // DishVote) — no separate favorites-tracking system here, just a small always-visible
 // summary of what that data already says.
 export default function FavoriteDishes({ child }: { child: any }) {
+  const { locale: contentLocale } = useExperience();
   const [dishes, setDishes] = useState<any[] | null>(null);
   const [recipeModal, setRecipeModal] = useState<any | null>(null);
 
@@ -26,12 +32,10 @@ export default function FavoriteDishes({ child }: { child: any }) {
 
   return (
     <div className={`${card} p-5`}>
-      <h3 className="font-black text-[#465940] text-sm mb-3">{child.name}-ის საყვარელი კერძები ❤️</h3>
+      <h3 className="font-black text-[#465940] text-sm mb-3">{child.name}<Copy>{"-ის საყვარელი კერძები ❤️"}</Copy></h3>
 
       {dishes.length === 0 ? (
-        <p className="text-sm text-[#465940]/60">
-          ჯერ ცოტა მონაცემია ❤️ რაც უფრო ხშირად გამოიყენებ Mommenu-ს, მით უკეთ გაიცნობთ ერთმანეთს.
-        </p>
+        <p className="text-sm text-[#465940]/60"> <Copy>{"ჯერ ცოტა მონაცემია ❤️ რაც უფრო ხშირად გამოიყენებ Mommenu-ს, მით უკეთ გაიცნობთ ერთმანეთს."}</Copy> </p>
       ) : (
         <div className="flex gap-3 overflow-x-auto pb-1 -mx-1 px-1">
           {dishes.map((d) => (
@@ -40,7 +44,7 @@ export default function FavoriteDishes({ child }: { child: any }) {
               <div className="w-24 h-24 rounded-2xl overflow-hidden bg-[#f0f8ee] group-hover:ring-2 group-hover:ring-[#465940]/40 transition">
                 {d.imageUrl ? <img src={d.imageUrl} className="w-full h-full object-cover" alt="" /> : <div className="w-full h-full bg-[#465940]/10" />}
               </div>
-              <p className="mt-1.5 text-xs font-bold text-[#465940] leading-snug line-clamp-2">{d.titleKa}</p>
+              <p className="mt-1.5 text-xs font-bold text-[#465940] leading-snug line-clamp-2">{localizedField(d, 'title', contentLocale)}</p>
             </button>
           ))}
         </div>

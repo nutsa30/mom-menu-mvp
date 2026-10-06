@@ -1,0 +1,4 @@
+{
+  "path": "/api/cron/international-communications",
+  "schedule": "0 * * * *"
+}

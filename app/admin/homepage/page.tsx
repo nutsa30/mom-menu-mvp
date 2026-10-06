@@ -2,7 +2,7 @@ import { prisma } from '@/lib/prisma';
 import { requireAdmin } from '@/lib/auth';
 import HomepageAdminClient from './HomepageAdminClient';
 
-const HOMEPAGE_DEFAULTS: Record<string, string | number> = {
+const HOMEPAGE_DEFAULTS: Record<string, string | number | null> = {
   heroBadgeKa:      'შემდეგი თაობის კვება',
   heroBadgeEn:      'Nurturing the Next Generation',
   heroTitleKa:      'პერსონალური ყოველდღიური კვების გეგმა შენი ბავშვისთვის',

@@ -34,6 +34,8 @@ export async function POST(req: Request) {
       data: {
         name: pending.name, email, passwordHash: pending.passwordHash, emailVerified: true,
         bogTrialUsed: !!usedTrial,
+        locale: pending.locale, market: pending.market, timeZone: pending.timeZone,
+        subscriptionCurrency: pending.market === 'INTL' ? 'USD' : 'GEL',
       },
     });
     await prisma.pendingRegistration.delete({ where: { email } });

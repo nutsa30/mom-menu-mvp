@@ -145,7 +145,7 @@ export default function RichTextEditor({
   useEffect(() => {
     if (!editor) return;
     const cur = editor.getHTML();
-    if (value !== cur) editor.commands.setContent(value, false);
+    if (value !== cur) editor.commands.setContent(value, { emitUpdate: false });
   }, [value, editor]);
 
   const addLink = useCallback(() => {
@@ -239,7 +239,7 @@ export default function RichTextEditor({
         <Divider />
         <Btn active={editor.isActive('bulletList')} onClick={() => editor.chain().focus().toggleBulletList().run()} title="სია">• —</Btn>
         <Btn active={editor.isActive('orderedList')} onClick={() => editor.chain().focus().toggleOrderedList().run()} title="ნომრიანი სია">1.</Btn>
-        <Btn active={editor.isActive('blockquote')} onClick={() => editor.chain().focus().toggleBlockquote().run()} title="ციტატა">"</Btn>
+        <Btn active={editor.isActive('blockquote')} onClick={() => editor.chain().focus().toggleBlockquote().run()} title="ციტატა">&quot;</Btn>
         <Divider />
         <Btn active={editor.isActive('link')} onClick={addLink} title="ბმულის დამატება">🔗</Btn>
         {editor.isActive('link') && (

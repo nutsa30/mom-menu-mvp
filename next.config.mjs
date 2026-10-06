@@ -1,6 +1,8 @@
+import { fileURLToPath } from 'node:url';
 const nextConfig = {
+  outputFileTracingRoot: fileURLToPath(new URL('.', import.meta.url)),
   typescript: {
-    ignoreBuildErrors: true,
+    ignoreBuildErrors: false,
   },
   transpilePackages: [
     '@blocknote/core',

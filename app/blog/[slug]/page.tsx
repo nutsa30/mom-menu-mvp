@@ -4,13 +4,14 @@ import BlogViewTracker from '@/components/BlogViewTracker';
 import type { Metadata } from 'next';
 import { Suspense } from 'react';
 
-export async function generateMetadata({
-  params,
-  searchParams,
-}: {
-  params: { slug: string };
-  searchParams: { lang?: string };
-}): Promise<Metadata> {
+export async function generateMetadata(
+  props: {
+    params: Promise<{ slug: string }>;
+    searchParams: Promise<{ lang?: string }>;
+  }
+): Promise<Metadata> {
+  const searchParams = await props.searchParams;
+  const params = await props.params;
   const blog =
     (await prisma.blog.findUnique({ where: { slug: params.slug } })) ??
     (await prisma.blog.findUnique({ where: { id: params.slug } }));
@@ -40,13 +41,14 @@ export async function generateMetadata({
   };
 }
 
-export default async function BlogPostPage({
-  params,
-  searchParams,
-}: {
-  params: { slug: string };
-  searchParams: { lang?: string };
-}) {
+export default async function BlogPostPage(
+  props: {
+    params: Promise<{ slug: string }>;
+    searchParams: Promise<{ lang?: string }>;
+  }
+) {
+  const searchParams = await props.searchParams;
+  const params = await props.params;
   const locale = searchParams.lang === 'en' ? 'en' : 'ka';
   const ka = locale === 'ka';
 

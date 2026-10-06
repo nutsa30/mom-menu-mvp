@@ -2,15 +2,15 @@ import { prisma } from "@/lib/prisma";
 import { sendWeeklyMenuEmail } from "@/lib/email";
 import { NextRequest, NextResponse } from "next/server";
 
-const SECRET = process.env.CRON_SECRET || "mm2026";
+const SECRET = process.env.CRON_SECRET;
 
 // Georgia Standard Time = UTC+4
 function geoHour() { return (new Date().getUTCHours() + 4) % 24; }
 function geoDay()  { return new Date(Date.now() + 4 * 3600_000).getUTCDay(); } // 0 = Sunday
 
 export async function GET(req: NextRequest) {
-  const secret = req.nextUrl.searchParams.get("secret");
-  if (secret !== SECRET) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  const secret = req.headers.get('authorization')?.replace(/^Bearer /, '') || req.nextUrl.searchParams.get('secret');
+  if (!SECRET || secret !== SECRET) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
   const day = geoDay();
   const hour = geoHour();
@@ -26,7 +26,7 @@ export async function GET(req: NextRequest) {
   }
 
   const users = await prisma.user.findMany({
-    where: { subscriptionStatus: { in: ["RECIPE_PLAN", "FULL_PLAN"] } },
+    where: { market: 'GE', subscriptionStatus: { in: ["RECIPE_PLAN", "FULL_PLAN"] } },
     select: { email: true, name: true },
   });
 

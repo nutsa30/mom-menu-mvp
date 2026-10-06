@@ -1,4 +1,6 @@
 'use client';
+import Copy, { useCopy } from '@/components/Copy';
+
 
 import { usePathname } from 'next/navigation';
 import { useState, useRef, useEffect } from 'react';
@@ -6,6 +8,7 @@ import { useState, useRef, useEffect } from 'react';
 type Msg = { role: 'user' | 'assistant'; content: string };
 
 function ChatbotPanel() {
+  const copy = useCopy();
   const [open, setOpen] = useState(false);
   const [messages, setMessages] = useState<Msg[]>([]);
   const [input, setInput] = useState('');
@@ -51,16 +54,14 @@ function ChatbotPanel() {
           <div className="bg-[#6F7A5C] px-4 py-3 flex items-center justify-between flex-shrink-0">
             <div className="flex items-center gap-2">
               <span className="text-lg">💬</span>
-              <span className="text-[#F5F1E4] font-bold text-sm">mom menu დამხმარე</span>
+              <span className="text-[#F5F1E4] font-bold text-sm"> <Copy>{"mom menu დამხმარე"}</Copy> </span>
             </div>
             <button onClick={() => setOpen(false)} className="text-[#F5F1E4]/70 hover:text-[#F5F1E4] text-xl leading-none">×</button>
           </div>
 
           <div ref={listRef} className="flex-1 overflow-y-auto p-4 space-y-3">
             {messages.length === 0 && (
-              <p className="text-sm text-[#6F7A5C]/60 text-center mt-8">
-                გამარჯობა! 👋 დამისვით შეკითხვა რეცეპტების, გამოწერის ან საიტის შესახებ.
-              </p>
+              <p className="text-sm text-[#6F7A5C]/60 text-center mt-8"> <Copy>{"გამარჯობა! 👋 დამისვით შეკითხვა რეცეპტების, გამოწერის ან საიტის შესახებ."}</Copy> </p>
             )}
             {messages.map((m, i) => (
               <div key={i} className={`flex ${m.role === 'user' ? 'justify-end' : 'justify-start'}`}>
@@ -73,10 +74,10 @@ function ChatbotPanel() {
             ))}
             {loading && (
               <div className="flex justify-start">
-                <div className="bg-[#6F7A5C]/10 text-[#6F7A5C]/60 rounded-2xl px-3 py-2 text-sm">იწერს...</div>
+                <div className="bg-[#6F7A5C]/10 text-[#6F7A5C]/60 rounded-2xl px-3 py-2 text-sm"> <Copy>{"იწერს..."}</Copy> </div>
               </div>
             )}
-            {error && <p className="text-red-600 text-xs text-center">{error}</p>}
+            {error && <p className="text-red-600 text-xs text-center"><Copy>{error}</Copy></p>}
           </div>
 
           <div className="p-3 border-t border-[#6F7A5C]/10 flex gap-2 flex-shrink-0">
@@ -84,7 +85,7 @@ function ChatbotPanel() {
               value={input}
               onChange={(e) => setInput(e.target.value)}
               onKeyDown={(e) => e.key === 'Enter' && send()}
-              placeholder="დაწერეთ შეკითხვა..."
+              placeholder={copy("დაწერეთ შეკითხვა...")}
               className="flex-1 min-w-0 px-3 py-2 rounded-xl border border-[#6F7A5C]/20 focus:outline-none focus:border-[#6F7A5C] text-sm bg-white text-[#6F7A5C]"
             />
             <button
@@ -101,7 +102,7 @@ function ChatbotPanel() {
       <button
         onClick={() => setOpen((v) => !v)}
         className="w-14 h-14 rounded-full bg-[#6F7A5C] shadow-xl flex items-center justify-center text-2xl hover:scale-105 transition"
-        aria-label="ჩატბოტი"
+        aria-label={copy("ჩატბოტი")}
       >
         {open ? '×' : '💬'}
       </button>

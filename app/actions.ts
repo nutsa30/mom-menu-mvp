@@ -1,4 +1,5 @@
 'use server';
+import { getExperience } from '@/lib/experience';
 import { redirect } from 'next/navigation';
 import { prisma } from '@/lib/prisma';
 import { clearAuthCookie, hashPassword, setAuthCookie, verifyPassword } from '@/lib/auth';
@@ -10,6 +11,8 @@ function str(form: FormData, key: string) { return String(form.get(key) || '').t
 function list(form: FormData, key: string) { return str(form, key).split(',').map(x => x.trim()).filter(Boolean); }
 
 export async function registerAction(form: FormData) {
+  const experience = await getExperience();
+  const preferences = { locale: experience.locale, market: experience.market, timeZone: experience.market === 'GE' ? 'Asia/Tbilisi' : 'UTC' };
   const name = str(form, 'name');
   const email = str(form, 'email').toLowerCase();
   const password = str(form, 'password');
@@ -27,8 +30,8 @@ export async function registerAction(form: FormData) {
   // the pending attempt with a fresh code, rather than erroring.
   await prisma.pendingRegistration.upsert({
     where: { email },
-    create: { email, name, passwordHash, codeHash, expiresAt: new Date(Date.now() + 15 * 60 * 1000) },
-    update: { name, passwordHash, codeHash, expiresAt: new Date(Date.now() + 15 * 60 * 1000) },
+    create: { ...preferences, email, name, passwordHash, codeHash, expiresAt: new Date(Date.now() + 15 * 60 * 1000) },
+    update: { ...preferences, name, passwordHash, codeHash, expiresAt: new Date(Date.now() + 15 * 60 * 1000) },
   });
 
   try { await sendVerificationEmail(email, name, code); } catch {}
@@ -46,12 +49,12 @@ export async function loginAction(form: FormData) {
   // old-style accounts stuck on the legacy link-based emailVerifyToken.
   if (!user!.emailVerified && user!.emailVerifyToken) redirect('/login?error=unverified&email=' + encodeURIComponent(email));
   await setAuthCookie({ id: user!.id, email: user!.email, name: user!.name, role: user!.role });
-  redirect(user!.role === 'ADMIN' ? '/admin?lang=ka' : '/dashboard?lang=ka&in=1');
+  redirect(user!.role === 'ADMIN' ? '/admin?lang=ka' : `/dashboard?lang=${user!.locale}&in=1`);
 }
 
 export async function logoutAction() {
   await clearAuthCookie();
-  redirect('/?lang=ka');
+  redirect('/');
 }
 
 export async function saveChildAction(form: FormData) {
