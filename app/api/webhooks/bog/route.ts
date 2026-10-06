@@ -231,6 +231,7 @@ export async function POST(req: Request) {
         bogTrialUsed: true,
         isGifted: false,
         subscriptionRenewsAt: renewsAt,
+        paymentFailedAt: null,
         subscriptionStartedAt: user.subscriptionStartedAt ?? now,
       },
     });
@@ -347,7 +348,7 @@ export async function POST(req: Request) {
 
     // isPaid — renewal actually captured.
     const existing = await prisma.payment.findUnique({ where: { bogOrderId: orderId } });
-    if (existing) return NextResponse.json({ received: true }); // already processed (retried callback)
+    if (existing?.status === 'SUCCESS') return NextResponse.json({ received: true }); // already captured
 
     // Renewal orders don't carry the interval in external_order_id (unlike the
     // first-purchase order), since the user is already subscribed by this point —
@@ -360,18 +361,24 @@ export async function POST(req: Request) {
     const grossAmount = applyDiscount(Number(PLAN_AMOUNTS_BY_INTERVAL[interval] ?? 0), user.promoCode?.discountPercent);
     const { commissionAmount, netAmount } = computeCommission(grossAmount, cardType);
 
-    const payment = await prisma.payment.create({
-      data: {
-        userId: user.id,
-        plan: 'FULL_PLAN',
-        billingIntervalMonths: interval,
-        status: 'SUCCESS',
-        bogOrderId: orderId,
-        cardType: cardType ?? null,
-        grossAmount,
-        commissionAmount,
-        netAmount,
-      },
+    // A capture may complete after an earlier approve error recorded this same order
+    // as FAILED. Promote that row so confirmed payment restores access and ends retries.
+    const paymentData = {
+      userId: user.id,
+      plan: 'FULL_PLAN' as const,
+      billingIntervalMonths: interval,
+      status: 'SUCCESS' as const,
+      bogOrderId: orderId,
+      cardType: cardType ?? null,
+      grossAmount,
+      commissionAmount,
+      netAmount,
+      failureReason: null,
+    };
+    const payment = await prisma.payment.upsert({
+      where: { bogOrderId: orderId },
+      create: paymentData,
+      update: paymentData,
     });
 
     // Covers BOTH cases with the same call: a trial converting to its first real charge
