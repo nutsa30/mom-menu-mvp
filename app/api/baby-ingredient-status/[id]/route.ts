@@ -7,13 +7,20 @@ export async function PATCH(req: NextRequest, { params }: { params: { id: string
   const session = await getSession();
   if (!session) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
 
+  const existing = await prisma.babyIngredientStatus.findFirst({
+    where: { id: params.id, child: { userId: session.id } },
+  });
+  if (!existing) return NextResponse.json({ error: 'Not found' }, { status: 404 });
+
   const body = await req.json();
   const allowed = ['tried', 'liked', 'disliked', 'ateWell', 'refused', 'allergic', 'comment'];
   const data: Record<string, any> = {};
   for (const key of allowed) {
     if (body[key] !== undefined) data[key] = body[key];
   }
-  if (body.tried && !data.triedAt) data.triedAt = new Date();
+  if (body.liked === true) data.disliked = false;
+  else if (body.disliked === true) data.liked = false;
+  if (body.tried && !existing.triedAt) data.triedAt = new Date();
 
   const updated = await prisma.babyIngredientStatus.update({
     where: { id: params.id },

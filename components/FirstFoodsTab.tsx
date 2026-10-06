@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 
 type Ingredient = {
   id: string; nameKa: string; nameEn: string; category: string; minAgeMonths: number;
@@ -59,10 +59,11 @@ function pureePrep(category: string, nameKa?: string): string {
   }
 }
 
-function StatusBadge({ tried, allergic, liked, ateWell }: any) {
-  if (allergic) return <span className="text-[10px] bg-red-100 text-red-600 font-bold px-2 py-0.5 rounded-full">ალერგია</span>;
+function StatusBadge({ tried, allergic, liked, disliked, ateWell }: any) {
+  if (allergic) return <span className="text-[10px] bg-red-100 text-red-600 font-bold px-2 py-0.5 rounded-full">ალერგია მისცა</span>;
   if (!tried) return <span className="text-[10px] bg-[#465940]/10 text-[#465940]/50 font-bold px-2 py-0.5 rounded-full">არ გასინჯულა</span>;
   if (liked) return <span className="text-[10px] bg-green-100 text-green-700 font-bold px-2 py-0.5 rounded-full">✓ მოეწონა</span>;
+  if (disliked) return <span className="text-[10px] bg-orange-100 text-orange-700 font-bold px-2 py-0.5 rounded-full">არ მოეწონა</span>;
   if (ateWell) return <span className="text-[10px] bg-blue-100 text-blue-700 font-bold px-2 py-0.5 rounded-full">✓ კარგად ჭამა</span>;
   return <span className="text-[10px] bg-[#465940]/10 text-[#465940] font-bold px-2 py-0.5 rounded-full">✓ გასინჯა</span>;
 }
@@ -70,32 +71,50 @@ function StatusBadge({ tried, allergic, liked, ateWell }: any) {
 function IngredientCard({
   ing, childId, onUpdate, blwMode, ageMonths,
 }: {
-  ing: Ingredient; childId: string; onUpdate: () => void; blwMode: boolean; ageMonths: number;
+  ing: Ingredient; childId: string; onUpdate: (status: NonNullable<Ingredient['status']>) => void; blwMode: boolean; ageMonths: number;
 }) {
   const [open, setOpen] = useState(false);
   const [saving, setSaving] = useState(false);
   const [comment, setComment] = useState(ing.status?.comment ?? '');
+  const [error, setError] = useState('');
+  const [showPreference, setShowPreference] = useState(false);
+  const preferenceDialog = useRef<HTMLDialogElement>(null);
   const s = ing.status;
+
+  useEffect(() => {
+    if (showPreference) preferenceDialog.current?.showModal();
+    else preferenceDialog.current?.close();
+  }, [showPreference]);
 
   const update = async (fields: Record<string, any>) => {
     setSaving(true);
-    const body = { childId, ingredientId: ing.id, ...fields };
-    if (s?.id) {
-      await fetch(`/api/baby-ingredient-status/${s.id}`, {
-        method: 'PATCH', headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(fields),
+    setError('');
+    try {
+      const res = await fetch(s?.id ? `/api/baby-ingredient-status/${s.id}` : '/api/baby-ingredient-status', {
+        method: s?.id ? 'PATCH' : 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(s?.id ? fields : { childId, ingredientId: ing.id, ...fields }),
       });
-    } else {
-      await fetch('/api/baby-ingredient-status', {
-        method: 'POST', headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(body),
-      });
+      if (!res.ok) throw new Error('Save failed');
+      onUpdate(await res.json());
+      return true;
+    } catch {
+      setError('შენახვა ვერ მოხერხდა. სცადე ხელახლა.');
+      return false;
+    } finally {
+      setSaving(false);
     }
-    setSaving(false);
-    onUpdate();
   };
 
   const toggle = (field: string, current: boolean | null) => update({ [field]: !current, tried: true });
+  const markTried = async () => {
+    if (await update({ tried: true })) setShowPreference(true);
+  };
+  const choosePreference = async (liked: boolean) => {
+    if (await update({ tried: true, liked, disliked: !liked })) setShowPreference(false);
+  };
+  const markAllergic = async () => {
+    if (await update({ tried: true, allergic: true, liked: false, disliked: false })) setShowPreference(false);
+  };
 
   return (
     <div className={`rounded-xl border-2 transition ${s?.allergic ? 'border-red-200 bg-red-50' : s?.tried ? 'border-[#465940]/30 bg-[#465940]/5' : 'border-[#465940]/10'}`}>
@@ -124,7 +143,7 @@ function IngredientCard({
           </div>
         </div>
         <div className="flex items-center gap-2 flex-shrink-0">
-          <StatusBadge tried={s?.tried} allergic={s?.allergic} liked={s?.liked} ateWell={s?.ateWell} />
+          <StatusBadge tried={s?.tried} allergic={s?.allergic} liked={s?.liked} disliked={s?.disliked} ateWell={s?.ateWell} />
           <span className="text-[#465940]/40 text-xs">{open ? '▲' : '▼'}</span>
         </div>
       </button>
@@ -137,7 +156,7 @@ function IngredientCard({
             </p>
           )}
           {!s?.tried ? (
-            <button onClick={() => update({ tried: true })} disabled={saving}
+            <button onClick={markTried} disabled={saving}
               className="w-full py-2 rounded-xl bg-[#465940] text-[#FDFBF0] text-sm font-bold transition disabled:opacity-60">
               ✓ გავასინჯე
             </button>
@@ -151,11 +170,8 @@ function IngredientCard({
           ) : (
             <div className="grid grid-cols-2 gap-2">
               {[
-                { field: 'liked',    val: s.liked,    label: 'მოეწონა',     active: 'bg-green-500 text-white' },
-                { field: 'disliked', val: s.disliked, label: 'არ მოეწონა',  active: 'bg-orange-400 text-white' },
                 { field: 'ateWell',  val: s.ateWell,  label: 'კარგად ჭამა', active: 'bg-blue-500 text-white' },
                 { field: 'refused',  val: s.refused,  label: 'არ ჭამა',     active: 'bg-gray-400 text-white' },
-                { field: 'allergic', val: s.allergic, label: 'ალერგია',     active: 'bg-red-500 text-white' },
               ].map(opt => (
                 <button key={opt.field}
                   onClick={() => toggle(opt.field, opt.val ?? false)}
@@ -167,10 +183,17 @@ function IngredientCard({
                 </button>
               ))}
               <button onClick={() => update({ tried: false, liked: null, disliked: null, ateWell: null, refused: null })}
+                disabled={saving}
                 className="py-2 px-3 rounded-xl text-xs font-bold border border-[#465940]/15 text-[#465940]/40 hover:text-[#465940]/60 transition col-span-1">
                 გასუფთავება
               </button>
             </div>
+          )}
+          {s?.tried && (
+            <button onClick={() => { setError(''); setShowPreference(true); }} disabled={saving}
+              className="w-full py-2 px-3 rounded-xl border-2 border-[#465940]/20 text-[#465940] text-xs font-bold transition disabled:opacity-50">
+              {s.allergic ? 'ალერგია მისცა · რეაქციის მონიშვნა' : s.liked ? '✓ მოეწონა · შეცვლა' : s.disliked ? 'არ მოეწონა · შეცვლა' : 'რეაქციის მონიშვნა'}
+            </button>
           )}
           {s?.tried && (
             <div className="flex gap-2">
@@ -185,6 +208,30 @@ function IngredientCard({
           )}
         </div>
       )}
+      {error && !showPreference && <p role="alert" className="px-4 pb-3 text-xs text-red-600">{error}</p>}
+      <dialog ref={preferenceDialog} onClose={() => setShowPreference(false)}
+        aria-labelledby={`preference-title-${ing.id}`}
+        className="w-[calc(100%-2rem)] max-w-sm rounded-2xl bg-[#FDFBF0] p-6 shadow-xl backdrop:bg-black/40">
+        <h3 id={`preference-title-${ing.id}`} className="text-lg font-black text-[#465940]">{ing.nameKa} — როგორი რეაქცია ჰქონდა?</h3>
+        <p className="mt-2 text-xs text-[#465940]/70">არჩევანის შეცვლა ნებისმიერ დროს შეგიძლია, განმეორებითი გასინჯვის შემდეგაც.</p>
+        <div className="mt-5 grid grid-cols-2 gap-3">
+          <button onClick={() => choosePreference(true)} disabled={saving} aria-pressed={!!s?.liked}
+            className={`rounded-xl py-3 text-sm font-bold disabled:opacity-50 ${s?.liked ? 'bg-green-600 text-white' : 'bg-green-100 text-green-800'}`}>
+            {s?.liked ? '✓ მოეწონა' : 'მოეწონა'}
+          </button>
+          <button onClick={() => choosePreference(false)} disabled={saving} aria-pressed={!!s?.disliked}
+            className={`rounded-xl py-3 text-sm font-bold disabled:opacity-50 ${s?.disliked ? 'bg-orange-500 text-white' : 'bg-orange-100 text-orange-800'}`}>
+            {s?.disliked ? '✓ არ მოეწონა' : 'არ მოეწონა'}
+          </button>
+          <button onClick={markAllergic} disabled={saving} aria-pressed={!!s?.allergic}
+            className={`col-span-2 rounded-xl py-3 text-sm font-bold disabled:opacity-50 ${s?.allergic ? 'bg-red-600 text-white' : 'bg-red-100 text-red-700'}`}>
+            {s?.allergic ? '✓ ალერგია მისცა' : 'ალერგია მისცა'}
+          </button>
+        </div>
+        {error && <p role="alert" className="mt-3 text-xs text-red-600">{error}</p>}
+        <button onClick={() => setShowPreference(false)} disabled={saving}
+          className="mt-4 w-full py-2 text-xs font-semibold text-[#465940]/70 disabled:opacity-50">დახურვა</button>
+      </dialog>
     </div>
   );
 }
@@ -320,8 +367,8 @@ export default function FirstFoodsTab({ child, isFullPlan }: { child: any; isFul
                 <div key={cat} className="bg-[#FDFBF0] rounded-2xl border border-[#465940]/10 shadow-sm p-4 space-y-2">
                   <p className="text-xs font-black text-[#465940]/60 uppercase tracking-wide mb-3">{CATEGORY_LABELS[cat] ?? cat}</p>
                   {items.map(ing => (
-                    <IngredientCard key={ing.id} ing={ing} childId={child.id} blwMode={blwMode} ageMonths={ageMonths}
-                      onUpdate={fetchIngredients} />
+                    <IngredientCard key={`${child.id}-${ing.id}`} ing={ing} childId={child.id} blwMode={blwMode} ageMonths={ageMonths}
+                      onUpdate={status => setIngredients(current => current.map(item => item.id === ing.id ? { ...item, status } : item))} />
                   ))}
                 </div>
               );
