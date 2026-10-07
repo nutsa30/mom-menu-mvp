@@ -96,13 +96,19 @@ function useFlowingStory() {
       const steps = ref.current?.querySelectorAll<HTMLElement>('[data-story-step]');
       if (!steps) return;
       const reduced = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
-      const fadeDistance = Math.min(120, window.innerHeight * 0.15);
+      const navigation = document.querySelector<HTMLElement>('[data-mobile-navigation]')?.getBoundingClientRect();
+      const visibleBottom = navigation && navigation.height > 0
+        ? Math.min(window.innerHeight, navigation.top) : window.innerHeight;
+      const enterDistance = Math.min(360, visibleBottom * 0.65);
+      const exitStart = Math.min(540, visibleBottom * 0.95);
+      const exitEnd = Math.min(72, visibleBottom * 0.12);
       steps.forEach(step => {
         const rect = step.getBoundingClientRect();
-        // Fade at the viewport edges, keeping the normal document flow. The next
-        // block is already visible before the outgoing block starts disappearing.
+        // Overlap longer fades within the visible area above the navigation.
+        // Start fading out while the outgoing card is still visibly on screen;
+        // its successor reaches full opacity before the outgoing card vanishes.
         const opacity = window.innerWidth >= 1024 || reduced ? 1
-          : Math.max(0, Math.min(1, (window.innerHeight - rect.top) / fadeDistance, rect.bottom / fadeDistance));
+          : Math.max(0, Math.min(1, (visibleBottom - rect.top) / enterDistance, (rect.bottom - exitEnd) / (exitStart - exitEnd)));
         step.style.opacity = String(opacity);
       });
     };

@@ -67,7 +67,7 @@ export default function MobileBottomNav({ isLoggedIn }: { isLoggedIn: boolean })
   ];
 
   return (
-    <nav className="md:hidden fixed bottom-0 left-0 right-0 z-50 bg-[#F5F1E4]/95 backdrop-blur border-t border-[#6F7A5C]/10"
+    <nav data-mobile-navigation className="md:hidden fixed bottom-0 left-0 right-0 z-50 bg-[#F5F1E4]/95 backdrop-blur border-t border-[#6F7A5C]/10"
       style={{ paddingBottom: 'max(14px, env(safe-area-inset-bottom))' }}>
       <div className="flex">
         {links.map((link) => {
