@@ -87,6 +87,41 @@ function useStaggeredFadeUp(delay = 120) {
 // `position: fixed` to the viewport; once the wrapper's bottom has scrolled past, the panel
 // rests at the wrapper's bottom. No scroll-jacking, no animation library — native scroll read
 // via a rAF-throttled listener.
+function useFlowingStory() {
+  const ref = useRef<HTMLDivElement>(null);
+  useEffect(() => {
+    let frame = 0;
+    const compute = () => {
+      frame = 0;
+      const steps = ref.current?.querySelectorAll<HTMLElement>('[data-story-step]');
+      if (!steps) return;
+      const reduced = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+      const fadeDistance = Math.min(120, window.innerHeight * 0.15);
+      steps.forEach(step => {
+        const rect = step.getBoundingClientRect();
+        // Fade at the viewport edges, keeping the normal document flow. The next
+        // block is already visible before the outgoing block starts disappearing.
+        const opacity = window.innerWidth >= 1024 || reduced ? 1
+          : Math.max(0, Math.min(1, (window.innerHeight - rect.top) / fadeDistance, rect.bottom / fadeDistance));
+        step.style.opacity = String(opacity);
+      });
+    };
+    const schedule = () => { if (!frame) frame = requestAnimationFrame(compute); };
+    const motion = window.matchMedia('(prefers-reduced-motion: reduce)');
+    window.addEventListener('scroll', schedule, { passive: true });
+    window.addEventListener('resize', schedule);
+    motion.addEventListener('change', schedule);
+    compute();
+    return () => {
+      window.removeEventListener('scroll', schedule);
+      window.removeEventListener('resize', schedule);
+      motion.removeEventListener('change', schedule);
+      if (frame) cancelAnimationFrame(frame);
+    };
+  }, []);
+  return ref;
+}
+
 function useScrollStory(count: number) {
   const wrapperRef = useRef<HTMLDivElement | null>(null);
   const [active, setActive] = useState(0);
@@ -477,6 +512,7 @@ export default function HomeClient({ s, dishes, dishCount, recentBlogs, planAmou
   const ka = locale === 'ka';
 
   const storyPin = useScrollStory(9);
+  const mobileStoryRef = useFlowingStory();
   const refCoreValue = useFadeUp();
   const refDaily = useFadeUp();
   const refSummary = useFadeUp();
@@ -619,7 +655,7 @@ export default function HomeClient({ s, dishes, dishCount, recentBlogs, planAmou
       {/* ── HERO ─────────────────────────────────────────────── */}
       <section className="relative overflow-hidden" style={{ background: INK }}>
         <div className="max-w-7xl mx-auto px-5 sm:px-8 pt-16 pb-16 sm:pt-24 sm:pb-24">
-          <div className="grid lg:grid-cols-2 gap-12 lg:gap-8 items-center">
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 lg:gap-8 items-center">
             <div className="max-w-xl">
               <h1 className="text-4xl sm:text-5xl lg:text-[54px] leading-[1.14] font-bold mb-6" style={{ color: CREAM, fontFamily: SERIF_KA }}>
                 {ka ? 'ბავშვის კვებაზე ყოველდღე ფიქრი აღარ მოგიწევს.' : "You won't have to think about your child's food every single day."}
@@ -643,14 +679,14 @@ export default function HomeClient({ s, dishes, dishCount, recentBlogs, planAmou
 
             {/* Layered real-product preview — not one screenshot but several connected
                 states, so the hero reads as "one system" rather than a single feature. */}
-            <div className="relative h-[460px] sm:h-[540px] lg:h-[600px]">
-              <div className="mm-parallax mm-hero-card absolute w-[68%] sm:w-[54%]" style={{ left: '0%', top: '32%', transform: 'rotate(-4deg)' }}>
+            <div className="relative grid gap-4 sm:grid-cols-2 lg:block lg:h-[600px] min-w-0 w-full max-w-xl mx-auto lg:max-w-none">
+              <div className="mm-hero-card order-2 min-w-0 lg:absolute lg:w-[54%] lg:left-0 lg:top-[32%] lg:-rotate-[4deg]">
                 <PantryMatchMock dish={dishes.breakfast} ka={ka} />
               </div>
-              <div className="mm-parallax mm-hero-card absolute w-[58%] sm:w-[48%]" style={{ right: '0%', top: '0%', transform: 'rotate(3deg)' }}>
+              <div className="mm-hero-card order-3 min-w-0 lg:absolute lg:w-[48%] lg:right-0 lg:top-0 lg:rotate-[3deg]">
                 <RecipeCardMock dish={dishes.dinner} ka={ka} />
               </div>
-              <div className="mm-parallax mm-hero-card absolute w-[64%] sm:w-[54%]" style={{ left: '30%', bottom: '0%', transform: 'rotate(1.5deg)' }}>
+              <div className="mm-hero-card order-1 min-w-0 sm:col-span-2 lg:absolute lg:w-[54%] lg:left-[30%] lg:bottom-0 lg:rotate-[1.5deg]">
                 <MenuDigestMock dishes={dishes} ka={ka} />
               </div>
             </div>
@@ -659,8 +695,8 @@ export default function HomeClient({ s, dishes, dishCount, recentBlogs, planAmou
       </section>
 
       {/* ── STORY: "დედის ჩვეულებრივი დღე" ──────────────────────
-          Mobile: a normal flowing column where each step fades in/out as it crosses the
-          viewport (useActiveStep). Desktop: a genuinely pinned scrollytelling panel — the
+          Mobile: a normal flowing column where each step fades at the viewport edges.
+          Desktop: a genuinely pinned scrollytelling panel — the
           wrapper is 5 viewport-heights tall, the inner panel is position:sticky, so the
           person stays put and the question + visual swap in place as they scroll
           (useScrollStory turns scroll position into a step index). No scroll-jacking, no
@@ -672,11 +708,12 @@ export default function HomeClient({ s, dishes, dishCount, recentBlogs, planAmou
             <h2 className="text-2xl sm:text-4xl font-bold mb-14 sm:mb-20 max-w-2xl" style={{ color: CREAM, fontFamily: SERIF_KA }}>
               {ka ? 'ყველაფერი ერთი კითხვით იწყება: დღეს რა ვაჭამო?' : 'It always starts with one question: what do I feed them today?'}
             </h2>
-            <div>
+            <div ref={mobileStoryRef}>
               {STORY_STEPS.map((step, i) => (
                 <div
                   key={i}
-                  className="py-8 sm:py-12"
+                  data-story-step
+                  className="py-8 sm:py-12 transition-opacity duration-150 motion-reduce:transition-none"
                 >
                   <p className="text-3xl sm:text-5xl font-bold" style={{ color: CREAM, fontFamily: SERIF_KA }}>{step.q}</p>
                   <div className="mt-6 max-w-sm">{step.visual}</div>
@@ -740,8 +777,8 @@ export default function HomeClient({ s, dishes, dishCount, recentBlogs, planAmou
       {/* ── DAILY USE ─────────────────────────────────────────── */}
       <section className="relative z-10 py-16 sm:py-28" style={{ background: CREAM }}>
         <div className="max-w-6xl mx-auto px-5 sm:px-8">
-          <div ref={refDaily} className="fade-up grid lg:grid-cols-2 gap-10 lg:gap-16 items-center">
-            <div className="order-2 lg:order-1 max-w-sm w-full mx-auto lg:mx-0">
+          <div ref={refDaily} className="fade-up grid grid-cols-1 lg:grid-cols-2 gap-10 lg:gap-16 items-center">
+            <div className="order-2 lg:order-1 min-w-0 max-w-sm w-full mx-auto lg:mx-0">
               <DayTimelineMock dishes={dishes} ka={ka} />
             </div>
             <div className="order-1 lg:order-2">
@@ -854,7 +891,7 @@ export default function HomeClient({ s, dishes, dishCount, recentBlogs, planAmou
                 : "If you spend every week thinking about your child's food, Mommenu exists to shrink that thinking."}
             </p>
           </div>
-          <div ref={refPricingCards} className="grid lg:grid-cols-3 gap-5 max-w-5xl mx-auto items-stretch">
+          <div ref={refPricingCards} className="grid grid-cols-1 lg:grid-cols-3 gap-5 max-w-5xl mx-auto items-stretch">
             {([1, 3, 6] as BillingInterval[]).map((interval) => {
               const price = planAmounts[interval];
               const disc = discountedPrice(interval, price);
