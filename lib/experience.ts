@@ -24,7 +24,7 @@ export async function getExperience() {
   const chosenLanguage = (await headers()).get('x-mommenu-locale') || (await cookies()).get('mommenu_locale')?.value;
   const locale: Locale = preview ? localeFor(preview) : chosenLanguage === 'en' || chosenLanguage === 'ka' ? chosenLanguage : account?.locale === 'en' ? 'en' : account ? 'ka' : localeFor(market);
   const unitPreference = account?.units || (await cookies()).get('mommenu_units')?.value;
-  const units: Units = unitPreference === 'us' || unitPreference === 'uk' ? unitPreference : 'metric';
+  const units: Units = market === 'INTL' && (unitPreference === 'us' || unitPreference === 'uk') ? unitPreference : 'metric';
   const zonePreference = account?.timeZone || (await cookies()).get('mommenu_timezone')?.value;
   const timeZone = validTimeZone(zonePreference) ? zonePreference! : market === 'GE' ? 'Asia/Tbilisi' : 'UTC';
   return { market, currency: currencyFor(market), locale, units, timeZone, country, preview, isAdmin: account?.role === 'ADMIN' };

@@ -1546,7 +1546,7 @@ function AllergiesSection({ child }: { child: any }) {
 }
 
 function SettingsTab({ user, activeChild }: { user: any; activeChild?: any }) {
-  const { locale: contentLocale } = useExperience();
+  const { locale: contentLocale, market } = useExperience();
   const copy = useCopy();
   const [name, setName] = useState(user.name);
   const [nameStatus, setNameStatus] = useState<'idle' | 'saving' | 'ok'>('idle');
@@ -1651,7 +1651,7 @@ function SettingsTab({ user, activeChild }: { user: any; activeChild?: any }) {
 
   return (
     <div className="space-y-5 max-w-lg">
-      <div className={`${card} p-5`}><MeasurementSwitcher /></div>
+      {market === 'INTL' && <div className={`${card} p-5`}><MeasurementSwitcher /></div>}
       {/* Name */}
       <div className={`${card} p-6`}>
         <h2 className="font-black text-[#465940] mb-4"> <Copy>{"სახელი"}</Copy> </h2>
