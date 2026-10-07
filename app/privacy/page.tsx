@@ -1,4 +1,5 @@
 import { localizedMetadata } from '@/lib/metadata';
+import MerchantInfo from '@/components/MerchantInfo';
 ﻿import type { Metadata } from 'next';
 import BackToRegisterButton from '@/components/BackToRegisterButton';
 import CopyEmailButton from '@/components/CopyEmailButton';
@@ -33,13 +34,14 @@ export default async function PrivacyPage(props: { searchParams: Promise<{ lang?
             {ka ? 'კონფიდენციალურობის პოლიტიკა' : 'Privacy Policy'}
           </h1>
           <p className="text-sm text-[#6F7A5C]/60">
-            {ka ? 'ბოლო განახლება: 2026 წლის მაისი' : 'Last updated: May 2026'}
+            {ka ? 'ბოლო განახლება: 7 ოქტომბერი, 2026' : 'Last updated: 7 October 2026'}
           </p>
         </div>
       </div>
 
       {/* Content */}
       <div className="max-w-3xl mx-auto px-6 py-14 space-y-12">
+        <div className="bg-[#F5F1E4] rounded-2xl p-5 sm:p-8 text-[#6F7A5C]"><MerchantInfo locale={locale} /></div>
 
         {/* Intro */}
         <div className="bg-[#F5F1E4] rounded-2xl border border-[#6F7A5C]/10 shadow-sm p-8">
@@ -57,7 +59,7 @@ export default async function PrivacyPage(props: { searchParams: Promise<{ lang?
           <SubSection title={ka ? 'ანგარიშის მონაცემები' : 'Account data'}>
             {ka
               ? 'რეგისტრაციისას ვაგროვებთ: სახელსა და გვარს, ელექტრონული ფოსტის მისამართს და პაროლს (დაშიფრული სახით — პირდაპირი პაროლი არასდროს ინახება).'
-              : 'When you register, we collect: your full name, email address, and password (stored in encrypted form — your actual password is never stored).'}
+              : 'When you register, we collect: your full name, email address, and password (stored as a one-way password hash — your actual password is never stored).'}
           </SubSection>
           <SubSection title={ka ? 'ბავშვის მონაცემები' : "Child's data"}>
             {ka
@@ -116,7 +118,7 @@ export default async function PrivacyPage(props: { searchParams: Promise<{ lang?
               'ტექნიკური ინფრასტრუქტურის პროვაიდერები (მონაცემთა ბაზა, სერვერი) — მხოლოდ სერვისის ფუნქციონირებისთვის',
               'კანონით გათვალისწინებული შემთხვევები — სასამართლოს ან უფლებამოსილი ორგანოს მოთხოვნით',
             ] : [
-              'Technical infrastructure providers (database, server) — solely for service operation',
+              'Service providers: Vercel (hosting), Neon (database), Resend (transactional email), Bank of Georgia (payments), Google (optional sign-in and consented analytics), and OneSignal (notifications you enable). Some processing takes place outside the UK, including Georgia and the United States. Contact us for information about the providers and safeguards applying to your data.',
               'As required by law — upon request from a court or authorized authority',
             ]).map((item, i) => (
               <li key={i} className="flex gap-3">
@@ -133,8 +135,8 @@ export default async function PrivacyPage(props: { searchParams: Promise<{ lang?
         >
           <p className="text-[#6F7A5C]/80 text-sm leading-relaxed mb-4">
             {ka
-              ? 'ვიყენებთ მხოლოდ ერთ cookie-ს — ავტორიზაციის JWT ტოკენს (mom_menu_token). ეს cookie:'
-              : 'We use only one cookie — the authentication JWT token (mom_menu_token). This cookie is:'}
+              ? 'აუცილებელ cookie-ებს ვიყენებთ ავტორიზაციისთვის, ენის, ერთეულებისა და დროის სარტყლის შესანარჩუნებლად. ავტორიზაციის JWT cookie (mom_menu_token):'
+              : 'Essential cookies support authentication and remember language, measurement and timezone preferences. The authentication JWT cookie (mom_menu_token) is:'}
           </p>
           <div className="grid grid-cols-2 gap-3">
             {(ka ? [
@@ -156,8 +158,8 @@ export default async function PrivacyPage(props: { searchParams: Promise<{ lang?
           </div>
           <p className="text-[#6F7A5C]/70 text-xs mt-4 leading-relaxed">
             {ka
-              ? 'სარეკლამო, ანალიტიკური ან მესამე მხარის tracking cookie-ებს არ ვიყენებთ.'
-              : 'We do not use advertising, analytics, or third-party tracking cookies.'}
+              ? 'მხოლოდ შენი თანხმობით ვტვირთავთ Google Analytics-ს და დაყენებულ Google Tag Manager-ს, ვიზიტების, კამპანიის წყაროს, რეგისტრაციისა და გადახდის გზის გასაზომად. ანალიტიკაში ბავშვის სახელს, დაბადების თარიღს, ალერგიებს, ელფოსტას და ბარათის მონაცემებს არ ვაგზავნით. არჩევანის შეცვლა ქვედა პანელში Cookie-ების პარამეტრებიდან შეგიძლია. კამპანიის წყარო მაქსიმუმ 30 დღით ინახება.'
+              : 'Only with your permission, we load Google Analytics and any configured Google Tag Manager to measure visits, campaign sources, signups and checkout/purchase events. We do not send child names, dates of birth, allergies, email addresses or card details to analytics. You can change your choice through Cookie settings in the footer. Campaign attribution is retained for up to 30 days. Declining analytics does not prevent signup, payment or access.'}
           </p>
         </Section>
 
@@ -180,7 +182,7 @@ export default async function PrivacyPage(props: { searchParams: Promise<{ lang?
               'Correct inaccurate data from your settings',
               'Request deletion of your account and all associated data',
               'Cancel your subscription at any time',
-              'Request a copy of your personal data',
+              'Request a copy of your personal data; where applicable, object to or restrict processing and withdraw consent. Contact info@mommenu.ge. UK customers can also complain to the Information Commissioner’s Office at ico.org.uk.',
             ]).map((item, i) => (
               <li key={i} className="flex gap-3">
                 <span className="flex-shrink-0 text-[#6F7A5C] font-black leading-none mt-0.5">✓</span>

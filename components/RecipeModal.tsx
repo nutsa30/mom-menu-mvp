@@ -2,7 +2,6 @@
 import { useExperience } from './ExperienceProvider';
 import { localizedField } from '@/lib/content';
 import { ingredientQuantity } from '@/lib/measurements';
-import MeasurementSwitcher from './MeasurementSwitcher';
 
 import Copy, { useCopy } from '@/components/Copy';
 
@@ -47,9 +46,9 @@ export default function RecipeModal({ dish, onClose, ageGroup, textureStage }: {
   const textureNote = texturePrepNote(dish, textureStage, contentLocale);
 
   return (
-    <div className="fixed inset-0 z-50 bg-black/50 flex items-end sm:items-center justify-center p-4" onClick={onClose}>
+    <div className="fixed inset-0 z-50 bg-black/50 flex items-center justify-center p-4" onClick={onClose}>
       <div className="bg-[#FDFBF0] w-full max-w-lg rounded-2xl overflow-hidden max-h-[90vh] flex flex-col" onClick={e => e.stopPropagation()}>
-        <div className="relative h-48 bg-[#fdf0ea] flex-shrink-0">
+        <div className="relative h-36 sm:h-48 bg-[#fdf0ea] flex-shrink-0">
           {dish.imageUrl
             ? <img src={dish.imageUrl} alt={localizedField(dish, 'title', contentLocale)} className="w-full h-full object-cover" />
             : <div className="w-full h-full flex items-center justify-center text-6xl">🍽️</div>}
@@ -63,8 +62,7 @@ export default function RecipeModal({ dish, onClose, ageGroup, textureStage }: {
               ~{dish.prepTimeMinutes} <Copy>{"წუთი"}</Copy> </span>
           )}
         </div>
-        <div className="overflow-y-auto p-6 space-y-5">
-          <MeasurementSwitcher />
+        <div className="overflow-y-auto p-4 sm:p-6 space-y-5 break-words">
           <h2 className="text-xl font-black text-[#465940]">{localizedField(dish, 'title', contentLocale)}</h2>
           {portionText && (
             <div className="bg-[#465940]/5 rounded-xl p-3">

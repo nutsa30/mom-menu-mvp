@@ -165,16 +165,6 @@ export default async function RootLayout({ children }: { children: React.ReactNo
         {/* overflow-x-hidden on body breaks iOS fixed element touch events — use wrapper instead */}
         <div style={{ overflowX: 'hidden', minHeight: '100vh' }}>
         {/* GTM noscript fallback */}
-        {gtmId && (
-          <noscript>
-            <iframe
-              src={`https://www.googletagmanager.com/ns.html?id=${gtmId}`}
-              height="0"
-              width="0"
-              style={{ display: 'none', visibility: 'hidden' }}
-            />
-          </noscript>
-        )}
 
         {/* PWA install banner — shown at the very top on every page */}
         <PWAInstallBanner />

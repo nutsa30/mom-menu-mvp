@@ -68,6 +68,7 @@ export async function GET(req: NextRequest) {
     where: { OR: [{ googleId }, { email }] },
   });
 
+  const isNew = !user;
   if (!user) {
     const experience = await getExperience();
     user = await prisma.user.create({
@@ -75,6 +76,7 @@ export async function GET(req: NextRequest) {
       data: {
         email,
         locale: experience.locale, market: experience.market, subscriptionCurrency: experience.currency,
+        units: experience.units,
         timeZone: experience.market === 'GE' ? 'Asia/Tbilisi' : 'UTC',        name: name || email.split('@')[0],
         googleId,
         emailVerified: true,
@@ -92,5 +94,5 @@ export async function GET(req: NextRequest) {
 
   await setAuthCookie({ id: user.id, email: user.email, name: user.name, role: user.role });
 
-  return NextResponse.redirect(`${BASE}/dashboard`);
+  return NextResponse.redirect(`${BASE}/dashboard?lang=${user.locale}&${isNew ? 'new=1&method=google' : 'in=1'}`);
 }

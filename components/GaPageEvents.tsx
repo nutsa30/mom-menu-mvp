@@ -15,13 +15,14 @@ export default function GaPageEvents() {
 
     if (!isNew && !isLogin) return;
 
-    if (isNew) ga.signUp();
+    if (isNew) ga.signUp(searchParams.get('method') === 'google' ? 'google' : 'email');
     if (isLogin) ga.login();
 
     // Clean the tracking params from URL without re-render
     const next = new URLSearchParams(searchParams.toString());
     next.delete('new');
     next.delete('in');
+    next.delete('method');
     const qs = next.toString();
     router.replace(qs ? `${pathname}?${qs}` : pathname, { scroll: false });
   }, []); // eslint-disable-line react-hooks/exhaustive-deps

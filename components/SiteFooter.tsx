@@ -2,6 +2,7 @@
 
 import { useSearchParams } from 'next/navigation';
 import { useState } from 'react';
+import LegalLinks from './LegalLinks';
 
 const EMAIL = 'info@mommenu.ge';
 
@@ -22,12 +23,6 @@ export default function SiteFooter() {
     { href: `/how-it-works?lang=${locale}`, label: ka ? 'როგორ მუშაობს'    : 'How it Works' },
     { href: `/recipes?lang=${locale}`,      label: ka ? 'რეცეპტები'         : 'Recipes' },
     { href: `/blog?lang=${locale}`,         label: ka ? 'ბლოგი'             : 'Blog' },
-  ];
-
-  const legalLinks = [
-    { href: `/privacy?lang=${locale}`,  label: ka ? 'კონფიდენციალურობა' : 'Privacy Policy' },
-    { href: `/terms?lang=${locale}`,    label: ka ? 'გამოყენების წესები' : 'Terms of Use' },
-    { href: `/contact?lang=${locale}`,  label: ka ? 'კონტაქტი'           : 'Contact' },
   ];
 
   return (
@@ -131,13 +126,7 @@ export default function SiteFooter() {
               ? 'ყველა რეცეპტი და კონტენტი შექმნილია mom menu-ის მიერ და დაცულია საავტორო უფლებით — მისი კოპირება, გავრცელება ან სხვა პლატფორმაზე გამოქვეყნება/გაყიდვა ნებართვის გარეშე აკრძალულია.'
               : 'All recipes and content are created by mom menu and protected by copyright — copying, distributing, or republishing/reselling on another platform without permission is prohibited.'}
           </p>
-          <div className="flex items-center gap-5">
-            {legalLinks.map((l) => (
-              <a key={l.href} href={l.href} className="text-xs text-[#F5F1E4]/40 hover:text-[#F5F1E4]/70 transition">
-                {l.label}
-              </a>
-            ))}
-          </div>
+          <div className="text-[#F5F1E4]/75"><LegalLinks /></div>
         </div>
         <div className="max-w-6xl mx-auto px-5 flex items-center justify-center sm:justify-end gap-2.5 mt-4 mb-3 sm:mb-0">
           <span className="text-xs text-[#F5F1E4]/40">{ka ? 'საიტი შექმნილია:' : 'Built by:'}</span>

@@ -1,6 +1,8 @@
 'use client';
 
 import { useState } from 'react';
+import { useCopy } from '@/components/Copy';
+import { BUSINESS } from '@/lib/business';
 
 type Settings = {
   introKa: string; introEn: string;
@@ -12,6 +14,7 @@ type Settings = {
 export default function ContactClient({ locale, settings }: { locale: 'ka' | 'en'; settings: Settings }) {
   const ka = locale === 'ka';
   const s = settings;
+  const copy = useCopy();
 
   const [name, setName]       = useState('');
   const [email, setEmail]     = useState('');
@@ -23,6 +26,7 @@ export default function ContactClient({ locale, settings }: { locale: 'ka' | 'en
     e.preventDefault();
     setStatus('sending');
     setErrMsg('');
+    try {
     const res = await fetch('/api/contact', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
@@ -34,7 +38,11 @@ export default function ContactClient({ locale, settings }: { locale: 'ka' | 'en
       setName(''); setEmail(''); setMessage('');
     } else {
       setStatus('error');
-      setErrMsg(data.error || (ka ? 'შეცდომა' : 'Error'));
+      setErrMsg(copy(data.error || 'გაგზავნა ვერ მოხერხდა'));
+    }
+    } catch {
+      setStatus('error');
+      setErrMsg(copy('კავშირის შეცდომა — სცადეთ ხელახლა.'));
     }
   };
 
@@ -46,6 +54,8 @@ export default function ContactClient({ locale, settings }: { locale: 'ka' | 'en
         <h2 className="text-2xl font-black text-[#F5F1E4] mb-4">
           {ka ? 'დაგვიკავშირდი' : 'Get in touch'}
         </h2>
+        <p className="text-[#F5F1E4] font-bold mb-2">{ka ? 'სერვისის მომწოდებელი: ' : 'Service provider: '}{BUSINESS.legalName} · {BUSINESS.brand}</p>
+        <p className="text-[#F5F1E4]/75 text-sm mb-4">{ka ? 'საიდენტიფიკაციო ნომერი: ' : 'Business identification number: '}{BUSINESS.registrationNumber} · {ka ? 'საქართველო' : BUSINESS.country}</p>
         <p className="text-[#F5F1E4]/70 leading-relaxed mb-8">
           {ka ? s.introKa : s.introEn}
         </p>

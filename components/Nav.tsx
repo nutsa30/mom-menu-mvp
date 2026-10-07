@@ -1,6 +1,7 @@
 'use client';
 
 import LangSwitcher from './LangSwitcher';
+import MeasurementSwitcher from './MeasurementSwitcher';
 
 export default function Nav({ locale = 'ka', isLoggedIn = false }: { locale?: string; isLoggedIn?: boolean }) {
   const navLinks = [
@@ -12,15 +13,15 @@ export default function Nav({ locale = 'ka', isLoggedIn = false }: { locale?: st
 
   return (
     <header style={{ background: '#F5F1E4', borderBottom: '1px solid rgba(111,122,92,0.12)', fontFamily: "'Rubik', sans-serif", paddingTop: 'env(safe-area-inset-top)' }} className="sticky top-0 z-50">
-      <nav className="flex justify-between items-center w-full px-5 py-4 max-w-7xl mx-auto">
+      <nav className="flex justify-between items-center gap-3 w-full px-4 sm:px-5 py-3 max-w-7xl mx-auto">
 
         {/* Logo */}
         <a href={`/?lang=${locale}`} className="flex-shrink-0 select-none">
-          <img src="/mommenu-logo.png" alt="mom menu" className="h-16 w-auto" />
+          <img src="/mommenu-logo.png" alt="mom menu" className="h-12 sm:h-16 w-auto" />
         </a>
 
         {/* Desktop links */}
-        <div className="hidden md:flex items-center gap-1">
+        <div className="hidden xl:flex items-center gap-1">
           {navLinks.map((l) => (
             <a
               key={l.href}
@@ -34,12 +35,13 @@ export default function Nav({ locale = 'ka', isLoggedIn = false }: { locale?: st
         </div>
 
         {/* Right side */}
-        <div className="flex items-center gap-2">
+        <div className="flex flex-wrap items-center justify-end gap-2 min-w-0">
           <LangSwitcher locale={locale} variant="light" />
+          <div className="basis-full sm:basis-auto"><MeasurementSwitcher compact /></div>
           <div className="hidden md:block">
             {isLoggedIn ? (
               <a
-                href="/dashboard"
+                href={`/dashboard?lang=${locale}`}
                 className="text-sm font-bold px-6 py-2.5 rounded-full transition hover:opacity-90"
                 style={{ background: '#D9803B', color: '#FFFFFF' }}
               >

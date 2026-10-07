@@ -6,7 +6,8 @@ const fragments = Object.keys(translations).sort((a, b) => b.length - a.length);
 export function translateCopy(text: string, locale: Locale): string {
   if (locale === 'ka' || !/[\u10A0-\u10FF]/.test(text)) return text;
   const trimmed = text.trim();
-  if (translations[trimmed] !== undefined) return text.replace(trimmed, translations[trimmed]);
+  const normalized = trimmed.replace(/\s+/g, ' ');
+  if (translations[normalized] !== undefined) return text.replace(trimmed, translations[normalized]);
   // Authored templates can combine numbers with static fragments. Longest first,
   // one pass over the original string, so translations never translate each other.
   let result = '';

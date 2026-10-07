@@ -93,6 +93,7 @@ const btn = 'px-4 py-2 rounded-full text-sm font-bold transition';
 
 // ── Introduction Banner (6-9mo) ──────────────────────────────────────────
 function IntroductionBanner({ childId, childName }: { childId: string; childName: string }) {
+  const { locale } = useExperience();
   const [intro, setIntro] = useState<any | null>(undefined);
 
   useEffect(() => {
@@ -130,7 +131,7 @@ function IntroductionBanner({ childId, childName }: { childId: string; childName
             <div>
               <p className="font-bold text-[#465940] text-sm"> <Copy>{"ახლა:"}</Copy> <span className="text-[#465940]">{intro.foodName}</span></p>
               <p className="text-xs text-[#465940]/60 mt-0.5">
-                {daysSince} <Copy>{"დღე ·"}</Copy> <Copy>{readyForNext ? 'მზადაა შემდეგ პროდუქტზე გადასასვლელად!' : `კიდევ ${3 - daysSince} დღე`}</Copy>
+                {locale === 'en' ? `${daysSince} ${daysSince === 1 ? 'day' : 'days'} · ` : <>{daysSince} დღე · </>}<Copy>{readyForNext ? 'მზადაა შემდეგ პროდუქტზე გადასასვლელად!' : locale === 'en' ? `${3 - daysSince} ${3 - daysSince === 1 ? 'day' : 'days'} remaining` : `კიდევ ${3 - daysSince} დღე`}</Copy>
               </p>
             </div>
             <div className={`w-10 h-10 rounded-full flex items-center justify-center text-sm font-black ${
@@ -726,7 +727,7 @@ function ShoppingListTab({ child, planStart }: { child: any; planStart: string }
 
       {apiError && (
         <div className="bg-[#465940] border border-[#FDFBF0]/30 rounded-2xl p-4 text-center">
-          <p className="text-sm text-[#FDFBF0] font-semibold"> <Copy>{"შეცდომა:"}</Copy> {apiError}</p>
+          <p className="text-sm text-[#FDFBF0] font-semibold"> <Copy>{"შეცდომა:"}</Copy> <Copy>{apiError}</Copy></p>
           <p className="text-xs text-[#FDFBF0]/70 mt-1"> <Copy>{"სცადე \"განახლება\" ღილაკი"}</Copy> </p>
         </div>
       )}
@@ -1222,7 +1223,7 @@ function ChildTab({ kids, userId, onUpdate, onDelete, autoOpenIntroChildId, onAu
             </div>
           </div>
           {newBirthError && (
-            <p className="text-sm text-red-600 bg-red-50 rounded-xl px-4 py-2.5">{newBirthError}</p>
+            <p className="text-sm text-red-600 bg-red-50 rounded-xl px-4 py-2.5"><Copy>{newBirthError}</Copy></p>
           )}
           <div>
             <label className="block text-sm font-semibold text-[#465940] mb-2"> <Copy>{"ალერგიები"}</Copy> </label>
@@ -1352,7 +1353,7 @@ function ChildTab({ kids, userId, onUpdate, onDelete, autoOpenIntroChildId, onAu
                 <div className="flex items-center justify-between mb-2">
                   <div>
                     <p className="font-black text-[#465940]">{item.foodName}</p>
-                    <p className="text-xs text-[#465940]/60">{days} <Copy>{"დღე გავიდა ·"}</Copy> <Copy>{safe ? '3 დღე შესრულდა' : `${3 - days} დღე დარჩა`}</Copy></p>
+                    <p className="text-xs text-[#465940]/60">{locale === 'en' ? `${days} ${days === 1 ? 'day' : 'days'} passed · ` : <>{days} დღე გავიდა · </>}<Copy>{safe ? '3 დღე შესრულდა' : locale === 'en' ? `${3 - days} ${3 - days === 1 ? 'day' : 'days'} remaining` : `${3 - days} დღე დარჩა`}</Copy></p>
                   </div>
                   <div className={`w-12 h-12 rounded-full flex items-center justify-center text-xl font-black ${safe ? 'bg-green-100 text-green-700' : 'bg-[#465940]/10 text-[#465940]'}`}>
                     {days}/3
@@ -1545,6 +1546,7 @@ function AllergiesSection({ child }: { child: any }) {
 }
 
 function SettingsTab({ user, activeChild }: { user: any; activeChild?: any }) {
+  const { locale: contentLocale } = useExperience();
   const copy = useCopy();
   const [name, setName] = useState(user.name);
   const [nameStatus, setNameStatus] = useState<'idle' | 'saving' | 'ok'>('idle');
@@ -1638,7 +1640,7 @@ function SettingsTab({ user, activeChild }: { user: any; activeChild?: any }) {
       body: JSON.stringify({ reason, reasonText }),
     });
     if (res.ok) {
-      window.location.href = '/?lang=ka';
+      window.location.href = `/?lang=${contentLocale}`;
     } else {
       setDeleting(false);
       setDeleteError('შეცდომა. სცადე თავიდან.');
@@ -1664,7 +1666,7 @@ function SettingsTab({ user, activeChild }: { user: any; activeChild?: any }) {
       <div className={`${card} p-6`}>
         <h2 className="font-black text-[#465940] mb-4"> <Copy>{"ელფასტა"}</Copy> </h2>
         <input type="email" value={email} onChange={(e) => setEmail(e.target.value)} className={inp} />
-        {emailStatus === 'error' && <p className="text-red-500 text-sm mt-1">{emailError}</p>}
+        {emailStatus === 'error' && <p className="text-red-500 text-sm mt-1"><Copy>{emailError}</Copy></p>}
         <button onClick={saveEmail} disabled={emailStatus === 'saving'}
           className="mt-3 bg-[#465940] hover:bg-[#465940] text-[#FDFBF0] px-6 py-2.5 rounded-full text-sm font-bold transition disabled:opacity-60">
           <Copy>{emailStatus === 'saving' ? 'ინახება...' : emailStatus === 'ok' ? '✓ შენახვა' : 'შენახვა'}</Copy>
@@ -1679,7 +1681,7 @@ function SettingsTab({ user, activeChild }: { user: any; activeChild?: any }) {
           <input type="password" placeholder={copy("მიმდინარე პაროლი")} value={pwCur} onChange={(e) => setPwCur(e.target.value)} required className={inp} />
           <input type="password" placeholder={copy("ახალი პაროლი")} value={pwNew} onChange={(e) => setPwNew(e.target.value)} required minLength={6} className={inp} />
           <input type="password" placeholder={copy("გაიმეორე ახალი პაროლი")} value={pwConf} onChange={(e) => setPwConf(e.target.value)} required className={inp} />
-          {pwStatus === 'error' && <p className="text-red-500 text-sm">{pwError}</p>}
+          {pwStatus === 'error' && <p className="text-red-500 text-sm"><Copy>{pwError}</Copy></p>}
           <button type="submit" disabled={pwStatus === 'loading'}
             className="w-full bg-[#465940] hover:bg-[#465940] text-[#FDFBF0] py-3 rounded-full font-bold text-sm transition disabled:opacity-60">
             <Copy>{pwStatus === 'loading' ? 'იცვლება...' : 'პაროლის განახლება'}</Copy>
@@ -1721,7 +1723,7 @@ function SettingsTab({ user, activeChild }: { user: any; activeChild?: any }) {
           className="bg-red-50 hover:bg-red-100 text-red-600 px-6 py-2.5 rounded-full text-sm font-bold transition disabled:opacity-60">
           <Copy>{deleting ? 'იშლება...' : 'ანგარიშის წაშლა'}</Copy>
         </button>
-        {deleteError && <p className="text-red-500 text-xs mt-2">{deleteError}</p>}
+        {deleteError && <p className="text-red-500 text-xs mt-2"><Copy>{deleteError}</Copy></p>}
         {showDeleteReasonModal && (
           <DeleteAccountReasonModal
             onClose={() => setShowDeleteReasonModal(false)}
@@ -2158,8 +2160,8 @@ export default function DashboardClient({ user }: { user: any }) {
   return (
     <div className={`min-h-screen bg-[#465940] flex flex-col ${navRows > 1 ? 'pb-28' : 'pb-16'}`}>
       {/* Header */}
-      <header className="bg-gradient-to-r from-[#465940] to-[#465940] px-5 py-4 flex items-center justify-between sticky top-0 z-30 shadow-sm" style={{ paddingTop: 'calc(1rem + env(safe-area-inset-top))' }}>
-        <div className="flex items-center gap-3">
+      <header className="bg-gradient-to-r from-[#465940] to-[#465940] px-4 sm:px-5 py-4 flex flex-wrap items-center justify-between gap-3 sticky top-0 z-30 shadow-sm" style={{ paddingTop: 'calc(1rem + env(safe-area-inset-top))' }}>
+        <div className="flex items-center gap-3 min-w-0 max-w-full">
           <Link href="/" className="inline-flex rounded-xl p-1" style={{ background: '#FDFBF0' }}>
             <img src="/mommenu-logo.png" alt="mom menu" className="h-9 w-auto" />
           </Link>
@@ -2181,11 +2183,14 @@ export default function DashboardClient({ user }: { user: any }) {
             <p className="text-sm font-bold text-[#FDFBF0]">{user.name}</p>
             <p className="text-xs text-[#FDFBF0]/60">{user.subscriptionStatus}</p>
           </div>
-          <LangSwitcher locale={locale} />
           <div className="w-9 h-9 rounded-full bg-[#FDFBF0]/25 flex items-center justify-center text-[#FDFBF0] font-bold text-sm flex-shrink-0 ring-2 ring-[#FDFBF0]/30">
             {user.name[0].toUpperCase()}
           </div>
           <button onClick={logout} className="text-xs text-[#FDFBF0]/70 hover:text-[#FDFBF0] transition hidden sm:block"> <Copy>{"გამოსვლა"}</Copy> </button>
+        </div>
+        <div className="flex flex-wrap items-center justify-center gap-3 basis-full sm:basis-auto sm:ml-auto">
+          <LangSwitcher locale={locale} />
+          <MeasurementSwitcher compact variant="dark" />
         </div>
       </header>
 

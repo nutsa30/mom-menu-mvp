@@ -2,12 +2,12 @@
 import { useRouter } from 'next/navigation';
 import { useState } from 'react';
 import { useExperience } from './ExperienceProvider';
-export default function MeasurementSwitcher() {
+export default function MeasurementSwitcher({ compact = false, variant = 'light' }: { compact?: boolean; variant?: 'light' | 'dark' }) {
   const { units, locale } = useExperience();
   const router = useRouter(); const [busy, setBusy] = useState(false); const [error, setError] = useState('');
-  return <label className="flex flex-wrap items-center gap-2 text-sm text-[#465940]">
+  return <label className={`flex flex-wrap items-center justify-center gap-2 ${compact ? 'text-xs' : 'text-sm'} ${variant === 'dark' ? 'text-[#F5F1E4]' : 'text-[#465940]'}`}>
     {locale === 'en' ? 'Measurements' : 'საზომი ერთეულები'}
-    <select value={units} disabled={busy} className="input settings-input w-auto" onChange={async e => {
+    <select value={units} disabled={busy} className={`min-w-0 max-w-full rounded-full border border-[#465940]/25 bg-[#F5F1E4] text-[#465940] ${compact ? 'px-2 py-1.5 text-xs' : 'px-3 py-2 text-sm'}`} onChange={async e => {
       setBusy(true); setError('');
       try {
         const response = await fetch('/api/preferences', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ units: e.target.value }) });

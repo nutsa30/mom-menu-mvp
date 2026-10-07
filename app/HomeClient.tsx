@@ -1,10 +1,11 @@
 'use client';
 import { useExperience } from '@/components/ExperienceProvider';
+import LegalLinks from '@/components/LegalLinks';
 
 
 import { useRouter, useSearchParams } from 'next/navigation';
 import { useState, useEffect, useRef } from 'react';
-import { ga } from '@/lib/gtag';
+import { ga, rememberCheckout } from '@/lib/gtag';
 
 type S = Record<string, string | number>;
 type Dish = { titleKa: string; titleEn: string; imageUrl: string | null; ingredientsKa: string[]; ingredientsEn: string[] } | null;
@@ -44,8 +45,7 @@ function useFadeUp() {
     const el = ref.current;
     if (!el) return;
     const obs = new IntersectionObserver(([e]) => {
-      if (e.isIntersecting) { el.classList.add('in-view'); }
-      else { el.classList.remove('in-view'); }
+      if (e.isIntersecting) { el.classList.add('in-view'); obs.unobserve(el); }
     }, { threshold: 0.12 });
     obs.observe(el);
     return () => obs.disconnect();
@@ -64,40 +64,13 @@ function useStaggeredFadeUp(delay = 120) {
         Array.from(el.children).forEach((child, i) => {
           timers.push(setTimeout(() => child.classList.add('in-view'), i * delay));
         });
-      } else {
-        timers.forEach(clearTimeout);
-        timers.length = 0;
-        Array.from(el.children).forEach(child => child.classList.remove('in-view'));
+        obs.unobserve(el);
       }
     }, { threshold: 0.05, rootMargin: '0px 0px -60px 0px' });
     obs.observe(el);
     return () => { obs.disconnect(); timers.forEach(clearTimeout); };
   }, [delay]);
   return ref;
-}
-
-// Drives the connected "one continuous story" section: which step's text is centered in the
-// viewport decides which product visual the sticky panel (desktop) shows. Plain
-// IntersectionObserver, no scroll libraries — respects prefers-reduced-motion on its own
-// since it only ever toggles which block is rendered, never a scroll-linked transform.
-function useActiveStep(count: number) {
-  const refs = useRef<(HTMLDivElement | null)[]>([]);
-  const [active, setActive] = useState(0);
-  useEffect(() => {
-    const obs = new IntersectionObserver(
-      (entries) => {
-        entries.forEach((e) => {
-          if (!e.isIntersecting) return;
-          const idx = refs.current.findIndex((el) => el === e.target);
-          if (idx !== -1) setActive(idx);
-        });
-      },
-      { threshold: 0.6, rootMargin: '-15% 0px -15% 0px' }
-    );
-    refs.current.slice(0, count).forEach((el) => el && obs.observe(el));
-    return () => obs.disconnect();
-  }, [count]);
-  return { refs, active };
 }
 
 // Desktop-only "pinned" scrollytelling driver: the wrapper is `count` viewport-heights tall
@@ -172,11 +145,11 @@ function MenuDigestMock({ dishes, ka }: { dishes: Dishes; ka: boolean }) {
         {rows.map((r) => {
           const dish = dishes[r.key];
           return (
-            <li key={r.key} className="flex items-center gap-3">
-              <span className="text-[11px] font-bold uppercase tracking-wide w-12 shrink-0" style={{ color: `${INK}66` }}>
+            <li key={r.key} className="grid grid-cols-[5.5rem_minmax(0,1fr)] items-center gap-3">
+              <span className="text-[11px] font-bold uppercase tracking-wide" style={{ color: `${INK}66` }}>
                 {ka ? r.labelKa : r.labelEn}
               </span>
-              <span className="flex-1 text-sm font-bold truncate" style={{ color: INK }}>{dishLabel(dish, ka)}</span>
+              <span className="min-w-0 text-sm font-bold break-words" style={{ color: INK }}>{dishLabel(dish, ka)}</span>
             </li>
           );
         })}
@@ -503,7 +476,6 @@ export default function HomeClient({ s, dishes, dishCount, recentBlogs, planAmou
   const locale = searchParams.get('lang') === 'en' ? 'en' : 'ka';
   const ka = locale === 'ka';
 
-  const refStory = useActiveStep(9);
   const storyPin = useScrollStory(9);
   const refCoreValue = useFadeUp();
   const refDaily = useFadeUp();
@@ -582,8 +554,7 @@ export default function HomeClient({ s, dishes, dishCount, recentBlogs, planAmou
 
   const handleSubscribeBog = async (interval: BillingInterval) => {
     setLoadingPlan(interval);
-    const planLabel = interval === 1 ? '1 თვის გეგმა' : interval === 3 ? '3 თვის გეგმა' : '6 თვის გეგმა';
-    ga.subscribe(planLabel, planAmounts[interval], experience.currency);
+    const planLabel = `${interval}-month plan`;
     try {
       const appliedPromo = promoStatus[interval]?.valid ? promoInput[interval]?.trim() : undefined;
       const res = await fetch('/api/subscription/bog-checkout', {
@@ -592,7 +563,11 @@ export default function HomeClient({ s, dishes, dishCount, recentBlogs, planAmou
       });
       if (res.status === 401) { router.push(`/login?lang=${locale}`); return; }
       const data = await res.json();
-      if (res.ok && data.url) { window.location.href = data.url; return; }
+      if (res.ok && data.url) {
+        ga.subscribe(planLabel, data.amount, data.currency);
+        rememberCheckout(data.orderId);
+        window.location.href = data.url; return;
+      }
       if (data.error === 'already_subscribed') {
         alert(ka ? 'ეს პაკეტი უკვე აქტიური გაქვთ' : 'You already have this plan active');
       } else if (data.error === 'interval_switch_blocked') {
@@ -701,12 +676,7 @@ export default function HomeClient({ s, dishes, dishCount, recentBlogs, planAmou
               {STORY_STEPS.map((step, i) => (
                 <div
                   key={i}
-                  ref={(el) => { refStory.refs.current[i] = el; }}
-                  className="py-10 sm:py-16 transition-all duration-500 ease-out"
-                  style={{
-                    opacity: refStory.active === i ? 1 : 0,
-                    transform: refStory.active === i ? 'translateY(0)' : 'translateY(18px)',
-                  }}
+                  className="py-8 sm:py-12"
                 >
                   <p className="text-3xl sm:text-5xl font-bold" style={{ color: CREAM, fontFamily: SERIF_KA }}>{step.q}</p>
                   <div className="mt-6 max-w-sm">{step.visual}</div>
@@ -884,7 +854,7 @@ export default function HomeClient({ s, dishes, dishCount, recentBlogs, planAmou
                 : "If you spend every week thinking about your child's food, Mommenu exists to shrink that thinking."}
             </p>
           </div>
-          <div ref={refPricingCards} className="grid md:grid-cols-3 gap-5 max-w-5xl mx-auto items-stretch">
+          <div ref={refPricingCards} className="grid lg:grid-cols-3 gap-5 max-w-5xl mx-auto items-stretch">
             {([1, 3, 6] as BillingInterval[]).map((interval) => {
               const price = planAmounts[interval];
               const disc = discountedPrice(interval, price);
@@ -995,6 +965,7 @@ export default function HomeClient({ s, dishes, dishCount, recentBlogs, planAmou
         </div>
       </section>
 
+      <div className="px-5 pb-10 text-[#F5F1E4]" style={{ background: INK }}><LegalLinks /></div>
       {/* ── FINAL CTA ─────────────────────────────────────────── */}
       <section className="relative z-10 py-20 sm:py-32" style={{ background: INK }}>
         <div ref={refFinal} className="fade-up max-w-2xl mx-auto px-5 text-center">

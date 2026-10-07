@@ -35,6 +35,7 @@ export async function POST(req: Request) {
         name: pending.name, email, passwordHash: pending.passwordHash, emailVerified: true,
         bogTrialUsed: !!usedTrial,
         locale: pending.locale, market: pending.market, timeZone: pending.timeZone,
+        units: (await getExperience()).units,
         subscriptionCurrency: pending.market === 'INTL' ? 'USD' : 'GEL',
       },
     });
@@ -57,3 +58,4 @@ export async function POST(req: Request) {
     return NextResponse.json({ error: 'server_error' }, { status: 500 });
   }
 }
+import { getExperience } from '@/lib/experience';

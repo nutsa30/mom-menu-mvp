@@ -56,7 +56,7 @@ export default async function AboutPage(props: { searchParams: Promise<{ lang?: 
             </p>
             <div className="flex items-center gap-3 mt-6">
               <div className="w-11 h-11 rounded-full bg-[#F5F1E4]/20 flex items-center justify-center text-[#F5F1E4] font-black text-lg">
-                ნ
+                {ka ? 'ნ' : 'N'}
               </div>
               <div>
                 <p className="font-black text-[#F5F1E4] text-sm">{ka ? 'ნუცა' : 'Nutsa'}</p>

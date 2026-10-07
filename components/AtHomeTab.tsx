@@ -193,27 +193,40 @@ export default function AtHomeTab({ child, allDishes }: { child: any; allDishes:
   const slotsForDish = (dish: any) => logs.filter((l) => l.mealType === dish.mealType);
 
   const markEatenInSlot = async (logId: string, dishId: string) => {
+    try {
     const res = await fetch(`/api/daily-log/${logId}`, {
       method: 'PATCH', headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ dishId, wasEaten: true }),
     });
+    if (!res.ok) throw new Error('Save failed');
     const updated = await res.json();
     setLogs((prev) => prev.map((l) => (l.id === logId ? updated : l)));
     // Same cache-invalidation the existing substitute() does — shopping list must reflect
     // the new dish's ingredients too.
-    localStorage.removeItem(`shopping_${child?.id}`);
+    const prefix = `shopping_${child?.id}`;
+    Object.keys(localStorage).filter(key => key === prefix || key.startsWith(prefix + '_')).forEach(key => localStorage.removeItem(key));
     setReplacing(null);
-    setConfirmedMsg(`დღის გეგმა განახლდა — ${MEAL_LABEL[updated.mealType]} ახლა არის „${localizedField(updated.dish, 'title', contentLocale)}“`);
+    setConfirmedMsg(contentLocale === 'en'
+      ? `Today's plan updated — ${copy(MEAL_LABEL[updated.mealType])}: ${localizedField(updated.dish, 'title', contentLocale)}`
+      : `დღის გეგმა განახლდა — ${MEAL_LABEL[updated.mealType]} ახლა არის „${localizedField(updated.dish, 'title', contentLocale)}“`);
     window.setTimeout(() => setConfirmedMsg(null), 4500);
+    } catch {
+      setConfirmedMsg(copy('შენახვა ვერ მოხერხდა. სცადე ხელახლა.'));
+    }
   };
 
   const toggleDislike = async (dishId: string) => {
-    await fetch('/api/dish-votes', {
+    try {
+    const response = await fetch('/api/dish-votes', {
       method: 'POST', headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ childId: child.id, dishId, liked: false }),
     });
+    if (!response.ok) throw new Error('Save failed');
     setConfirmedMsg('აღინიშნა როგორც არ მოწონებული — მომავალში ნაკლებად შემოგთავაზდება');
     window.setTimeout(() => setConfirmedMsg(null), 4500);
+    } catch {
+      setConfirmedMsg(copy('შენახვა ვერ მოხერხდა. სცადე ხელახლა.'));
+    }
   };
 
   if (!child) {
@@ -334,7 +347,7 @@ export default function AtHomeTab({ child, allDishes }: { child: any; allDishes:
 
       {confirmedMsg && (
         <div className="rounded-2xl bg-[#465940] text-[#FDFBF0] px-4 py-3 text-sm font-semibold text-center">
-          {confirmedMsg}
+          <Copy>{confirmedMsg}</Copy>
         </div>
       )}
 

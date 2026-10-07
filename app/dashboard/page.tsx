@@ -2,6 +2,7 @@
 import { prisma } from '@/lib/prisma';
 import DashboardClient from '@/components/DashboardClient';
 import GaPageEvents from '@/components/GaPageEvents';
+import PurchaseConversion from '@/components/PurchaseConversion';
 import { Suspense } from 'react';
 import type { Metadata } from 'next';
 import { localizedMetadata } from '@/lib/metadata';
@@ -26,6 +27,7 @@ export default async function DashboardPage() {
   return (
     <>
       <Suspense fallback={null}><GaPageEvents /></Suspense>
+      <Suspense fallback={null}><PurchaseConversion /></Suspense>
       <DashboardClient user={user} />
     </>
   );

@@ -2,11 +2,12 @@
 import { useExperience } from '@/components/ExperienceProvider';
 
 import Copy, { useCopy } from '@/components/Copy';
+import LegalLinks from '@/components/LegalLinks';
 
 
 import { useRouter } from 'next/navigation';
 import { useEffect, useState } from 'react';
-import { ga } from '@/lib/gtag';
+import { ga, rememberCheckout } from '@/lib/gtag';
 
 type BillingInterval = 1 | 3 | 6;
 
@@ -18,6 +19,7 @@ const PROMO_TRIAL_DAYS = 3;
 export default function SubscriptionClient({ planAmounts }: { planAmounts: Record<BillingInterval, number> }) {
   const copy = useCopy();
   const experience = useExperience();
+  const english = experience.locale === 'en';
   const symbol = experience.currency === 'USD' ? '$' : '₾';
   const formatPrice = (value: string | number) => experience.currency === 'USD' ? new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD', minimumFractionDigits: 0, maximumFractionDigits: 2 }).format(Number(value)) : `${value}₾`;
   const router = useRouter();
@@ -62,31 +64,32 @@ export default function SubscriptionClient({ planAmounts }: { planAmounts: Recor
       });
       const data = await res.json();
       if (res.ok && data.valid) {
-        setPromoStatus(p => ({ ...p, [interval]: { discount: data.discountPercent, valid: true, msg: `✓ ${data.discountPercent}% ფასდაკლება — ${PROMO_TRIAL_DAYS}-დღიანი სატესტო პერიოდით` } }));
+        setPromoStatus(p => ({ ...p, [interval]: { discount: data.discountPercent, valid: true, msg: english ? `✓ ${data.discountPercent}% discount — with a ${PROMO_TRIAL_DAYS}-day trial` : `✓ ${data.discountPercent}% ფასდაკლება — ${PROMO_TRIAL_DAYS}-დღიანი სატესტო პერიოდით` } }));
       } else {
-        const msg = data.error === 'wrong_plan' ? 'ეს კოდი სხვა გეგმისთვისაა'
-          : data.error === 'limit_reached' ? 'კოდის ლიმიტი ამოიწურა'
-          : 'კოდი არასწორია';
+        const msg = data.error === 'wrong_plan' ? (english ? 'This code is for a different plan' : 'ეს კოდი სხვა გეგმისთვისაა')
+          : data.error === 'limit_reached' ? (english ? 'This code has reached its usage limit' : 'კოდის ლიმიტი ამოიწურა')
+          : (english ? 'Invalid code' : 'კოდი არასწორია');
         setPromoStatus(p => ({ ...p, [interval]: { discount: 0, valid: false, msg } }));
       }
     } catch {
-      setPromoStatus(p => ({ ...p, [interval]: { discount: 0, valid: false, msg: 'შეცდომა' } }));
+      setPromoStatus(p => ({ ...p, [interval]: { discount: 0, valid: false, msg: english ? 'Could not check the code. Please try again.' : 'შეცდომა' } }));
     } finally { setPromoLoading(null); }
   };
 
   const handleSubscribeBog = async (interval: BillingInterval) => {
     setLoadingPlan(interval);
-    const planLabel = interval === 1 ? '1 თვის გეგმა' : interval === 3 ? '3 თვის გეგმა' : '6 თვის გეგმა';
-    ga.subscribe(planLabel, planAmounts[interval], experience.currency);
+    const planLabel = english ? `${interval}-month plan` : interval === 1 ? '1 თვის გეგმა' : interval === 3 ? '3 თვის გეგმა' : '6 თვის გეგმა';
     try {
       const appliedPromo = promoStatus[interval]?.valid ? promoInput[interval]?.trim() : undefined;
       const res = await fetch('/api/subscription/bog-checkout', {
         method: 'POST', headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ interval, promoCode: appliedPromo }),
       });
-      if (res.status === 401) { router.push('/login'); return; }
+      if (res.status === 401) { router.push(`/login?lang=${experience.locale}`); return; }
       const data = await res.json();
       if (res.ok && data.url) {
+        ga.subscribe(planLabel, data.amount, data.currency);
+        rememberCheckout(data.orderId);
         window.location.href = data.url;
         return;
       }
@@ -95,7 +98,7 @@ export default function SubscriptionClient({ planAmounts }: { planAmounts: Recor
       } else if (data.error === 'interval_switch_blocked') {
         setIntervalBlocked({ currentInterval: data.currentInterval, renewsAt: data.renewsAt ?? null });
       } else if (data.error === 'child_too_young') {
-        alert(data.message);
+        alert(english ? 'The package unlocks once your child turns 6 months old.' : data.message);
       } else {
         alert(copy('გადახდის სერვისი დროებით ტექნიკურ სამუშაოებზეა. გთხოვთ სცადოთ მოგვიანებით.'));
       }
@@ -121,7 +124,7 @@ export default function SubscriptionClient({ planAmounts }: { planAmounts: Recor
         <h1 className="text-4xl font-black text-[#F5F1E4] mb-3"> <Copy>{"პაკეტის არჩევა"}</Copy> </h1>
         <p className="text-[#F5F1E4]/60 mb-12"> <Copy>{"გაუქმება ნებისმიერ დროს შეგიძლია"}</Copy> </p>
 
-        <div className="grid gap-6 md:grid-cols-3">
+        <div className="grid gap-6 lg:grid-cols-3">
           {([1, 3, 6] as BillingInterval[]).map((interval) => {
             const price = planAmounts[interval];
             const disc = discountedPrice(interval, price);
@@ -130,7 +133,8 @@ export default function SubscriptionClient({ planAmounts }: { planAmounts: Recor
             const savings = monthlyBaseline - price;
             const savingsPct = Math.round((savings / monthlyBaseline) * 100);
             const perMonth = (price / interval).toFixed(experience.market === 'INTL' ? 2 : interval === 6 ? 1 : 0);
-            const cadence = interval === 1 ? 'თვეში' : `ყოველ ${interval} თვეში`;
+            const cadence = english ? (interval === 1 ? 'month' : `every ${interval} months`) : interval === 1 ? 'თვეში' : `ყოველ ${interval} თვეში`;
+            const renewalCadence = english ? (interval === 1 ? 'monthly' : `every ${interval} months`) : cadence;
             const isActive = currentPlan === 'FULL_PLAN' && currentInterval === interval && !loadingPlan;
             // Free trial retired for everyone except promo-code signups (2026-09-13
             // decision) — a referral code alone no longer grants one. Only a promo code
@@ -139,16 +143,16 @@ export default function SubscriptionClient({ planAmounts }: { planAmounts: Recor
             const hasTrial = !bogTrialUsed && Boolean(promoStatus[interval]?.valid);
 
             return (
-              <div key={interval} className={`rounded-[28px] bg-[#F5F1E4] p-8 flex flex-col min-w-0 relative ${isRecommended ? 'md:scale-105 z-10 border-2' : ''}`}
+              <div key={interval} className={`rounded-[28px] bg-[#F5F1E4] p-5 sm:p-8 flex flex-col min-w-0 relative ${isRecommended ? 'lg:scale-105 z-10 border-2' : ''}`}
                 style={isRecommended ? { borderColor: '#D9803B' } : undefined}>
                 {isRecommended && (
                   <div className="absolute -top-4 left-1/2 -translate-x-1/2">
                     <span className="inline-flex items-center gap-2 text-white text-sm font-black px-6 py-2 rounded-full shadow-md whitespace-nowrap" style={{ background: '#D9803B' }}> <Copy>{"მშობლების არჩევანი"}</Copy> </span>
                   </div>
                 )}
-                <h2 className="text-xl font-semibold text-[#6F7A5C] mb-1 mt-4">{interval} <Copy>{"თვე"}</Copy> </h2>
+                <h2 className="text-xl font-semibold text-[#6F7A5C] mb-1 mt-4">{english ? `${interval} ${interval === 1 ? 'month' : 'months'}` : `${interval} თვე`}</h2>
                 <p className="text-sm mb-4 h-5" style={{ color: savings > 0 ? '#D9803B' : 'transparent' }}>
-                  <Copy>{savings > 0 ? (experience.locale === 'en' ? `You save ${savings}${symbol} (${savingsPct}%)` : `ზოგავთ ${savings}${symbol}-ს (${savingsPct}%)`) : '—'}</Copy>
+                  <Copy>{savings > 0 ? (english ? `You save ${formatPrice(savings)} (${savingsPct}%)` : `ზოგავთ ${savings}${symbol}-ს (${savingsPct}%)`) : '—'}</Copy>
                 </p>
 
                 {hasTrial ? (
@@ -177,7 +181,7 @@ export default function SubscriptionClient({ planAmounts }: { planAmounts: Recor
 
                 <p className="text-[#6F7A5C]/40 text-[11px] italic mt-2 mb-5">
                   <Copy>{hasTrial
-                    ? `თანხა ჩამოგეჭრებათ მე-${PROMO_TRIAL_DAYS + 1} დღეს. გაუქმება შესაძლებელია სატესტო პერიოდშივე, სრულიად უფასოდ.`
+                    ? english ? `Your card will be charged on day ${PROMO_TRIAL_DAYS + 1}. You can cancel during the trial at no cost.` : `თანხა ჩამოგეჭრებათ მე-${PROMO_TRIAL_DAYS + 1} დღეს. გაუქმება შესაძლებელია სატესტო პერიოდშივე, სრულიად უფასოდ.`
                     : bogTrialUsed
                       ? 'თანხა ჩამოგეჭრებათ დაუყოვნებლივ — სატესტო პერიოდი ერთხელ უკვე გამოყენებული გაქვთ.'
                       : 'თანხა ჩამოგეჭრებათ დაუყოვნებლივ, გამოწერისთანავე.'}</Copy>
@@ -219,16 +223,16 @@ export default function SubscriptionClient({ planAmounts }: { planAmounts: Recor
                     : loadingPlan === interval
                       ? 'მუშავდება...'
                       : hasTrial
-                        ? `დაწყება — ${PROMO_TRIAL_DAYS} დღით უფასოდ`
+                        ? english ? `Start — ${PROMO_TRIAL_DAYS} days free` : `დაწყება — ${PROMO_TRIAL_DAYS} დღით უფასოდ`
                         : 'შეიძინე ახლავე'}</Copy>
                 </button>
-                <p className="text-[#6F7A5C]/50 text-xs mt-2 text-center"> <Copy>{"ავტომატურად განახლდება"}</Copy> {cadence} <Copy>{". გაუქმება ნებისმიერ დროს."}</Copy> </p>
+                <p className="text-[#6F7A5C]/50 text-xs mt-2 text-center">{english ? `Renews automatically ${renewalCadence}. Cancel at any time.` : `ავტომატურად განახლდება ${cadence}. გაუქმება ნებისმიერ დროს.`}</p>
               </div>
             );
           })}
         </div>
-
-        <a href="/dashboard" className="mt-10 inline-block text-[#F5F1E4]/60 hover:text-[#F5F1E4] transition text-sm"> <Copy>{"← დაბრუნება"}</Copy> </a>
+        <div className="mt-8 text-[#F5F1E4]"><LegalLinks /></div>
+        <a href={`/dashboard?lang=${experience.locale}`} className="mt-10 inline-block text-[#F5F1E4]/60 hover:text-[#F5F1E4] transition text-sm"> <Copy>{"← დაბრუნება"}</Copy> </a>
       </div>
 
       {intervalBlocked && (
@@ -236,7 +240,7 @@ export default function SubscriptionClient({ planAmounts }: { planAmounts: Recor
           currentInterval={intervalBlocked.currentInterval}
           renewsAt={intervalBlocked.renewsAt}
           onClose={() => setIntervalBlocked(null)}
-          onGoCancel={() => router.push('/dashboard?tab=settings&focus=cancel')}
+          onGoCancel={() => router.push(`/dashboard?lang=${experience.locale}&tab=settings&focus=cancel`)}
         />
       )}
     </main>

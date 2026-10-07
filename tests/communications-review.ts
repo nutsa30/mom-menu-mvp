@@ -17,6 +17,16 @@ async function main() {
     assert.equal(sends, 1);
     await assert.rejects(() => oncePerLocalDay('localreview', kind, '2026-10-07', async () => { throw new Error('provider failure'); }));
     assert.equal(await oncePerLocalDay('localreview', kind, '2026-10-07', async () => { sends++; }), true);
+    const birthdayMessages: { subject: string; html: string }[] = [];
+    resend.emails.send = (async (message: { subject: string; html: string }) => {
+      birthdayMessages.push(message);
+      return { data: { id: 'local-review-only' }, headers: null, error: null };
+    }) as typeof resend.emails.send;
+    await sendBirthdayEmail('parent@review.local');
+    await sendBirthdayEmail('georgian@review.local');
+    assert.match(birthdayMessages[0].subject, /birthday/i);
+    assert(!/[ა-ჰ]/.test(birthdayMessages[0].html), 'English birthday email must not contain Georgian copy');
+    assert(/[ა-ჰ]/.test(birthdayMessages[1].subject), 'Georgian account keeps its Georgian birthday email');
     resend.emails.send = (async () => ({ data: null, headers: null, error: { name: 'validation_error', statusCode: 422, message: 'simulated provider error' } })) as typeof resend.emails.send;
     await assert.rejects(() => sendWeeklyMenuEmail('parent@review.local', 'Local review'), /simulated provider error/);
     await assert.rejects(() => sendBirthdayEmail('parent@review.local'), /simulated provider error/);

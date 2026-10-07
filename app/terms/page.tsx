@@ -1,3 +1,5 @@
+import RefundPolicy from '@/components/RefundPolicy';
+import MerchantInfo from '@/components/MerchantInfo';
 import { localizedMetadata } from '@/lib/metadata';
 ﻿import type { Metadata } from 'next';
 import BackToRegisterButton from '@/components/BackToRegisterButton';
@@ -33,7 +35,7 @@ export default async function TermsPage(props: { searchParams: Promise<{ lang?: 
             {ka ? 'გამოყენების პირობები' : 'Terms of Service'}
           </h1>
           <p className="text-sm text-[#6F7A5C]/60">
-            {ka ? 'ბოლო განახლება: 2026 წლის მაისი' : 'Last updated: May 2026'}
+            {ka ? 'ბოლო განახლება: 7 ოქტომბერი, 2026' : 'Last updated: 7 October 2026'}
           </p>
         </div>
       </div>
@@ -41,6 +43,7 @@ export default async function TermsPage(props: { searchParams: Promise<{ lang?: 
       {/* Content */}
       <div className="max-w-3xl mx-auto px-6 py-14 space-y-8">
 
+        <div className="bg-[#F5F1E4] rounded-2xl p-5 sm:p-8 text-[#6F7A5C]"><MerchantInfo locale={locale} /></div>
         {/* Intro */}
         <div className="bg-[#F5F1E4] rounded-2xl border border-[#6F7A5C]/10 shadow-sm p-8">
           <p className="text-[#6F7A5C]/80 leading-relaxed">
@@ -94,16 +97,16 @@ export default async function TermsPage(props: { searchParams: Promise<{ lang?: 
             <p>
               {ka
                 ? 'mom menu გთავაზობთ უფასო და ფასიანი გამოწერის გეგმებს. ფასიანი გამოწერის პირობები:'
-                : 'mom menu offers free and paid subscription plans. Paid subscription terms:'}
+                : 'mom menu offers free and paid subscription plans. International plans cost USD $15 for 30 days, $34 for 90 days or $52 for 180 days, before any displayed promotion. Georgian-market plans are billed in GEL. Checkout shows your actual total and currency before payment; your bank may charge a conversion fee. Access starts after payment confirmation and renewal charges the selected plan unless cancelled. Paid subscription terms:'}
             </p>
             <ul className="space-y-2">
               {(ka ? [
-                'გამოწერა ავტომატურად განახლდება ყოველ თვე',
+                'გამოწერა ავტომატურად განახლდება არჩეული პაკეტის პერიოდით: 30, 90 ან 180 დღე',
                 'გაუქმება შეიძლება ნებისმიერ დროს პარამეტრებიდან',
                 'გაუქმების შემდეგ სარგებლობა შეიძლება მიმდინარე პერიოდის ბოლომდე',
                 'ფასები შეიძლება შეიცვალოს წინასწარი შეტყობინებით',
               ] : [
-                'Subscriptions renew automatically each month',
+                'Plans renew automatically at the selected interval: 30, 90 or 180 days (1, 3 or 6 months)',
                 'Cancellation is possible at any time from settings',
                 'After cancellation, access continues until the end of the current period',
                 'Prices may change with prior notice',
@@ -118,31 +121,7 @@ export default async function TermsPage(props: { searchParams: Promise<{ lang?: 
         </Section>
 
         <Section num="04" title={ka ? 'გაუქმება და თანხის დაბრუნება' : 'Cancellation and refunds'}>
-          <div className="space-y-4 text-sm text-[#6F7A5C]/80 leading-relaxed">
-            <p>
-              {ka
-                ? 'mom menu ციფრული სერვისია. გამოწერის გაუქმება შეგიძლიათ ნებისმიერ დროს პარამეტრების გვერდიდან.'
-                : 'mom menu is a digital service. You can cancel your subscription at any time from the settings page.'}
-            </p>
-            <ul className="space-y-2">
-              {(ka ? [
-                'გაუქმების შემდეგ წვდომა გრძელდება მიმდინარე ანაზღაურებული პერიოდის ბოლომდე',
-                'ციფრული კონტენტის სპეციფიკიდან გამომდინარე, უკვე გადახდილ პერიოდზე თანხის დაბრუნება არ ხდება',
-                'გამონაკლის შემთხვევებში (ტექნიკური ხარვეზი ჩვენი მხრიდან) თანხის დაბრუნება განიხილება ინდივიდუალურად',
-                'დაბრუნების მოთხოვნა უნდა გამოიგზავნოს info@mommenu.ge-ზე 48 საათის განმავლობაში',
-              ] : [
-                'After cancellation, access continues until the end of the current paid period',
-                'Due to the nature of digital content, no refunds are issued for already-paid periods',
-                'In exceptional cases (technical error on our part), refunds are considered individually',
-                'Refund requests must be sent to info@mommenu.ge within 48 hours',
-              ]).map((item, i) => (
-                <li key={i} className="flex gap-3">
-                  <span className="flex-shrink-0 text-[#6F7A5C] font-black leading-none mt-0.5">—</span>
-                  {item}
-                </li>
-              ))}
-            </ul>
-          </div>
+          <RefundPolicy locale={locale} />
         </Section>
 
         <Section num="05" title={ka ? 'დაუშვებელი გამოყენება' : 'Prohibited use'}>

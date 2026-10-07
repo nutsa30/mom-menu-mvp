@@ -10,7 +10,7 @@ async function main() {
   try {
     for (const market of ['GE', 'INTL'] as const) {
       const lang = market === 'GE' ? 'ka' : 'en';
-      const headers = { origin, 'x-vercel-ip-country': market === 'GE' ? 'GE' : 'US' };
+      const headers = { origin, 'x-vercel-ip-country': market === 'GE' ? 'GE' : 'US', cookie: 'mommenu_units=us' };
       const formResponse = await fetch(`${origin}/register?lang=${lang}`, { headers });
       assert.equal(formResponse.status, 200);
       const html = await formResponse.text();
@@ -33,6 +33,7 @@ async function main() {
       const user = await prisma.user.findUniqueOrThrow({ where: { email } });
       assert.equal(user.market, market); assert.equal(user.locale, lang); assert.equal(user.subscriptionCurrency, market === 'GE' ? 'GEL' : 'USD');
       assert.equal(user.emailVerified, true); assert(user.referralCode);
+      assert.equal(user.units, 'us', 'A measurement preference chosen before signup must persist on the new account');
       const cookie = verified.headers.getSetCookie().map(c => c.split(';')[0]).join('; ');
       const child = await fetch(`${origin}/api/children`, { method: 'POST', headers: { ...headers, cookie, 'Content-Type': 'application/json' }, body: JSON.stringify({ name: 'Local review child', birthDate: '2025-04-05', allergies: [], likes: [], dislikes: [] }) });
       assert.equal(child.status, 200, await child.text());

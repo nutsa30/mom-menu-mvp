@@ -64,7 +64,7 @@ export default function VerifyEmailPage(
         else setError(ka ? 'შეცდომა. სცადეთ თავიდან.' : 'Error. Please try again.');
         return;
       }
-      router.push('/dashboard?lang=' + locale + '&in=1');
+      router.push('/dashboard?lang=' + locale + '&new=1');
     } catch {
       setError(ka ? 'შეცდომა. სცადეთ თავიდან.' : 'Error. Please try again.');
     } finally {

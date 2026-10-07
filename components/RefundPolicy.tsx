@@ -1,0 +1,19 @@
+export default function RefundPolicy({ locale }: { locale: 'ka' | 'en' }) {
+  const ka = locale === 'ka';
+  const paragraphs = ka ? [
+    'ავტომატური განახლება ნებისმიერ დროს გააუქმე დაშბორდში: პარამეტრები → გამოწერის გაუქმება. ჩვეულებრივი გაუქმებისას წვდომა გადახდილი პერიოდის ბოლომდე გრჩება და შემდეგი ჩამოჭრა აღარ მოხდება. ანგარიშის წაშლა საჭირო არ არის.',
+    'გაერთიანებული სამეფოს მომხმარებლები: პირველი გამოწერის შეძენიდან 14 კალენდარულ დღეში შეგიძლია მოითხოვო პირველი გადახდის სრულად დაბრუნება, სერვისის გამოყენების მიუხედავად. ეს Mommenu-ის პოლიტიკაა; დაუყოვნებელი წვდომით ამ უფლებაზე უარს არ ამბობ.',
+    'მოთხოვნა გამოგზავნე info@mommenu.ge-ზე: ანგარიშის ელფოსტა, შეძენის თარიღი და სურვილი, რომ გააუქმო გამოწერა და დაგიბრუნდეს თანხა. მიზეზის დასახელება საჭირო არ არის. ბარათის ნომერი, პაროლი ან უსაფრთხოების კოდი არ გამოგვიგზავნო.',
+    'შესაბამის დაბრუნებას მოთხოვნის მიღებიდან არაუგვიანეს 14 დღისა, თავდაპირველი გადახდის მეთოდით, დამატებითი დაბრუნების საკომისიოს გარეშე შევასრულებთ. ბანკის მიერ თანხის ასახვის ვადა შეიძლება განსხვავდებოდეს. სრული დაბრუნების დამუშავებისას ფასიანი წვდომა დასრულდება და ავტომატური განახლება შეწყდება.',
+    '14 დღის შემდეგ ჩვეულებრივი გაუქმება უკვე გადახდილი პერიოდის ავტომატურ დაბრუნებას არ ნიშნავს. დუბლირებული ან არასწორი ჩამოჭრის, სერვისის მიუწოდებლობის ან გაუმართაობის შემთხვევაში დაგვიკავშირდი. კანონით გათვალისწინებული შეკეთების, ფასის შემცირების, დაბრუნებისა და სხვა უფლებები შენარჩუნებულია; მათ 48-საათიანი შეზღუდვა არ ეხება. ეს პოლიტიკა განახლებასთან დაკავშირებულ სავალდებულო უფლებებსაც არ ზღუდავს.',
+    'გაერთიანებული სამეფოს გარეთ: ადგილობრივი კანონით გათვალისწინებული სავალდებულო უფლებების დაცვით, უკვე გადახდილი პერიოდები არ ანაზღაურდება. ჩვენი ტექნიკური ხარვეზის შემთხვევაში დაბრუნება ინდივიდუალურად განიხილება; ჩვეულებრივი მოთხოვნა info@mommenu.ge-ზე 48 საათში გამოგზავნე. ეს ვადა კანონით მინიჭებულ სავალდებულო უფლებებს არ ზღუდავს.',
+  ] : [
+    'Stop automatic renewal at any time in Dashboard → Settings → Cancel subscription. Ordinary cancellation keeps access until the end of your paid period and stops future renewal charges. You do not need to delete your account.',
+    'Customers in the United Kingdom: you can request a full refund of your first subscription payment within 14 calendar days of your first purchase, even if you have used the service. This is Mommenu’s refund policy; starting access immediately does not waive this right.',
+    'Email info@mommenu.ge with your account email, purchase date and a clear statement that you want to cancel and receive a refund. You do not need to give a reason. Do not send your card number, password or security code.',
+    'We will process an eligible refund within 14 days of receiving your request, using your original payment method without an additional refund fee. Your bank’s posting time may vary. When a full refund is processed, paid access ends and automatic renewal stops.',
+    'After 14 days, ordinary cancellation does not automatically refund an already-paid period. Contact us about duplicate or incorrect charges, non-delivery or a faulty service. Statutory rights to a remedy, price reduction, refund or other protection remain unaffected and are not subject to a 48-hour limit. This policy does not restrict mandatory rights relating to renewal.',
+    'Customers outside the United Kingdom: subject to mandatory rights under your local law, already-paid periods are not refunded. Refunds for a technical fault on our part are considered individually; please send an ordinary request to info@mommenu.ge within 48 hours. This time limit does not restrict mandatory statutory rights.',
+  ];
+  return <div className="space-y-4 text-sm leading-relaxed text-[#6F7A5C]">{paragraphs.map(text => <p key={text}>{text}</p>)}<p><a className="underline" href={`/contact?lang=${locale}`}>{ka ? 'საკონტაქტო გვერდი' : 'Contact and refund requests'}</a></p></div>;
+}

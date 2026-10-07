@@ -90,7 +90,7 @@ export async function POST(req: Request) {
     // one), so checking it here is exactly "does this order have a promo code on it".
     const eligibleForTrial = !user.bogTrialUsed && discountPercent !== null;
     const createOrder = eligibleForTrial ? createTrialOrder : createDirectOrder;
-    const { url } = await createOrder({
+    const { url, orderId } = await createOrder({
       interval,
       userId: user.id,
       email: user.email,
@@ -99,7 +99,8 @@ export async function POST(req: Request) {
       market: accountMarket(user),
       locale: user.locale === 'en' ? 'en' : 'ka',
     });
-    return NextResponse.json({ url });
+    const checkout = await prisma.checkoutOrder.findUniqueOrThrow({ where: { id: orderId }, select: { amount: true, currency: true } });
+    return NextResponse.json({ url, orderId, amount: checkout.amount, currency: checkout.currency });
   } catch (err: any) {
     console.error('BOG checkout error:', err.message);
     // Status 400 (not 502/503/504) — Cloudflare intercepts those from the origin and

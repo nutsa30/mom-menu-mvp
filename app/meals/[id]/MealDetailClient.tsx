@@ -5,7 +5,6 @@ import Copy from '@/components/Copy';
 import { useExperience } from '@/components/ExperienceProvider';
 import { localizedField } from '@/lib/content';
 import { ingredientQuantity } from '@/lib/measurements';
-import MeasurementSwitcher from '@/components/MeasurementSwitcher';
 
 const VITAMINS: { key: string; label: string; unit: string }[] = [
   { key: 'vitaminAmcg',   label: 'A ვიტამინი',  unit: 'mcg' },
@@ -110,7 +109,6 @@ export default function MealDetailClient({ dish, canViewRecipe }: { dish: any; c
             )}
 
             {/* Ingredients */}
-            <div className="mb-4"><MeasurementSwitcher /></div>
             <div className={`grid ${locale === 'ka' ? 'md:grid-cols-2' : ''} gap-6 mb-10`}>
               {locale === 'ka' && <div>
                 <h2 className="text-lg font-bold text-[#6F7A5C] mb-3"><Copy>{"ინგრედიენტები"}</Copy></h2>

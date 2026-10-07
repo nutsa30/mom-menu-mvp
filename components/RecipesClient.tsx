@@ -2,7 +2,6 @@
 import Copy, { useCopy } from '@/components/Copy';
 import { useExperience } from './ExperienceProvider';
 import { ingredientQuantity } from '@/lib/measurements';
-import MeasurementSwitcher from './MeasurementSwitcher';
 
 
 import { useState, useEffect } from 'react';
@@ -399,9 +398,9 @@ export default function RecipesClient({ dishes, locale, canRead, isLoggedIn }: P
 
       {/* Recipe modal */}
       {selected && (
-        <div className="fixed inset-0 z-50 bg-black/50 flex items-end sm:items-center justify-center p-4" onClick={() => setSelected(null)}>
+        <div className="fixed inset-0 z-50 bg-black/50 flex items-center justify-center p-4" onClick={() => setSelected(null)}>
           <div className="bg-[#F5F1E4] w-full max-w-lg rounded-2xl overflow-hidden max-h-[90vh] flex flex-col" onClick={(e) => e.stopPropagation()}>
-            <div className="relative h-52 bg-[#fdf0ea] flex-shrink-0">
+            <div className="relative h-36 sm:h-52 bg-[#fdf0ea] flex-shrink-0">
               {selected.imageUrl ? (
                 <img src={selected.imageUrl} alt={title(selected)} className="w-full h-full object-cover" />
               ) : (
@@ -416,7 +415,7 @@ export default function RecipesClient({ dishes, locale, canRead, isLoggedIn }: P
               </span>
             </div>
 
-            <div className="overflow-y-auto p-6 space-y-5">
+            <div className="overflow-y-auto p-4 sm:p-6 space-y-5 break-words">
               <div>
                 <h2 className="text-xl font-black text-[#6F7A5C]">{title(selected)}</h2>
                 <div className="flex flex-wrap gap-1.5 mt-2">
@@ -452,7 +451,6 @@ export default function RecipesClient({ dishes, locale, canRead, isLoggedIn }: P
 
                   {ingredients(selected).length > 0 && (
                     <div>
-                      <MeasurementSwitcher />
                       <p className="text-sm font-bold text-[#6F7A5C] mb-2"><Copy>{t('ინგრედიენტები', 'Ingredients')}</Copy></p>
                       <ol className="space-y-1.5">
                         {ingredients(selected).map((ing, i) => (
