@@ -99,17 +99,22 @@ function useFlowingStory() {
       const navigation = document.querySelector<HTMLElement>('[data-mobile-navigation]')?.getBoundingClientRect();
       const visibleBottom = navigation && navigation.height > 0
         ? Math.min(window.innerHeight, navigation.top) : window.innerHeight;
-      const enterDistance = Math.min(460, visibleBottom * 0.8);
-      const exitStart = Math.min(680, visibleBottom * 1.15);
       const exitEnd = Math.min(72, visibleBottom * 0.12);
-      steps.forEach(step => {
-        const rect = step.getBoundingClientRect();
-        const stepExitStart = Math.min(exitStart, rect.height + visibleBottom - enterDistance - 32);
-        // Overlap longer fades within the visible area above the navigation.
-        // Start fading out while the outgoing card is still visibly on screen;
-        // its successor reaches full opacity before the outgoing card vanishes.
+      const rects = Array.from(steps, step => step.getBoundingClientRect());
+      const departure = rects.map(rect => {
+        const start = rect.height * 0.3;
+        const distance = Math.max(1, rect.height - start - exitEnd);
+        const progress = Math.max(0, Math.min(1, (-rect.top - start) / distance));
+        return progress * progress * (3 - 2 * progress);
+      });
+      steps.forEach((step, index) => {
+        // Reveal the next step only once scrolling starts taking the current
+        // step away. Its arrival and its predecessor's departure share progress.
+        const arrival = index === 0
+          ? Math.max(0, Math.min(1, (visibleBottom - rects[index].top) / Math.min(220, visibleBottom * 0.5)))
+          : departure[index - 1];
         const opacity = window.innerWidth >= 1024 || reduced ? 1
-          : Math.pow(Math.max(0, Math.min(1, (visibleBottom - rect.top) / enterDistance, (rect.bottom - exitEnd) / (stepExitStart - exitEnd))), 1.35);
+          : Math.min(arrival, 1 - departure[index]);
         step.style.opacity = String(opacity);
       });
     };
