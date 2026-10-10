@@ -137,7 +137,7 @@ function IngredientCard({
           <div className="min-w-0">
             <span className="font-semibold text-sm text-[#465940]">{localizedField(ing, 'name', contentLocale)}</span>
             {ing.isAllergen && (
-              <span className="ml-1.5 text-[9px] font-bold text-orange-600 align-middle"> <Copy><Copy>{"{\"⚠ ალერგენი\"}"}</Copy></Copy> </span>
+              <span className="ml-1.5 text-[9px] font-bold text-orange-600 align-middle"> <Copy>{"⚠ ალერგენი"}</Copy> </span>
             )}
             {/* Prep hint — always visible so parent knows how to prepare */}
             {!s?.allergic && (
@@ -158,7 +158,7 @@ function IngredientCard({
       {open && (
         <div className="px-4 pb-4 space-y-3 border-t border-[#465940]/10 pt-3">
           {ing.isAllergen && !s?.tried && (
-            <p className="text-[11px] text-orange-700 bg-orange-50 rounded-lg px-3 py-2"> <Copy><Copy>{"{\"ალერგენია — მიეცი ცალკე, სხვა ახალი პროდუქტების გარეშე, და დააკვირდი 2-3 დღე რეაქციაზე სანამ მომდევნო ახალ პროდუქტს გასინჯავ.\"}"}</Copy></Copy> </p>
+            <p className="text-[11px] text-orange-700 bg-orange-50 rounded-lg px-3 py-2"> <Copy>{"ალერგენია — მიეცი ცალკე, სხვა ახალი პროდუქტების გარეშე, და დააკვირდი 2-3 დღე რეაქციაზე სანამ მომდევნო ახალ პროდუქტს გასინჯავ."}</Copy> </p>
           )}
           {!s?.tried ? (
             <button onClick={markTried} disabled={saving}
@@ -169,7 +169,7 @@ function IngredientCard({
             // Allergy markings are deliberately not casually clearable here — a real allergy
             // shouldn't be one accidental tap away from being erased. Un-marking it is only
             // possible from Settings → Allergies.
-            <p className="text-xs text-[#465940]/60 bg-[#465940]/5 rounded-xl px-3 py-2.5"> <Copy><Copy>{"{\"ალერგია დაფიქსირებულია. მისი მოხსნა შესაძლებელია მხოლოდ\"}"}</Copy></Copy> <strong> <Copy><Copy>{"{\"პარამეტრები → ალერგიები\"}"}</Copy></Copy> </strong> <Copy><Copy>{"{\"-დან.\"}"}</Copy></Copy> </p>
+            <p className="text-xs text-[#465940]/60 bg-[#465940]/5 rounded-xl px-3 py-2.5"> <Copy>{"ალერგია დაფიქსირებულია. მისი მოხსნა შესაძლებელია მხოლოდ"}</Copy> <strong> <Copy>{"პარამეტრები → ალერგიები"}</Copy> </strong> <Copy>{"-დან."}</Copy> </p>
           ) : (
             <div className="grid grid-cols-2 gap-2">
               {[
@@ -204,7 +204,7 @@ function IngredientCard({
                 placeholder={copy("კომენტარი (სურვილისამებრ)")}
                 className="flex-1 px-3 py-1.5 rounded-xl border border-[#465940]/20 text-xs text-[#465940] bg-white focus:outline-none focus:border-[#465940]" />
               <button onClick={() => update({ comment })} disabled={saving || comment === (s?.comment ?? '')}
-                className="px-3 py-1.5 rounded-xl bg-[#465940] text-[#FDFBF0] text-xs font-bold disabled:opacity-40 transition"> <Copy><Copy>{"{\"შენახვა\"}"}</Copy></Copy> </button>
+                className="px-3 py-1.5 rounded-xl bg-[#465940] text-[#FDFBF0] text-xs font-bold disabled:opacity-40 transition"> <Copy>{"შენახვა"}</Copy> </button>
             </div>
           )}
         </div>
@@ -284,9 +284,9 @@ export default function FirstFoodsTab({ child, isFullPlan }: { child: any; isFul
   if (!isFullPlan) return (
     <div className="bg-[#FDFBF0] rounded-2xl border border-[#465940]/10 shadow-sm p-10 text-center">
       <div className="w-16 h-16 rounded-full bg-[#465940] flex items-center justify-center text-3xl mx-auto mb-5"></div>
-      <h2 className="text-xl font-black text-[#465940] mb-2"> <Copy><Copy>{"{\"პირველი საკვები დაბლოკილია\"}"}</Copy></Copy> </h2>
-      <p className="text-[#465940]/70 text-sm mb-6 max-w-sm mx-auto"> <Copy><Copy>{"{\"ინგრედიენტების გასინჯვის ტრეკერი ხელმისაწვდომია მხოლოდ სრული პაკეტით.\"}"}</Copy></Copy> </p>
-      <a href="/subscription" className="inline-flex items-center justify-center rounded-full bg-[#465940] px-8 py-3 font-semibold text-[#FDFBF0] shadow-lg hover:scale-105 transition"> <Copy><Copy>{"{\"პაკეტის განახლება\"}"}</Copy></Copy> </a>
+      <h2 className="text-xl font-black text-[#465940] mb-2"> <Copy>{"პირველი საკვები დაბლოკილია"}</Copy> </h2>
+      <p className="text-[#465940]/70 text-sm mb-6 max-w-sm mx-auto"> <Copy>{"ინგრედიენტების გასინჯვის ტრეკერი ხელმისაწვდომია მხოლოდ სრული პაკეტით."}</Copy> </p>
+      <a href="/subscription" className="inline-flex items-center justify-center rounded-full bg-[#465940] px-8 py-3 font-semibold text-[#FDFBF0] shadow-lg hover:scale-105 transition"> <Copy>{"პაკეტის განახლება"}</Copy> </a>
     </div>
   );
 
@@ -308,18 +308,18 @@ export default function FirstFoodsTab({ child, isFullPlan }: { child: any; isFul
       <div className="bg-[#FDFBF0] rounded-2xl border border-[#465940]/10 shadow-sm p-5">
         <div className="flex items-center justify-between mb-3">
           <div>
-            <h2 className="text-xl font-black text-[#465940]"> <Copy><Copy>{"{\"პირველი საკვები\"}"}</Copy></Copy> </h2>
-            <p className="text-xs text-[#465940]/60 mt-0.5">{child.name} · {ageMonths} <Copy><Copy>{"{\"თვე\"}"}</Copy></Copy> </p>
+            <h2 className="text-xl font-black text-[#465940]"> <Copy>{"პირველი საკვები"}</Copy> </h2>
+            <p className="text-xs text-[#465940]/60 mt-0.5">{child.name} · {ageMonths} <Copy>{"თვე"}</Copy> </p>
           </div>
           <div className="flex gap-3 text-center">
             <div className="bg-[#465940]/5 rounded-xl px-3 py-2">
               <p className="text-xl font-black text-[#465940]">{triedCount}</p>
-              <p className="text-[10px] text-[#465940]/60"> <Copy><Copy>{"{\"გასინჯული\"}"}</Copy></Copy> </p>
+              <p className="text-[10px] text-[#465940]/60"> <Copy>{"გასინჯული"}</Copy> </p>
             </div>
             {allergicCount > 0 && (
               <div className="bg-red-50 rounded-xl px-3 py-2">
                 <p className="text-xl font-black text-red-500">{allergicCount}</p>
-                <p className="text-[10px] text-red-400"> <Copy><Copy>{"{\"ალერგია\"}"}</Copy></Copy> </p>
+                <p className="text-[10px] text-red-400"> <Copy>{"ალერგია"}</Copy> </p>
               </div>
             )}
           </div>
@@ -330,14 +330,14 @@ export default function FirstFoodsTab({ child, isFullPlan }: { child: any; isFul
           <div className="h-2 bg-[#465940] rounded-full transition-all"
             style={{ width: ageAppropriate.length ? `${(triedCount / ageAppropriate.length) * 100}%` : '0%' }} />
         </div>
-        <p className="text-[10px] text-[#465940]/50 mt-1">{triedCount} / {ageAppropriate.length} <Copy><Copy>{"{\"ინგრედიენტი გასინჯული (\"}"}</Copy></Copy> {ageMonths} <Copy><Copy>{"{\"თვის ასაკისთვის)\"}"}</Copy></Copy> </p>
+        <p className="text-[10px] text-[#465940]/50 mt-1">{triedCount} / {ageAppropriate.length} <Copy>{"ინგრედიენტი გასინჯული ("}</Copy> {ageMonths} <Copy>{"თვის ასაკისთვის)"}</Copy> </p>
 
         {/* BLW toggle */}
         <div className="mt-3 pt-3 border-t border-[#465940]/10 flex items-center justify-between">
           <div>
-            <span className="text-xs font-bold text-[#465940]"> <Copy><Copy>{"{\"BLW კვება\"}"}</Copy></Copy> </span>
+            <span className="text-xs font-bold text-[#465940]"> <Copy>{"BLW კვება"}</Copy> </span>
             <span className="ml-2 text-[10px] text-[#465940]/50">
-              <Copy><Copy>{"{blwMode ? 'ჩართულია — ნაჭრებად, პიურეს გარეშე' : 'გამორთულია — პიურე რეჟიმი'}"}</Copy></Copy>
+              <Copy>{blwMode ? 'ჩართულია — ნაჭრებად, პიურეს გარეშე' : 'გამორთულია — პიურე რეჟიმი'}</Copy>
             </span>
           </div>
           <button onClick={toggleBlw}
@@ -352,7 +352,7 @@ export default function FirstFoodsTab({ child, isFullPlan }: { child: any; isFul
           {['all', ...presentCategories].map(cat => (
             <button key={cat} onClick={() => setCategoryFilter(cat)}
               className={`px-4 py-1.5 rounded-full text-xs font-bold transition ${categoryFilter === cat ? 'bg-[#465940] text-[#FDFBF0]' : 'bg-[#FDFBF0] border border-[#465940]/20 text-[#465940]/70'}`}>
-              <Copy><Copy>{"{cat === 'all' ? 'ყველა' : CATEGORY_LABELS[cat] ?? cat}"}</Copy></Copy>
+              <Copy>{cat === 'all' ? 'ყველა' : CATEGORY_LABELS[cat] ?? cat}</Copy>
             </button>
           ))}
         </div>

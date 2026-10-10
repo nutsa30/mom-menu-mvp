@@ -940,7 +940,7 @@ function NutritionTab({ child }: { child: any }) {
           <div className="grid grid-cols-2 gap-2">
             {AGE_REQUIREMENTS[child.ageGroup].values.map(v => (
               <div key={v.nutrient} className="bg-[#465940]/5 rounded-xl p-3">
-                <p className="text-xs font-bold text-[#465940]">{v.nutrient}</p>
+                <p className="text-xs font-bold text-[#465940]"><Copy>{v.nutrient}</Copy></p>
                 <p className="text-sm font-black text-[#465940] mt-0.5"><Copy>{v.amount}</Copy></p>
                 {v.note && <p className="text-[10px] text-[#465940]/60 mt-0.5"><Copy>{v.note}</Copy></p>}
               </div>

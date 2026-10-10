@@ -11,7 +11,7 @@
     "prisma:migrate": "prisma migrate dev",
     "prisma:studio": "prisma studio",
     "seed": "tsx prisma/seed.ts",
-    "test:international": "node --import tsx --test tests/international.test.ts tests/shopping-list.test.ts"
+    "test:international": "node --import tsx --test tests/international.test.ts tests/shopping-list.test.ts tests/first-foods-copy.test.cjs"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.120.0",
