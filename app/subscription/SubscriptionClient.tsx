@@ -147,7 +147,7 @@ export default function SubscriptionClient({ planAmounts }: { planAmounts: Recor
                 style={isRecommended ? { borderColor: '#D9803B' } : undefined}>
                 {isRecommended && (
                   <div className="absolute -top-4 left-1/2 -translate-x-1/2">
-                    <span className="inline-flex items-center gap-2 text-white text-sm font-black px-6 py-2 rounded-full shadow-md whitespace-nowrap" style={{ background: '#D9803B' }}> <Copy>{"მშობლების არჩევანი"}</Copy> </span>
+                    <span className="inline-flex items-center gap-2 text-white text-sm font-black px-6 py-2 rounded-full shadow-md whitespace-nowrap" style={{ background: '#D9803B' }}>{english ? 'Best choice' : 'საუკეთესო არჩევანი'}</span>
                   </div>
                 )}
                 <h2 className="text-xl font-semibold text-[#6F7A5C] mb-1 mt-4">{english ? `${interval} ${interval === 1 ? 'month' : 'months'}` : `${interval} თვე`}</h2>
