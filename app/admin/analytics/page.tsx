@@ -101,6 +101,14 @@ export default async function AdminAnalyticsPage(props: { searchParams: Promise<
     prisma.withdrawal.findMany({ where: { currency }, orderBy: { createdAt: 'desc' } }),
   ]);
   const paidUserIds = new Set(successfulPayers.map((p) => p.userId));
+  // Actual successful charges, before bank fees or any subsequent refunds.
+  // Sum in minor units so fractional currency values do not accumulate float errors.
+  const monthEnd = new Date(
+    Date.UTC(nowInTbilisi.getUTCFullYear(), nowInTbilisi.getUTCMonth() + 1, 1) - TBILISI_OFFSET_MS
+  );
+  const monthGrossRevenue = revenuePayments
+    .filter((p) => p.createdAt >= monthStart && p.createdAt < monthEnd)
+    .reduce((sum, p) => sum + Math.round(p.grossAmount * 100), 0) / 100;
 
   // ─── Balance ("სრული შემოსავალი" minus what's been withdrawn) ──────────────────────
   // Net (not gross): what's actually left in the account after BOG's commission — and, when
@@ -333,6 +341,14 @@ export default async function AdminAnalyticsPage(props: { searchParams: Promise<
 
       {/* ── Balance: total revenue collected, minus what's been withdrawn ── */}
       <div className="mb-4">
+        <h2 className="text-xs font-black uppercase tracking-widest text-[#465940]/50 mb-3">შემოსავალი საკომისიოს ჩამოჭრამდე</h2>
+        <div className="mb-6">
+          <div className="rounded-[20px] bg-[#FDFBF0] p-5 shadow-sm">
+            <p className="text-xs font-bold uppercase tracking-wider text-[#465940]">ამ თვეში მიღებული — საკომისიომდე</p>
+            <p className="mt-2 text-3xl font-black text-[#465940]">{monthGrossRevenue.toFixed(2)}{currencySymbol}</p>
+            <p className="mt-1 text-xs text-[#465940]/50">თვის 1 რიცხვიდან ბოლო რიცხვის ჩათვლით, საქართველოს დროით — საკომისიოსა და შემდგომი დაბრუნებების გამოკლებამდე</p>
+          </div>
+        </div>
         <h2 className="text-xs font-black uppercase tracking-widest text-[#465940]/50 mb-3">ბალანსი</h2>
         <p className="text-[11px] text-[#465940]/50 -mt-2 mb-3">
           {unsettledUSD ? 'მიღებული დოლარის გადახდები, წარმატებული რეფერალური დაბრუნებების გამოკლებით. ბანკის საკომისიო და ანგარიშზე წმინდა ჩარიცხვა დაუზუსტებელია.' : 'წმინდა, ანუ BOG-ის საკომისიოს (და გატანილი რეფერალის ფასდაკლების/კრედიტის) გამოკლებით — ზუსტად ის თანხა, რაც რეალურად ჩამოგერიცხა ბარათზე. ეს არ არის ზემოთ MRR/ARR-ის შეფასება.'}
