@@ -907,7 +907,7 @@ export default function HomeClient({ s, dishes, dishCount, recentBlogs, planAmou
             {([1, 3, 6] as BillingInterval[]).map((interval) => {
               const price = planAmounts[interval];
               const disc = discountedPrice(interval, price);
-              const isRecommended = interval === 3;
+              const isRecommended = interval === 6;
               const perMonth = (price / interval).toFixed(experience.market === 'INTL' ? 2 : interval === 6 ? 2 : 0);
               const cadenceKa = interval === 1 ? 'თვეში' : `ყოველ ${interval} თვეში`;
               const cadenceEn = interval === 1 ? 'month' : `${interval} months`;
@@ -925,7 +925,7 @@ export default function HomeClient({ s, dishes, dishCount, recentBlogs, planAmou
                   {isRecommended && (
                     <div className="absolute -top-4 left-1/2 -translate-x-1/2">
                       <div className="inline-flex items-center gap-1.5 text-sm font-bold px-5 py-2 rounded-full whitespace-nowrap shadow-md" style={{ background: ACCENT, color: '#fff' }}>
-                        {ka ? 'საუკეთესო არჩევანი' : 'Best choice'}
+                        {ka ? 'მშობლების არჩევანი' : "Parents' choice"}
                       </div>
                     </div>
                   )}

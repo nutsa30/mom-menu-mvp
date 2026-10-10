@@ -128,7 +128,7 @@ export default function SubscriptionClient({ planAmounts }: { planAmounts: Recor
           {([1, 3, 6] as BillingInterval[]).map((interval) => {
             const price = planAmounts[interval];
             const disc = discountedPrice(interval, price);
-            const isRecommended = interval === 3;
+            const isRecommended = interval === 6;
             const monthlyBaseline = planAmounts[1] * interval;
             const savings = monthlyBaseline - price;
             const savingsPct = Math.round((savings / monthlyBaseline) * 100);
@@ -147,7 +147,7 @@ export default function SubscriptionClient({ planAmounts }: { planAmounts: Recor
                 style={isRecommended ? { borderColor: '#D9803B' } : undefined}>
                 {isRecommended && (
                   <div className="absolute -top-4 left-1/2 -translate-x-1/2">
-                    <span className="inline-flex items-center gap-2 text-white text-sm font-black px-6 py-2 rounded-full shadow-md whitespace-nowrap" style={{ background: '#D9803B' }}>{english ? 'Best choice' : 'საუკეთესო არჩევანი'}</span>
+                    <span className="inline-flex items-center gap-2 text-white text-sm font-black px-6 py-2 rounded-full shadow-md whitespace-nowrap" style={{ background: '#D9803B' }}>{english ? "Parents' choice" : 'მშობლების არჩევანი'}</span>
                   </div>
                 )}
                 <h2 className="text-xl font-semibold text-[#6F7A5C] mb-1 mt-4">{english ? `${interval} ${interval === 1 ? 'month' : 'months'}` : `${interval} თვე`}</h2>
