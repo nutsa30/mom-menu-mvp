@@ -3,6 +3,9 @@ import { prisma } from '@/lib/prisma';
 import { PLAN_AMOUNTS, PLAN_AMOUNTS_BY_INTERVAL, BillingInterval, applyDiscount } from '@/lib/bog';
 import { addWithdrawal } from './actions';
 import WithdrawalDeleteButton from '@/components/WithdrawalDeleteButton';
+import { revenuePeriod, grossRevenueForPeriod, revenueYears } from '@/lib/revenue-period';
+
+const MONTH_NAMES = ['იანვარი', 'თებერვალი', 'მარტი', 'აპრილი', 'მაისი', 'ივნისი', 'ივლისი', 'აგვისტო', 'სექტემბერი', 'ოქტომბერი', 'ნოემბერი', 'დეკემბერი'];
 
 const PRICES: Record<string, number> = {
   RECIPE_PLAN: Number(PLAN_AMOUNTS.RECIPE_PLAN ?? 15),
@@ -37,8 +40,10 @@ const priceFor = (u: PriceableUser) => {
 const monthlyPriceFor = (u: PriceableUser) =>
   priceFor(u) / (u.billingIntervalMonths || 1);
 
-export default async function AdminAnalyticsPage(props: { searchParams: Promise<{ market?: string }> }) {
-  const market = normalizeMarket((await props.searchParams).market);
+export default async function AdminAnalyticsPage(props: { searchParams: Promise<{ market?: string; revenueYear?: string; revenueMonth?: string }> }) {
+  const params = await props.searchParams;
+  const market = normalizeMarket(params.market);
+  const selectedPeriod = revenuePeriod(params.revenueYear, params.revenueMonth);
   const currency = currencyFor(market);
   const currencySymbol = currency === "USD" ? "$" : "₾";
   const unsettledUSD = currency === 'USD';
@@ -101,14 +106,8 @@ export default async function AdminAnalyticsPage(props: { searchParams: Promise<
     prisma.withdrawal.findMany({ where: { currency }, orderBy: { createdAt: 'desc' } }),
   ]);
   const paidUserIds = new Set(successfulPayers.map((p) => p.userId));
-  // Actual successful charges, before bank fees or any subsequent refunds.
-  // Sum in minor units so fractional currency values do not accumulate float errors.
-  const monthEnd = new Date(
-    Date.UTC(nowInTbilisi.getUTCFullYear(), nowInTbilisi.getUTCMonth() + 1, 1) - TBILISI_OFFSET_MS
-  );
-  const monthGrossRevenue = revenuePayments
-    .filter((p) => p.createdAt >= monthStart && p.createdAt < monthEnd)
-    .reduce((sum, p) => sum + Math.round(p.grossAmount * 100), 0) / 100;
+  const monthGrossRevenue = grossRevenueForPeriod(revenuePayments, selectedPeriod);
+  const availableYears = [...new Set([...revenueYears(revenuePayments, selectedPeriod.currentYear), selectedPeriod.year])].sort((a, b) => b - a);
 
   // ─── Balance ("სრული შემოსავალი" minus what's been withdrawn) ──────────────────────
   // Net (not gross): what's actually left in the account after BOG's commission — and, when
@@ -342,9 +341,25 @@ export default async function AdminAnalyticsPage(props: { searchParams: Promise<
       {/* ── Balance: total revenue collected, minus what's been withdrawn ── */}
       <div className="mb-4">
         <h2 className="text-xs font-black uppercase tracking-widest text-[#465940]/50 mb-3">შემოსავალი საკომისიოს ჩამოჭრამდე</h2>
+        <form method="get" className="flex flex-wrap items-end gap-3 mb-4">
+          <input type="hidden" name="market" value={market} />
+          <label className="text-sm font-semibold text-[#465940]">
+            წელი
+            <select name="revenueYear" defaultValue={selectedPeriod.year} className="block mt-1 rounded-xl border border-[#465940]/20 bg-[#FDFBF0] px-3 py-2">
+              {availableYears.map(year => <option key={year} value={year}>{year}</option>)}
+            </select>
+          </label>
+          <label className="text-sm font-semibold text-[#465940]">
+            თვე
+            <select name="revenueMonth" defaultValue={selectedPeriod.month} className="block mt-1 rounded-xl border border-[#465940]/20 bg-[#FDFBF0] px-3 py-2">
+              {MONTH_NAMES.map((name, index) => <option key={name} value={index + 1}>{name}</option>)}
+            </select>
+          </label>
+          <button type="submit" className="rounded-full bg-[#465940] px-5 py-2 text-sm font-bold text-[#FDFBF0]">ჩვენება</button>
+        </form>
         <div className="mb-6">
           <div className="rounded-[20px] bg-[#FDFBF0] p-5 shadow-sm">
-            <p className="text-xs font-bold uppercase tracking-wider text-[#465940]">ამ თვეში მიღებული — საკომისიომდე</p>
+            <p className="text-xs font-bold uppercase tracking-wider text-[#465940]">{MONTH_NAMES[selectedPeriod.month - 1]} {selectedPeriod.year} — საკომისიომდე</p>
             <p className="mt-2 text-3xl font-black text-[#465940]">{monthGrossRevenue.toFixed(2)}{currencySymbol}</p>
             <p className="mt-1 text-xs text-[#465940]/50">თვის 1 რიცხვიდან ბოლო რიცხვის ჩათვლით, საქართველოს დროით — საკომისიოსა და შემდგომი დაბრუნებების გამოკლებამდე</p>
           </div>
