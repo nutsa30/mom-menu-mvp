@@ -3,6 +3,7 @@ import { prisma } from '@/lib/prisma';
 import { hashPassword, setAuthCookie } from '@/lib/auth';
 import { ensureReferralCode } from '@/lib/referral';
 import { NextResponse } from 'next/server';
+import { logRegistrationMarket } from '@/lib/log-registration-market';
 
 export async function POST(req: Request) {
   try {
@@ -21,6 +22,7 @@ export async function POST(req: Request) {
     const passwordHash = await hashPassword(password);
     const experience = await getExperience();
     const user = await prisma.user.create({ data: { email, passwordHash, name, locale: experience.locale, market: experience.market, timeZone: experience.market === 'GE' ? 'Asia/Tbilisi' : 'UTC', subscriptionCurrency: experience.currency } });
+    await logRegistrationMarket('legacy_signup', user.market, { userId: user.id });
     await ensureReferralCode(user.id);
 
     await setAuthCookie({ id: user.id, email: user.email, name: user.name, role: user.role });

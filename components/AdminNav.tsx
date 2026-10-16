@@ -67,6 +67,7 @@ export default function AdminNav() {
     { key: 'cancellations', label: locale === 'ka' ? 'გაუქმებები' : 'Cancellations',     href: '/admin/cancellations' },
     { key: 'ingredients', label: d.ingredientsNav,                                     href: '/admin/ingredients' },
     { key: 'analytics', label: locale === 'ka' ? 'ანალიტიკა'      : 'Analytics',       href: '/admin/analytics' },
+    { key: 'analytics', label: locale === 'ka' ? 'ბაზრის დიაგნოსტიკა' : 'Market diagnostics', href: '/admin/market-diagnostics' },
     { key: 'testimonials', label: locale === 'ka' ? 'კომენტარები' : 'Testimonials',    href: '/admin/testimonials' },
     { key: 'birthdays', label: locale === 'ka' ? 'დაბადების დღეები' : 'Birthdays',    href: '/admin/birthdays' },
     { key: 'dishFeedback', label: locale === 'ka' ? 'კერძების შეფასება' : 'Dish Feedback', href: '/admin/dish-feedback' },

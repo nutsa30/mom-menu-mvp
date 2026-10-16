@@ -4,6 +4,7 @@ import { sendWelcomeEmail } from '@/lib/email';
 import { ensureReferralCode } from '@/lib/referral';
 import { NextResponse } from 'next/server';
 import crypto from 'crypto';
+import { logRegistrationMarket } from '@/lib/log-registration-market';
 
 export async function POST(req: Request) {
   try {
@@ -39,6 +40,7 @@ export async function POST(req: Request) {
         subscriptionCurrency: pending.market === 'INTL' ? 'USD' : 'GEL',
       },
     });
+    await logRegistrationMarket('email_verified', user.market, { registrationId: pending.id, userId: user.id });
     await prisma.pendingRegistration.delete({ where: { email } });
     // This is the real signup completion point (the User row is only created here, once
     // the emailed code is confirmed) — give every new user their permanent referral code
