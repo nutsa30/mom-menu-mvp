@@ -4,6 +4,8 @@ import { PLAN_AMOUNTS, PLAN_AMOUNTS_BY_INTERVAL, BillingInterval, applyDiscount 
 import { addWithdrawal } from './actions';
 import WithdrawalDeleteButton from '@/components/WithdrawalDeleteButton';
 import { revenuePeriod, grossRevenueForPeriod, revenueYears } from '@/lib/revenue-period';
+import { getNbgUsdRate, tbilisiDay } from '@/lib/nbg-rate';
+import { CARD_KEYS, CARD_LABEL, cardOf, cardStats, isSettled, resolveUsdPayment, type CardKey } from '@/lib/usd-settlement';
 
 const MONTH_NAMES = ['იანვარი', 'თებერვალი', 'მარტი', 'აპრილი', 'მაისი', 'ივნისი', 'ივლისი', 'აგვისტო', 'სექტემბერი', 'ოქტომბერი', 'ნოემბერი', 'დეკემბერი'];
 
@@ -46,7 +48,6 @@ export default async function AdminAnalyticsPage(props: { searchParams: Promise<
   const selectedPeriod = revenuePeriod(params.revenueYear, params.revenueMonth);
   const currency = currencyFor(market);
   const currencySymbol = currency === "USD" ? "$" : "₾";
-  const unsettledUSD = currency === 'USD';
   const INTERVAL_PRICE = market === "INTL" ? INTERNATIONAL_PRICES : Object.fromEntries(Object.entries(PLAN_AMOUNTS_BY_INTERVAL).map(([k,v]) => [k, Number(v)])) as Record<BillingInterval, number>;
   // Tbilisi "now" (Georgia has used a fixed UTC+4 offset, no DST, since 2017) — used only to
   // find the current calendar month's boundaries (1st through the last day) for
@@ -99,45 +100,81 @@ export default async function AdminAnalyticsPage(props: { searchParams: Promise<
     // "სრული შემოსავალი" (all-time) and "ამ თვის შემოსავალი" (this month) balance cards
     // below (see totalNetRevenue/monthNetRevenue) — one unbounded query, filtered by
     // createdAt in JS for the month figure, rather than a second DB round-trip.
+    // Both currencies together: the money block below is ONE lari account (USD payments
+    // count as the lari actually received), independent of the GE/INTL user toggle.
     prisma.payment.findMany({
-      where: { status: 'SUCCESS', currency },
-      select: { createdAt: true, grossAmount: true, netAmount: true, commissionAmount: true, discountAmount: true, discountRefundFailed: true, creditAppliedAmount: true, creditRefundFailed: true },
+      where: { status: 'SUCCESS' },
+      select: {
+        createdAt: true, currency: true, grossAmount: true, netAmount: true, commissionAmount: true,
+        discountAmount: true, discountRefundFailed: true, creditAppliedAmount: true, creditRefundFailed: true,
+        cardType: true, settledCardType: true, settledAmountGel: true, settledFxRate: true,
+      },
     }),
-    prisma.withdrawal.findMany({ where: { currency }, orderBy: { createdAt: 'desc' } }),
+    prisma.withdrawal.findMany({ orderBy: { createdAt: 'desc' } }),
   ]);
   const paidUserIds = new Set(successfulPayers.map((p) => p.userId));
-  const monthGrossRevenue = grossRevenueForPeriod(revenuePayments, selectedPeriod);
-  const availableYears = [...new Set([...revenueYears(revenuePayments, selectedPeriod.currentYear), selectedPeriod.year])].sort((a, b) => b - a);
 
-  // ─── Balance ("სრული შემოსავალი" minus what's been withdrawn) ──────────────────────
-  // Net (not gross): what's actually left in the account after BOG's commission — and, when
-  // the refund actually went through, after any referral discount/credit refunded back out
-  // of this same payment. A refund BOG rejected (discountRefundFailed/creditRefundFailed)
-  // means that money never left, so it stays counted. Shared by both the all-time and the
-  // this-month figures below — same real-money logic, just a different date range.
-  const netOf = (p: (typeof revenuePayments)[number]) => {
-    const discount = p.discountRefundFailed ? 0 : (p.discountAmount ?? 0);
-    const credit = p.creditRefundFailed ? 0 : (p.creditAppliedAmount ?? 0);
-    return (unsettledUSD ? p.grossAmount : (p.netAmount ?? 0)) - discount - credit;
-  };
-  const totalNetRevenue = revenuePayments.reduce((sum, p) => sum + netOf(p), 0);
-  // This calendar month only (1st through today, Tbilisi time) — what should actually match
-  // the owner's real bank/card statement for the money that's landed so far this month,
-  // after BOG's commission (owner explicitly asked for this to match the real deposited
-  // amount, not a subscription-based MRR estimate).
-  const monthNetRevenue = revenuePayments
-    .filter((p) => p.createdAt >= monthStart)
-    .reduce((sum, p) => sum + netOf(p), 0);
+  // ─── Unified lari account (GEL payments + USD payments as lari received) ────────────
+  // GEL payments: exact net from BOG. USD payments: if the owner entered the card + lari
+  // received (users page), the figures are exact ("confirmed"). Otherwise they are ESTIMATED
+  // from the average bank cost of that card type, learned from the entered ones, at the
+  // National Bank of Georgia rate for the payment day. Payments that can't be estimated yet
+  // (no rate or no entered payment to learn from) count as 0 and are flagged.
+  const usdRows = revenuePayments.filter((p) => p.currency === 'USD');
+  const usdStats = cardStats(usdRows);
+  const lastKnownRate = [...usdRows]
+    .filter(isSettled)
+    .sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime())[0]?.settledFxRate ?? null;
+  const unsettledDays = [...new Set(usdRows.filter((p) => !isSettled(p)).map((p) => tbilisiDay(p.createdAt)))];
+  const dayRates = new Map<string, number | null>(
+    await Promise.all(unsettledDays.map(async (d) => [d, await getNbgUsdRate(d)] as const)),
+  );
+  type MoneyRow = { createdAt: Date; grossGel: number; costGel: number; netGel: number; status: 'exact' | 'confirmed' | 'estimated' | 'unknown'; card: CardKey | null };
+  const moneyRows: MoneyRow[] = revenuePayments.map((p): MoneyRow => {
+    if (p.currency !== 'USD') {
+      const discount = p.discountRefundFailed ? 0 : (p.discountAmount ?? 0);
+      const credit = p.creditRefundFailed ? 0 : (p.creditAppliedAmount ?? 0);
+      return {
+        createdAt: p.createdAt, grossGel: p.grossAmount, costGel: p.commissionAmount ?? 0,
+        netGel: (p.netAmount ?? 0) - discount - credit, status: 'exact', card: null,
+      };
+    }
+    const dayRate = dayRates.get(tbilisiDay(p.createdAt)) ?? null;
+    const r = resolveUsdPayment(p, usdStats, dayRate ?? lastKnownRate);
+    return { createdAt: p.createdAt, grossGel: r.grossGel, costGel: r.costGel, netGel: r.netGel, status: r.status === 'confirmed' ? 'confirmed' : r.status, card: cardOf(p) };
+  });
+  const sumBy = (rows: MoneyRow[], f: (r: MoneyRow) => number) => rows.reduce((sum, r) => sum + f(r), 0);
+  const monthRows = moneyRows.filter((r) => r.createdAt >= monthStart);
+  const totalNetRevenue = sumBy(moneyRows, (r) => r.netGel);
+  const monthNetRevenue = sumBy(monthRows, (r) => r.netGel);
+  const totalCommission = sumBy(moneyRows, (r) => r.costGel);
+  const monthCommission = sumBy(monthRows, (r) => r.costGel);
+  const estimatedRows = moneyRows.filter((r) => r.status === 'estimated');
+  const unknownRows = moneyRows.filter((r) => r.status === 'unknown');
+  const estimatedNet = sumBy(estimatedRows, (r) => r.netGel);
+  const estimatedMonthNet = sumBy(estimatedRows.filter((r) => r.createdAt >= monthStart), (r) => r.netGel);
+  const estimatedCommission = sumBy(estimatedRows, (r) => r.costGel);
+  const rateFetchFailed = usdRows.some((p) => !isSettled(p) && dayRates.get(tbilisiDay(p.createdAt)) == null);
+  const usdCount = usdRows.length;
+  const usdConfirmed = usdRows.filter(isSettled).length;
+
+  const monthGrossRevenue = grossRevenueForPeriod(
+    moneyRows.map((r) => ({ createdAt: r.createdAt, grossAmount: r.grossGel })),
+    selectedPeriod,
+  );
+  const availableYears = [...new Set([...revenueYears(revenuePayments, selectedPeriod.currentYear), selectedPeriod.year])].sort((a, b) => b - a);
+  // Everything entered as a withdrawal is counted as lari (the single account).
   const totalWithdrawn = withdrawals.reduce((sum, w) => sum + w.amount, 0);
   const remainingBalance = totalNetRevenue - totalWithdrawn;
-  // How much BOG has actually taken in commission — separate from totalNetRevenue/
-  // monthNetRevenue above (which are already net of it); shown as its own figure since the
-  // owner explicitly asked to see the commission amount itself, not just infer it from the
-  // gap between gross and net.
-  const totalCommission = revenuePayments.reduce((sum, p) => sum + (p.commissionAmount ?? 0), 0);
-  const monthCommission = revenuePayments
-    .filter((p) => p.createdAt >= monthStart)
-    .reduce((sum, p) => sum + (p.commissionAmount ?? 0), 0);
+  const usdWithdrawals = withdrawals.filter((w) => w.currency === 'USD').length;
+
+  // Per-card table: what the bank actually takes (incl. conversion), learned from entered payments.
+  const cardRows = CARD_KEYS.map((key) => {
+    const stat = usdStats.byCard[key];
+    const pending = moneyRows.filter((r) => r.card === key && (r.status === 'estimated' || r.status === 'unknown')).length;
+    return { key, count: stat?.count ?? 0, pct: stat ? stat.pct * 100 : null, pending };
+  }).filter((r) => r.count > 0 || r.pending > 0);
+  const noCardPending = usdRows.filter((p) => !isSettled(p) && !cardOf(p)).length;
 
   const dishIds = planItems.map((p) => p.dishId);
   const topDishes = await prisma.dish.findMany({
@@ -338,7 +375,7 @@ export default async function AdminAnalyticsPage(props: { searchParams: Promise<
         </div>
       </div>
 
-      {/* ── Balance: total revenue collected, minus what's been withdrawn ── */}
+      {/* ── Balance: ONE lari account — GEL payments + USD payments as lari received ── */}
       <div className="mb-4">
         <h2 className="text-xs font-black uppercase tracking-widest text-[#465940]/50 mb-3">შემოსავალი საკომისიოს ჩამოჭრამდე</h2>
         <form method="get" className="flex flex-wrap items-end gap-3 mb-4">
@@ -360,47 +397,91 @@ export default async function AdminAnalyticsPage(props: { searchParams: Promise<
         <div className="mb-6">
           <div className="rounded-[20px] bg-[#FDFBF0] p-5 shadow-sm">
             <p className="text-xs font-bold uppercase tracking-wider text-[#465940]">{MONTH_NAMES[selectedPeriod.month - 1]} {selectedPeriod.year} — საკომისიომდე</p>
-            <p className="mt-2 text-3xl font-black text-[#465940]">{monthGrossRevenue.toFixed(2)}{currencySymbol}</p>
-            <p className="mt-1 text-xs text-[#465940]/50">თვის 1 რიცხვიდან ბოლო რიცხვის ჩათვლით, საქართველოს დროით — საკომისიოსა და შემდგომი დაბრუნებების გამოკლებამდე</p>
+            <p className="mt-2 text-3xl font-black text-[#465940]">{monthGrossRevenue.toFixed(2)}₾</p>
+            <p className="mt-1 text-xs text-[#465940]/50">ლარი + USD ერთად (USD ეროვნული ბანკის კურსით ლარში გადაყვანილი), თვის 1 რიცხვიდან ბოლო რიცხვის ჩათვლით, საქართველოს დროით</p>
           </div>
         </div>
-        <h2 className="text-xs font-black uppercase tracking-widest text-[#465940]/50 mb-3">ბალანსი</h2>
+        <h2 className="text-xs font-black uppercase tracking-widest text-[#465940]/50 mb-3">ბალანსი (ერთი ლარის ანგარიში)</h2>
         <p className="text-[11px] text-[#465940]/50 -mt-2 mb-3">
-          {unsettledUSD ? 'მიღებული დოლარის გადახდები, წარმატებული რეფერალური დაბრუნებების გამოკლებით. ბანკის საკომისიო და ანგარიშზე წმინდა ჩარიცხვა დაუზუსტებელია.' : 'წმინდა, ანუ BOG-ის საკომისიოს (და გატანილი რეფერალის ფასდაკლების/კრედიტის) გამოკლებით — ზუსტად ის თანხა, რაც რეალურად ჩამოგერიცხა ბარათზე. ეს არ არის ზემოთ MRR/ARR-ის შეფასება.'}
+          ლარის გადახდები - BOG-ის საკომისიოს გამოკლებით. USD გადახდები - ლარი, რაც რეალურად ჩაგერიცხა (შენს მიერ შეყვანილი მომხმარებლების გვერდზე), ხოლო ვისაც ჯერ არ შეუყვანია - სავარაუდო, იმავე ბარათის საშუალო საკომისიოთი. რეფერალური დაბრუნებები გამოკლებულია.
         </p>
+        {(unknownRows.length > 0 || rateFetchFailed) && (
+          <div className="mb-3 rounded-2xl border border-amber-400/60 bg-amber-50 px-4 py-3 text-xs text-amber-800">
+            {unknownRows.length > 0 && <p>⚠ {unknownRows.length} USD გადახდა ჯერ ვერ დაითვალა (არც კურსია ცნობილი და არც ერთი შევსებული გადახდა, საიდანაც საკომისიოს ვისწავლით) - ბალანსში 0₾-ად არის. შეავსე ერთი მაინც მომხმარებლების გვერდზე (საერთაშორისო).</p>}
+            {rateFetchFailed && <p>⚠ ეროვნული ბანკის კურსი ამჟამად ვერ ჩამოიტვირთა - ვის გადახდასაც კურსი არ აქვს, ბოლო ცნობილი კურსით ითვლება.</p>}
+          </div>
+        )}
         <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-5 mb-4">
           <div className="rounded-[20px] bg-[#FDFBF0] p-5 shadow-sm">
             <p className="text-xs font-bold uppercase tracking-wider text-[#465940]">სრული შემოსავალი</p>
-            <p className="mt-2 text-3xl font-black text-[#465940]">{totalNetRevenue.toFixed(2)}{currencySymbol}</p>
-            <p className="mt-1 text-xs text-[#465940]/50">{unsettledUSD ? 'მიღებული, საკომისიოს გამოკლებამდე' : 'წმინდა, დღემდე სულ'}</p>
+            <p className="mt-2 text-3xl font-black text-[#465940]">{totalNetRevenue.toFixed(2)}₾</p>
+            <p className="mt-1 text-xs text-[#465940]/50">წმინდა, დღემდე სულ{estimatedRows.length > 0 ? ` · აქედან სავარაუდო: ${estimatedNet.toFixed(2)}₾` : ''}</p>
           </div>
           <div className="rounded-[20px] bg-[#FDFBF0] p-5 shadow-sm">
             <p className="text-xs font-bold uppercase tracking-wider text-[#465940]">ამ თვის შემოსავალი</p>
-            <p className="mt-2 text-3xl font-black text-[#465940]">{monthNetRevenue.toFixed(2)}{currencySymbol}</p>
-            <p className="mt-1 text-xs text-[#465940]/50">{unsettledUSD ? 'მიღებული ამ თვეში, საკომისიოს გამოკლებამდე' : 'წმინდა, ამ თვეში ჩამორიცხული'}</p>
+            <p className="mt-2 text-3xl font-black text-[#465940]">{monthNetRevenue.toFixed(2)}₾</p>
+            <p className="mt-1 text-xs text-[#465940]/50">წმინდა, ამ თვეში{estimatedMonthNet !== 0 ? ` · სავარაუდო: ${estimatedMonthNet.toFixed(2)}₾` : ''}</p>
           </div>
           <div className="rounded-[20px] bg-[#FDFBF0] p-5 shadow-sm">
             <p className="text-xs font-bold uppercase tracking-wider text-[#465940]">ბანკის საკომისიო</p>
-            <p className="mt-2 text-3xl font-black text-[#465940]">{unsettledUSD ? 'დაუზუსტებელი' : `${totalCommission.toFixed(2)}${currencySymbol}`}</p>
-            <p className="mt-1 text-xs text-[#465940]/50">{unsettledUSD ? 'ბანკის USD ტარიფი დასადასტურებელია' : `დღემდე სულ · ამ თვე: ${monthCommission.toFixed(2)}${currencySymbol}`}</p>
+            <p className="mt-2 text-3xl font-black text-[#465940]">{totalCommission.toFixed(2)}₾</p>
+            <p className="mt-1 text-xs text-[#465940]/50">დღემდე სულ · ამ თვე: {monthCommission.toFixed(2)}₾{estimatedRows.length > 0 ? ` · სავარაუდო ნაწილი: ${estimatedCommission.toFixed(2)}₾` : ''}</p>
           </div>
           <div className="rounded-[20px] bg-[#FDFBF0] p-5 shadow-sm">
             <p className="text-xs font-bold uppercase tracking-wider text-[#465940]">სულ გატანილი</p>
-            <p className="mt-2 text-3xl font-black text-[#465940]">{totalWithdrawn.toFixed(2)}{currencySymbol}</p>
+            <p className="mt-2 text-3xl font-black text-[#465940]">{totalWithdrawn.toFixed(2)}₾</p>
             <p className="mt-1 text-xs text-[#465940]/50">{withdrawals.length} ჩანაწერი</p>
           </div>
           <div className="rounded-[20px] bg-[#465940] p-5 shadow-sm">
             <p className="text-xs font-bold uppercase tracking-wider text-[#FDFBF0]/70">დარჩენილი ბალანსი</p>
-            <p className="mt-2 text-3xl font-black text-[#FDFBF0]">{unsettledUSD ? 'დაუზუსტებელი' : `${remainingBalance.toFixed(2)}${currencySymbol}`}</p>
-            <p className="mt-1 text-xs text-[#FDFBF0]/50">{unsettledUSD ? 'წმინდა ჩარიცხვა დასადასტურებელია' : 'სრული შემოსავალი − გატანილი'}</p>
+            <p className="mt-2 text-3xl font-black text-[#FDFBF0]">{remainingBalance.toFixed(2)}₾</p>
+            <p className="mt-1 text-xs text-[#FDFBF0]/50">ბანკს ევალება შენთვის · სრული შემოსავალი − გატანილი</p>
           </div>
         </div>
 
+        {/* ── What the bank takes per card type (learned from the USD payments she filled in) ── */}
+        {usdCount > 0 && (
+          <div className="rounded-[20px] bg-[#FDFBF0] p-5 shadow-sm mb-4">
+            <h3 className="font-bold text-[#465940] mb-1">USD გადახდები - რამდენს იღებს ბანკი ბარათის მიხედვით</h3>
+            <p className="text-[11px] text-[#465940]/50 mb-3">
+              {usdConfirmed} / {usdCount} გადახდა შევსებულია. პროცენტი = (დოლარი × ეროვნული ბანკის კურსი − რაც ჩაგერიცხა) / (დოლარი × კურსი), ანუ საკომისიო და კონვერტაციის სხვაობა ერთად.
+            </p>
+            {cardRows.length > 0 ? (
+              <div className="overflow-x-auto">
+                <table className="w-full text-sm">
+                  <thead>
+                    <tr className="text-left text-[11px] uppercase tracking-wide text-[#465940]/60">
+                      <th className="py-1.5 pr-4">ბარათი</th>
+                      <th className="py-1.5 pr-4">შევსებული გადახდა</th>
+                      <th className="py-1.5 pr-4">ბანკს მიაქვს</th>
+                      <th className="py-1.5">შეუვსებელი (სავარაუდოდ ითვლება)</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-[#465940]/10">
+                    {cardRows.map((r) => (
+                      <tr key={r.key} className="text-[#465940]">
+                        <td className="py-2 pr-4 font-semibold">{CARD_LABEL[r.key]}</td>
+                        <td className="py-2 pr-4">{r.count}</td>
+                        <td className="py-2 pr-4 font-bold">{r.pct != null ? `${r.pct.toFixed(2)}%` : '—'}</td>
+                        <td className="py-2">{r.pending}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            ) : (
+              <p className="text-sm text-[#465940]/50">ჯერ არცერთი USD გადახდა არ არის შევსებული.</p>
+            )}
+            {noCardPending > 0 && (
+              <p className="mt-2 text-[11px] text-[#465940]/60">{noCardPending} შეუვსებელ გადახდაზე BOG-მა ბარათის ტიპი არ დააბრუნა - ისინი ითვლება ყველა შევსებულის საერთო საშუალო საკომისიოთი.</p>
+            )}
+          </div>
+        )}
+
         <div className="rounded-[20px] bg-[#FDFBF0] p-5 shadow-sm mb-6">
           <form action={addWithdrawal} className="flex flex-wrap items-end gap-3 mb-4">
-            <input type="hidden" name="currency" value={currency} />
             <div>
-              <label className="block text-xs font-semibold text-[#465940]/70 mb-1">გატანილი თანხა ({currency})</label>
+              <label className="block text-xs font-semibold text-[#465940]/70 mb-1">გატანილი თანხა (₾)</label>
               <input name="amount" type="number" min="0.01" step="0.01" required placeholder="0.00"
                 className="w-32 px-3 py-2 rounded-xl border border-[#465940]/20 focus:outline-none focus:border-[#465940] text-sm text-[#465940] bg-white" />
             </div>
@@ -414,13 +495,16 @@ export default async function AdminAnalyticsPage(props: { searchParams: Promise<
               დამატება
             </button>
           </form>
+          {usdWithdrawals > 0 && (
+            <p className="mb-3 text-[11px] text-amber-700">⚠ {usdWithdrawals} ძველი გატანის ჩანაწერი USD-შია შეყვანილი, მაგრამ ბალანსში უბრალოდ ციფრად ითვლება ლარად. შეამოწმე და საჭიროებისას წაშალე/თავიდან შეიყვანე ლარში.</p>
+          )}
 
           {withdrawals.length > 0 ? (
             <div className="space-y-1.5 max-h-64 overflow-y-auto">
               {withdrawals.map((w) => (
                 <div key={w.id} className="flex items-center justify-between gap-3 text-sm py-1.5 border-t border-[#465940]/10 first:border-t-0">
                   <div className="min-w-0">
-                    <span className="font-bold text-[#465940]">{w.amount.toFixed(2)}{currencySymbol}</span>
+                    <span className="font-bold text-[#465940]">{w.amount.toFixed(2)}{w.currency === 'USD' ? '$' : '₾'}</span>
                     {w.note && <span className="text-[#465940]/60 ml-2 truncate">{w.note}</span>}
                   </div>
                   <div className="flex items-center gap-3 flex-shrink-0">

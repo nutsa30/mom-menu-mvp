@@ -3,6 +3,7 @@
 import { useMemo, useState } from 'react';
 import { BlockUserButton, ToggleAdminButton, GiftSubscriptionButton } from '@/components/AdminUserActions';
 import type { AdminLocale } from '@/lib/adminI18n';
+import UsdSettlementForm, { type UsdPaymentRow } from '@/components/UsdSettlementForm';
 
 const subBadge: Record<string, string> = {
   FREE: 'bg-[#465940]/10 text-[#465940]/70',
@@ -130,7 +131,7 @@ export default function UsersSearchTable({
         </p>
       ) : (
         <div className="overflow-x-auto">
-          <table className="w-full min-w-[940px]">
+          <table className={`w-full ${currency === "USD" ? "min-w-[1240px]" : "min-w-[940px]"}`}>
             <thead className="bg-[#465940]">
               <tr>
                 <th className="text-left px-6 py-3 text-xs font-semibold text-[#FDFBF0]/80 uppercase tracking-wide">სახელი</th>
@@ -140,6 +141,9 @@ export default function UsersSearchTable({
                 <th className="text-left px-4 py-3 text-xs font-semibold text-[#FDFBF0]/80 uppercase tracking-wide">შვილები</th>
                 <th className="text-left px-4 py-3 text-xs font-semibold text-[#FDFBF0]/80 uppercase tracking-wide">რეგ. თარიღი</th>
                 <th className="text-left px-4 py-3 text-xs font-semibold text-[#FDFBF0]/80 uppercase tracking-wide">შეძენის დრო</th>
+                {currency === "USD" && (
+                  <th className="text-left px-4 py-3 text-xs font-semibold text-[#FDFBF0]/80 uppercase tracking-wide">USD გადახდა / ჩარიცხვა</th>
+                )}
                 <th className="text-right px-6 py-3 text-xs font-semibold text-[#FDFBF0]/80 uppercase tracking-wide">მოქმედება</th>
               </tr>
             </thead>
@@ -201,6 +205,19 @@ export default function UsersSearchTable({
                       ? new Date(user.subscriptionStartedAt).toLocaleString('ka-GE', { timeZone: 'Asia/Tbilisi', dateStyle: 'short', timeStyle: 'short' })
                       : <span className="text-[#465940]/40">—</span>}
                   </td>
+                  {currency === "USD" && (
+                    <td className="px-4 py-4">
+                      {(user.usdPayments ?? []).length === 0 ? (
+                        <span className="text-[#465940]/40 text-xs">—</span>
+                      ) : (
+                        <div className="flex flex-col gap-3">
+                          {(user.usdPayments ?? []).map((p: UsdPaymentRow) => (
+                            <UsdSettlementForm key={`${p.id}-${p.settledAmountGel ?? 'x'}`} payment={p} />
+                          ))}
+                        </div>
+                      )}
+                    </td>
+                  )}
                   <td className="px-6 py-4">
                     <div className="flex items-center justify-end gap-2 flex-wrap">
                       <GiftSubscriptionButton userId={user.id} currentStatus={user.subscriptionStatus} isGifted={user.isGifted} intervalPrices={intervalPrices} />

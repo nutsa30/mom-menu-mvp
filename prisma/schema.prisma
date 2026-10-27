@@ -203,6 +203,17 @@ model Payment {
   commissionAmount Float?
   netAmount        Float?
 
+  // ── Foreign (USD) payments: what the owner actually received, entered by hand ──────
+  // BOG doesn't report the commission for USD payments, so the owner looks up in her bank
+  // which card was used and how many lari landed, and enters it per payment. The USD→GEL
+  // rate (National Bank of Georgia, on the settlement date) is stored with it so the bank's
+  // real cost per card type can be derived and used to ESTIMATE not-yet-entered payments.
+  settledCardType  String?   // VISA | MASTERCARD | AMEX | UNIONPAY | OTHER
+  settledAmountGel Float?    // lari actually credited for this payment
+  settledFxRate    Float?    // NBG USD→GEL rate used
+  settledRateDate  String?   // YYYY-MM-DD the rate was taken for
+  settledAt        DateTime?
+
   // Why a FAILED payment failed — whatever BOG's callback (or, for an internal API
   // exception, the error message itself) actually said, so admin can see the real reason
   // (insufficient funds, expired card, bank-side block, etc.) without digging through

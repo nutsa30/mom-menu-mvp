@@ -1,8 +1,9 @@
 import { currencyFor, normalizeMarket, INTERNATIONAL_PRICES } from '@/lib/market';
-﻿import { prisma } from '@/lib/prisma';
+import { prisma } from '@/lib/prisma';
 import { adminDict, getAdminLocale } from '@/lib/adminI18n';
 import UsersFilterBar from '@/components/UsersFilterBar';
 import UsersSearchTable from '@/components/UsersSearchTable';
+import { normalizeCard } from '@/lib/usd-settlement';
 import DueByDateList from '@/components/DueByDateList';
 import { PLAN_AMOUNTS, PLAN_AMOUNTS_BY_INTERVAL, BillingInterval, applyDiscount } from '@/lib/bog';
 
@@ -102,6 +103,31 @@ export default async function AdminUsersPage(
     }),
   ]);
   const paidUserIds = new Set(successfulPayers.map((p) => p.userId));
+
+  // Foreign (USD) payments per user, for the "which card / how many lari landed" form next to
+  // each foreign customer. Only fetched on the international tab.
+  const usdPaymentsByUser = new Map<string, any[]>();
+  if (currency === 'USD') {
+    const usdRows = await prisma.payment.findMany({
+      where: { status: 'SUCCESS', currency: 'USD', userId: { not: null } },
+      orderBy: { createdAt: 'desc' },
+      select: { id: true, userId: true, createdAt: true, grossAmount: true, cardType: true, settledCardType: true, settledAmountGel: true, settledFxRate: true, settledRateDate: true },
+    });
+    for (const r of usdRows) {
+      const row = {
+        id: r.id,
+        createdAt: r.createdAt.toISOString(),
+        gross: r.grossAmount,
+        bogCard: normalizeCard(r.cardType),
+        settledCardType: r.settledCardType,
+        settledAmountGel: r.settledAmountGel,
+        settledFxRate: r.settledFxRate,
+        settledRateDate: r.settledRateDate,
+      };
+      const list = usdPaymentsByUser.get(r.userId!);
+      if (list) list.push(row); else usdPaymentsByUser.set(r.userId!, [row]);
+    }
+  }
 
   // Per-user list of the calendar dates (UTC, same convention as the registration-date
   // filter below) they actually had a successful payment on — a subscriber who's renewed a
@@ -461,6 +487,7 @@ export default async function AdminUsersPage(
             planLabel: subLabelFor(u),
             promoPrice: priceFor(u),
             purchaseDates: purchaseDatesByUser.get(u.id) ?? [],
+            usdPayments: usdPaymentsByUser.get(u.id) ?? [],
           }))}
           locale={locale}
           currency={currency}
