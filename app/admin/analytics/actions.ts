@@ -31,13 +31,19 @@ export type SettlementResult = { ok: true; rate: number; rateDate: string } | { 
 export async function saveUsdSettlement(input: {
   paymentId: string;
   card: string;
-  amountGel: number;
+  amountGel?: number | null;
+  // Alternative to amountGel: the commission the bank charged (as shown in the bank app).
+  // Received lari is then derived as gross × rate − commission.
+  commission?: number | null;
+  commissionCurrency?: 'GEL' | 'USD';
   date?: string;
   manualRate?: number | null;
 }): Promise<SettlementResult> {
   await requireAdmin();
   if (!isCardKey(input.card)) return { ok: false, error: 'აირჩიე ბარათის ტიპი' };
-  if (!Number.isFinite(input.amountGel) || input.amountGel <= 0) return { ok: false, error: 'ჩარიცხული თანხა უნდა იყოს 0-ზე მეტი' };
+  const hasAmount = input.amountGel != null && Number.isFinite(input.amountGel) && input.amountGel > 0;
+  const hasCommission = input.commission != null && Number.isFinite(input.commission) && input.commission >= 0;
+  if (!hasAmount && !hasCommission) return { ok: false, error: 'შეიყვანე ჩარიცხული თანხა ან ბანკის საკომისიო' };
 
   const payment = await prisma.payment.findUnique({
     where: { id: input.paymentId },
@@ -54,17 +60,24 @@ export async function saveUsdSettlement(input: {
   if (rate == null) {
     return { ok: false, error: 'ეროვნული ბანკის კურსი ვერ მოიძებნა - ჩაწერე კურსი ხელით (მაგ. 2.7) და ისევ შეინახე' };
   }
-  // Sanity check: received lari can't be wildly more/less than gross × rate.
   const expected = payment.grossAmount * rate;
-  if (input.amountGel > expected * 1.05 || input.amountGel < expected * 0.5) {
-    return { ok: false, error: `თანხა საეჭვოა: ${payment.grossAmount}$ × ${rate.toFixed(4)} ≈ ${expected.toFixed(2)}₾. შეამოწმე ჩარიცხული თანხა.` };
+  let amountGel: number;
+  if (hasAmount) {
+    amountGel = input.amountGel!;
+  } else {
+    const commissionGel = input.commissionCurrency === 'USD' ? input.commission! * rate : input.commission!;
+    amountGel = Math.round((expected - commissionGel) * 100) / 100;
+  }
+  // Sanity check: received lari can't be wildly more/less than gross × rate.
+  if (amountGel > expected * 1.05 || amountGel < expected * 0.5) {
+    return { ok: false, error: `თანხა საეჭვოა: ${payment.grossAmount}$ × ${rate.toFixed(4)} ≈ ${expected.toFixed(2)}₾. შეამოწმე შეყვანილი თანხა/საკომისიო.` };
   }
 
   await prisma.payment.update({
     where: { id: payment.id },
     data: {
       settledCardType: input.card,
-      settledAmountGel: input.amountGel,
+      settledAmountGel: amountGel,
       settledFxRate: rate,
       settledRateDate: rateDate,
       settledAt: new Date(),

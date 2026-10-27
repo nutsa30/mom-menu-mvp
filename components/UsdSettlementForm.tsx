@@ -22,6 +22,8 @@ export default function UsdSettlementForm({ payment }: { payment: UsdPaymentRow 
   const [editing, setEditing] = useState(!settled);
   const [card, setCard] = useState(payment.settledCardType ?? payment.bogCard ?? '');
   const [amount, setAmount] = useState(payment.settledAmountGel != null ? String(payment.settledAmountGel) : '');
+  const [commission, setCommission] = useState('');
+  const [commissionCur, setCommissionCur] = useState<'GEL' | 'USD'>('USD');
   const [manualRate, setManualRate] = useState('');
   const [needsRate, setNeedsRate] = useState(false);
   const [error, setError] = useState('');
@@ -38,13 +40,16 @@ export default function UsdSettlementForm({ payment }: { payment: UsdPaymentRow 
       const res = await saveUsdSettlement({
         paymentId: payment.id,
         card,
-        amountGel: Number(amount),
+        amountGel: amount ? Number(amount) : null,
+        commission: !amount && commission !== '' ? Number(commission) : null,
+        commissionCurrency: commissionCur,
         manualRate: manualRate ? Number(manualRate) : null,
       });
       if (res.ok) {
         setEditing(false);
         setNeedsRate(false);
         setManualRate('');
+        setCommission('');
       } else {
         setError(res.error);
         if (res.error.includes('კურსი')) setNeedsRate(true);
@@ -93,6 +98,25 @@ export default function UsdSettlementForm({ payment }: { payment: UsdPaymentRow 
           aria-label="ჩარიცხული თანხა ლარში"
           className="w-24 rounded-lg border border-[#465940]/20 bg-white px-2 py-1 text-xs"
         />
+        <span className="text-[10px] text-[#465940]/50">ან</span>
+        <input
+          type="number" min="0" step="0.01" inputMode="decimal"
+          value={commission} onChange={(e) => setCommission(e.target.value)}
+          placeholder="საკომისიო $"
+          aria-label="ბანკის საკომისიო"
+          disabled={!!amount}
+          className="w-24 rounded-lg border border-[#465940]/20 bg-white px-2 py-1 text-xs disabled:opacity-40"
+        />
+        <select
+          value={commissionCur}
+          onChange={(e) => setCommissionCur(e.target.value as 'GEL' | 'USD')}
+          aria-label="საკომისიოს ვალუტა"
+          disabled={!!amount}
+          className="rounded-lg border border-[#465940]/20 bg-white px-1.5 py-1 text-xs disabled:opacity-40"
+        >
+          <option value="USD">$</option>
+          <option value="GEL">₾</option>
+        </select>
         {needsRate && (
           <input
             type="number" min="0" step="0.0001" inputMode="decimal"
@@ -103,7 +127,7 @@ export default function UsdSettlementForm({ payment }: { payment: UsdPaymentRow 
           />
         )}
         <button
-          type="button" onClick={save} disabled={pending || !card || !amount}
+          type="button" onClick={save} disabled={pending || !card || (!amount && commission === '')}
           className="rounded-full bg-[#465940] px-3 py-1 text-[11px] font-bold text-[#FDFBF0] disabled:opacity-40"
         >
           {pending ? '...' : 'შენახვა'}
