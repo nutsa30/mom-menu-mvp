@@ -406,15 +406,20 @@ export function verifyWebhookSignature(rawBody: string, headers: Headers): boole
 }
 
 // ─── Commission calculation ─────────────────────────────────────────────────
-// BOG commission: 2% (minimum 0.10₾) for local Georgian cards, 3.5% for
-// Amex/international cards. cardType comes from the payment-details response
-// (see getPaymentDetails) — treat anything identifiably Amex or explicitly
-// flagged international as the 3.5% tier, default to the local 2% tier
-// otherwise (safer default once real card_type values are observed in
-// production — revisit if BOG's actual values need tighter matching).
-export function computeCommission(grossAmount: number, cardType?: string | null): { commissionAmount: number; netAmount: number } {
+// BOG commission: 2% (minimum 0.10₾) normally, 3.5% for international cards.
+// Checked against the real bank statement (Sep-Oct 2026): Visa and Mastercard were always 2%.
+// Amex was NOT uniform: 8 payments on card BIN 374669 were credited at 2%, while the one
+// payment on card BIN 379897 was credited at 3.5% — so for Amex the card's BIN (first 6 digits
+// of payer_identifier in the BOG receipt/webhook) decides. Known 2% Amex BINs are listed in
+// LOCAL_AMEX_BINS; any other (or unknown) Amex BIN stays at the cautious 3.5% until the bank
+// statement shows otherwise — add its BIN here if it turns out to be 2%.
+const LOCAL_AMEX_BINS = ['374669'];
+
+export function computeCommission(grossAmount: number, cardType?: string | null, payerIdentifier?: string | null): { commissionAmount: number; netAmount: number } {
   const type = (cardType || '').toUpperCase();
-  const isInternational = type.includes('AMEX') || type.includes('AMERICAN EXPRESS') || type.includes('INTERNATIONAL');
+  const isAmex = type.includes('AMEX') || type.includes('AMERICAN EXPRESS');
+  const bin = (payerIdentifier || '').replace(/\D/g, '').slice(0, 6);
+  const isInternational = type.includes('INTERNATIONAL') || (isAmex && !LOCAL_AMEX_BINS.includes(bin));
   const rate = isInternational ? 0.035 : 0.02;
   let commissionAmount = grossAmount * rate;
   if (!isInternational) commissionAmount = Math.max(commissionAmount, 0.1);

@@ -95,6 +95,8 @@ export async function POST(req: Request) {
 
   const externalOrderId: string | undefined = body?.external_order_id;
   const cardType: string | undefined = body?.payment_detail?.card_type;
+  // First 6 digits of the card number (BIN) — decides the commission tier for Amex, see computeCommission.
+  const cardBin: string | undefined = body?.payment_detail?.payer_identifier;
 
   const decoded = decodeOrderId(externalOrderId);
   const renewal = decoded ? null : decodeRenewalOrderId(externalOrderId);
@@ -220,7 +222,7 @@ export async function POST(req: Request) {
     // isPaid — direct order (account already used its free trial): real, immediate charge.
     const { commissionAmount, netAmount } = currency === 'USD'
       ? { commissionAmount: null, netAmount: null }
-      : computeCommission(grossAmount, cardType);
+      : computeCommission(grossAmount, cardType, cardBin);
     const renewsAt = new Date(now.getTime() + INTERVAL_MS[decoded.interval]);
     const payment = await prisma.$transaction(async tx => {
       if (await tx.payment.findUnique({ where: { bogOrderId: orderId } })) return null;
@@ -398,7 +400,7 @@ export async function POST(req: Request) {
     const grossAmount = user.subscriptionAmount ?? applyDiscount(planPrice(normalizeMarket(user.market), interval), user.promoCode?.discountPercent);
     const { commissionAmount, netAmount } = currency === 'USD'
       ? { commissionAmount: null, netAmount: null }
-      : computeCommission(grossAmount, cardType);
+      : computeCommission(grossAmount, cardType, cardBin);
 
     const payment = await prisma.$transaction(async tx => {
       const previous = await tx.payment.findUnique({ where: { bogOrderId: orderId } });
