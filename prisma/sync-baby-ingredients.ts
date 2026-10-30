@@ -14,8 +14,8 @@ const INTENDED = [
   { nameKa: 'ტკბილი კარტოფილი', nameEn: 'Sweet Potato', minAgeMonths: 6, category: 'vegetable' },
   { nameKa: 'ჭარხალი', nameEn: 'Beetroot', minAgeMonths: 6, category: 'vegetable' },
   { nameKa: 'მწვანე ლობიო', nameEn: 'Green Beans', minAgeMonths: 6, category: 'vegetable' },
-  { nameKa: 'ბროკოლი', nameEn: 'Broccoli', minAgeMonths: 7, category: 'vegetable' },
-  { nameKa: 'ყვავილოვანი კომბოსტო', nameEn: 'Cauliflower', minAgeMonths: 7, category: 'vegetable' },
+  { nameKa: 'ბროკოლი', nameEn: 'Broccoli', minAgeMonths: 6, category: 'vegetable' },
+  { nameKa: 'ყვავილოვანი კომბოსტო', nameEn: 'Cauliflower', minAgeMonths: 6, category: 'vegetable' },
   { nameKa: 'ბრიუსელის კომბოსტო', nameEn: 'Brussels Sprouts', minAgeMonths: 7, category: 'vegetable' },
   { nameKa: 'კომბოსტო', nameEn: 'Cabbage', minAgeMonths: 7, category: 'vegetable' },
   { nameKa: 'ისპანახი', nameEn: 'Spinach', minAgeMonths: 8, category: 'vegetable' },
@@ -66,6 +66,13 @@ async function main() {
       lowered++;
     }
   }
+  // The single-ingredient purees of broccoli and cauliflower move to 6 months as well
+  // (combinations with other vegetables stay at 7).
+  const sug = await prisma.babyMealSuggestion.updateMany({
+    where: { titleEn: { in: ['Broccoli Puree', 'Cauliflower Puree'] }, minAgeMonths: { gt: 6 } },
+    data: { minAgeMonths: 6 },
+  });
+  if (sug.count) console.log(`ბროკოლისა და ყვავილოვანი კომბოსტოს პიურე: ${sug.count} შეთავაზება ახლა 6 თვიდანაა`);
   console.log(`\nდაემატა ${created}, ასაკი შემცირდა ${lowered} ინგრედიენტზე. დანარჩენი უკვე სწორად იყო.`);
 }
 main().finally(() => prisma.$disconnect());

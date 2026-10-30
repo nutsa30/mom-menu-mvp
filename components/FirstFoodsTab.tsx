@@ -64,6 +64,9 @@ function pureePrep(category: string, nameKa?: string): string {
   }
 }
 
+// Allowed from 6 months, but known to sometimes cause bloating at that age — a note is shown.
+const GASSY_AT_SIX = ['Broccoli', 'Cauliflower'];
+
 function StatusBadge({ tried, allergic, liked, disliked, ateWell }: any) {
   if (allergic) return <span className="text-[10px] bg-red-100 text-red-600 font-bold px-2 py-0.5 rounded-full"><Copy>{"ალერგია მისცა"}</Copy></span>;
   if (!tried) return <span className="text-[10px] bg-[#465940]/10 text-[#465940]/50 font-bold px-2 py-0.5 rounded-full"><Copy>{"არ გასინჯულა"}</Copy></span>;
@@ -145,6 +148,12 @@ function IngredientCard({
                 <Copy>{blwMode
                   ? `${blwCutSize(ageMonths)} · ${blwPrep(ing.category, ing.nameKa)}`
                   : `${pureePrep(ing.category, ing.nameKa)}`}</Copy>
+              </p>
+            )}
+            {/* Cruciferous vegetables allowed from 6 months, but they often cause gas in the youngest babies */}
+            {!s?.allergic && GASSY_AT_SIX.includes(ing.nameEn) && ageMonths < 7 && (
+              <p className="text-[10px] text-orange-600 mt-0.5">
+                <Copy>{"6 თვეზე შეიძლება შებერილობა გამოიწვიოს - დაიწყე მცირე ულუფით."}</Copy>
               </p>
             )}
           </div>
