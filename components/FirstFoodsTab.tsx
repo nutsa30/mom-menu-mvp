@@ -293,9 +293,14 @@ export default function FirstFoodsTab({ child, isFullPlan }: { child: any; isFul
   const triedCount = ingredients.filter(i => i.status?.tried).length;
   const allergicCount = ingredients.filter(i => i.status?.allergic).length;
 
-  // Age-appropriate filter: show only if minAgeMonths <= baby's age, OR already tried
+  // Age-appropriate filter: show only if minAgeMonths <= baby's age, OR already tried.
+  // This tracker is for babies starting solids, i.e. from 6 months — so the age used for
+  // filtering never drops below 6. Otherwise a baby a few days short of a full calendar
+  // month count (say 5 months 25 days, whose parent starts solids "at 6 months") would see
+  // none of the 6-month foods, and a parent could not mark anything as tried.
+  const visibleAgeMonths = Math.max(ageMonths, 6);
   const ageAppropriate = ingredients.filter(i =>
-    i.minAgeMonths <= ageMonths || i.status?.tried
+    i.minAgeMonths <= visibleAgeMonths || i.status?.tried
   );
   const filteredIng = ageAppropriate.filter(i =>
     categoryFilter === 'all' || i.category === categoryFilter
