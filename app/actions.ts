@@ -7,6 +7,7 @@ import { getAgeGroup } from '@/lib/meal';
 import { sendWelcomeEmail, sendVerificationEmail } from '@/lib/email';
 import crypto from 'crypto';
 import { logRegistrationMarket } from '@/lib/log-registration-market';
+import { attributionSnapshot } from '@/lib/attribution';
 
 function str(form: FormData, key: string) { return String(form.get(key) || '').trim(); }
 function list(form: FormData, key: string) { return str(form, key).split(',').map(x => x.trim()).filter(Boolean); }
@@ -29,10 +30,12 @@ export async function registerAction(form: FormData) {
   // becomes a real account once the emailed code is confirmed (see verify-email-code
   // route). Re-submitting the form with the same email before confirming just replaces
   // the pending attempt with a fresh code, rather than erroring.
+  // Which ad/source brought this visitor (campaign details only if they accepted cookies).
+  const attribution = JSON.parse(JSON.stringify(await attributionSnapshot()));
   const pending = await prisma.pendingRegistration.upsert({
     where: { email },
-    create: { ...preferences, email, name, passwordHash, codeHash, expiresAt: new Date(Date.now() + 15 * 60 * 1000) },
-    update: { ...preferences, name, passwordHash, codeHash, expiresAt: new Date(Date.now() + 15 * 60 * 1000) },
+    create: { ...preferences, email, name, passwordHash, codeHash, attribution, expiresAt: new Date(Date.now() + 15 * 60 * 1000) },
+    update: { ...preferences, name, passwordHash, codeHash, attribution, expiresAt: new Date(Date.now() + 15 * 60 * 1000) },
   });
   await logRegistrationMarket('email_pending', preferences.market, { registrationId: pending.id });
 

@@ -6,6 +6,7 @@ import { ensureReferralCode } from '@/lib/referral';
 import { cookies } from 'next/headers';
 import { timingSafeEqual } from 'crypto';
 import { logRegistrationMarket } from '@/lib/log-registration-market';
+import { saveUserAttribution, attributionSnapshot } from '@/lib/attribution';
 
 const BASE = process.env.NEXT_PUBLIC_APP_URL!;
 
@@ -85,6 +86,7 @@ export async function GET(req: NextRequest) {
     });
     await logRegistrationMarket('google', user.market, { userId: user.id });
     await ensureReferralCode(user.id);
+    await saveUserAttribution(user.id, await attributionSnapshot(), 'google');
   } else if (!user.googleId) {
     user = await prisma.user.update({
       where: { id: user.id },

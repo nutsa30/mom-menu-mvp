@@ -5,6 +5,7 @@ import { ensureReferralCode } from '@/lib/referral';
 import { NextResponse } from 'next/server';
 import crypto from 'crypto';
 import { logRegistrationMarket } from '@/lib/log-registration-market';
+import { saveUserAttribution, attributionSnapshot, type AttributionSnapshot } from '@/lib/attribution';
 
 export async function POST(req: Request) {
   try {
@@ -42,6 +43,8 @@ export async function POST(req: Request) {
     });
     await logRegistrationMarket('email_verified', user.market, { registrationId: pending.id, userId: user.id });
     await prisma.pendingRegistration.delete({ where: { email } });
+    // Record where this person came from (captured when they filled in the form).
+    await saveUserAttribution(user.id, (pending.attribution as unknown as AttributionSnapshot | null) ?? await attributionSnapshot(), 'email');
     // This is the real signup completion point (the User row is only created here, once
     // the emailed code is confirmed) — give every new user their permanent referral code
     // right away, same as the Google sign-in path.

@@ -4,6 +4,7 @@ import { hashPassword, setAuthCookie } from '@/lib/auth';
 import { ensureReferralCode } from '@/lib/referral';
 import { NextResponse } from 'next/server';
 import { logRegistrationMarket } from '@/lib/log-registration-market';
+import { saveUserAttribution, attributionSnapshot } from '@/lib/attribution';
 
 export async function POST(req: Request) {
   try {
@@ -24,6 +25,7 @@ export async function POST(req: Request) {
     const user = await prisma.user.create({ data: { email, passwordHash, name, locale: experience.locale, market: experience.market, timeZone: experience.market === 'GE' ? 'Asia/Tbilisi' : 'UTC', subscriptionCurrency: experience.currency } });
     await logRegistrationMarket('legacy_signup', user.market, { userId: user.id });
     await ensureReferralCode(user.id);
+    await saveUserAttribution(user.id, await attributionSnapshot(), 'email');
 
     await setAuthCookie({ id: user.id, email: user.email, name: user.name, role: user.role });
 

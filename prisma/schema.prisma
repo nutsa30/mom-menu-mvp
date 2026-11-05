@@ -126,6 +126,7 @@ model User {
   passwordResetTokens    PasswordResetToken[]
   testimonials           Testimonial[]
   payments               Payment[]
+  attribution            UserAttribution?
   cancellations          SubscriptionCancellation[]
 
   // Real usage signal, distinct from subscription/billing dates — updated (throttled to
@@ -845,6 +846,8 @@ model PendingRegistration {
   passwordHash String
   codeHash     String
   expiresAt    DateTime
+  // Where the visitor came from (campaign/geo/device), carried across the email-code step.
+  attribution  Json?
   createdAt    DateTime @default(now())
 }
 
@@ -1003,4 +1006,82 @@ model CommunicationDelivery {
   localDate String
   createdAt DateTime @default(now())
   @@unique([userId, kind, localDate])
+}
+
+// ── Analytics ────────────────────────────────────────────────────────────────────────
+// One row per public page view. No IP address, no raw user-agent, no e-mail and no query
+// string is stored. visitorKey is either "v:<random id>" (visitor accepted cookies) or
+// "a:<hash>" - a hash that includes the day and rotates every day, so it can count a
+// visitor within ONE day but can never follow anyone across days (visitor declined cookies).
+// Source / campaign fields are only filled on a landing page view (the first page of a visit).
+model AnalyticsEvent {
+  id           String   @id @default(cuid())
+  createdAt    DateTime @default(now())
+  type         String   @default("page_view")
+  visitorKey   String
+  consented    Boolean  @default(false)
+  isNewVisitor Boolean?
+  isLanding    Boolean  @default(false)
+  path         String
+  pageKind     String?
+  source       String?
+  medium       String?
+  campaign     String?
+  content      String?
+  term         String?
+  utmSource    String?
+  referrerHost String?
+  country      String?
+  region       String?
+  city         String?
+  device       String?
+  browser      String?
+  os           String?
+
+  @@index([createdAt])
+  @@index([type, createdAt])
+  @@index([isLanding, source, createdAt])
+  @@index([country, createdAt])
+  @@index([visitorKey, createdAt])
+}
+
+// Written once when an account is created: which ad/source brought the person (first and most
+// recent), and where they were. Campaign fields are filled ONLY if the visitor accepted
+// cookies. Payments are attributed by joining Payment -> User -> UserAttribution, so no
+// payment row or payment code is touched. Deleted together with the account (privacy).
+model UserAttribution {
+  id               String    @id @default(cuid())
+  userId           String    @unique
+  user             User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  createdAt        DateTime  @default(now())
+  signupMethod     String?   // email | google
+  consented        Boolean   @default(false)
+  visitorId        String?
+  firstSource      String?
+  firstMedium      String?
+  firstCampaign    String?
+  firstContent     String?
+  firstTerm        String?
+  firstUtmSource   String?
+  firstLandingPath String?
+  firstReferrerHost String?
+  firstSeenAt      DateTime?
+  lastSource       String?
+  lastMedium       String?
+  lastCampaign     String?
+  lastContent      String?
+  lastTerm         String?
+  lastUtmSource    String?
+  country          String?
+  region           String?
+  city             String?
+  device           String?
+  browser          String?
+  os               String?
+
+  @@index([firstSource])
+  @@index([firstCampaign])
+  @@index([lastSource])
+  @@index([country])
+  @@index([createdAt])
 }

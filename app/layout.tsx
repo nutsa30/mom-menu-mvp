@@ -7,6 +7,7 @@ import NavWrapper from '@/components/NavWrapper';
 import FooterWrapper from '@/components/FooterWrapper';
 import Analytics from '@/components/Analytics';
 import CookieBanner from '@/components/CookieBanner';
+import FirstPartyTracker from '@/components/FirstPartyTracker';
 import PWAInstallBanner from '@/components/PWAInstallBanner';
 import NotificationPrompt from '@/components/NotificationPrompt';
 import ChatbotWidget from '@/components/ChatbotWidget';
@@ -184,6 +185,9 @@ export default async function RootLayout({ children }: { children: React.ReactNo
         <Suspense fallback={null}>
           <Analytics gaId={gaId} gtmId={gtmId} />
         </Suspense>
+
+        {/* Own visitor statistics (admin-only reports); see lib/traffic-source.ts */}
+        <FirstPartyTracker />
 
         {/* Notification permission prompt — shown after 8s, triggered by user tap (iOS requirement) */}
         <NotificationPrompt />

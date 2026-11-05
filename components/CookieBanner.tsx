@@ -26,6 +26,7 @@ export default function CookieBanner() {
     try {
       localStorage.setItem('cookie_consent', 'declined');
       localStorage.removeItem('mommenu_campaign');
+      for (const domain of ['', window.location.hostname, '.mommenu.ge']) document.cookie = `mm_attr=; Max-Age=0; path=/${domain ? '; domain=' + domain : ''}`;
       Object.keys(document.cookie.split(';').reduce<Record<string, boolean>>((cookies, pair) => ({ ...cookies, [pair.trim().split('=')[0]]: true }), {})).filter(key => key === '_ga' || key.startsWith('_ga_') || key === '_gid').forEach(key => {
         for (const domain of ['', window.location.hostname, '.mommenu.ge']) document.cookie = `${key}=; Max-Age=0; path=/${domain ? '; domain=' + domain : ''}`;
       });
