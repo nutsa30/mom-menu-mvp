@@ -32,11 +32,13 @@ export type TouchInput = {
   ownHost?: string | null;
 };
 
-// Letters (Georgian included), digits, space and a few safe separators only.
+// Keeps letters (Georgian included), digits, space and a few safe separators. Anything else
+// (brackets, quotes, <>, & ...) becomes "_" instead of throwing the whole value away, so a
+// campaign called "Oct Launch (Reels)" is still recorded as "Oct Launch _Reels_".
 export function cleanParam(value: unknown, max = 100): string | undefined {
   if (typeof value !== 'string') return undefined;
-  const v = value.trim().slice(0, max);
-  return v && /^[\p{L}\p{N} _.+:|/-]+$/u.test(v) ? v : undefined;
+  const v = value.replace(/[^\p{L}\p{N} _.+:|/-]+/gu, '_').replace(/\s+/g, ' ').trim().slice(0, max);
+  return v || undefined;
 }
 
 export function hostOf(url: string | null | undefined): string | undefined {

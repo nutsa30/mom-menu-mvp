@@ -43,7 +43,9 @@ test('no referrer, or our own site, is direct', () => {
 });
 
 test('hostile or oversized parameters are dropped', () => {
-  assert.equal(cleanParam('<script>alert(1)</script>'), undefined);
+  assert.ok(!/[<>()]/.test(cleanParam('<script>alert(1)</script>') || ''));
+  assert.equal(cleanParam('Oct Launch (Reels)'), 'Oct Launch _Reels_');
+  assert.equal(cleanParam('   '), undefined);
   assert.equal(cleanParam('a'.repeat(300))?.length, 100);
   assert.equal(cleanParam('summer sale-2026'), 'summer sale-2026');
   assert.equal(cleanParam('კამპანია_1'), 'კამპანია_1');
