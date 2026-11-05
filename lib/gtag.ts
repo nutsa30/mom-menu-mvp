@@ -1,4 +1,5 @@
 import { analyticsAllowed, analyticsLocation, campaignAttribution } from './analytics-consent';
+import { pixelEvent } from './ad-pixels';
 
 declare global {
   interface Window {
@@ -11,6 +12,8 @@ declare global {
 
 export function trackEvent(eventName: string, params?: Record<string, any>) {
   if (!analyticsAllowed()) return;
+  // Ad-platform pixels (Meta / TikTok / Pinterest) get only the four conversion events, and only if configured.
+  pixelEvent(eventName, params);
   const event = { name: eventName, params: { ...campaignAttribution(), page_location: analyticsLocation(window.location.href), ...params } };
   if (!window.mommenuAnalyticsReady) {
     window.mommenuAnalyticsQueue = [...(window.mommenuAnalyticsQueue || []), event].slice(-50);
@@ -34,6 +37,15 @@ export const ga = {
   viewBlog:            (title: string) =>
                          trackEvent("view_item",               { item_name: title, item_category: "blog" }),
   contactSubmit:       () => trackEvent("contact_form_submit"),
+  // Packages page opened - once per browser tab session, not on every refresh.
+  viewPricing:         () => {
+    if (!analyticsAllowed()) return;
+    try {
+      if (sessionStorage.getItem('mommenu_view_pricing')) return;
+      sessionStorage.setItem('mommenu_view_pricing', '1');
+    } catch { /* Storage may be unavailable. */ }
+    trackEvent("view_pricing", { item_category: "pricing" });
+  },
 };
 
 export function rememberCheckout(orderId: string) {

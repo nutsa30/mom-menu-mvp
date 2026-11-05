@@ -8,6 +8,7 @@ import LegalLinks from '@/components/LegalLinks';
 import { useRouter } from 'next/navigation';
 import { useEffect, useState } from 'react';
 import { ga, rememberCheckout } from '@/lib/gtag';
+import { CONSENT_EVENT } from '@/lib/analytics-consent';
 
 type BillingInterval = 1 | 3 | 6;
 
@@ -39,6 +40,12 @@ export default function SubscriptionClient({ planAmounts }: { planAmounts: Recor
   // check) — shown as a detail modal instead of a plain alert() so the reason and the way
   // out (cancel, then resubscribe once the paid period ends) are both actually visible.
   const [intervalBlocked, setIntervalBlocked] = useState<{ currentInterval: BillingInterval; renewsAt: string | null } | null>(null);
+
+  useEffect(() => {
+    ga.viewPricing();
+    window.addEventListener(CONSENT_EVENT, ga.viewPricing);
+    return () => window.removeEventListener(CONSENT_EVENT, ga.viewPricing);
+  }, []);
 
   useEffect(() => {
     fetch('/api/auth/me')

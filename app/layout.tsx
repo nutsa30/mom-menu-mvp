@@ -8,6 +8,8 @@ import FooterWrapper from '@/components/FooterWrapper';
 import Analytics from '@/components/Analytics';
 import CookieBanner from '@/components/CookieBanner';
 import FirstPartyTracker from '@/components/FirstPartyTracker';
+import AdPixels from '@/components/AdPixels';
+import { validMetaId, validPinterestId, validTiktokId } from '@/lib/ad-pixels';
 import PWAInstallBanner from '@/components/PWAInstallBanner';
 import NotificationPrompt from '@/components/NotificationPrompt';
 import ChatbotWidget from '@/components/ChatbotWidget';
@@ -137,6 +139,12 @@ export default async function RootLayout({ children }: { children: React.ReactNo
   const gaId   = seo?.gaId  || process.env.NEXT_PUBLIC_GA_ID  || 'G-YXNN1XCX9V';
   const gtmId  = seo?.gtmId || process.env.NEXT_PUBLIC_GTM_ID || '';
   const googleVerification = seo?.googleVerification;
+  // Ad pixels switch on only when the ID is set in Vercel (and the visitor accepted cookies).
+  const pixelIds = {
+    meta: validMetaId(process.env.META_PIXEL_ID),
+    tiktok: validTiktokId(process.env.TIKTOK_PIXEL_ID),
+    pinterest: validPinterestId(process.env.PINTEREST_TAG_ID),
+  };
 
   return (
     <html lang={experience.locale}>
@@ -188,6 +196,7 @@ export default async function RootLayout({ children }: { children: React.ReactNo
 
         {/* Own visitor statistics (admin-only reports); see lib/traffic-source.ts */}
         <FirstPartyTracker />
+        <AdPixels ids={pixelIds} />
 
         {/* Notification permission prompt — shown after 8s, triggered by user tap (iOS requirement) */}
         <NotificationPrompt />

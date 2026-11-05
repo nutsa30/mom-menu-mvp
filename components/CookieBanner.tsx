@@ -26,7 +26,7 @@ export default function CookieBanner() {
     try {
       localStorage.setItem('cookie_consent', 'declined');
       localStorage.removeItem('mommenu_campaign');
-      for (const domain of ['', window.location.hostname, '.mommenu.ge']) document.cookie = `mm_attr=; Max-Age=0; path=/${domain ? '; domain=' + domain : ''}`;
+      for (const name of ['mm_attr', '_fbp', '_fbc', '_ttp', '_tt_enable_cookie', '_pin_unauth', '_derived_epik']) for (const domain of ['', window.location.hostname, '.mommenu.ge']) document.cookie = `${name}=; Max-Age=0; path=/${domain ? '; domain=' + domain : ''}`;
       Object.keys(document.cookie.split(';').reduce<Record<string, boolean>>((cookies, pair) => ({ ...cookies, [pair.trim().split('=')[0]]: true }), {})).filter(key => key === '_ga' || key.startsWith('_ga_') || key === '_gid').forEach(key => {
         for (const domain of ['', window.location.hostname, '.mommenu.ge']) document.cookie = `${key}=; Max-Age=0; path=/${domain ? '; domain=' + domain : ''}`;
       });
@@ -46,8 +46,8 @@ export default function CookieBanner() {
           </p>
           <p className="text-xs text-[#6F7A5C]/70 leading-relaxed">
             {ka
-              ? 'აუცილებელი cookie-ები საიტის მუშაობისთვის გამოიყენება. შენი თანხმობით Google Analytics ვიზიტებსა და რეკლამიდან გამოწერებამდე გზას აღრიცხავს. უარყოფა საიტის გამოყენებას არ ზღუდავს.'
-              : 'Essential cookies keep the site working. With your permission, Google Analytics measures visits and the journey from ads to subscriptions. Declining does not limit access.'}
+              ? 'აუცილებელი cookie-ები საიტის მუშაობისთვის გამოიყენება. შენი თანხმობით Google Analytics და რეკლამის პლატფორმების (Meta/Instagram, TikTok, Pinterest) საზომი კოდები ვიზიტებსა და რეკლამიდან გამოწერამდე გზას აღრიცხავს. უარყოფა საიტის გამოყენებას არ ზღუდავს.'
+              : 'Essential cookies keep the site working. With your permission, Google Analytics and advertising platforms (Meta/Instagram, TikTok, Pinterest) measure visits and the journey from ads to subscriptions. Declining does not limit access.'}
           </p>
           <a href={`/privacy?lang=${locale}`} className="text-xs underline text-[#6F7A5C]">{ka ? 'კონფიდენციალურობა' : 'Privacy and cookies'}</a>
         </div>
