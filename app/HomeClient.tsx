@@ -73,100 +73,6 @@ function useStaggeredFadeUp(delay = 120) {
   return ref;
 }
 
-// Desktop-only "pinned" scrollytelling driver: the wrapper is `count` viewport-heights tall
-// and its inner panel visually stays put while the person scrolls through it, swapping the
-// active question/visual in place. Deliberately NOT implemented with CSS `position: sticky`:
-// this app's root layout wraps every page in a div with `overflow-x: hidden` (added to avoid
-// an iOS fixed-element touch bug — see app/layout.tsx), and per the CSS spec a non-`visible`
-// overflow on one axis computes the other axis to `auto` too, which turns that wrapper into a
-// scroll-containing ancestor and silently breaks `position: sticky` in most browsers (the
-// panel just scrolls away instead of pinning) — that's why this looked fine on mobile (which
-// never uses this pinned panel) but showed long empty stretches on desktop. Fixed by driving
-// the pin manually: 'before' the wrapper reaches the top, the panel sits at the wrapper's own
-// top (normal document position); while scrolling through the wrapper, the panel is
-// `position: fixed` to the viewport; once the wrapper's bottom has scrolled past, the panel
-// rests at the wrapper's bottom. No scroll-jacking, no animation library — native scroll read
-// via a rAF-throttled listener.
-function useFlowingStory() {
-  const ref = useRef<HTMLDivElement>(null);
-  useEffect(() => {
-    let frame = 0;
-    const compute = () => {
-      frame = 0;
-      const steps = ref.current?.querySelectorAll<HTMLElement>('[data-story-step]');
-      if (!steps) return;
-      const reduced = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
-      const navigation = document.querySelector<HTMLElement>('[data-mobile-navigation]')?.getBoundingClientRect();
-      const visibleBottom = navigation && navigation.height > 0
-        ? Math.min(window.innerHeight, navigation.top) : window.innerHeight;
-      const exitEnd = Math.min(72, visibleBottom * 0.12);
-      const rects = Array.from(steps, step => step.getBoundingClientRect());
-      const departure = rects.map(rect => {
-        const start = rect.height * 0.3;
-        const distance = Math.max(1, rect.height - start - exitEnd);
-        const progress = Math.max(0, Math.min(1, (-rect.top - start) / distance));
-        return progress * progress * (3 - 2 * progress);
-      });
-      steps.forEach((step, index) => {
-        // Reveal the next step only once scrolling starts taking the current
-        // step away. Its arrival and its predecessor's departure share progress.
-        const arrival = index === 0
-          ? Math.max(0, Math.min(1, (visibleBottom - rects[index].top) / Math.min(220, visibleBottom * 0.5)))
-          : departure[index - 1];
-        const opacity = window.innerWidth >= 1024 || reduced ? 1
-          : Math.min(arrival, 1 - departure[index]);
-        step.style.opacity = String(opacity);
-      });
-    };
-    const schedule = () => { if (!frame) frame = requestAnimationFrame(compute); };
-    const motion = window.matchMedia('(prefers-reduced-motion: reduce)');
-    window.addEventListener('scroll', schedule, { passive: true });
-    window.addEventListener('resize', schedule);
-    motion.addEventListener('change', schedule);
-    compute();
-    return () => {
-      window.removeEventListener('scroll', schedule);
-      window.removeEventListener('resize', schedule);
-      motion.removeEventListener('change', schedule);
-      if (frame) cancelAnimationFrame(frame);
-    };
-  }, []);
-  return ref;
-}
-
-function useScrollStory(count: number) {
-  const wrapperRef = useRef<HTMLDivElement | null>(null);
-  const [active, setActive] = useState(0);
-  const [pin, setPin] = useState<'before' | 'pinned' | 'after'>('before');
-  useEffect(() => {
-    let raf = 0;
-    const compute = () => {
-      raf = 0;
-      const el = wrapperRef.current;
-      if (!el) return;
-      const rect = el.getBoundingClientRect();
-      const vh = window.innerHeight;
-
-      setPin(rect.top > 0 ? 'before' : rect.bottom <= vh ? 'after' : 'pinned');
-
-      const total = rect.height - vh;
-      const progress = total <= 0 ? 0 : Math.min(1, Math.max(0, -rect.top / total));
-      const idx = Math.min(count - 1, Math.floor(progress * count));
-      setActive((prev) => (prev === idx ? prev : idx));
-    };
-    const onScroll = () => { if (!raf) raf = requestAnimationFrame(compute); };
-    window.addEventListener('scroll', onScroll, { passive: true });
-    window.addEventListener('resize', onScroll);
-    compute();
-    return () => {
-      window.removeEventListener('scroll', onScroll);
-      window.removeEventListener('resize', onScroll);
-      if (raf) cancelAnimationFrame(raf);
-    };
-  }, [count]);
-  return { wrapperRef, active, pin };
-}
-
 const dishLabel = (d: Dish, ka: boolean) =>
   d ? (ka ? d.titleKa : d.titleEn) : (ka ? 'კერძი არ არის' : 'No dish');
 
@@ -523,8 +429,6 @@ export default function HomeClient({ s, dishes, dishCount, recentBlogs, planAmou
   const locale = searchParams.get('lang') === 'en' ? 'en' : 'ka';
   const ka = locale === 'ka';
 
-  const storyPin = useScrollStory(9);
-  const mobileStoryRef = useFlowingStory();
   const refCoreValue = useFadeUp();
   const refDaily = useFadeUp();
   const refSummary = useFadeUp();
@@ -707,64 +611,21 @@ export default function HomeClient({ s, dishes, dishCount, recentBlogs, planAmou
       </section>
 
       {/* ── STORY: "დედის ჩვეულებრივი დღე" ──────────────────────
-          Mobile: a normal flowing column where each step fades at the viewport edges.
-          Desktop: a genuinely pinned scrollytelling panel — the
-          wrapper is 5 viewport-heights tall, the inner panel is position:sticky, so the
-          person stays put and the question + visual swap in place as they scroll
-          (useScrollStory turns scroll position into a step index). No scroll-jacking, no
-          animation library — native scroll read via a rAF-throttled listener. */}
-      <section id="story" className="relative z-10" style={{ background: INK }}>
-        {/* Mobile / tablet (< lg): flowing list */}
-        <div className="lg:hidden py-16 sm:py-28">
-          <div className="max-w-6xl mx-auto px-5 sm:px-8">
-            <h2 className="text-2xl sm:text-4xl font-bold mb-14 sm:mb-20 max-w-2xl" style={{ color: CREAM, fontFamily: SERIF_KA }}>
-              {ka ? 'ყველაფერი ერთი კითხვით იწყება: დღეს რა ვაჭამო?' : 'It always starts with one question: what do I feed them today?'}
-            </h2>
-            <div ref={mobileStoryRef}>
-              {STORY_STEPS.map((step, i) => (
-                <div
-                  key={i}
-                  data-story-step
-                  className="py-8 sm:py-12 transition-opacity duration-150 motion-reduce:transition-none"
-                >
-                  <p className="text-3xl sm:text-5xl font-bold" style={{ color: CREAM, fontFamily: SERIF_KA }}>{step.q}</p>
-                  <div className="mt-6 max-w-sm">{step.visual}</div>
-                </div>
-              ))}
-            </div>
-          </div>
-        </div>
-
-        {/* Desktop (lg+): pinned scrollytelling */}
-        <div ref={storyPin.wrapperRef} className="hidden lg:block relative" style={{ height: `${STORY_STEPS.length * 85}vh` }}>
-          <div
-            className="h-screen flex items-center overflow-hidden left-0 right-0"
-            style={{ position: storyPin.pin === 'pinned' ? 'fixed' : 'absolute', top: storyPin.pin === 'after' ? 'auto' : 0, bottom: storyPin.pin === 'after' ? 0 : 'auto' }}
-          >
-            <div className="max-w-6xl mx-auto px-8 w-full">
-              <h2 className="text-4xl font-bold mb-16 max-w-2xl" style={{ color: CREAM, fontFamily: SERIF_KA }}>
-                {ka ? 'ყველაფერი ერთი კითხვით იწყება: დღეს რა ვაჭამო?' : 'It always starts with one question: what do I feed them today?'}
-              </h2>
-              <div className="grid grid-cols-2 gap-20 items-center">
-                <div className="relative h-[240px]">
-                  {STORY_STEPS.map((step, i) => (
-                    <p
-                      key={i}
-                      className="absolute top-0 left-0 right-0 text-5xl font-bold transition-all duration-500 ease-out"
-                      style={{
-                        color: CREAM,
-                        fontFamily: SERIF_KA,
-                        opacity: storyPin.active === i ? 1 : 0,
-                        transform: storyPin.active === i ? 'translateY(0)' : 'translateY(18px)',
-                      }}
-                    >
-                      {step.q}
-                    </p>
-                  ))}
-                </div>
-                <div className="max-w-sm ml-auto">{STORY_STEPS[storyPin.active].visual}</div>
+          Every question with its screen is visible right away (no pinned panel, no fading in
+          and out while scrolling), laid out in a compact grid, so nothing is waited for and
+          no empty green stretch is left below. */}
+      <section id="story" className="relative z-10 py-16 sm:py-24" style={{ background: INK }}>
+        <div className="max-w-6xl mx-auto px-5 sm:px-8">
+          <h2 className="text-2xl sm:text-4xl font-bold mb-10 sm:mb-14 max-w-2xl" style={{ color: CREAM, fontFamily: SERIF_KA }}>
+            {ka ? 'ყველაფერი ერთი კითხვით იწყება: დღეს რა ვაჭამო?' : 'It always starts with one question: what do I feed them today?'}
+          </h2>
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-x-8 gap-y-12 items-start">
+            {STORY_STEPS.map((step, i) => (
+              <div key={i} className="min-w-0 flex flex-col">
+                <p className="text-xl sm:text-2xl font-bold mb-4 leading-snug" style={{ color: CREAM, fontFamily: SERIF_KA }}>{step.q}</p>
+                <div className="w-full max-w-sm">{step.visual}</div>
               </div>
-            </div>
+            ))}
           </div>
         </div>
       </section>
