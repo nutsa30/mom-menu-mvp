@@ -2014,6 +2014,11 @@ function PaymentFailedBanner({ paymentFailedAt }: { paymentFailedAt: string | Da
 }
 
 // ── Main Dashboard ────────────────────────────────────────────────────────────
+// The full menu ("დღის გეგმა", shopping list, freezer, what's at home, nutrition) opens at this
+// age. Before it, the child sees only first foods + recipes. At exactly this age "პირველი საკვები"
+// stays visible next to the full menu so a baby still trying new foods loses nothing.
+const FULL_MENU_FROM_MONTHS = 11;
+
 export default function DashboardClient({ user }: { user: any }) {
   const { locale } = useExperience();
   const router = useRouter();
@@ -2022,7 +2027,7 @@ export default function DashboardClient({ user }: { user: any }) {
     ? 'today'
     : ageInMonths(firstChild.birthDate) < 6
     ? 'child'
-    : (firstChild.ageGroup === 'FROM_6' || firstChild.ageGroup === 'FROM_9') ? 'firstfoods' : 'today';
+    : ageInMonths(firstChild.birthDate) < FULL_MENU_FROM_MONTHS ? 'firstfoods' : 'today';
   const [tab, setTab] = useState<Tab>(defaultTab);
   // Feature 8 ("კვების SOS") "ახალი პროდუქტის დამატება" option routes here: switches to
   // "შვილი" and tells ChildTab
@@ -2087,9 +2092,10 @@ export default function DashboardClient({ user }: { user: any }) {
       if (tab !== 'child' && tab !== 'settings' && tab !== 'referral') setTab('child');
       return;
     }
-    const young = activeChild.ageGroup === 'FROM_6' || activeChild.ageGroup === 'FROM_9';
+    const months = ageInMonths(activeChild.birthDate);
+    const young = months < FULL_MENU_FROM_MONTHS;
     if (young && tab === 'today') setTab('firstfoods');
-    if (!young && (tab === 'firstfoods' || tab === 'recipes')) setTab('today');
+    if (!young && (tab === 'recipes' || (tab === 'firstfoods' && months >= 12))) setTab('today');
     if (young && tab === 'athome') setTab('firstfoods');
     if (young && tab === 'nutrition') setTab('firstfoods');
   }, [activeChild?.id]);
@@ -2121,7 +2127,10 @@ export default function DashboardClient({ user }: { user: any }) {
   // whole time so bog-renew's daily cron keeps retrying the same saved card (see the BOG
   // webhook's isFailed branch); this is what actually enforces "no access until it's paid".
   const isFullPlan = hasPaidAccess(user, true);
-  const isYoungBaby = activeChild?.ageGroup === 'FROM_6' || activeChild?.ageGroup === 'FROM_9';
+  const babyMonths = activeChild ? ageInMonths(activeChild.birthDate) : 99;
+  const isYoungBaby = !!activeChild && babyMonths < FULL_MENU_FROM_MONTHS;
+  // Settings keeps showing the allergies block for the whole first-foods stage (unchanged: 6-11 months).
+  const isFirstFoodsStage = activeChild?.ageGroup === 'FROM_6' || activeChild?.ageGroup === 'FROM_9';
 
   // Site content (first-foods, recipes, meal plans, everything) starts at 6 months — a
   // child younger than that has nothing to show yet, regardless of subscription.
@@ -2132,7 +2141,10 @@ export default function DashboardClient({ user }: { user: any }) {
     : [
         ...(isYoungBaby
           ? [{ key: 'firstfoods' as Tab, label: 'პირველი საკვები' }, { key: 'recipes' as Tab, label: 'რეცეპტები' }]
-          : [{ key: 'today' as Tab, label: 'დღის გეგმა' }]
+          : [
+              { key: 'today' as Tab, label: 'დღის გეგმა' },
+              ...(babyMonths < 12 ? [{ key: 'firstfoods' as Tab, label: 'პირველი საკვები' }] : []),
+            ]
         ),
         // Needs a real daily plan to match against (same FULL_PLAN gate /api/daily-log
         // itself enforces), so it's hidden for the same audiences "დღის გეგმა" is.
@@ -2245,7 +2257,7 @@ export default function DashboardClient({ user }: { user: any }) {
           />
         )}
         {tab === 'referral' && <ReferralTab />}
-        {tab === 'settings' && <SettingsTab user={user} activeChild={isYoungBaby ? activeChild : null} />}
+        {tab === 'settings' && <SettingsTab user={user} activeChild={isFirstFoodsStage ? activeChild : null} />}
       </main>
     </div>
   );
