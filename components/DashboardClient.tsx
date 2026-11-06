@@ -1023,6 +1023,8 @@ function ChildTab({ kids, userId, onUpdate, onDelete, autoOpenIntroChildId, onAu
   const [milkStopped, setMilkStopped] = useState(false);
   const [textureStage, setTextureStage] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
+  const [saveError, setSaveError] = useState('');
+  const [savedNote, setSavedNote] = useState('');
   const [deleting, setDeleting] = useState(false);
   const [newChildMode, setNewChildMode] = useState(false);
   const [newName, setNewName] = useState('');
@@ -1097,6 +1099,7 @@ function ChildTab({ kids, userId, onUpdate, onDelete, autoOpenIntroChildId, onAu
     setMilkType(child.milkType ?? 'BREAST');
     setMilkStopped(child.milkStopped ?? false);
     setTextureStage(child.textureStage ?? null);
+    setSaveError('');
     loadIntroductions(child);
   };
 
@@ -1121,21 +1124,40 @@ function ChildTab({ kids, userId, onUpdate, onDelete, autoOpenIntroChildId, onAu
 
   const save = async () => {
     if (!selected) return;
+    setSaveError('');
+    // The date field must hold a real, past date - otherwise nothing could be saved and the
+    // person would see no reason why.
+    const parsed = new Date(birthDate);
+    if (!birthDate || Number.isNaN(parsed.getTime())) { setSaveError('შეიყვანე დაბადების თარიღი სრულად (დღე, თვე, წელი).'); return; }
+    if (parsed.getTime() > Date.now()) { setSaveError('დაბადების თარიღი მომავალში ვერ იქნება.'); return; }
     setSaving(true);
-    const res = await fetch(`/api/children/${selected.id}`, {
-      method: 'PATCH',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ name, birthDate, allergies, dislikes, likes, milkType, milkStopped, textureStage }),
-    });
-    const updated = await res.json();
-    setSaving(false);
-    if (updated.id) {
-      // Clear plan + shopping caches so a fresh plan generates with new preferences
-      const today = new Date().toISOString().split('T')[0];
-      localStorage.setItem(`planStart_${updated.id}`, today);
-      clearShoppingCache(updated.id);
+    try {
+      const res = await fetch(`/api/children/${selected.id}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ name, birthDate, allergies, dislikes, likes, milkType, milkStopped, textureStage }),
+      });
+      const updated = await res.json().catch(() => null);
+      if (!res.ok || !updated?.id) {
+        setSaveError(updated?.message || (res.status === 401 ? 'სესია ამოიწურა - გაიარე ავტორიზაცია თავიდან.' : 'ვერ შეინახა. სცადე თავიდან.'));
+        return;
+      }
+      // Clear plan + shopping caches so a fresh plan generates with new preferences.
+      // Browser storage can be blocked (private mode, in-app browsers) - that must never
+      // stop the saved change from showing up.
+      try {
+        const today = new Date().toISOString().split('T')[0];
+        localStorage.setItem(`planStart_${updated.id}`, today);
+        clearShoppingCache(updated.id);
+      } catch { /* optional cache only */ }
       onUpdate(updated);
       setSelected(null);
+      setSavedNote(`${updated.name}: შენახულია. ასაკი ახლა - ${getAge(updated.birthDate)}`);
+      setTimeout(() => setSavedNote(''), 6000);
+    } catch {
+      setSaveError('კავშირის შეცდომა. შეამოწმე ინტერნეტი და სცადე თავიდან.');
+    } finally {
+      setSaving(false);
     }
   };
 
@@ -1188,6 +1210,9 @@ function ChildTab({ kids, userId, onUpdate, onDelete, autoOpenIntroChildId, onAu
 
   return (
     <div className="space-y-5">
+      {savedNote && (
+        <div className="rounded-2xl bg-green-50 border border-green-200 px-4 py-3 text-sm font-semibold text-green-800"><Copy>{savedNote}</Copy></div>
+      )}
       {/* Child pills */}
       <div className={`${card} p-5`}>
         <div className="flex items-center justify-between mb-4">
@@ -1329,6 +1354,9 @@ function ChildTab({ kids, userId, onUpdate, onDelete, autoOpenIntroChildId, onAu
             </div>
           </div>
 
+          {saveError && (
+            <p className="text-sm text-red-600 bg-red-50 rounded-xl px-4 py-2.5"><Copy>{saveError}</Copy></p>
+          )}
           <button onClick={save} disabled={saving}
             className="w-full bg-[#465940] hover:bg-[#465940] text-[#FDFBF0] py-3 rounded-full font-bold text-sm transition disabled:opacity-60">
             <Copy>{saving ? 'ინახება...' : 'შენახვა'}</Copy>
